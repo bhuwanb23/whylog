@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Typecheck, lint, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Invariant territory: the whole product must work keyless. This job runs
+      # with no provider secrets configured, deliberately.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint and format check
+        run: npm run check
+
+      - name: Unit and integration tests
+        run: npm run test
+
+      - name: Keyless end-to-end path
+        run: npx vitest run tests/integration/keyless.test.ts
+
+  guards:
+    name: Decision guards (Phase 4.6)
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      # Emitted by `npm run guards:ci` from the materialised decision graph.
+      # Fails the build on any guard with severity "blocking".
+      # See docs/04-executable-decision-guards.md section 5.2.
+      - name: Run exported guard set
+        run: npm run guards:ci
