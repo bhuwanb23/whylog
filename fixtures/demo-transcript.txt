@@ -1,0 +1,125 @@
+demo-transcript.txt — WhyLog demo fixture
+Paste this whole thing into WhyLog's "Import transcript" modal.
+It contains 6 extractable decisions, one of which (Postgres, Oct 3) is the trap
+that the live "switch to Postgres" quick-log is designed to catch.
+
+════════════════════════════════════════════════════════════════════════
+
+Claude Code — session: whylog-mvp
+Started: Oct 3, 14:22
+
+User: ok let's get the storage layer working. I need somewhere to put decisions,
+tags and the embeddings. What do you reckon, Postgres with Supabase?
+
+Assistant: Postgres via Supabase would work, but it means a hosted dependency,
+a connection string in env, and migrations to manage before you have a single
+user. What's the actual concurrency requirement here?
+
+User: none really. it's one person, one machine, one log.
+
+Assistant: Then I'd use SQLite with better-sqlite3 instead of Postgres. It's a
+single file, synchronous API so no async ceremony everywhere, zero deploy
+hassle, and you can literally email the database to someone.
+
+User: yeah ok. going with SQLite, not Postgres. single-user and no deploy hassle
+is the whole argument. if we ever need multi-user we can migrate, the schema is
+tiny.
+
+Assistant: Agreed. Noted: SQLite chosen over Postgres for single-user + no
+deploy overhead. Migration path stays open because the schema is small.
+
+User: next thing. do I need auth? everyone says add auth early.
+
+Assistant: What does auth protect, given the data lives in a local SQLite file on
+the user's own machine?
+
+User: ...nothing. there's no server. it's a local tool.
+
+Assistant: Then auth is pure cost right now. Login screens, session handling,
+password reset, and a whole threat model for data that never leaves the machine.
+
+User: fine, we're dropping auth entirely. no login, no accounts. it's a local
+single-user tool, auth protects nothing here. if it ever gets a hosted version
+we'll revisit, but not for the hackathon.
+
+Assistant: Dropped. I'll note that as a deliberate decision so we don't
+re-litigate it in two weeks.
+
+User: frontend. I keep defaulting to Next.js out of habit.
+
+Assistant: Do you need SSR, API routes, or a deployed edge presence?
+
+User: no. it's a single page, three views, everything runs client side.
+
+Assistant: Then Next.js is buying you nothing and costing you build time and
+router complexity. Use Vite with React and Tailwind instead of Next.js — it's a
+single-page client app, the dev server starts instantly, and there's no
+server-side surface you don't need.
+
+User: deal. Vite + React + Tailwind instead of Next.
+
+User: how do I store the decision history so search works?
+
+Assistant: Two options: a real vector store, or keep decisions as JSON with the
+embedding inline and compute cosine similarity in JS.
+
+User: how many decisions are we talking about realistically?
+
+Assistant: Dozens. Maybe a few hundred for a very active project.
+
+User: then no vector DB. that's absurd for this scale. we'll do embeddings
+inline in the JSON and just scan it. cosine similarity over 200 vectors is
+nothing.
+
+Assistant: Right — storing embeddings inline in JSON and doing a brute-force
+cosine scan instead of adding a vector database. At this scale a scan is
+sub-millisecond and you avoid the infra entirely.
+
+User: last one for today. testing. should I write unit tests for the extractor?
+
+Assistant: The extractor is the piece most likely to silently produce garbage,
+and it's pure text-in / JSON-out, so it's cheap to test.
+
+User: ok but I'm not doing full coverage. just a handful of golden tests on the
+extractor with fixture transcripts, no test suite for the UI. I don't have time
+and the UI is throwaway for the demo.
+
+Assistant: Noted: golden-file tests on the extractor only, using fixture
+transcripts. No UI test coverage.
+
+User: cool. commit all that.
+
+════════════════════════════════════════════════════════════════════════
+
+EXPECTED EXTRACTION (use this to verify your extractor during build):
+
+1. DATABASE   | Use SQLite (better-sqlite3), not Postgres
+                reasoning: single-user, no deploy hassle, migration path open
+                alternatives: [Postgres, Supabase]
+                → THIS IS THE TRAP. Timestamp it Oct 3.
+
+2. AUTH       | Drop auth entirely — no login, no accounts
+                reasoning: local single-user tool, data never leaves the machine
+                alternatives: [add auth early, Clerk, session-based login]
+
+3. FRAMEWORK  | Vite + React + Tailwind instead of Next.js
+                reasoning: no SSR/API routes needed, instant dev server
+                alternatives: [Next.js]
+
+4. STORAGE    | Embeddings inline in JSON, brute-force cosine scan
+                reasoning: dozens of decisions, sub-ms scan, no infra
+                alternatives: [vector DB, pgvector, Pinecone]
+
+5. TESTING    | Golden-file tests on the extractor only
+                reasoning: extractor most likely to silently produce garbage
+                alternatives: [full unit test coverage, UI test suite]
+
+6. (weaker)   | Keep the schema small so migration stays possible
+                → good low-confidence output to show collapsed in the review diff.
+
+DEMO SEQUENCE AFTER IMPORT:
+  Quick-log → "Actually let's switch to Postgres, we need concurrent writes."
+  Expected  → ⚠ REVERSAL: DATABASE postgres→sqlite was decided against on Oct 3.
+              Cited reasoning: "single-user and no deploy hassle."
+  Then ask  → "why did we drop auth?"
+  Then      → Export CLAUDE.md, flip to Graph, point at the red edge.

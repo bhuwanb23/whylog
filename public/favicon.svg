@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Premise nodes on top, decision node below: the bipartite lattice from
+       plan/phase-6-presentation.md sub-phase 6.6, reduced to a mark.
+       Solid = supports (IN-list). Dashed = excludes (OUT-list). -->
+  <rect width="32" height="32" rx="7" fill="#0b0f14"/>
+  <circle cx="10" cy="9" r="3" fill="none" stroke="#3ddc97" stroke-width="1.6"/>
+  <circle cx="22" cy="9" r="3" fill="none" stroke="#3ddc97" stroke-width="1.6"/>
+  <rect x="12" y="18" width="8" height="8" rx="2" fill="#3ddc97"/>
+  <path d="M10 12 L15 18 M22 12 L17 18" stroke="#3ddc97" stroke-width="1.4" fill="none"/>
+  <path d="M10 12 L17 18" stroke="#f5a524" stroke-width="1.4" stroke-dasharray="2 2" fill="none"/>
+</svg>
