@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+
+    <title>WhyLog - decision truth maintenance</title>
+    <meta
+      name="description"
+      content="A truth maintenance system for the decisions you make while building with AI. Stores the premises a decision rests on, cascades invalidation when one breaks, and compiles the log into agent-readable, machine-verifiable rules."
+    />
+
+    <!-- No external fonts, no CDN, no analytics. WhyLog is client-only and
+         must work with no network at all. See src/ai/local/. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

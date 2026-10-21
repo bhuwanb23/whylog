@@ -1,0 +1,44 @@
+# --- dependencies & build output -------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+*.local
+
+# --- secrets ----------------------------------------------------------------
+# Keys are optional and live in localStorage at runtime. They must never be
+# committed, and must never reach the event log or an export.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- editors & OS -----------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+*.sw?
+
+# --- logs & temp ------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.cache/
+.temp/
+tmp/
+
+# --- test & tooling artifacts ----------------------------------------------
+.vitest/
+*.tsbuildinfo
+
+# --- WhyLog runtime data ----------------------------------------------------
+# Exported logs and generated agent files are artifacts of a run, not source.
+# Commit them deliberately if you want them versioned with a project.
+.whylog/
+whylog-export/
