@@ -1,7 +1,7 @@
 /**
  * The domain model: decisions, premises, justifications, labels.
  *
- * Phase 0 · sub-phase 0.7 (ontology) and Phase 1 (extraction output)
+ * Phase 0 ú sub-phase 0.7 (ontology) and Phase 1 (extraction output)
  * Plan:     plan/phase-0-foundation.md §0.7
  *           plan/phase-1-extraction-pipeline.md §1.3–1.6
  * Research: docs/02-truth-maintenance-theory.md §4.1–4.3

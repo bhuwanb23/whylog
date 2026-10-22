@@ -62,7 +62,7 @@ The previous version blamed derived premises too, which inflated the set and mad
 nogood non-minimal — the opposite of §2.6's ATMS borrowing.
 
 New `reasoning/graph-index.ts` builds both indexes in one pass, because the naive
-traversals were `O(D² × J)` — invisible at demo scale, tens of millions of comparisons
+traversals were `O(Dý × J)` — invisible at demo scale, tens of millions of comparisons
 at the 500 nodes §2.2 names as a target.
 
 ### 🟠 The adjudicator and the detector disagreed

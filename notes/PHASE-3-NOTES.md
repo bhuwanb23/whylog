@@ -24,8 +24,8 @@ The plan's acceptance criteria for Phase 3, checked against what was built.
 | Two-stage retrieval with reranking; **all three engine implementations present** | ✅ | `rerank/index.ts` dispatches; `rerank/cross-encoder.ts` has the LLM listwise path **and** the downloaded-model row, which is documented as unavailable rather than faked. |
 | Contradiction classifier producing **five verdicts** | ✅ | `contradiction.ts`. All five reachable — see deviation 1 below. |
 | **Invariant I3 enforced** — similarity never produces a verdict | ✅ | `classifyPair` takes two `DecisionSnapshot`s. There is no threshold constant in the file and no score parameter to pass one through. The reranker scores against the original query because `rerank()` takes the query string and nothing else, so a HyDE hypothetical is not expressible rather than merely discouraged. |
-| **Evidence contract**: three verdicts, bounded searches (≤3), run trace, citation-resolution rule | ✅ | `evidence-contract.ts`. `MAX_SEARCHES = 3`, `SearchTrace`, `resolveCitations` (a citation resolves iff its id was retrieved in THIS run), four distinct stop reasons. |
-| Groundedness computed and displayed | ✅ | `groundedness.ts` — `\|claims with ≥1 resolving citation\| / \|total claims\|`, thresholds ≥0.95 / 0.5–0.95 / <0.5. Rendered in `AskView` as both a percentage and an `n of m` fraction. |
+| **Evidence contract**: three verdicts, bounded searches (ó3), run trace, citation-resolution rule | ✅ | `evidence-contract.ts`. `MAX_SEARCHES = 3`, `SearchTrace`, `resolveCitations` (a citation resolves iff its id was retrieved in THIS run), four distinct stop reasons. |
+| Groundedness computed and displayed | ✅ | `groundedness.ts` — `\|claims with ò1 resolving citation\| / \|total claims\|`, thresholds ò0.95 / 0.5–0.95 / <0.5. Rendered in `AskView` as both a percentage and an `n of m` fraction. |
 | Citation expansion showing **premises with labels**, alternatives, guards, provenance | ✅ | `citations.ts` → `renderExpansion`. Labels are LIVE (labeller's map), with a fallback counter that reports when a label came from the stored value instead. |
 | Ask view complete, keyless, including the **rejected-alternative pre-emption** path | ✅ | `views/AskView.tsx` (862 lines), routed in `App.tsx` with `phase: "3"`. Pre-emption from `preemption.ts`, rendered above the answer when the reason has expired. |
 | **Gate G3 passes** on an answerable and an unanswerable question | ⚠️ **runnable, not run** | Both questions are buttons in the Ask view. Verified against the corpus: `demo-transcript.txt` contains the SQLite/Postgres decision; **neither fixture mentions payments, Stripe, billing or checkout at all** (grepped), so the second question is genuinely unanswerable. |
@@ -135,7 +135,7 @@ Phase 7's ablation.
 Candidate generation is `retrieval/candidates.ts`, the 19th file (deviation 4). Three sources,
 unioned and de-duplicated:
 
-- **dense neighbours** — cosine ≥ 0.35, top 5 per decision, read from the L1 vectors already in
+- **dense neighbours** — cosine ò 0.35, top 5 per decision, read from the L1 vectors already in
   the index. **Zero embedding calls**, so gate (b) runs keyless.
 - **shared premises** — pairs resting on the same assumption, wherever similarity puts them.
 - **same variable** — pairs settling the same slot, whatever their wording.
@@ -154,7 +154,7 @@ was unavailable", and a false one.
 
 1. `npm install && npm run dev`
 2. **Import & review** → paste `fixtures/demo-transcript.txt` → approve on the local engine,
-   keyless. Confirm ≥5 decisions and ≥3 premises (that is G1, already passing).
+   keyless. Confirm ò5 decisions and ò3 premises (that is G1, already passing).
 3. **Ask** → the two G3 buttons are rendered under the question box.
 
 **Half 1 — answerable.** "Why did we choose SQLite over Postgres?"
@@ -185,7 +185,7 @@ GROUNDED, but a different answer. Run G3 on fixture 1 alone for the behaviour de
 |---|---|---|
 | **Nothing has been executed** | 🔴 | Type errors and runtime errors are entirely possible. The structural checker does not typecheck. First `npm run dev` will surface them. |
 | `understandQuery` matches values by substring over `commonValues` | 🟠 | A question naming a value the ontology does not list gets no L4 promotion. Deliberately conservative — a loose promotion cannot be demoted by the reranker, so a false one is worse than a missed one. |
-| Premise matching requires ≥2 shared content tokens | 🟠 | Same reasoning. Single-token overlap ("app", "server") would pull in half the log. |
+| Premise matching requires ò2 shared content tokens | 🟠 | Same reasoning. Single-token overlap ("app", "server") would pull in half the log. |
 | M1/M2 diagnostics are computed with similarity 0 in `classifyPairs` | 🟡 | They need a rationale-similarity judgement; the batch path has no vectors. `diagnose()` is correct and exported — the pipeline should pass a real similarity where it has one. |
 | Search 3 re-queries L3 only | 🟡 | It could re-fuse all levels. Bounded to L3 because the point of search 3 is vocabulary, not ranking. |
 | No caching of query embeddings | 🟢 | One `embed` call per question. Sub-millisecond locally; irrelevant. |

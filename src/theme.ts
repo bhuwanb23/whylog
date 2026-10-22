@@ -1,8 +1,8 @@
 /**
  * The visual language.
  *
- * Phase 6 ┬╖ authored in Phase 0 so every component reads one source
- * Plan: plan/phase-6-presentation.md ┬º6.0
+ * Phase 6 ú authored in Phase 0 so every component reads one source
+ * Plan: plan/phase-6-presentation.md §6.0
  *
  * ---------------------------------------------------------------------------
  * THE RULE: COLOUR ENCODES EPISTEMIC STATUS, NEVER SEVERITY
@@ -11,12 +11,12 @@
  * three different things need to look different and none of them is an error:
  *
  *   IN          the decision is supported by at least one valid justification
- *   OUT         every justification failed ΓÇö RETRACTED, not wrong, not deleted
+ *   OUT         every justification failed — RETRACTED, not wrong, not deleted
  *   UNKNOWN     the premises are neither confirmed nor refuted
  *   UNFOUNDED   a DATA-QUALITY warning: the justification chain never reaches a
  *               premise. Not a truth claim, and it must not look like one.
  *
- * So: green for supported, slate for retracted (present, closed, at rest ΓÇö not
+ * So: green for supported, slate for retracted (present, closed, at rest — not
  * alarming), amber for unknown, and a distinct violet for unfounded, because
  * "we could not ground this" is a different kind of statement from "we are not
  * sure yet". Red is reserved for ONE thing: a decision that is currently being
@@ -43,10 +43,11 @@ export const LABEL_BACKGROUND: Readonly<Record<DecisionLabel, string>> = {
 };
 
 export const LABEL_MEANING: Readonly<Record<DecisionLabel, string>> = {
-  IN: "Supported ΓÇö at least one justification is valid. IN does not mean TRUE; it means the decision currently rests on something.",
-  OUT: "Retracted ΓÇö every justification failed. Kept, never deleted, and still searchable.",
-  UNKNOWN: "Unresolved ΓÇö the premises are neither confirmed nor refuted.",
-  UNFOUNDED: "Data-quality warning ΓÇö the justification chain never reaches a premise node. Not a claim that the decision is wrong.",
+  IN: "Supported — at least one justification is valid. IN does not mean TRUE; it means the decision currently rests on something.",
+  OUT: "Retracted — every justification failed. Kept, never deleted, and still searchable.",
+  UNKNOWN: "Unresolved — the premises are neither confirmed nor refuted.",
+  UNFOUNDED:
+    "Data-quality warning — the justification chain never reaches a premise node. Not a claim that the decision is wrong.",
 };
 
 export const STATUS_COLOUR: Readonly<Record<DecisionStatus, string>> = {
@@ -60,20 +61,47 @@ export const STATUS_COLOUR: Readonly<Record<DecisionStatus, string>> = {
 export const STATUS_MEANING: Readonly<Record<DecisionStatus, string>> = {
   proposed: "Extracted, awaiting your review. Not yet part of the graph's conclusions.",
   active: "Approved and live.",
-  contested: "Screened out by non-prioritized revision: the new information could not outrank what it contradicts. Waiting for you, never silently applied.",
-  superseded: "Replaced by a later decision on the same variable. Excluded from exports by default.",
+  contested:
+    "Screened out by non-prioritized revision: the new information could not outrank what it contradicts. Waiting for you, never silently applied.",
+  superseded:
+    "Replaced by a later decision on the same variable. Excluded from exports by default.",
   archived: "Rejected or closed out. Retained for the audit trail.",
 };
 
 /** The four edge kinds the lattice draws, in four different styles. A cascade
  *  path and a conflict must never look alike: one propagates, one does not. */
 export const EDGE_STYLE = {
-  sharesPremiseWith: { stroke: "var(--edge-cascade)", width: 2, dash: "", label: "shares a premise ΓÇö CASCADE PATH" },
-  dependsOn: { stroke: "var(--edge-cascade)", width: 2, dash: "", label: "depends on ΓÇö CASCADE PATH" },
-  conflictsWith: { stroke: "var(--edge-conflict)", width: 1.5, dash: "5 3", label: "conflicts ΓÇö never a cascade path" },
+  sharesPremiseWith: {
+    stroke: "var(--edge-cascade)",
+    width: 2,
+    dash: "",
+    label: "shares a premise — CASCADE PATH",
+  },
+  dependsOn: {
+    stroke: "var(--edge-cascade)",
+    width: 2,
+    dash: "",
+    label: "depends on — CASCADE PATH",
+  },
+  conflictsWith: {
+    stroke: "var(--edge-conflict)",
+    width: 1.5,
+    dash: "5 3",
+    label: "conflicts — never a cascade path",
+  },
   supersedes: { stroke: "var(--edge-supersede)", width: 1.5, dash: "2 3", label: "supersedes" },
-  supersededBy: { stroke: "var(--edge-supersede)", width: 1.5, dash: "2 3", label: "superseded by" },
-  related: { stroke: "var(--edge-related)", width: 1, dash: "1 4", label: "topically related ΓÇö logically compatible" },
+  supersededBy: {
+    stroke: "var(--edge-supersede)",
+    width: 1.5,
+    dash: "2 3",
+    label: "superseded by",
+  },
+  related: {
+    stroke: "var(--edge-related)",
+    width: 1,
+    dash: "1 4",
+    label: "topically related — logically compatible",
+  },
 } as const;
 
 /** Premise-type columns in the lattice. Fixed order so the layout is stable
@@ -104,10 +132,28 @@ export const PREMISE_RING: Readonly<Record<string, string>> = {
 
 /** The mode badge. It says what is running BEFORE you act, not after. */
 export const MODE_BADGE = {
-  local: { label: "local engine", colour: "var(--mode-local)", meaning: "Deterministic, offline, no API key. Nothing leaves this browser." },
-  llm: { label: "llm engine", colour: "var(--mode-llm)", meaning: "Your transcript is sent to the configured provider. Every produced node is stamped with this engine." },
-  stale: { label: "index stale", colour: "var(--mode-stale)", meaning: "Semantic retrieval is disabled: the stored vectors came from a different embedding space." },
-  unavailable: { label: "no engine", colour: "var(--mode-stale)", meaning: "No engine could be constructed. The log, graph and exports still work." },
+  local: {
+    label: "local engine",
+    colour: "var(--mode-local)",
+    meaning: "Deterministic, offline, no API key. Nothing leaves this browser.",
+  },
+  llm: {
+    label: "llm engine",
+    colour: "var(--mode-llm)",
+    meaning:
+      "Your transcript is sent to the configured provider. Every produced node is stamped with this engine.",
+  },
+  stale: {
+    label: "index stale",
+    colour: "var(--mode-stale)",
+    meaning:
+      "Semantic retrieval is disabled: the stored vectors came from a different embedding space.",
+  },
+  unavailable: {
+    label: "no engine",
+    colour: "var(--mode-stale)",
+    meaning: "No engine could be constructed. The log, graph and exports still work.",
+  },
 } as const;
 
 /** Confidence is drawn as a bar, never as a colour. A low-confidence extraction

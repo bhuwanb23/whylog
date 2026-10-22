@@ -1,8 +1,8 @@
 /**
  * The engine seam.
  *
- * Phase 0 ┬╖ sub-phase 0.9
- * Plan: plan/phase-0-foundation.md ┬º0.9 ┬╖ plan/OVERVIEW.md ┬º8
+ * Phase 0 ú sub-phase 0.9
+ * Plan: plan/phase-0-foundation.md §0.9 ú plan/OVERVIEW.md §8
  *
  * ---------------------------------------------------------------------------
  * ONE INTERFACE, TWO IMPLEMENTATIONS, SELECTED AT RUNTIME
@@ -16,7 +16,7 @@
  * THE RULE THAT MAKES THE TWO PATHS COMPARABLE
  *
  * EVERY RESULT CARRIES THE `engine` THAT PRODUCED IT, AND THAT FIELD IS STORED ON
- * THE NODE ΓÇö not merely displayed next to it.
+ * THE NODE — not merely displayed next to it.
  *
  * Two consequences, both deliberate:
  *
@@ -43,14 +43,9 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type {
-  DecisionOrigin,
-  DecisionVariable,
-  Modality,
-  PremiseType,
-} from "@/types/domain";
-import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { DecisionOrigin, DecisionVariable, Modality, PremiseType } from "@/types/domain";
 import type { ProposedGuard } from "@/types/guards";
+import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Capabilities                                                               */
@@ -77,13 +72,13 @@ export interface EngineCapabilities {
    *  a real implementation with lower fluency, not a stub. */
   readonly composition: boolean;
   readonly guardSynthesis: "none" | "template-only" | "llm";
-  /** Three-run majority voting (plan/phase-1 ┬º1.8). Costs 3x; only the LLM path
+  /** Three-run majority voting (plan/phase-1 §1.8). Costs 3x; only the LLM path
    *  can afford it. */
   readonly voting: boolean;
   /** HyPE-style index-time questions. */
   readonly questionGeneration: boolean;
   /** The engine's own claim about its quality, for the Settings panel. Never used
-   *  for control flow ΓÇö that would let an engine overstate itself. */
+   *  for control flow — that would let an engine overstate itself. */
   readonly notes: string;
 }
 
@@ -177,7 +172,7 @@ export interface ExtractionResult {
   readonly premises: readonly PremiseCandidate[];
   readonly alternatives: readonly AlternativeCandidate[];
   /** Episodes the transcript was segmented into. Extraction happens per episode,
-   *  not per sentence ΓÇö the deliberate deviation from arXiv:2506.11005. */
+   *  not per sentence — the deliberate deviation from arXiv:2506.11005. */
   readonly episodes: readonly EpisodeSpan[];
   /** Candidates discarded before return, with the reason. These become
    *  `ExtractionDiscarded` events, which is the denominator of the precision
@@ -282,7 +277,7 @@ export interface CompositionRequest {
   readonly kind: CompositionKind;
   /** The structured material to compose FROM. Composition is never asked to
    *  retrieve; retrieval already happened and its results are here. That split is
-   *  what makes the evidence contract enforceable (docs/03 ┬º5). */
+   *  what makes the evidence contract enforceable (docs/03 §5). */
   readonly material: readonly CompositionFact[];
   readonly question?: string;
   readonly maxLengthChars?: number;
@@ -290,7 +285,7 @@ export interface CompositionRequest {
 }
 
 /** One grounded fact. A composition may only use these, and every claim it makes
- *  must cite at least one ΓÇö the check is in src/retrieval/groundedness.ts. */
+ *  must cite at least one — the check is in src/retrieval/groundedness.ts. */
 export interface CompositionFact {
   readonly decisionId: DecisionId;
   readonly statement: string;
@@ -305,6 +300,12 @@ export interface CompositionResult {
   /** The decision ids the text actually cites. Compared against `material` to
    *  detect a citation that does not resolve. */
   readonly citedDecisionIds: readonly DecisionId[];
+  /** A note about HOW this was composed — a provenance disclosure, not a claim about
+   *  the log. It is returned separately so the claim attribution never has to guess
+   *  whether a sentence is a claim: a disclosure carries no decision id, so if it
+   *  were part of `text` it would be scored as an ungrounded claim and would drag a
+   *  perfectly well-sourced answer below the GROUNDED threshold. */
+  readonly disclosure?: string;
   readonly engine: EngineId;
   readonly durationMs: number;
 }

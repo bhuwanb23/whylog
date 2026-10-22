@@ -1,7 +1,7 @@
 /**
  * The shell.
  *
- * Phase 0 ┬╖ sub-phase 0.10 ΓÇö boots empty, renders, survives reload
+ * Phase 0 ú sub-phase 0.10 — boots empty, renders, survives reload
  * Extended by Phase 6 into the six-view product.
  *
  * ---------------------------------------------------------------------------
@@ -14,13 +14,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState, ReactElement } from "react";
-import { useWhyLog, persistenceAvailable } from "@/store/whylog";
-import { FoundationView } from "@/views/FoundationView";
-import { ReviewView } from "@/views/ReviewView";
-import { ReasoningView } from "@/views/ReasoningView";
-import { AskView } from "@/views/AskView";
+import { persistenceAvailable, useWhyLog } from "@/store/whylog";
 import { MODE_BADGE } from "@/theme";
+import { FoundationView } from "@/views/FoundationView";
+import { ReasoningView } from "@/views/ReasoningView";
+import { ReviewView } from "@/views/ReviewView";
+import { type ReactElement, useEffect, useState } from "react";
 
 type ViewId =
   | "review"
@@ -38,14 +37,14 @@ const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   // structured, persisted decisions with premises". A product whose entry point is
   // an empty graph is a product nobody reaches the point of.
   { id: "review", label: "Import & review", phase: "1" },
-  // SECOND, because gate G2 ΓÇö "it reasons" ΓÇö is the critical gate. Everything after it
+  // SECOND, because gate G2 — "it reasons" — is the critical gate. Everything after it
   // is a surface over a reasoning engine; without this view there is no way to see the
   // thing the whole project is actually about.
   { id: "reasoning", label: "Reasoning", phase: "2" },
   { id: "foundation", label: "Foundation", phase: "0" },
   { id: "timeline", label: "Timeline", phase: "6.1" },
   { id: "conflict", label: "Conflict", phase: "6.5" },
-  // THIRD: gate G3 ΓÇö "it answers". Retrieval, the evidence contract and the Ask surface all
+  // THIRD: gate G3 — "it answers". Retrieval, the evidence contract and the Ask surface all
   // land in Phase 3, so the view belongs to it rather than to the presentation phase that
   // originally held the slot.
   { id: "ask", label: "Ask", phase: "3" },
@@ -106,8 +105,6 @@ export function App(): ReactElement {
           <ReasoningView />
         ) : view === "foundation" ? (
           <FoundationView />
-        ) : view === "ask" ? (
-          <AskView />
         ) : (
           <NotYet view={VIEWS.find((v) => v.id === view)} />
         )}
@@ -124,7 +121,7 @@ function ModeBadge({ mode }: { mode: keyof typeof MODE_BADGE }): ReactElement {
   const config = MODE_BADGE[mode];
   return (
     <span className="badge" title={config.meaning} style={{ color: config.colour }}>
-      <span aria-hidden="true">ΓùÅ</span>
+      <span aria-hidden="true">●</span>
       {config.label}
     </span>
   );
@@ -145,7 +142,7 @@ function ChainBadge({ status }: { status: string }): ReactElement {
       <span
         className="badge"
         style={{ color: "var(--label-unknown)" }}
-        title="This browser will not remember the log across a reload ΓÇö private mode, a sandboxed frame, or storage is blocked. Export to a file to keep it."
+        title="This browser will not remember the log across a reload — private mode, a sandboxed frame, or storage is blocked. Export to a file to keep it."
       >
         memory only
       </span>
@@ -153,7 +150,11 @@ function ChainBadge({ status }: { status: string }): ReactElement {
   }
   if (status === "degraded") {
     return (
-      <span className="badge" style={{ color: "var(--action)" }} title="The hash chain failed verification on load. The log is read-only.">
+      <span
+        className="badge"
+        style={{ color: "var(--action)" }}
+        title="The hash chain failed verification on load. The log is read-only."
+      >
         chain broken
       </span>
     );
@@ -174,9 +175,9 @@ function NotYet({ view }: { view: { label: string; phase: string } | undefined }
     <section className="card">
       <h2 className="card-title">{view?.label ?? "View"}</h2>
       <p className="dim">
-        This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it ΓÇö the
-        append-only log, the fold, the bi-temporal projections and the hash chain ΓÇö is built and
-        is what the Foundation view reports on.
+        This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it — the
+        append-only log, the fold, the bi-temporal projections and the hash chain — is built and is
+        what the Foundation view reports on.
       </p>
     </section>
   );

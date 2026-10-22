@@ -1,7 +1,7 @@
 /**
- * The engine facade ΓÇö `getEngine()`.
+ * The engine facade — `getEngine()`.
  *
- * Phase 0 ┬╖ sub-phase 0.9
+ * Phase 0 ú sub-phase 0.9
  *
  * ---------------------------------------------------------------------------
  * THE ONE CALL SITE
@@ -18,23 +18,22 @@
  *
  * Step 3 is not an error and is not silent. `getEngine()` returns the reason
  * alongside the engine so the UI can say "you asked for GPT, there is no key, this
- * is local" ΓÇö the one behaviour the seam must never have is a quiet substitution.
+ * is local" — the one behaviour the seam must never have is a quiet substitution.
  * ---------------------------------------------------------------------------
  */
 
 import type { EngineId } from "@/types/common";
-import type { WhyLogEngine } from "./types";
-import { LOCAL_CAPABILITIES } from "./types";
-import { EngineError, describeError } from "./errors";
-import { createEngine, listEngines, nullEngine } from "./registry";
 import {
   DEFAULT_CONFIG,
-  engineIdOf,
+  type EngineConfig,
   embeddingEngineIdOf,
   readConfig,
   resolveEngine,
-  type EngineConfig,
 } from "./config";
+import { EngineError, describeError } from "./errors";
+import { createEngine, listEngines, nullEngine } from "./registry";
+import type { WhyLogEngine } from "./types";
+import type { LOCAL_CAPABILITIES } from "./types";
 
 export interface ActiveEngine {
   readonly engine: WhyLogEngine;
@@ -138,7 +137,7 @@ export function getLocalEngine(): WhyLogEngine {
 }
 
 /** The engine id that will stamp the NEXT extraction. Shown next to the Extract
- *  button, before the user presses it ΓÇö the badge is a promise, not a footnote. */
+ *  button, before the user presses it — the badge is a promise, not a footnote. */
 export function activeEngineId(): EngineId {
   return getEngine().id;
 }

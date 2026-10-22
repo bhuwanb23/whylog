@@ -1,8 +1,8 @@
 /**
- * Parsing and coercion for the LLM path ΓÇö 1.10.
+ * Parsing and coercion for the LLM path — 1.10.
  *
- * Phase 1 ┬╖ sub-phase 1.10
- * Plan: STRUCTURE.md ┬º5 names this file; `ai/llm/index.ts` owns the engine object
+ * Phase 1 ú sub-phase 1.10
+ * Plan: STRUCTURE.md §5 names this file; `ai/llm/index.ts` owns the engine object
  * and this owns everything between "the model answered" and "here are candidates".
  *
  * ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@
  * that invents a variable produces an OTHER decision; a model that paraphrases a
  * quote produces `null` and the item is dropped.
  *
- * The alternative ΓÇö parsing into the declared interfaces with a cast ΓÇö would let a
+ * The alternative — parsing into the declared interfaces with a cast — would let a
  * malformed answer reach the review queue looking well-formed, and the review is
  * the one place the system is allowed to be wrong in public.
  *
@@ -28,26 +28,30 @@
  * ---------------------------------------------------------------------------
  */
 
+import { chunkTurns } from "@/extraction/chunking";
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { locateSnippet } from "@/extraction/offset-map";
+import { contentTokens } from "@/lib/text";
+import {
+  canonicalPredicate,
+  canonicalValueOf,
+  foldKey,
+  resolveVariable,
+} from "@/ontology/canonicalize";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionVariable, PremiseType } from "@/types/domain";
 import { DECISION_VARIABLES, PREMISE_TYPES } from "@/types/domain";
-import type { ExtractionRequest, ExtractionResult } from "../types";
-import { canonicalPredicate, canonicalValueOf, foldKey, resolveVariable } from "@/ontology/canonicalize";
-import { contextTokens } from "@/extraction/cue-scan";
-import { chunkTurns } from "@/extraction/chunking";
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { locateSnippet } from "@/extraction/offset-map";
 import {
-  EMPTY_LLM_EXTRACTION,
-  PROMPT_CHAR_BUDGET,
   type LlmAlternative,
   type LlmDecision,
   type LlmDiscard,
   type LlmExtraction,
   type LlmPremise,
+  PROMPT_CHAR_BUDGET,
 } from "../prompts/extraction";
 import { extractJson } from "../providers/openai-compatible";
+import type { ExtractionRequest, ExtractionResult } from "../types";
 
 /* -------------------------------------------------------------------------- */
 /* Parsing                                                                    */
@@ -57,10 +61,12 @@ export function readExtraction(text: string, model: string): LlmExtraction {
   const parsed = extractJson(text, model);
 
   return {
-    decisions: arrayOf(parsed["decisions"]).filter(isRecord) as readonly LlmDecision[],
-    premises: arrayOf(parsed["premises"]).filter(isRecord) as readonly LlmPremise[],
-    alternatives: arrayOf(parsed["alternatives"]).filter(isRecord) as readonly LlmAlternative[],
-    discarded: arrayOf(parsed["discarded"]).filter(isRecord) as readonly LlmDiscard[],
+    decisions: arrayOf(parsed["decisions"]).filter(isRecord) as unknown as readonly LlmDecision[],
+    premises: arrayOf(parsed["premises"]).filter(isRecord) as unknown as readonly LlmPremise[],
+    alternatives: arrayOf(parsed["alternatives"]).filter(
+      isRecord,
+    ) as unknown as readonly LlmAlternative[],
+    discarded: arrayOf(parsed["discarded"]).filter(isRecord) as unknown as readonly LlmDiscard[],
   };
 }
 
@@ -85,9 +91,19 @@ export function toExtractionResult(
   completionTokens: number,
 ): ExtractionResult {
   if (parsed.decisions.length === 0 && parsed.premises.length === 0) {
+    // The LLM's own empty-extraction constant holds Llm* candidates, which are
+    // a different shape from the seam's. The empty result is built directly.
     return {
-      ...EMPTY_LLM_EXTRACTION,
-      discarded: parsed.discarded,
+      decisions: [],
+      premises: [],
+      alternatives: [],
+      episodes: [],
+      discarded: parsed.discarded.map((discard) => ({
+        kind: discard.kind,
+        discardedBy: discard.discardedBy,
+        rawText: String(discard.rawText ?? "").slice(0, 400),
+        confidence: asConfidence(clamp(Number(discard.confidence ?? 0.3))),
+      })),
       engine,
       durationMs: Math.round(durationMs),
       usage: { promptTokens, completionTokens },
@@ -128,7 +144,7 @@ function toDecision(
   decision: LlmDecision,
   request: ExtractionRequest,
   raw: string,
-  engine: EngineId,
+  _engine: EngineId,
   premiseCount: number,
 ): ExtractionResult["decisions"][number] | null {
   const value = stringOf(decision["value"]);
@@ -137,7 +153,7 @@ function toDecision(
   const snippet = resolveSpan(request, raw, stringOf(decision["snippet"]));
   if (snippet === null) return null;
 
-  const guess = resolveVariable(value, contextTokens(snippet.text));
+  const guess = resolveVariable(value, contentTokens(snippet.text));
   const variable: DecisionVariable = isVariable(decision["variable"])
     ? (decision["variable"] as DecisionVariable)
     : guess.variable;
@@ -161,9 +177,16 @@ function toDecision(
   return {
     variable,
     value: canonical,
-    statement: stringOf(decision["statement"]).length > 0 ? stringOf(decision["statement"]) : `Use ${canonical}`,
-    ...(stringOf(decision["yStatement"]).length === 0 ? {} : { yStatement: stringOf(decision["yStatement"]) }),
-    ...(stringOf(decision["rationale"]).length === 0 ? {} : { rationale: stringOf(decision["rationale"]) }),
+    statement:
+      stringOf(decision["statement"]).length > 0
+        ? stringOf(decision["statement"])
+        : `Use ${canonical}`,
+    ...(stringOf(decision["yStatement"]).length === 0
+      ? {}
+      : { yStatement: stringOf(decision["yStatement"]) }),
+    ...(stringOf(decision["rationale"]).length === 0
+      ? {}
+      : { rationale: stringOf(decision["rationale"]) }),
     ...(stringOf(decision["acceptedDownside"]).length === 0
       ? {}
       : { acceptedDownside: stringOf(decision["acceptedDownside"]) }),
@@ -175,7 +198,10 @@ function toDecision(
     snippet,
     premiseRefs: refs,
     alternativeRefs,
-    appliesTo: arrayOf(decision["appliesTo"]).map(String).filter((glob) => glob.includes("*")).slice(0, 8),
+    appliesTo: arrayOf(decision["appliesTo"])
+      .map(String)
+      .filter((glob) => glob.includes("*"))
+      .slice(0, 8),
   };
 }
 
@@ -192,14 +218,18 @@ function toPremise(
   const snippet = resolveSpan(request, raw, stringOf(premise["snippet"]) || text);
   if (snippet === null) return null;
 
-  const type: PremiseType = isPremiseType(premise["type"]) ? (premise["type"] as PremiseType) : "requirement";
+  const type: PremiseType = isPremiseType(premise["type"])
+    ? (premise["type"] as PremiseType)
+    : "requirement";
   const predicate = canonicalPredicate(type, stringOf(premise["predicate"]) || text);
   void engine;
 
   return {
     type,
     predicate,
-    ...(premise["value"] === undefined || premise["value"] === null ? {} : { value: premise["value"] as string | number | boolean }),
+    ...(premise["value"] === undefined || premise["value"] === null
+      ? {}
+      : { value: premise["value"] as string | number | boolean }),
     text,
     confidence: asConfidence(Math.min(0.85, clamp(Number(premise["confidence"] ?? 0.55)))),
     snippet,
@@ -223,7 +253,7 @@ function toAlternative(
   const snippet = resolveSpan(request, raw, stringOf(alternative["snippet"]));
   if (snippet === null) return null;
 
-  const guess = resolveVariable(value, contextTokens(snippet.text));
+  const guess = resolveVariable(value, contentTokens(snippet.text));
   const variable: DecisionVariable = isVariable(alternative["variable"])
     ? (alternative["variable"] as DecisionVariable)
     : guess.variable;
@@ -234,7 +264,9 @@ function toAlternative(
   return {
     variable,
     value: variable === "OTHER" ? foldKey(value) : canonicalValueOf(variable, value),
-    ...(stringOf(alternative["whyRejected"]).length === 0 ? {} : { whyRejected: stringOf(alternative["whyRejected"]) }),
+    ...(stringOf(alternative["whyRejected"]).length === 0
+      ? {}
+      : { whyRejected: stringOf(alternative["whyRejected"]) }),
     // Halved against the model's own claim: published precision on this component is
     // 15.4%, and a model's self-reported confidence is not calibrated against that.
     confidence: asConfidence(Math.min(0.6, clamp(Number(alternative["confidence"] ?? 0.5)) * 0.5)),
@@ -250,12 +282,16 @@ function toAlternative(
 /**
  * Locate a model's quote in the input.
  *
- * Returns null when it is not a literal substring ΓÇö which is the rule, not an
+ * Returns null when it is not a literal substring — which is the rule, not an
  * error: the item is dropped here and counted in `discarded` by the validation pass
  * downstream. Guessing a span would produce a highlight over the wrong words, and
  * that is undetectable by reading it.
  */
-function resolveSpan(request: ExtractionRequest, raw: string, snippet: string): ReturnType<typeof locateSnippet> {
+function resolveSpan(
+  request: ExtractionRequest,
+  raw: string,
+  snippet: string,
+): ReturnType<typeof locateSnippet> {
   const needle = snippet.trim();
   if (needle.length === 0) return null;
   return locateSnippet(request.transcriptId, raw, needle);
@@ -269,18 +305,21 @@ function resolveSpan(request: ExtractionRequest, raw: string, snippet: string): 
  * Split a long transcript on TURN boundaries for the prompt.
  *
  * `chunkTurns` is the same chunker the local path uses, so a transcript that fits
- * locally and does not fit remotely is split identically ΓÇö which matters because
+ * locally and does not fit remotely is split identically — which matters because
  * Phase 7 compares the two engines on the same fixture and a different split would
  * be a confound.
  */
-export function splitForPrompt(raw: string, transcriptId: ExtractionRequest["transcriptId"]): readonly string[] {
+export function splitForPrompt(
+  raw: string,
+  transcriptId: ExtractionRequest["transcriptId"],
+): readonly string[] {
   const normalized = normaliseTranscript(raw, { transcriptId });
   const { chunks } = chunkTurns(normalized.turns, PROMPT_CHAR_BUDGET);
 
   if (chunks.length === 0) return [raw];
   return chunks.map((chunk) =>
-    chunk.turnIndexes
-      .map((index) => normalized.turns[index]?.text ?? "")
+    chunk.turns
+      .map((turn) => turn.text)
       .filter((text) => text.length > 0)
       .join("\n\n"),
   );
@@ -322,7 +361,9 @@ function modalityOf(value: unknown): "asserted" | "proposed" | "hypothetical" | 
   }
 }
 
-function originOf(value: unknown): "human_stated" | "agent_proposed_human_accepted" | "agent_inferred" {
+function originOf(
+  value: unknown,
+): "human_stated" | "agent_proposed_human_accepted" | "agent_inferred" {
   switch (value) {
     case "human_stated":
     case "agent_proposed_human_accepted":
@@ -331,4 +372,3 @@ function originOf(value: unknown): "human_stated" | "agent_proposed_human_accept
       return "agent_inferred";
   }
 }
-

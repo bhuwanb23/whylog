@@ -1,7 +1,7 @@
 /**
  * The closed vocabulary of the log.
  *
- * Phase 0 · sub-phase 0.1
+ * Phase 0 ú sub-phase 0.1
  * Plan:     plan/phase-0-foundation.md §0.1
  * Research: docs/06-agent-memory-landscape.md §2  (bi-temporality)
  *           docs/02-truth-maintenance-theory.md §4 (formalism)

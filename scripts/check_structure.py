@@ -558,8 +558,8 @@ def main() -> int:
             print("  - " + problem)
         return 1
 
-    print("  imports resolve · named exports exist · no cycles · brackets balance")
-    print("  event vocabulary agrees · no forbidden patterns")
+    print("  imports resolve ú named exports exist ú no cycles ú brackets balance")
+    print("  event vocabulary agrees ú no forbidden patterns")
     return 0
 
 

@@ -1,7 +1,7 @@
 /**
- * The local engine's alternative vocabulary ΓÇö 1.5.
+ * The local engine's alternative vocabulary — 1.5.
  *
- * Phase 1 ┬╖ sub-phase 1.5
+ * Phase 1 ú sub-phase 1.5
  *
  * `extraction/alternatives.ts` owns the pipeline-side recovery. This module owns the
  * one piece that is recognition rather than mechanics: WHICH NOUNS COUNT AS
@@ -10,9 +10,9 @@
  * a rejected technology.
  */
 
-import type { DecisionVariable } from "@/types/domain";
 import { canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import { NONE_VALUES } from "@/ontology/data/aliases";
+import type { DecisionVariable } from "@/types/domain";
 import { isTechShaped, knownValuesIn, variablesFor } from "./value-phrase";
 
 export interface AlternativeValue {
@@ -28,7 +28,7 @@ export interface AlternativeValue {
  *
  * Two sources, in order of trust: the ontology's known values, then
  * technology-shaped tokens (kebab-case, dotted, CamelCase) that the ontology does
- * not know. A bare noun is never returned ΓÇö "the database" is not an alternative,
+ * not know. A bare noun is never returned — "the database" is not an alternative,
  * it is the topic.
  *
  * @param variable the decision's own variable, used as a hint and as the fallback
@@ -78,7 +78,7 @@ export function alternativeValues(
  * Is this a non-choice?
  *
  * "none", "nothing", "no auth" are DECISIONS, not alternatives, and treating them as
- * rejected options produces a nonsense pre-emption ΓÇö "you rejected nothing" ΓÇö which
+ * rejected options produces a nonsense pre-emption — "you rejected nothing" — which
  * is the kind of wrong that makes a user stop reading the warnings.
  */
 export function isNoneValue(value: string): boolean {
@@ -106,7 +106,9 @@ function shapedTokens(window: string): readonly string[] {
  * `handleClick`" is exactly the false pre-emption that gets the feature switched
  * off.
  */
-export function preemptionEligible(values: readonly AlternativeValue[]): readonly AlternativeValue[] {
+export function preemptionEligible(
+  values: readonly AlternativeValue[],
+): readonly AlternativeValue[] {
   return values.filter((value) => value.strength === "known");
 }
 

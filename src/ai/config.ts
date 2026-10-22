@@ -1,7 +1,7 @@
 /**
  * Engine configuration.
  *
- * Phase 0 ┬╖ sub-phase 0.9
+ * Phase 0 ú sub-phase 0.9
  *
  * ---------------------------------------------------------------------------
  * WHERE THE KEY LIVES, AND WHERE IT NEVER GOES
@@ -13,24 +13,24 @@
  *
  * The reason is structural rather than a policy: the event log is DESIGNED to be
  * shared. The portable JSON is the product's own `requirement.portability`
- * premise made real ΓÇö one file you can email, commit, or hand to a teammate. A
+ * premise made real — one file you can email, commit, or hand to a teammate. A
  * secret in a shareable artifact is a leaked secret, and "we redact on export" is
  * a control that fails the first time somebody forgets. So the secret is not in
  * the thing that gets shared.
  *
  * Corollary: switching engines writes an `EngineSwitched` event carrying only the
- * two `EngineId`s ΓÇö kind and model name ΓÇö which are not secrets and ARE history.
+ * two `EngineId`s — kind and model name — which are not secrets and ARE history.
  * ---------------------------------------------------------------------------
  */
 
-import { ok, err, type Result } from "@/lib/result";
-import type { EngineId } from "@/types/common";
+import { type Result, err, ok } from "@/lib/result";
 import {
+  type StoredConfig,
   clearApiKey as clearStoredKey,
   loadConfig,
   saveConfig,
-  type StoredConfig,
 } from "@/substrate/persistence";
+import type { EngineId } from "@/types/common";
 
 export type ProviderId = "openai" | "anthropic" | "openrouter" | "local";
 
@@ -47,7 +47,7 @@ export interface EngineConfig {
    *  requested. */
   readonly wantsLlmWithoutKey: boolean;
   /** Three-run majority voting. Off by default: it triples the cost and the
-   *  benefit is measurable but not free (plan/phase-1 ┬º1.8). */
+   *  benefit is measurable but not free (plan/phase-1 §1.8). */
   readonly voting: boolean;
   /** HyPE-style index-time questions. Costs one call per decision at index time
    *  and nothing at query time, which is why it defaults on for the LLM path. */
@@ -99,9 +99,11 @@ export function readConfig(): EngineConfig {
 }
 
 function fromStored(stored: StoredConfig): EngineConfig {
-  const provider = isProvider(stored.engineKind === "local" ? "local" : stored.provider)
-    ? (stored.provider ?? "local")
-    : "local";
+  // `engineKind` is the authority on WHICH engine runs; `provider` only says
+  // which remote provider to use when that engine is the LLM one. Reading the
+  // provider alone would report "openai" for a log that is running locally.
+  const requested = stored.engineKind === "local" ? "local" : stored.provider;
+  const provider: ProviderId = isProvider(requested) ? requested : "local";
 
   return {
     provider,
@@ -166,7 +168,7 @@ export function isLlmUsable(config: EngineConfig): boolean {
 /**
  * Resolve what the app will actually run.
  *
- * Returns the requested engine when it is usable, and the local engine otherwise ΓÇö
+ * Returns the requested engine when it is usable, and the local engine otherwise —
  * with `fellBack` set, so the caller can TELL THE USER. A silent fallback is the
  * one behaviour this seam must not have: the user would believe their transcript
  * went to a provider when it did not, or vice versa.
@@ -185,7 +187,7 @@ export function resolveEngine(config: EngineConfig): {
   return {
     config: { ...DEFAULT_CONFIG, apiKey: null, wantsLlmWithoutKey: true },
     fellBack: true,
-    reason: `${config.provider} was selected but no API key is stored. Running the local engine instead ΓÇö nothing was sent anywhere.`,
+    reason: `${config.provider} was selected but no API key is stored. Running the local engine instead — nothing was sent anywhere.`,
   };
 }
 
@@ -202,8 +204,8 @@ export function redacted(config: EngineConfig): Omit<EngineConfig, "apiKey"> & {
 }
 
 function keyHint(key: string): string {
-  if (key.length < 8) return "ΓÇóΓÇóΓÇóΓÇó";
-  return `${key.slice(0, 4)}ΓÇª${key.slice(-4)} (${key.length} chars)`;
+  if (key.length < 8) return "••••";
+  return `${key.slice(0, 4)}…${key.slice(-4)} (${key.length} chars)`;
 }
 
 /** Never returns the key. Exists so a code reviewer can grep for the one place

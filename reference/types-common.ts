@@ -1,7 +1,7 @@
 /**
  * Shared primitives.
  *
- * Phase 0 · sub-phase 0.1
+ * Phase 0 ú sub-phase 0.1
  * Plan:     plan/phase-0-foundation.md
  * Research: docs/02-truth-maintenance-theory.md §4
  *
