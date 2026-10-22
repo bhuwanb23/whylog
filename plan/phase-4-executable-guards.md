@@ -49,34 +49,34 @@
         variable: DATABASE · value: sqlite
         rejected: [postgres, supabase]
         applies_to: src/db/**, package.json
-                    │
+                    ³
                     ▼
         ┌──────────────────────────────────┐
-        │  TEMPLATE RULES per variable     │  deterministic — covers ~80%
-        │  DATABASE  → driver present /    │
-        │              rejected absent /   │
-        │              connection-string   │
-        │              absent              │
-        │  FRAMEWORK → build config +      │
-        │              dependency          │
-        │  HOSTING   → config file +       │
-        │              deploy manifest     │
-        │  AUTH      → middleware / lib    │
-        │              present or absent   │
-        │  STORAGE   → artifact present    │
+        ³  TEMPLATE RULES per variable     ³  deterministic — covers ~80%
+        ³  DATABASE  → driver present /    ³
+        ³              rejected absent /   ³
+        ³              connection-string   ³
+        ³              absent              ³
+        ³  FRAMEWORK → build config +      ³
+        ³              dependency          ³
+        ³  HOSTING   → config file +       ³
+        ³              deploy manifest     ³
+        ³  AUTH      → middleware / lib    ³
+        ³              present or absent   ³
+        ³  STORAGE   → artifact present    ³
         └───────────────┬──────────────────┘
-                        │
+                        ³
                   covered? ──no──► ┌────────────────────────┐
-                        │          │  LLM SYNTHESIS         │
-                       yes         │  decision + file list  │
-                        │          │  → proposed guard set  │
-                        │          │  generatedBy: llm      │
-                        │          │  REQUIRES REVIEW       │
-                        │          └───────────┬────────────┘
+                        ³          ³  LLM SYNTHESIS         ³
+                       yes         ³  decision + file list  ³
+                        ³          ³  → proposed guard set  ³
+                        ³          ³  generatedBy: llm      ³
+                        ³          ³  REQUIRES REVIEW       ³
+                        ³          └───────────┬────────────┘
                         ▼                      ▼
                  ┌────────────────────────────────┐
-                 │  HUMAN REVIEW — guards are     │
-                 │  proposed, never silent        │
+                 ³  HUMAN REVIEW — guards are     ³
+                 ³  proposed, never silent        ³
                  └───────────────┬────────────────┘
                                  ▼
                      accepted guards attached to the decision
@@ -118,18 +118,18 @@
 **Goal.** Turn drift into numbers.
 
 ```
-                      Σ | IN decisions whose guards all pass |
+                      ä | IN decisions whose guards all pass |
    compliance  =  ─────────────────────────────────────────────
-                  Σ | IN decisions with ≥1 accepted guard      |
+                  ä | IN decisions with ≥1 accepted guard      |
 ```
 
 | Metric | Definition | Why it matters |
 |---|---|---|
 | **Decision Compliance** | above | The headline. *"Your codebase has quietly stopped believing 3 of your 12 decisions."* |
-| **Verifiable Coverage** | IN decisions with ≥1 accepted guard ≈ all IN decisions | Low coverage = most of the log is unfalsifiable prose |
-| **Log Soundness** | IN decisions ≈ all non-superseded decisions | The truth-maintenance counterpart: how much of what you believe is still supported |
+| **Verifiable Coverage** | IN decisions with ≥1 accepted guard ÷ all IN decisions | Low coverage = most of the log is unfalsifiable prose |
+| **Log Soundness** | IN decisions ÷ all non-superseded decisions | The truth-maintenance counterpart: how much of what you believe is still supported |
 | **Drift Age** | Days since a failing guard was first observed | A failure ignored for 30 days is a decision you no longer hold |
-| **Deterministic Ratio** | Deterministic guards ≈ all guards | How much of your verification is trustworthy without a model |
+| **Deterministic Ratio** | Deterministic guards ÷ all guards | How much of your verification is trustworthy without a model |
 
 **Baseline pattern — borrowed from fitness-function practice.** A legacy codebase will fail many guards on first run. **Do not make that a wall of red.** Freeze the initial state as a baseline, fail only on *new* violations, and let the user shrink the baseline deliberately. The literature's phrasing: *"Never write fitness functions for the codebase you want — write them for the one you have… The function is a lock, not a goal."*
 
@@ -145,20 +145,20 @@
 
 ```
    GUARD RUN
-      │
+      ³
       ├── PASS ──► corroboration +1 for the decision
-      │            implementation_cost ↑  ──► entrenchment E(d)
-      │
+      ³            implementation_cost ↑  ──► entrenchment E(d)
+      ³
       └── FAIL ──► emit GuardFailed event
-                        │
+                        ³
                         ▼
                  REVISE() STEP 1  ◄── same entry point as a transcript
-                        │
+                        ³
                         ▼
           does this falsify a premise the decision rests on?
-                   │                │
+                   ³                ³
                   yes               no
-                   │                │
+                   ³                ³
                    ▼                ▼
             GATE (c) fires     GATE (a) fires
             premise            structural drift:
@@ -220,35 +220,35 @@ States: `proposed` → `accepted` → (`suppressed` | `deleted`). Suppression re
 
 ```
    ┌──────────────┐     synthesise     ┌──────────────┐
-   │   DECISION   │ ─────────────────► │    GUARDS    │
-   │  WLD-0007    │                    │  G-0007a…d   │
+   ³   DECISION   ³ ─────────────────► ³    GUARDS    ³
+   ³  WLD-0007    ³                    ³  G-0007a…d   ³
    └──────┬───────┘                    └──────┬───────┘
-          │                                   │ run against
-          │                                   ▼
-          │                           ┌──────────────┐
-          │                           │   PROJECT    │  package.json,
-          │                           │  (real or    │  file listing,
-          │                           │   virtual)   │  file contents
-          │                           └──────┬───────┘
-          │                                  │
-          │                     ┌────────────┴────────────┐
-          │                     ▼                         ▼
-          │                 PASS                      FAIL
-          │                     │                         │
-          │     corroboration +1│                         │ GuardFailed event
-          │     implementation  │                         │
-          │     _cost ↑         │                         │
-          │                     │                         ▼
-          │                     │                 ┌───────────────┐
-          │                     └────────────────►│   REVISE()    │
-          │                            evidence   │  Phase 2      │
-          │                                       └───────┬───────┘
-          │                                               │
-          │            ┌──────────────────────────────────┤
-          │            ▼                                  ▼
-          │   entrenchment updated              revision proposal
-          │                                     "your code disagrees
-          │                                      with your decision"
+          ³                                   ³ run against
+          ³                                   ▼
+          ³                           ┌──────────────┐
+          ³                           ³   PROJECT    ³  package.json,
+          ³                           ³  (real or    ³  file listing,
+          ³                           ³   virtual)   ³  file contents
+          ³                           └──────┬───────┘
+          ³                                  ³
+          ³                     ┌────────────┴────────────┐
+          ³                     ▼                         ▼
+          ³                 PASS                      FAIL
+          ³                     ³                         ³
+          ³     corroboration +1³                         ³ GuardFailed event
+          ³     implementation  ³                         ³
+          ³     _cost ↑         ³                         ³
+          ³                     ³                         ▼
+          ³                     ³                 ┌───────────────┐
+          ³                     └────────────────►³   REVISE()    ³
+          ³                            evidence   ³  Phase 2      ³
+          ³                                       └───────┬───────┘
+          ³                                               ³
+          ³            ┌──────────────────────────────────┤
+          ³            ▼                                  ▼
+          ³   entrenchment updated              revision proposal
+          ³                                     "your code disagrees
+          ³                                      with your decision"
           └────────────────────────────────────────────────┘
 ```
 
@@ -263,11 +263,11 @@ States: `proposed` → `accepted` → (`suppressed` | `deleted`). Suppression re
 
    FAILING
    ┌────────────────────────────────────────────────────────────┐
-   │ ✗ WLD-0009  Use Vite, not Next.js                          │
-   │   G-0009b  dependency_absent: next                         │
-   │   Evidence: "next": "^15.1.0" in devDependencies           │
-   │   First failed 4 days ago · blocking                       │
-   │   [ Reverse decision ]  [ Suppress ]  [ It's drift ]       │
+   ³ ✗ WLD-0009  Use Vite, not Next.js                          ³
+   ³   G-0009b  dependency_absent: next                         ³
+   ³   Evidence: "next": "^15.1.0" in devDependencies           ³
+   ³   First failed 4 days ago · blocking                       ³
+   ³   [ Reverse decision ]  [ Suppress ]  [ It's drift ]       ³
    └────────────────────────────────────────────────────────────┘
 
    UNVERIFIABLE  (4 decisions — no guard could be synthesised)

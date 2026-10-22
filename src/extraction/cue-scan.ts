@@ -1,7 +1,7 @@
 /**
  * Cue scanning — the shared front end of 1.3 and 1.5.
  *
- * Phase 1 ú sub-phases 1.2, 1.3, 1.5
+ * Phase 1 · sub-phases 1.2, 1.3, 1.5
  * Plan: plan/phase-1-extraction-pipeline.md §1.3
  *
  * ---------------------------------------------------------------------------

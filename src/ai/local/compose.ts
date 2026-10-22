@@ -1,7 +1,7 @@
 /**
  * Template composition for the local engine — Phase 3.
  *
- * Phase 3 ú sub-phase 3.9
+ * Phase 3 · sub-phase 3.9
  * Plan: plan/phase-3-retrieval.md §3.9
  * Replaces the Phase 0 `templateCompose` in `./index.ts`, which said in its own comment that
  * Phase 3 would replace it with "the fuller ones in src/ai/local/compose.ts".

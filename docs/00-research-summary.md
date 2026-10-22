@@ -37,7 +37,7 @@ That is a solved problem in a 45-year-old branch of AI that nobody has pointed a
 | **[ai-memory](https://github.com/hyxnj666-creator/ai-memory)** | `extract` from Cursor/Claude Code history → typed Markdown (decisions/architecture/conventions/todos/issues); `rules --target agents-md`; `recall "OAuth"` shows git lineage; MCP `remember`/`recall`; D3 knowledge graph; works keyless | No consistency reasoning. No premises. No contradiction detection at all. No verification against code. |
 | **[agentmemory](https://github.com/rohitg00/agentmemory)** | 4-tier memory (working/episodic/semantic/procedural), Ebbinghaus decay, BM25+vector+graph with RRF, R@5 95.2%, 12 hooks, JSONL import, session replay | Memory of **what the agent did**, not of **why you decided**. Contradiction handling = recency/dedup, not logic. |
 | **[Zep / Graphiti](https://arxiv.org/abs/2501.13956)** | **Bi-temporal** knowledge graph: every fact has `valid_at` / `invalid_at`; contradicted facts are closed out, never deleted; LongMemEval 63.8–71.2% vs Mem0's 49% | Fact invalidation on **arrival of a contradicting fact**. No dependency cascade, no premises, no code grounding. Generic agent memory, not decision rationale. |
-| **[Veritas (veritas-tms)](https://github.com/Iam-Raghava/veritas)** | **The closest thing that exists.** JTMS-style justifications, entrenchment-ordered contraction (GΣrdenfors–Makinson), cascade retraction, append-only audit, "derived beliefs cannot outlive their premises" | Operates on **machine-asserted propositions** with hand-supplied `source_reliability`. No extraction from dialogue, no domain ontology, no code grounding, no human-in-the-loop revision, not developer-facing. |
+| **[Veritas (veritas-tms)](https://github.com/Iam-Raghava/veritas)** | **The closest thing that exists.** JTMS-style justifications, entrenchment-ordered contraction (Gärdenfors–Makinson), cascade retraction, append-only audit, "derived beliefs cannot outlive their premises" | Operates on **machine-asserted propositions** with hand-supplied `source_reliability`. No extraction from dialogue, no domain ontology, no code grounding, no human-in-the-loop revision, not developer-facing. |
 | **[Kantara instantiation — Dhaouadi, Oakes & Famelis 2025](https://arxiv.org/abs/2506.11005)** | **The closest academic work.** Builds a *Rationale and Decision Graph* (decision nodes → rationale nodes, edges labelled Similar / Contradicts) from Linux kernel commits using NLI + LLMs. Found 396 contradictory decision pairs and 86 inconsistencies in the OOM-Killer module; F1 0.70–0.75 across 6 projects. Two mechanisms: **M1** = similar decisions with contradictory rationales, **M2** = contradictory decisions with similar rationales | **Detects, never revises.** No dependency-directed backtracking, no minimal revision set, no premises/assumptions, no executable verification. Source = commit messages, not human–AI dialogue. It's an analysis instrument for studying erosion, not a tool a developer uses mid-build. |
 | **[adr-staleness-check](https://github.com/chenhz01/adr-staleness-check)** | Drift detector: superseded ADR still anchored in the implementation map (M3), accepted ADR with zero implementation evidence (M4), cycles in the supersedes graph (G1) | Requires a **hand-maintained implementation map**. No extraction, no semantics, no premises. |
 | **[Repowise](https://repowise.dev/guides/decisions-adr)** | `verified / fuzzy / unverified` from literal evidence spans; `supersedes / refines / conflicts_with` lineage; stale flag from governed-file last-commit vs decision last-update | Closest commercial product. Deterministic staleness = timestamp comparison, not logical validity. No cascade, no premises. |
@@ -64,25 +64,25 @@ Plot everyone on two axes:
 ```
                  REASONS ABOUT TRUTH
                           ▲
-                          │
-        Veritas ●         │        ● ← WhyLog goes here
-     (agent beliefs,      │     (developer decisions, extracted
-      no extraction,      │      from dialogue, premised, cascaded,
-      no code)            │      and VERIFIED against the code)
-                          │
-   Kantara/2506.11005 ●   │
-   (detects contradictions│
-    in commits, never     │
-    revises, no premises) │
-                          │
+                          ³
+        Veritas ●         ³        ● ← WhyLog goes here
+     (agent beliefs,      ³     (developer decisions, extracted
+      no extraction,      ³      from dialogue, premised, cascaded,
+      no code)            ³      and VERIFIED against the code)
+                          ³
+   Kantara/2506.11005 ●   ³
+   (detects contradictions³
+    in commits, never     ³
+    revises, no premises) ³
+                          ³
  ─────────────────────────┼──────────────────────────────►
-                          │                    EXTRACTS FROM
-    adr-staleness ●       │              NATURAL DIALOGUE
-    Repowise ●            │
-  (manual maps,           │   ● ai-memory   ● agentmemory
-   timestamp drift)       │   ● Zep/Graphiti ● Mem0/Letta/cognee
-                          │   (store, index, retrieve, inject)
-                          │
+                          ³                    EXTRACTS FROM
+    adr-staleness ●       ³              NATURAL DIALOGUE
+    Repowise ●            ³
+  (manual maps,           ³   ● ai-memory   ● agentmemory
+   timestamp drift)       ³   ● Zep/Graphiti ● Mem0/Letta/cognee
+                          ³   (store, index, retrieve, inject)
+                          ³
                  STORES & RETRIEVES
 ```
 
@@ -116,7 +116,7 @@ A **Decision Knowledge Base** `K = ⟨D, P, J, L⟩`:
 
 **Soundness (JTMS validity):** a decision `d` is **IN** iff at least one of its justifications is valid — every node in the IN-list is IN, and no node in the OUT-list is IN. Otherwise `d` is **OUT** (unsound) and *is not deleted*; it is relabelled, with the reason retained.
 
-**Entrenchment** (how resistant to retraction, adapted from Veritas/GΣrdenfors–Makinson, with one term that is ours):
+**Entrenchment** (how resistant to retraction, adapted from Veritas/Gärdenfors–Makinson, with one term that is ours):
 
 ```
 E(d) = 0.30 · source_authority      human-stated > human-approved-agent-proposal > agent-inferred
@@ -279,7 +279,7 @@ Each decision is indexed at four levels, all computed offline:
 | **L3** | sparse keyword index over `statement + rationale + alternatives + variable + value` | Exact tech names must never be missed. BM25/keyword catches "postgres" when the embedding drifts. |
 | **L4** | structural index: `variable → value → premise ids` | Deterministic, exact, and the only level that can see negation. |
 
-**Fusion:** Reciprocal Rank Fusion, `RRF(d) = Σ_r 1/(k + rank_r(d))`, `k = 60`, over L1+L2 (dense) and L3 (sparse). Then rerank.
+**Fusion:** Reciprocal Rank Fusion, `RRF(d) = ä_r 1/(k + rank_r(d))`, `k = 60`, over L1+L2 (dense) and L3 (sparse). Then rerank.
 
 ### 3.2 Two-stage retrieval
 
@@ -306,7 +306,7 @@ Every answer from the Ask view carries one of three verdicts:
 - **PARTIAL** — some claims grounded; the ungrounded part is explicitly marked.
 - **INSUFFICIENT EVIDENCE** — *"Your log has no decision about auth. Nearest related: WLD-0004 (session handling, Oct 3)."*
 
-Bounded retrieval (≤3 searches), and **every citation must resolve to evidence retrieved during this run**. A decision-memory tool that refuses to invent rationale is more trustworthy than one that always answers — and it's a 20-line feature that reads as rigour.
+Bounded retrieval (ó3 searches), and **every citation must resolve to evidence retrieved during this run**. A decision-memory tool that refuses to invent rationale is more trustworthy than one that always answers — and it's a 20-line feature that reads as rigour.
 
 ---
 
@@ -400,21 +400,21 @@ That is a **self-enforcing decision record**, and it is the thing that makes an 
 
 ```
 ┌─ L5 PRESENTATION ──────────────────────────────────────────────────────────────┐
-│  Timeline · Ask (evidence-contract answers) · Graph (premise lattice) ·        │
-│  Export (compiled per-agent) · Health (compliance + agency + staleness)        │
+³  Timeline · Ask (evidence-contract answers) · Graph (premise lattice) ·        ³
+³  Export (compiled per-agent) · Health (compliance + agency + staleness)        ³
 ├─ L4 SYNTHESIS ─────────────────────────────────────────────────────────────────┤
-│  answer() · compile() → CLAUDE.md/.cursorrules/AGENTS.md + verify commands     │
-│  guard synthesis · revision proposals · time-travel materialisation            │
+³  answer() · compile() → CLAUDE.md/.cursorrules/AGENTS.md + verify commands     ³
+³  guard synthesis · revision proposals · time-travel materialisation            ³
 ├─ L3 RETRIEVAL ─────────────────────────────────────────────────────────────────┤
-│  4-level index → RRF fusion → cross-encoder/NLI rerank → structural gate       │
-├─ L2 REASONING  ← the differentiating layer ────────────────────────────────────┐│
-│  JTMS labeller · contradiction detector (3 gates) · dependency-directed        ││
-│  backtracking · cascade · entrenchment-ordered adjudication · nogood recording ││
+³  4-level index → RRF fusion → cross-encoder/NLI rerank → structural gate       ³
+├─ L2 REASONING  ← the differentiating layer ────────────────────────────────────┐³
+³  JTMS labeller · contradiction detector (3 gates) · dependency-directed        ³³
+³  backtracking · cascade · entrenchment-ordered adjudication · nogood recording ³³
 ├─ L1 EXTRACTION ────────────────────────────────────────────────────────────────┤
-│  transcript → decisions + PREMISES + alternatives + provenance + snippets      │
-│  entity resolution onto existing nodes (merge, don't append)                   │
+³  transcript → decisions + PREMISES + alternatives + provenance + snippets      ³
+³  entity resolution onto existing nodes (merge, don't append)                   ³
 ├─ L0 SUBSTRATE ─────────────────────────────────────────────────────────────────┤
-│  append-only bi-temporal event log · hash chain · localStorage + JSON import   │
+³  append-only bi-temporal event log · hash chain · localStorage + JSON import   ³
 └────────────────────────────────────────────────────────────────────────────────┘
            AI seam: every L1–L4 operation has an LLM impl and a local impl
 ```
@@ -425,7 +425,7 @@ The one-line architecture pitch: **"An event-sourced, bi-temporal decision knowl
 
 ## 8. What to cut, and what to build first
 
-Everything above is the *concept*. For an afternoon-to-weekend build, rank by (novelty × demo-impact) ≈ cost:
+Everything above is the *concept*. For an afternoon-to-weekend build, rank by (novelty × demo-impact) ÷ cost:
 
 | Build | Why | Cost |
 |---|---|---|

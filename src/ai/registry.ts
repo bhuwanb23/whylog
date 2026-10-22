@@ -1,7 +1,7 @@
 /**
  * The engine registry.
  *
- * Phase 0 ú sub-phase 0.9
+ * Phase 0 · sub-phase 0.9
  *
  * Engines register themselves here; the app resolves one by id. Keeping
  * registration separate from construction means a provider adapter can be

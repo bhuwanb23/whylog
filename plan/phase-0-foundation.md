@@ -62,13 +62,13 @@
    APPEND-ONLY EVENT LOG                          MATERIALISED PROJECTIONS
    ─────────────────────                          ────────────────────────
    e₁  TranscriptImported          ┌───────────►  decisions    : id → Decision
-   e₂  DecisionProposed            │              premises     : id → Premise
-   e₃  PremiseAsserted             │              justifications: id → J
-   e₄  DecisionApproved            │              labels       : id → IN|OUT|UNKNOWN|UNFOUNDED
+   e₂  DecisionProposed            ³              premises     : id → Premise
+   e₃  PremiseAsserted             ³              justifications: id → J
+   e₄  DecisionApproved            ³              labels       : id → IN|OUT|UNKNOWN|UNFOUNDED
    e₅  JustificationAttached  ─────┤              edges        : dependency network
-   e₆  PremiseInvalidated          │              premiseIndex : premiseId → [decisionIds]
-   e₇  LabelChanged                │              variableIndex: variable → [decisionIds]
-   e₈  CascadePropagated           │              guardIndex   : decisionId → [guardIds]
+   e₆  PremiseInvalidated          ³              premiseIndex : premiseId → [decisionIds]
+   e₇  LabelChanged                ³              variableIndex: variable → [decisionIds]
+   e₈  CascadePropagated           ³              guardIndex   : decisionId → [guardIds]
    e₉  DecisionReversed            └───────────►  metrics      : compliance, soundness, coverage
        …
    (never rewritten)                (recomputable, cacheable, disposable)
@@ -93,16 +93,16 @@
         VALID TIME  (t₁) — when it was true in the world
         ──────────────────────────────────────────────────►
         Oct 3                    Oct 12              Oct 21
-        │                        │                   │
-        ●────────────────────────●                   │
-     P-0002 "single user"     P-0002 invalidated     │
-     validFrom                validTo                │
-                                                     │
-        LEARNED TIME (t₂) — when WhyLog found out    │
+        ³                        ³                   ³
+        ●────────────────────────●                   ³
+     P-0002 "single user"     P-0002 invalidated     ³
+     validFrom                validTo                ³
+                                                     ³
+        LEARNED TIME (t₂) — when WhyLog found out    ³
         ──────────────────────────────────────────────────►
         Oct 3                    Oct 21              Oct 21
-        │                        │                   │
-        ●                        │                   ●
+        ³                        ³                   ³
+        ●                        ³                   ●
      decided in a live        transcript pasted    WhyLog learns
      session                  three weeks later    about P-0002
 ```
@@ -121,7 +121,7 @@
 
 **Acceptance criteria.**
 - Importing a transcript dated three weeks ago produces a timeline ordered three weeks back, not today.
-- "What did we believe on Oct 12?" is answerable by folding events with `occurredAt ≤ Oct 12`.
+- "What did we believe on Oct 12?" is answerable by folding events with `occurredAt ó Oct 12`.
 
 ---
 
@@ -190,7 +190,7 @@
 | Import | Validate schema version → verify chain → resolve entities against existing nodes → append events |
 | Export | Whole log, or a filtered slice (single project, date range) |
 | Migration | Versioned migration steps applied to the event stream on load; migrations themselves are recorded as `SchemaMigrated` events |
-| Size budget | Events are small; embeddings are the bulk. At 500 decisions × 512-d float32 ≈ 1 MB. Round embeddings to 8-bit or store them in a separate lazy-loaded blob if `localStorage` limits bite |
+| Size budget | Events are small; embeddings are the bulk. At 500 decisions × 512-d float32 ÷ 1 MB. Round embeddings to 8-bit or store them in a separate lazy-loaded blob if `localStorage` limits bite |
 
 **Rule:** the portable JSON is **events, not state**. Exporting materialised state would lose the audit trail, the bi-temporal history and the ability to replay — which are the product.
 
@@ -276,24 +276,24 @@ Embeddings and inverted-question vectors are **derived data**: reproducible from
 
 ```
                         ┌───────────────────────────┐
-                        │       WhyLogEngine        │
+                        ³       WhyLogEngine        ³
                         ├───────────────────────────┤
-                        │  extract(transcript)      │
-                        │  classify(a, candidates)  │
-                        │  embed(texts)             │
-                        │  rerank(query, cands)     │
-                        │  compose(task, context)   │
+                        ³  extract(transcript)      ³
+                        ³  classify(a, candidates)  ³
+                        ³  embed(texts)             ³
+                        ³  rerank(query, cands)     ³
+                        ³  compose(task, context)   ³
                         ├───────────────────────────┤
-                        │  capabilities(): flags    │
-                        │  id(): {engine, model}    │
+                        ³  capabilities(): flags    ³
+                        ³  id(): {engine, model}    ³
                         └─────────────┬─────────────┘
-                                      │
+                                      ³
                     ┌─────────────────┴─────────────────┐
                     ▼                                   ▼
           ┌───────────────────┐               ┌───────────────────┐
-          │   LocalEngine     │               │    LLMEngine      │
-          │  default, offline │               │  key present      │
-          │  deterministic    │               │  provider-agnostic│
+          ³   LocalEngine     ³               ³    LLMEngine      ³
+          ³  default, offline ³               ³  key present      ³
+          ³  deterministic    ³               ³  provider-agnostic³
           └───────────────────┘               └───────────────────┘
 ```
 
@@ -347,14 +347,14 @@ src/
    ─────                    ──────────                     ─────────
    transcript ─┐
    user action ┼─► EVENT ─► validate ─► chain hash ─► append ─┐
-   guard run  ─┘                                             │
+   guard run  ─┘                                             ³
                                                              ▼
                                                      ┌──────────────┐
-   UI ◄── projections ◄── fold(pure, total) ◄────────│  EVENT LOG   │
-   views                                             │  append-only │
-   metrics                                           │  immutable   │
+   UI ◄── projections ◄── fold(pure, total) ◄────────³  EVENT LOG   ³
+   views                                             ³  append-only ³
+   metrics                                           ³  immutable   ³
                                                      └──────┬───────┘
-                                                            │
+                                                            ³
                                               snapshot ─────┘ (cache, disposable)
 ```
 
@@ -362,22 +362,22 @@ src/
 
 ```
                         ┌──────────────────────────────────────────┐
-                        │                                          │
-   PROPOSED ──approve──► ACTIVE ──────────────────────────────────┐│
-       │                   │                                     ││
-    reject                 │ justification invalidated           ││
-       │                   ▼                                     ││
-       └────────────► UNSOUND (OUT)                              ││
-                           │                                     ││
-              ┌────────────┼────────────┬────────────────┐       ││
-              ▼            ▼            ▼                ▼       ││
-        RE-JUSTIFIED   REVERSED     CONTESTED        ARCHIVED    ││
-        (new premise)  (new value)  (human must      (out of     ││
-              │            │         adjudicate)      scope)     ││
-              └────────────┴────────────┬────────────────┘       ││
-                                        ▼                        ▼│
-                                     ACTIVE ◄─────────────────────┘│
-                                                                   │
+                        ³                                          ³
+   PROPOSED ──approve──► ACTIVE ──────────────────────────────────┐³
+       ³                   ³                                     ³³
+    reject                 ³ justification invalidated           ³³
+       ³                   ▼                                     ³³
+       └────────────► UNSOUND (OUT)                              ³³
+                           ³                                     ³³
+              ┌────────────┼────────────┬────────────────┐       ³³
+              ▼            ▼            ▼                ▼       ³³
+        RE-JUSTIFIED   REVERSED     CONTESTED        ARCHIVED    ³³
+        (new premise)  (new value)  (human must      (out of     ³³
+              ³            ³         adjudicate)      scope)     ³³
+              └────────────┴────────────┬────────────────┘       ³³
+                                        ▼                        ▼³
+                                     ACTIVE ◄─────────────────────┘³
+                                                                   ³
    SUPERSEDED ◄────────────────────────────────────────────────────┘
    (retained forever — closed out with validTo, never deleted)
 ```
@@ -386,22 +386,22 @@ src/
 
 ```
    incoming assertion
-          │
+          ³
           ▼
    exact predicate? ──yes──► MERGE (+corroboration)
-          │no
+          ³no
           ▼
    variable+value?  ──yes──► MERGE (+corroboration)
-          │no
+          ³no
           ▼
    alias hit?       ──yes──► canonicalise ─► MERGE
-          │no
+          ³no
           ▼
    cos ≥ τ_hi?      ──yes──► MERGE (flagged for review)
-          │no
+          ³no
           ▼
    cos ≥ τ_lo?      ──yes──► CANDIDATE ──► ask the human
-          │no
+          ³no
           ▼
       CREATE NEW NODE
 ```

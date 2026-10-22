@@ -1,8 +1,8 @@
 /**
  * The hashed n-gram vectoriser.
  *
- * Phase 0 ú sub-phase 0.8 — the local engine's embedding implementation
- * Plan: plan/phase-0-foundation.md §0.8 ú docs/03 §2 (the four-level index)
+ * Phase 0 · sub-phase 0.8 — the local engine's embedding implementation
+ * Plan: plan/phase-0-foundation.md §0.8 · docs/03 §2 (the four-level index)
  *
  * ---------------------------------------------------------------------------
  * WHAT THIS IS

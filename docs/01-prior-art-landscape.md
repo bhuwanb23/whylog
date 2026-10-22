@@ -103,7 +103,7 @@ What it does:
 - **JTMS-style propagation** (Doyle 1979): retract a belief → dependents re-evaluated → orphaned beliefs cascade-retract *unless they stand on their own source*. Explicitly framed as **zombie-belief prevention**: "derived beliefs cannot outlive their premises."
 - **Entrenchment** as a transparent weighted score:
   `0.40 × source_reliability + 0.25 × corroboration (log-scaled justification count) + 0.20 × confidence + 0.15 × recency (30-day half-life)`
-- Respects **GΣrdenfors–Makinson EE2 (dominance) and EE3**: a derived belief is capped at its weakest premise.
+- Respects **Gärdenfors–Makinson EE2 (dominance) and EE3**: a derived belief is capped at its weakest premise.
 - **Non-prioritized revision (Hansson)**: the store *screens* newcomers — if the new belief is weaker than **any** contradictor it is **REJECTED** rather than overwriting. Rationale: classical AGM's Success postulate (always accept input) is wrong for noisy environments.
 - **Append-only audit log** recording reasons, not just events.
 - Pluggable contradiction detectors ("bring your own NLI model"); the *retraction decision* is deterministic once a contradiction is given.
@@ -129,7 +129,7 @@ Dhaouadi, Oakes & Famelis (2025). *Automated Extraction and Analysis of Develope
 - Instantiates **Kantara**, an existing high-level rationale extraction and management architecture, using pre-trained models + LLMs.
 - Builds a **Rationale and Decision Graph**: decision nodes linked to rationale nodes; edges between decision nodes labelled **Similar** or **Contradicts**.
 - Includes **structure-based mechanisms to detect reasoning conflicts** that could cause design erosion over time.
-- Results on the Linux kernel OOM-Killer module: **29 similar pairs, 396 contradictory decision pairs, 86 inconsistencies**. Generalises to five other active OSS projects with **F1 ≈ 0.70–0.75**.
+- Results on the Linux kernel OOM-Killer module: **29 similar pairs, 396 contradictory decision pairs, 86 inconsistencies**. Generalises to five other active OSS projects with **F1 ÷ 0.70–0.75**.
 - Two named inconsistency mechanisms:
   - **M1** — decisions that are *similar* even though their *rationales are contradictory* → probable miscommunication or misunderstanding.
   - **M2** — decisions that are *contradictory* even though their *rationales are similar* → probable copy-paste, or a graph-construction error.
@@ -183,29 +183,29 @@ They then specify what an ADR must look like for a *machine* reader rather than 
 ```
                         REASONS ABOUT TRUTH
                                  ▲
-                                 │
-        Veritas ●                │              ●  ← WhyLog
-   (agent beliefs;               │   (developer decisions, recovered from
-    programmatic assertion;      │    dialogue; premised; cascading;
-    no extraction;               │    entrenchment grounded in the code;
-    no code grounding;           │    compiled into executable guards
-    no human gate)               │    and agent-readable rules)
-                                 │
-   Kantara / 2506.11005 ●        │
-   (detects contradictions in    │
-    commits via NLI; never       │
-    revises; no premises;        │
-    no verification)             │
-                                 │
+                                 ³
+        Veritas ●                ³              ●  ← WhyLog
+   (agent beliefs;               ³   (developer decisions, recovered from
+    programmatic assertion;      ³    dialogue; premised; cascading;
+    no extraction;               ³    entrenchment grounded in the code;
+    no code grounding;           ³    compiled into executable guards
+    no human gate)               ³    and agent-readable rules)
+                                 ³
+   Kantara / 2506.11005 ●        ³
+   (detects contradictions in    ³
+    commits via NLI; never       ³
+    revises; no premises;        ³
+    no verification)             ³
+                                 ³
 ─────────────────────────────────┼──────────────────────────────────────►
-   adr-staleness-check ●         │                 EXTRACTS FROM
-   Repowise ●                    │              NATURAL DIALOGUE
-   (hand-maintained maps;        │
-    timestamp drift;             │  ● ai-memory        ● agentmemory
-    no semantics)                │  ● total-agent-memory
-                                 │  ● Zep/Graphiti     ● Mem0 / Letta / cognee
-                                 │  (store · index · retrieve · inject)
-                                 │
+   adr-staleness-check ●         ³                 EXTRACTS FROM
+   Repowise ●                    ³              NATURAL DIALOGUE
+   (hand-maintained maps;        ³
+    timestamp drift;             ³  ● ai-memory        ● agentmemory
+    no semantics)                ³  ● total-agent-memory
+                                 ³  ● Zep/Graphiti     ● Mem0 / Letta / cognee
+                                 ³  (store · index · retrieve · inject)
+                                 ³
                         STORES & RETRIEVES
 ```
 

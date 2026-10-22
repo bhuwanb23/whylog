@@ -1,7 +1,7 @@
 /**
  * The local confidence rubrics — 1.8.
  *
- * Phase 1 ú sub-phase 1.8
+ * Phase 1 · sub-phase 1.8
  * Plan: plan/phase-1-extraction-pipeline.md §1.8
  *
  * ---------------------------------------------------------------------------

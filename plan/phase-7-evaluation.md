@@ -56,13 +56,13 @@ Also: no tool in this category publishes a benchmark for decision-rationale extr
 | 1 | **Decision extraction P / R / F1** | Against hand labels, per component | RecovAr 75/77; Kantara F1 0.70–0.75 |
 | 2 | **Premise extraction P / R / F1** | Against hand labels, per premise type | **None published — this is new territory** |
 | 3 | **Alternative extraction precision** | Against hand labels | ARGUS 15.4% |
-| 4 | **Contradiction recall** (L1) | Planted pairwise contradictions detected ≈ planted | Kantara reported counts, not recall |
-| 5 | **Premise-invalidation recall** (L2) | Planted premise falsifications detected ≈ planted | **None published** |
-| 6 | **Cascade correctness** (L3) | Correct flips ≈ expected flips, **and** survivors correctly preserved ≈ expected survivors | **None published** |
+| 4 | **Contradiction recall** (L1) | Planted pairwise contradictions detected ÷ planted | Kantara reported counts, not recall |
+| 5 | **Premise-invalidation recall** (L2) | Planted premise falsifications detected ÷ planted | **None published** |
+| 6 | **Cascade correctness** (L3) | Correct flips ÷ expected flips, **and** survivors correctly preserved ÷ expected survivors | **None published** |
 | 7 | **False-positive rate** | Spurious contradictions per 100 decisions | ARGUS FP:FN = 13:1 |
-| 8 | **Answer groundedness** | Claims with resolving citations ≈ total claims | RepoRationale's contract, unquantified |
+| 8 | **Answer groundedness** | Claims with resolving citations ÷ total claims | RepoRationale's contract, unquantified |
 | 9 | **Retrieval precision@5 / MRR** | On a labelled question set | agentmemory R@5 95.2% (different task) |
-| 10 | **Guard precision** | Correct failures ≈ total failures on seeded violations | Fitness-function literature is qualitative |
+| 10 | **Guard precision** | Correct failures ÷ total failures on seeded violations | Fitness-function literature is qualitative |
 
 **Report both engines separately, always.** A single blended number hides the thing that most needs showing: that the local, keyless path is a genuine peer rather than a stub.
 
@@ -194,30 +194,30 @@ Sources: [docs/02 §7](../docs/02-truth-maintenance-theory.md) (8 reasoning fail
 
 ```
    ┌──────────────────┐      label       ┌──────────────────┐
-   │  30 FIXTURE      │ ───────────────► │  GROUND TRUTH    │
-   │  TRANSCRIPTS     │                  │  decisions,      │
-   │  clean / messy / │                  │  premises,       │
-   │  adversarial     │                  │  alternatives,   │
-   └────────┬─────────┘                  │  spans, planted  │
-            │                            │  contradictions  │
+   ³  30 FIXTURE      ³ ───────────────► ³  GROUND TRUTH    ³
+   ³  TRANSCRIPTS     ³                  ³  decisions,      ³
+   ³  clean / messy / ³                  ³  premises,       ³
+   ³  adversarial     ³                  ³  alternatives,   ³
+   └────────┬─────────┘                  ³  spans, planted  ³
+            ³                            ³  contradictions  ³
             ▼                            └────────┬─────────┘
-   ┌──────────────────┐                           │
-   │  WhyLog pipeline │                           │
-   │  both engines    │                           │
-   └────────┬─────────┘                           │
-            │                                     │
+   ┌──────────────────┐                           ³
+   ³  WhyLog pipeline ³                           ³
+   ³  both engines    ³                           ³
+   └────────┬─────────┘                           ³
+            ³                                     ³
             ▼                                     ▼
    ┌──────────────────┐                  ┌──────────────────┐
-   │  10 METRICS      │ ◄──── compare ───│                  │
+   ³  10 METRICS      ³ ◄──── compare ───³                  ³
    └────────┬─────────┘                  └──────────────────┘
-            │
+            ³
             ├──► per-engine, always separate
-            │
+            ³
             ▼
    ┌──────────────────┐      toggle      ┌──────────────────┐
-   │  ABLATION HARNESS│ ───────────────► │  delta table     │
-   │  11 switches     │                  │  which component │
-   └──────────────────┘                  │  earned what     │
+   ³  ABLATION HARNESS³ ───────────────► ³  delta table     ³
+   ³  11 switches     ³                  ³  which component ³
+   └──────────────────┘                  ³  earned what     ³
                                          └──────────────────┘
 ```
 

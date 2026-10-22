@@ -1,7 +1,7 @@
 /**
  * The import form — the entry point to the whole product.
  *
- * Phase 1 ú sub-phase 1.9
+ * Phase 1 · sub-phase 1.9
  *
  * This is the first thing a new user sees, so it states the two things that decide
  * whether they paste anything at all: the transcript is read LOCALLY, and nothing

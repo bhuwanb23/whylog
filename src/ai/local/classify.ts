@@ -1,7 +1,7 @@
 /**
  * The local semantic classifier — 2.11, delegating to 3.6.
  *
- * Phase 2 ú sub-phase 2.11 — rewritten in Phase 3 ú sub-phase 3.6
+ * Phase 2 · sub-phase 2.11 — rewritten in Phase 3 · sub-phase 3.6
  * Plan: plan/phase-2-truth-maintenance.md §2.11
  *       plan/phase-3-retrieval.md §3.6 (the canonical rule engine)
  *

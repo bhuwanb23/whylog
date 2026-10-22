@@ -1,7 +1,7 @@
 /**
  * The shell.
  *
- * Phase 0 ú sub-phase 0.10 — boots empty, renders, survives reload
+ * Phase 0 · sub-phase 0.10 — boots empty, renders, survives reload
  * Extended by Phase 6 into the six-view product.
  *
  * ---------------------------------------------------------------------------

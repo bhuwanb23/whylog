@@ -1,7 +1,7 @@
 /**
  * The visual language.
  *
- * Phase 6 ú authored in Phase 0 so every component reads one source
+ * Phase 6 · authored in Phase 0 so every component reads one source
  * Plan: plan/phase-6-presentation.md §6.0
  *
  * ---------------------------------------------------------------------------

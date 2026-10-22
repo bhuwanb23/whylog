@@ -1,7 +1,7 @@
 /**
  * The local engine's alternative vocabulary — 1.5.
  *
- * Phase 1 ú sub-phase 1.5
+ * Phase 1 · sub-phase 1.5
  *
  * `extraction/alternatives.ts` owns the pipeline-side recovery. This module owns the
  * one piece that is recognition rather than mechanics: WHICH NOUNS COUNT AS

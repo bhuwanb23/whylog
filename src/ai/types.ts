@@ -1,8 +1,8 @@
 /**
  * The engine seam.
  *
- * Phase 0 ú sub-phase 0.9
- * Plan: plan/phase-0-foundation.md §0.9 ú plan/OVERVIEW.md §8
+ * Phase 0 · sub-phase 0.9
+ * Plan: plan/phase-0-foundation.md §0.9 · plan/OVERVIEW.md §8
  *
  * ---------------------------------------------------------------------------
  * ONE INTERFACE, TWO IMPLEMENTATIONS, SELECTED AT RUNTIME

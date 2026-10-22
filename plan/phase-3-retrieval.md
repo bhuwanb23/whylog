@@ -84,7 +84,7 @@ Three indexes maintained incrementally:
 **Goal.** Merge incomparable ranked lists without normalising incomparable scores.
 
 ```
-   RRF(d) = Σ over retrievers r  of   1 / (k + rank_r(d))          k = 60
+   RRF(d) = ä over retrievers r  of   1 / (k + rank_r(d))          k = 60
 ```
 
 `k = 60` is the standard value from the original RRF work, used unchanged by Graphiti and most hybrid stacks.
@@ -107,11 +107,11 @@ Fused lists: L1 + L2 (dense, combined) and L3 (sparse). L4 and L5 promote separa
      ├──► sparse (L3)      ──┼──► RRF ──► top-20 candidates
      ├──► structural (L4)  ──┘             ▲
      └──► premise (L5) ─── promote ────────┘
-                                           │
+                                           ³
                                            ▼
                             ┌──────────────────────────────┐
-                            │  RERANK — query × candidate  │
-                            │  scored JOINTLY, not apart   │
+                            ³  RERANK — query × candidate  ³
+                            ³  scored JOINTLY, not apart   ³
                             └──────────────┬───────────────┘
                                            ▼
                                       top-5 ──► synthesis
@@ -158,7 +158,7 @@ Retrieval produces candidates. This component judges them. Five verdicts: `contr
 4. Antonym-pair members asserted on the same variable → **contradiction**
 5. Otherwise → **neutral**
 
-**Negation and scope machinery** ([docs/03 §4.4](../docs/03-retrieval-and-contradiction.md)): cue inventory, ≤6-token scope window, verb-pattern polarity, antonym lexicon, and a **modality field** where only `asserted` creates nodes.
+**Negation and scope machinery** ([docs/03 §4.4](../docs/03-retrieval-and-contradiction.md)): cue inventory, ó6-token scope window, verb-pattern polarity, antonym lexicon, and a **modality field** where only `asserted` creates nodes.
 
 **Invariant I3 lives here:** similarity never produces a verdict.
 
@@ -244,21 +244,21 @@ Every citation expands to:
 
 ```
    ┌──────────────────────────────────────────────────────────────┐
-   │  Ask your log…                                     ⌘K        │
+   ³  Ask your log…                                     ⌘K        ³
    ├──────────────────────────────────────────────────────────────┤
-   │  why did we drop auth?                                       │
-   │                                                              │
-   │  ┌─ GROUNDED ── groundedness 1.00 ── 3 claims / 3 cited ───┐ │
-   │  │ You dropped auth entirely on 3 Oct. The reasoning: it's │ │
-   │  │ a local single-user tool, so auth would protect nothing │ │
-   │  │ — the data never leaves the machine. [WLD-0002]        │ │
-   │  │                                                        │ │
-   │  │ You also noted a revisit condition: if a hosted version │ │
-   │  │ ever ships. [WLD-0002 · premise P-0006 deployment=none]│ │
-   │  └────────────────────────────────────────────────────────┘ │
-   │                                                              │
-   │  Retrieved 5 of 47 · 2 searches · engine: local              │
-   │  [ view run trace ]                                          │
+   ³  why did we drop auth?                                       ³
+   ³                                                              ³
+   ³  ┌─ GROUNDED ── groundedness 1.00 ── 3 claims / 3 cited ───┐ ³
+   ³  ³ You dropped auth entirely on 3 Oct. The reasoning: it's ³ ³
+   ³  ³ a local single-user tool, so auth would protect nothing ³ ³
+   ³  ³ — the data never leaves the machine. [WLD-0002]        ³ ³
+   ³  ³                                                        ³ ³
+   ³  ³ You also noted a revisit condition: if a hosted version ³ ³
+   ³  ³ ever ships. [WLD-0002 · premise P-0006 deployment=none]³ ³
+   ³  └────────────────────────────────────────────────────────┘ ³
+   ³                                                              ³
+   ³  Retrieved 5 of 47 · 2 searches · engine: local              ³
+   ³  [ view run trace ]                                          ³
    └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -280,34 +280,34 @@ This is the highest-value sentence the retrieval layer can produce, and it is on
 
 ```
    "why did we drop auth?"
-            │
+            ³
    ┌────────┴─────────────────────────────────────────────────┐
-   │                                                          │
+   ³                                                          ³
    ▼            ▼             ▼              ▼                ▼
   L1 dense    L2 questions   L3 sparse     L4 structural    L5 premise
-   │            │             │              │                │
-   └─────┬──────┘             │              │                │
-         ▼                    ▼              │                │
-      RRF (k=60) ◄────────────┘              │                │
-         │                                   │                │
+   ³            ³             ³              ³                ³
+   └─────┬──────┘             ³              ³                ³
+         ▼                    ▼              ³                ³
+      RRF (k=60) ◄────────────┘              ³                ³
+         ³                                   ³                ³
          ▼                                   ▼                ▼
      top-20  ◄──────── promote exact hits ───┴────────────────┘
-         │
+         ³
          ▼
      RERANK (cross-encoder, or 5-component local weights)
-         │
+         ³
          ▼
       top-5
-         │
+         ³
          ▼
    ┌──────────────────────────────┐
-   │  SYNTHESISE + EVIDENCE CHECK │
-   │  decompose into claims       │
-   │  resolve each citation       │
-   │  score groundedness          │
+   ³  SYNTHESISE + EVIDENCE CHECK ³
+   ³  decompose into claims       ³
+   ³  resolve each citation       ³
+   ³  score groundedness          ³
    └──────────────┬───────────────┘
                   ▼
-      GROUNDED │ PARTIAL │ INSUFFICIENT EVIDENCE
+      GROUNDED ³ PARTIAL ³ INSUFFICIENT EVIDENCE
 ```
 
 ### D3.2 — Question↔question matching
@@ -316,17 +316,17 @@ This is the highest-value sentence the retrieval layer can produce, and it is on
    NAIVE                                  WhyLog (HyPE)
    ─────                                  ─────────────
    query: "why did we drop auth?"         query: "why did we drop auth?"
-                 │                                      │
+                 ³                                      ³
                  ▼                                      ▼
    match against STATEMENTS               match against INVERTED QUESTIONS
    "Drop auth entirely — local            "why is there no login?"
     single-user tool"                     "did we decide about auth?"
-                 │                        "why aren't we using Clerk?"
-                 ▼                                      │
+                 ³                        "why aren't we using Clerk?"
+                 ▼                                      ³
         style mismatch:                                 ▼
         interrogative vs                       question ↔ question
         declarative                            same dialect, same shape
-                                                              │
+                                                              ³
                                                               ▼
                                                      materially better rank
 ```
@@ -343,7 +343,7 @@ This is the highest-value sentence the retrieval layer can produce, and it is on
 | Confident answer with no evidence | 🔴 | Evidence contract; INSUFFICIENT EVIDENCE is a first-class verdict; groundedness is computed, not assumed |
 | Local reranking too weak to demo | 🟡 | Structural and lexical components carry 0.65 of the weight and are exact; measure against the fixture corpus before judging |
 | Index bloat in `localStorage` | 🟡 | Vectors live outside the event log (Phase 0.8), 8-bit rounded if needed |
-| Over-retrieval drowning a small answer | 🟢 | k = 5 after rerank; at 10²–10│ documents, top-5 is usually the whole relevant set |
+| Over-retrieval drowning a small answer | 🟢 | k = 5 after rerank; at 10²–10³ documents, top-5 is usually the whole relevant set |
 
 ---
 

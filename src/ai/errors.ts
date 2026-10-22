@@ -1,7 +1,7 @@
 /**
  * Engine errors.
  *
- * Phase 0 ú sub-phase 0.9
+ * Phase 0 · sub-phase 0.9
  *
  * Every failure an engine can have is named here, because the UI's response
  * differs per failure and "something went wrong" is not a response:

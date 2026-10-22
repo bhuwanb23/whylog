@@ -24,20 +24,20 @@
 ```
    MATERIALISED GRAPH  (Phase 0.2)
    decisions · labels · premises · alternatives · guards · compliance
-        │
+        ³
         ▼
    ┌─────────────────────────┐
-   │  CANONICAL INTERMEDIATE │  one normalised representation,
-   │  FORM (CIF)             │  engine- and target-agnostic
+   ³  CANONICAL INTERMEDIATE ³  one normalised representation,
+   ³  FORM (CIF)             ³  engine- and target-agnostic
    └────────────┬────────────┘
-                │
+                ³
      ┌──────────┼──────────┬──────────┬──────────┐
      ▼          ▼          ▼          ▼          ▼
   CLAUDE.md  AGENTS.md  .cursorrules DECISIONS.md  CI runner
                                     (human ADR)   + workflow
-     │          │          │          │          │
+     ³          ³          ³          ³          ³
      └──────────┴──────────┴──────────┴──────────┘
-                │
+                ³
                 ▼
         INTEGRITY STAMP  (head hash · counts · compliance · timestamp)
 ```
@@ -172,14 +172,14 @@ Before compilation, run a full consistency pass over the decisions being exporte
 
 ```
    ┌─────────────────────────────────────────────┐
-   │  any two exported decisions in conflict?    │──yes──► BLOCK
-   │  any exported decision labelled OUT?        │──yes──► WARN + exclude
-   │  any contested premise in an emitted        │──yes──► ANNOTATE
-   │    "Because:" line?                         │         ("premise contested")
-   │  any failing guard on an emitted decision?  │──yes──► ANNOTATE
-   │                                             │         ("verify currently fails")
+   ³  any two exported decisions in conflict?    ³──yes──► BLOCK
+   ³  any exported decision labelled OUT?        ³──yes──► WARN + exclude
+   ³  any contested premise in an emitted        ³──yes──► ANNOTATE
+   ³    "Because:" line?                         ³         ("premise contested")
+   ³  any failing guard on an emitted decision?  ³──yes──► ANNOTATE
+   ³                                             ³         ("verify currently fails")
    └─────────────────────────────────────────────┘
-                        │
+                        ³
                         ▼
                     COMPILE
 ```
@@ -214,15 +214,15 @@ A blocked export shows the conflicting pair, the nogood, and a link to the revis
 
 ```
    graph ──► CIF ──► priority rank ──► budget split ──► emitters ──► stamp
-              │                          │                │
-              │                          │                ├── CLAUDE.md
-              │                          │                ├── AGENTS.md
-              │                          │                ├── .cursorrules
-              │                          │                ├── DECISIONS.md
-              │                          │                └── ci/guards.mjs + workflow
-              │                          │
-              │                          └─ tier 1 inline / tier 2 index
-              │
+              ³                          ³                ³
+              ³                          ³                ├── CLAUDE.md
+              ³                          ³                ├── AGENTS.md
+              ³                          ³                ├── .cursorrules
+              ³                          ³                ├── DECISIONS.md
+              ³                          ³                └── ci/guards.mjs + workflow
+              ³                          ³
+              ³                          └─ tier 1 inline / tier 2 index
+              ³
               └─ consistency gate (5.6) — BLOCKS before any of the above
 ```
 
@@ -230,31 +230,31 @@ A blocked export shows the conflicting pair, the nogood, and a link to the revis
 
 ```
    ┌──────────────────────── CLAUDE.md ────────────────────────┐
-   │                                                           │
-   │  ## Active decisions (11)                                 │
-   │                                                           │
-   │  ### WLD-0007 — MUST use SQLite. MUST NOT introduce       │
-   │                   Postgres.                               │
-   │  Applies to: src/db/**, package.json                      │
-   │  Because: single user (P-0002), no deploy infra (P-0005)  │
-   │  Rejected: Postgres — deploy complexity                   │
-   │  Verify: node -e "…"                                      │
-   │  Status: IN · sound · guards 2/2 passing                  │
-   │                                                           │
-   │  … 10 more …                                              │
-   │                                                           │
-   │  ## Rejected — do not re-propose                          │
-   │  - Postgres (WLD-0007) — deploy complexity                │
-   │  - Supabase (WLD-0007) — hosted dependency                │
-   │  - Next.js  (WLD-0003) — premise CONTESTED                │
-   │                                                           │
-   │  ## Index (23 further decisions)                          │
-   │  WLD-0014 · MUST use zustand · src/state/**               │
-   │  …                                                        │
-   │                                                           │
-   │  --- stamp ---                                            │
+   ³                                                           ³
+   ³  ## Active decisions (11)                                 ³
+   ³                                                           ³
+   ³  ### WLD-0007 — MUST use SQLite. MUST NOT introduce       ³
+   ³                   Postgres.                               ³
+   ³  Applies to: src/db/**, package.json                      ³
+   ³  Because: single user (P-0002), no deploy infra (P-0005)  ³
+   ³  Rejected: Postgres — deploy complexity                   ³
+   ³  Verify: node -e "…"                                      ³
+   ³  Status: IN · sound · guards 2/2 passing                  ³
+   ³                                                           ³
+   ³  … 10 more …                                              ³
+   ³                                                           ³
+   ³  ## Rejected — do not re-propose                          ³
+   ³  - Postgres (WLD-0007) — deploy complexity                ³
+   ³  - Supabase (WLD-0007) — hosted dependency                ³
+   ³  - Next.js  (WLD-0003) — premise CONTESTED                ³
+   ³                                                           ³
+   ³  ## Index (23 further decisions)                          ³
+   ³  WLD-0014 · MUST use zustand · src/state/**               ³
+   ³  …                                                        ³
+   ³                                                           ³
+   ³  --- stamp ---                                            ³
    └───────────────────────────────────────────────────────────┘
-             │
+             ³
              ▼
    the agent reads a rule, sees WHY it holds,
    can RUN the check, and knows what was already rejected

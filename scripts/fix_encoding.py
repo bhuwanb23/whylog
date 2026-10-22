@@ -1,32 +1,12 @@
-#!/usr/bin/env python3
-"""
-Repair CP437 mojibake in text files.
+"""Report (and optionally repair) the CP437 mojibake in the source tree.
 
-WHAT HAPPENED
--------------
-UTF-8 source was written through a CP437 (DOS OEM) console. Every UTF-8 byte
-became one CP437 character, so an em-dash (U+2014, bytes E2 80 94) turned into
-the three characters "—". The files stayed valid UTF-8, so nothing complained,
-and the damage was invisible until a STRING COMPARISON failed.
+The corruption: a UTF-8 file was written through a CP437 (DOS OEM) console
+decode. Each UTF-8 byte became one CP437 character. The inverse is: take the
+CP437 bytes back and decode them as UTF-8.
 
-WHY IT MATTERED
-----------------
-The derived-premise marker is `"— excluded by"`. The premise text was produced
-in one file (mojibake) and matched in another (correct), so `isDerivedPremise`
-never matched, every derived exclusion was CONFIRMED, and gate (c)'s OUT-list
-half never fired. A silent encoding bug had disabled a correctness mechanism.
-
-THE REPAIR
-----------
-The inverse of the corruption: take the CP437 bytes back, decode them as UTF-8.
-It is applied per byte-run, and only where the result is valid UTF-8. A file
-whose ASCII skeleton changes is REJECTED and left alone, because that would
-mean real content moved rather than a character being re-encoded.
-
-Usage:
-    python scripts/fix_encoding.py            # dry run: report what would change
-    python scripts/fix_encoding.py --apply    # write the repairs
-    python scripts/fix_encoding.py --root DIR # operate on another tree
+The report lists every distinct (mojibake, repaired) pair so the repair can be
+reviewed before it is applied, and so a legitimate non-ASCII sequence that
+merely looks like mojibake can be spotted.
 """
 
 from __future__ import annotations
@@ -35,8 +15,7 @@ import collections
 import pathlib
 import sys
 
-SUFFIXES = {".ts", ".tsx", ".py", ".mjs", ".cjs", ".md", ".json", ".html", ".css"}
-SKIP_DIRS = {"node_modules", ".git", "dist", "coverage", ".next"}
+ROOT = pathlib.Path(sys.argv[sys.argv.index("--root") + 1]) if "--root" in sys.argv else pathlib.Path.cwd()
 
 
 def repair(text: str) -> str:
@@ -76,55 +55,39 @@ def repair(text: str) -> str:
     return "".join(out)
 
 
-def skeleton(text: str) -> str:
-    """The ASCII-only content. A repair must not change this."""
-    return "".join(c for c in text if ord(c) < 128)
-
-
 def main() -> int:
     apply = "--apply" in sys.argv
-    root = pathlib.Path.cwd()
-    if "--root" in sys.argv:
-        root = pathlib.Path(sys.argv[sys.argv.index("--root") + 1])
-
+    targets: list[pathlib.Path] = []
+    for pattern in ("src/**/*", "tests/**/*", "scripts/**/*", "notes/**/*"):
+        targets.extend(ROOT.glob(pattern))
     targets = [
         p
-        for p in root.rglob("*")
-        if p.is_file()
-        and p.suffix in SUFFIXES
-        and not any(part in SKIP_DIRS for part in p.parts)
+        for p in targets
+        if p.is_file() and p.suffix in {".ts", ".tsx", ".py", ".mjs", ".md", ".json"}
     ]
 
-    table: collections.Counter[str] = collections.Counter()
+    table: collections.Counter[tuple[str, str]] = collections.Counter()
     changed: list[pathlib.Path] = []
-    rejected: list[pathlib.Path] = []
 
     for path in targets:
         raw = path.read_bytes()
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
-            print(f"SKIP (not valid utf-8): {path}")
+            print(f"SKIP (not valid utf-8): {path.relative_to(ROOT)}")
             continue
         fixed = repair(text)
         if fixed == text:
             continue
-        if skeleton(fixed) != skeleton(text):
-            rejected.append(path)
-            continue
         changed.append(path)
         for a, b in zip(text, fixed):
             if a != b:
-                table[b] += 1
+                table[(a, b)] += 1
 
     print(f"files needing repair: {len(changed)}")
-    print(f"files rejected (ASCII skeleton changed): {len(rejected)}")
-    for path in rejected:
-        print(f"  REJECTED {path}")
-    if table:
-        print("characters restored:")
-        for ch, count in table.most_common(20):
-            print(f"  U+{ord(ch):04X}  x{count}")
+    print("distinct character repairs (mojibake -> correct):")
+    for (bad, good), count in table.most_common(40):
+        print(f"  U+{ord(bad):04X} -> U+{ord(good):04X}   x{count}")
 
     if not apply:
         print("\n(dry run; pass --apply to write)")

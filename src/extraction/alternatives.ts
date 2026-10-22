@@ -1,13 +1,13 @@
 /**
  * Rejected-alternative recovery — 1.5.
  *
- * Phase 1 ú sub-phase 1.5
+ * Phase 1 · sub-phase 1.5
  * Plan: plan/phase-1-extraction-pipeline.md §1.5
  *
  * ---------------------------------------------------------------------------
  * WHY THIS GETS ITS OWN SUB-PHASE
  *
- * ARGUS measured **15.4% precision** on Alternatives with run-consistency à = 0.64
+ * ARGUS measured **15.4% precision** on Alternatives with run-consistency α = 0.64
  * — the worst of any rationale component (docs/05 §4). It is also the
  * highest-value one, because alternatives power PRE-EMPTION: catching a mistake
  * before the decision rather than after.

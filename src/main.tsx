@@ -1,7 +1,7 @@
 /**
  * React entry.
  *
- * Phase 0 ú sub-phase 0.10
+ * Phase 0 · sub-phase 0.10
  *
  * The imports of "@/ai/local" and "@/ai/llm" are SIDE EFFECTS: they register the
  * engines in the registry. That must happen before the store boots, because

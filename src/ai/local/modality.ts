@@ -1,7 +1,7 @@
 /**
  * Modality — 1.3, component 4.
  *
- * Phase 1 ú sub-phase 1.3
+ * Phase 1 · sub-phase 1.3
  * Plan: plan/phase-1-extraction-pipeline.md §1.3
  *
  * ---------------------------------------------------------------------------

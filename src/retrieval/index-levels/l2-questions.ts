@@ -11,12 +11,12 @@
  *   NAIVE                            WhyLog
  *   ─────                            ──────
  *   "why did we drop auth?"          "why did we drop auth?"
- *            │                                │
+ *            ³                                ³
  *            ▼                                ▼
  *   match against STATEMENTS         match against INVERTED QUESTIONS
  *   "Drop auth entirely — local      "why is there no login?"
  *    single-user tool"               "did we decide about auth?"
- *            │                                │
+ *            ³                                ³
  *            ▼                                ▼
  *   interrogative vs declarative     question ↔ question
  *   — a dialect mismatch             — same shape, same dialect

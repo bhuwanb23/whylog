@@ -1,7 +1,7 @@
 /**
  * Commit reporting — the words a commit is described in.
  *
- * Phase 1 ú sub-phase 1.9
+ * Phase 1 · sub-phase 1.9
  * Plan: plan/phase-1-extraction-pipeline.md §1.9
  *
  * Split out of `commit.ts` because the write path is the part that must be
@@ -69,7 +69,7 @@ export function describeActions(actions: readonly (ReviewAction | null)[]): stri
     tally.set(action, (tally.get(action) ?? 0) + 1);
   }
   if (tally.size === 0) return "no actions";
-  return [...tally.entries()].map(([action, count]) => `${count} ${action}`).join(" ú ");
+  return [...tally.entries()].map(([action, count]) => `${count} ${action}`).join(" · ");
 }
 
 /** The sentence shown while a commit is in flight. Committing appends a batch and

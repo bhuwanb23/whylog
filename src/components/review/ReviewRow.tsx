@@ -1,7 +1,7 @@
 /**
  * One review row — the unit the queue is built from.
  *
- * Phase 1 ú sub-phase 1.9
+ * Phase 1 · sub-phase 1.9
  *
  * ---------------------------------------------------------------------------
  * THE ROW IS WHERE THE 13:1 RATIO IS PAID

@@ -1,7 +1,7 @@
 /**
  * Confidence tiering — 1.8, the shared half.
  *
- * Phase 1 ú sub-phase 1.8
+ * Phase 1 · sub-phase 1.8
  * Plan: plan/phase-1-extraction-pipeline.md §1.8
  *
  * ---------------------------------------------------------------------------
@@ -21,7 +21,7 @@
  * negatives, a 13:1 ratio (docs/05). So the review surface is optimised for FAST
  * REJECTION rather than careful acceptance:
  *
- *   ò0.75  high    expanded, bulk-approvable
+ *   ≥0.75  high    expanded, bulk-approvable
  *   0.45–  medium  normal
  *   <0.45  low     COLLAPSED BY DEFAULT, one-click discard
  *
@@ -215,12 +215,12 @@ export function describeHistogram(h: TierHistogram): string {
   if (h.total === 0) return "nothing extracted";
   const parts = [
     `${h.total} item${h.total === 1 ? "" : "s"}`,
-    `${h.high} high ú ${h.medium} medium ú ${h.low} low`,
+    `${h.high} high · ${h.medium} medium · ${h.low} low`,
   ];
   if (h.bulkApprovable > 0) parts.push(`${h.bulkApprovable} bulk-approvable`);
   const collapsed = h.total - h.expandedByDefault;
   if (collapsed > 0) parts.push(`${collapsed} collapsed by default`);
-  return parts.join(" ú ");
+  return parts.join(" · ");
 }
 
 /** What a tier MEANS, in the words the review UI shows. */
