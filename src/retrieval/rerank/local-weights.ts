@@ -1,14 +1,14 @@
 /**
- * Local reranking — five inspectable components. 3.5
+ * Local reranking ΓÇö five inspectable components. 3.5
  *
- * Phase 3 · sub-phase 3.5
- * Plan: plan/phase-3-retrieval.md §3.5
+ * Phase 3 ┬╖ sub-phase 3.5
+ * Plan: plan/phase-3-retrieval.md ┬º3.5
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS THE DEFAULT AND NOT THE FALLBACK
  *
  * When a judge asks "how does your ranking work?", the answer here is five numbers and a
- * sentence each. That is a far stronger position than "the model decides" — not because the
+ * sentence each. That is a far stronger position than "the model decides" ΓÇö not because the
  * model is worse at ranking, but because a number a user can read is a number a user can
  * ARGUE WITH, and an argument is how a wrong ranking gets found.
  *
@@ -18,10 +18,10 @@
  * ---------------------------------------------------------------------------
  * THE WEIGHTS
  *
- *   0.35  structural match      exact variable or value hit — decisive, not statistical
+ *   0.35  structural match      exact variable or value hit ΓÇö decisive, not statistical
  *   0.30  lexical overlap       BM25 plus exact technology-name matches
- *   0.20  dense cosine          L1 and L2 fused — topical relatedness
- *   0.10  premise overlap       Jaccard over shared premise ids — graph proximity
+ *   0.20  dense cosine          L1 and L2 fused ΓÇö topical relatedness
+ *   0.10  premise overlap       Jaccard over shared premise ids ΓÇö graph proximity
  *   0.05  recency               tie-break ONLY, on valid time
  *
  * Structural and lexical carry 0.65 between them, and both are exact. That is deliberate
@@ -40,20 +40,24 @@
  *
  * HyDE generates a hypothetical ANSWER and embeds it to improve retrieval. If the reranker
  * then scores candidates against that hypothetical instead of the question, every downstream
- * number measures similarity to something the user never said — and the pipeline is silently
+ * number measures similarity to something the user never said ΓÇö and the pipeline is silently
  * broken in the way that is hardest to notice, because the results still look plausible.
  * `rerankAgainst` takes the query and nothing else, so the mistake is not expressible here.
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { IndexArtifacts, RetrievedHit } from "@/types/retrieval";
+import type { GraphState } from "@/substrate/graph-state";
 import { exactTermHits } from "../index-levels/l3-sparse";
 import type { StructuralMatch } from "../index-levels/l4-structural";
-import { type PremiseMatch, premiseOverlap, premisesOfDecision } from "../index-levels/l5-premises";
+import {
+  premiseOverlap,
+  premisesOfDecision,
+  type PremiseMatch,
+} from "../index-levels/l5-premises";
 
-/** The five weights. Named, exported, and rendered in the UI — a weight the user cannot
+/** The five weights. Named, exported, and rendered in the UI ΓÇö a weight the user cannot
  *  see is a weight the user cannot argue with. */
 export const RERANK_WEIGHTS = Object.freeze({
   structural: 0.35,
@@ -129,23 +133,30 @@ export function rerankLocally(input: LocalRerankInput): readonly ScoredCandidate
      * variable-only match scores three quarters. Both are exact; the difference is
      * specificity, not confidence. */
     const structural =
-      candidate.structural === null ? 0 : candidate.structural.via === "value" ? 1 : 0.75;
+      candidate.structural === null
+        ? 0
+        : candidate.structural.via === "value"
+          ? 1
+          : 0.75;
 
     /* ---- 0.30 lexical: exact names dominate, BM25 fills in ---- */
     /* Exact technology-name matches are worth more than aggregate BM25, because BM25 can
-     * be high on stopword-ish overlap with no exact name match at all — and the whole
+     * be high on stopword-ish overlap with no exact name match at all ΓÇö and the whole
      * reason L3 exists is that a name in the query must find the name in the decision. */
     const exactComponent = exactTerms.length === 0 ? 0 : Math.min(1, 0.6 + 0.2 * exactTerms.length);
     const bm25Component = sparseMax === 0 ? 0 : candidate.sparseScore / sparseMax;
     const lexical = Math.max(exactComponent, bm25Component);
 
     /* ---- 0.20 dense: fused L1+L2 cosine, clamped ---- */
-    const dense = candidate.denseScore === null ? 0 : clamp01((candidate.denseScore + 1) / 2);
+    const dense =
+      candidate.denseScore === null ? 0 : clamp01((candidate.denseScore + 1) / 2);
 
     /* ---- 0.10 premise overlap: graph proximity, deliberately weak ---- */
     const candidatePremises = premisesOfDecision(input.artifacts, candidate.decisionId);
     const premise =
-      candidate.premise !== null ? 1 : premiseOverlap(input.queryPremises, candidatePremises);
+      candidate.premise !== null
+        ? 1
+        : premiseOverlap(input.queryPremises, candidatePremises);
 
     /* ---- 0.05 recency: tie-break only ---- */
     const recency = recencyComponent(input.state, candidate.decisionId, input.now);
@@ -192,7 +203,7 @@ function recencyComponent(state: GraphState, decisionId: DecisionId, now: number
   if (!Number.isFinite(ms)) return 0.5;
 
   const ageDays = Math.max(0, (now - ms) / 86_400_000);
-  return 0.5 ** (ageDays / RECENCY_HALF_LIFE_DAYS);
+  return Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
 }
 
 function clamp01(value: number): number {
@@ -220,34 +231,28 @@ export function explainScore(scored: ScoredCandidate): string {
   const w = RERANK_WEIGHTS;
 
   return [
-    `${scored.candidate.decisionId} — rerank ${scored.total.toFixed(3)}`,
-    `  ${w.structural.toFixed(2)} × structural ${c.structural.toFixed(2)}${
-      scored.candidate.structural === null
-        ? " (no exact slot or value match)"
-        : ` (${scored.candidate.structural.explanation})`
-    }`,
-    `  ${w.lexical.toFixed(2)} × lexical    ${c.lexical.toFixed(2)}${
-      scored.exactTerms.length === 0 ? " (BM25 only)" : ` (exact: ${scored.exactTerms.join(", ")})`
-    }`,
-    `  ${w.dense.toFixed(2)} × dense      ${c.dense.toFixed(2)}${scored.candidate.denseScore === null ? " (unavailable — index stale or not built)" : ""}`,
-    `  ${w.premise.toFixed(2)} × premise    ${c.premise.toFixed(2)}`,
-    `  ${w.recency.toFixed(2)} × recency    ${c.recency.toFixed(2)} (tie-break, ${RECENCY_HALF_LIFE_DAYS}-day half-life)`,
-    `  = ${scored.total.toFixed(3)}`,
+    scored.candidate.decisionId + " ΓÇö rerank " + scored.total.toFixed(3),
+    "  " + w.structural.toFixed(2) + " ├ù structural " + c.structural.toFixed(2) + (scored.candidate.structural === null ? " (no exact slot or value match)" : " (" + scored.candidate.structural.explanation + ")"),
+    "  " + w.lexical.toFixed(2) + " ├ù lexical    " + c.lexical.toFixed(2) + (scored.exactTerms.length === 0 ? " (BM25 only)" : " (exact: " + scored.exactTerms.join(", ") + ")"),
+    "  " + w.dense.toFixed(2) + " ├ù dense      " + c.dense.toFixed(2) + (scored.candidate.denseScore === null ? " (unavailable ΓÇö index stale or not built)" : ""),
+    "  " + w.premise.toFixed(2) + " ├ù premise    " + c.premise.toFixed(2),
+    "  " + w.recency.toFixed(2) + " ├ù recency    " + c.recency.toFixed(2) + " (tie-break, " + RECENCY_HALF_LIFE_DAYS + "-day half-life)",
+    "  = " + scored.total.toFixed(3),
   ].join("\n");
 }
 
-/** The weights as a sentence each — the whole ranking policy in five lines. */
+/** The weights as a sentence each ΓÇö the whole ranking policy in five lines. */
 export function describeWeights(): string {
   return [
-    "Structural 0.35 — an exact variable or value match. Decisive, not statistical.",
-    "Lexical    0.30 — BM25, with exact technology-name matches scoring above it. Names are where embeddings are weakest and lexical matching strongest.",
-    "Dense      0.20 — L1 and L2 fused cosine. Topical relatedness; zero when the index is stale.",
-    "Premise    0.10 — Jaccard over shared premise ids. Graph proximity, deliberately weak: two decisions can share a premise and answer different questions.",
-    "Recency    0.05 — tie-break only, on valid time. Any higher and a fresh irrelevant decision beats an old exact one.",
+    "Structural 0.35 ΓÇö an exact variable or value match. Decisive, not statistical.",
+    "Lexical    0.30 ΓÇö BM25, with exact technology-name matches scoring above it. Names are where embeddings are weakest and lexical matching strongest.",
+    "Dense      0.20 ΓÇö L1 and L2 fused cosine. Topical relatedness; zero when the index is stale.",
+    "Premise    0.10 ΓÇö Jaccard over shared premise ids. Graph proximity, deliberately weak: two decisions can share a premise and answer different questions.",
+    "Recency    0.05 ΓÇö tie-break only, on valid time. Any higher and a fresh irrelevant decision beats an old exact one.",
   ].join("\n");
 }
 
-/** Which components actually decided this ranking — the ones with non-zero weight×value,
+/** Which components actually decided this ranking ΓÇö the ones with non-zero weight├ùvalue,
  *  highest contribution first. */
 export function dominantComponents(scored: ScoredCandidate): readonly string[] {
   const w = RERANK_WEIGHTS;
@@ -262,7 +267,7 @@ export function dominantComponents(scored: ScoredCandidate): readonly string[] {
   return contributions
     .filter((entry) => entry.amount > 0)
     .sort((a, b) => b.amount - a.amount)
-    .map((entry) => `${entry.name} ${entry.amount.toFixed(3)}`);
+    .map((entry) => entry.name + " " + entry.amount.toFixed(3));
 }
 
 /** A `RetrievedHit` carries no rerank breakdown, so the score is attached here for the

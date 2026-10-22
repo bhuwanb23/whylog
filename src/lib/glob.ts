@@ -1,8 +1,8 @@
 /**
  * Glob matching for guard scoping and `applies_to`.
  *
- * Phase 4 · sub-phase 4.3, Phase 5 · sub-phase 5.3
- * Plan: plan/phase-4-executable-guards.md §4.3
+ * Phase 4 ┬╖ sub-phase 4.3, Phase 5 ┬╖ sub-phase 5.3
+ * Plan: plan/phase-4-executable-guards.md ┬º4.3
  *
  * Supports the subset that actually appears in decision records:
  *   *        any run of characters except "/"
@@ -11,7 +11,7 @@
  *   {a,b}    alternation
  *   [abc]    character class
  *
- * Compiled to a RegExp once and cached — a guard set is evaluated against every
+ * Compiled to a RegExp once and cached ΓÇö a guard set is evaluated against every
  * file in the project, so recompiling per file would dominate the runtime.
  */
 
@@ -103,8 +103,8 @@ export function filterByGlob(paths: readonly string[], glob: string): readonly s
  * Word-boundary pattern matching.
  *
  * Default for every `string_*` guard, because a bare substring match on "pg"
- * hits "pgp", "pgsql-tools" and any passing comment — which is how a guard
- * learns to cry wolf. See plan/phase-4 §4.3 and docs/04 §8.
+ * hits "pgp", "pgsql-tools" and any passing comment ΓÇö which is how a guard
+ * learns to cry wolf. See plan/phase-4 ┬º4.3 and docs/04 ┬º8.
  */
 export function compilePattern(
   pattern: string,
@@ -157,7 +157,7 @@ const GLOB_IN_TEXT =
  * appearance.
  *
  * Used by Phase 1.3 to fill `appliesTo`, which drives `applies_to` in export
- * (plan/phase-5 §5.3) and guard scoping (plan/phase-4 §4.2).
+ * (plan/phase-5 ┬º5.3) and guard scoping (plan/phase-4 ┬º4.2).
  */
 export function findGlobs(text: string, limit = 12): readonly string[] {
   const found: string[] = [];

@@ -1,8 +1,8 @@
 /**
- * Modality — 1.3, component 4.
+ * Modality ΓÇö 1.3, component 4.
  *
- * Phase 1 · sub-phase 1.3
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phase 1.3
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
  * ---------------------------------------------------------------------------
  * THE SINGLE FIELD THAT PREVENTS MOST EXTRACTION-DRIVEN FALSE CONTRADICTIONS
@@ -29,7 +29,7 @@
  * ---------------------------------------------------------------------------
  * SCOPE IS THE CLAUSE, NOT THE TURN
  *
- * "yeah ok. going with SQLite, not Postgres." — the acceptance is in the turn but
+ * "yeah ok. going with SQLite, not Postgres." ΓÇö the acceptance is in the turn but
  * not in the clause that carries the cue, and that clause IS assertive. Scanning
  * the whole turn would find no hypothetical markers here, but in "what if we used
  * Redis? actually no, going with SQLite" it would find "what if" and mislabel the
@@ -99,7 +99,7 @@ const PROPOSED: readonly RegExp[] = [
   /\bshould we\b/i,
 ];
 
-/** Someone else's decision, quoted. Real, but not THIS project's — reporting it as
+/** Someone else's decision, quoted. Real, but not THIS project's ΓÇö reporting it as
  *  asserted would make the log claim a decision nobody here made. */
 const REPORTED: readonly RegExp[] = [
   /\b(?:they|the team|the client|management|someone|people) (?:said|decided|want|wants|chose|picked|told)\b/i,
@@ -178,7 +178,7 @@ function lastBreakBefore(text: string, from: number): number {
 /**
  * Classify one cue occurrence.
  *
- * @param turnText the full turn body — used only to find the clause
+ * @param turnText the full turn body ΓÇö used only to find the clause
  * @param hit      the cue, with its `speculative` flag from the ontology table
  * @param speaker  a question from a human is far more likely to be hypothetical
  *                 than the same words from an agent, which is answering one
@@ -197,7 +197,7 @@ export function classifyModality(
       if (match === null) continue;
 
       // A marker AFTER the cue is usually the next thought, not a hedge on this
-      // one: "going with SQLite — what if we need multi-user later?" is an
+      // one: "going with SQLite ΓÇö what if we need multi-user later?" is an
       // asserted decision with a hypothetical worry attached.
       const at = match.index;
       if (at > cueAt + hit.phrase.length && set.modality !== "reported") continue;
@@ -274,7 +274,7 @@ export function describeModality(evidence: ModalityEvidence): string {
     evidence.marker === null
       ? "no hedge found in the clause"
       : `because the clause contains "${evidence.marker}"`;
-  return `${evidence.modality} — ${why}. ${MODALITY_EXPLANATIONS[evidence.modality]}`;
+  return `${evidence.modality} ΓÇö ${why}. ${MODALITY_EXPLANATIONS[evidence.modality]}`;
 }
 
 /** Marker counts, for the eval harness: a modality classifier that only ever

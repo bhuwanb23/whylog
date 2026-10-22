@@ -1,22 +1,22 @@
 /**
- * Review actions — 1.9, the five things a human can do.
+ * Review actions ΓÇö 1.9, the five things a human can do.
  *
- * Phase 1 · sub-phase 1.9
- * Plan: plan/phase-1-extraction-pipeline.md §1.9
+ * Phase 1 ┬╖ sub-phase 1.9
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.9
  *
  * ---------------------------------------------------------------------------
  * FIVE ACTIONS, AND EACH ONE WRITES A DIFFERENT EVENT
  *
- *   approve       → the candidate becomes a node at `status: "proposed"`. It does
- *                   NOT become IN unless `viaBulk` is false — a bulk approval is not
+ *   approve       ΓåÆ the candidate becomes a node at `status: "proposed"`. It does
+ *                   NOT become IN unless `viaBulk` is false ΓÇö a bulk approval is not
  *                   a considered one, and the fold enforces that.
- *   edit          → the human's wording wins, at `origin: "human_override"`, and the
+ *   edit          ΓåÆ the human's wording wins, at `origin: "human_override"`, and the
  *                   ORIGINAL extraction stays on the `DecisionProposed` event.
- *   discard       → `ExtractionDiscarded` with the human's reason. Recorded, because
+ *   discard       ΓåÆ `ExtractionDiscarded` with the human's reason. Recorded, because
  *                   the discard list is the denominator of the precision metric.
- *   merge-into    → the human overrides the identity ladder. Rung-4 merges are
+ *   merge-into    ΓåÆ the human overrides the identity ladder. Rung-4 merges are
  *                   flagged `needsReview` precisely so this action exists.
- *   contest       → the Hansson screening outcome: a newcomer that cannot outrank
+ *   contest       ΓåÆ the Hansson screening outcome: a newcomer that cannot outrank
  *                   every contradictor goes to the Contested queue rather than being
  *                   silently applied or silently dropped.
  *
@@ -34,7 +34,7 @@
  * human's own sentence.
  *
  * The distinction matters because entrenchment reads it. An edited decision is
- * harder to retract than an approved one, which is correct — a human has already
+ * harder to retract than an approved one, which is correct ΓÇö a human has already
  * looked at the words.
  * ---------------------------------------------------------------------------
  */
@@ -56,7 +56,7 @@ import type { ReviewItem } from "./types";
 export const EDITED_CONFIDENCE = asConfidence(0.95);
 
 /* -------------------------------------------------------------------------- */
-/* Constructors — the only way to build an action                             */
+/* Constructors ΓÇö the only way to build an action                             */
 /* -------------------------------------------------------------------------- */
 
 export const approve = (viaBulk = false): ReviewAction => ({ type: "approve", viaBulk });
@@ -140,7 +140,7 @@ export function applyAction(candidate: ResolvedCandidate, action: ReviewAction):
  *
  * The fields are a partial, so an untouched field keeps the machine's value. What
  * always changes is the ORIGIN and the CONFIDENCE, because a human has now read this
- * item — and an item a human has read is different evidence from one they have not.
+ * item ΓÇö and an item a human has read is different evidence from one they have not.
  */
 export function applyEdit(
   candidate: ResolvedCandidate,
@@ -199,7 +199,7 @@ function editDecision(
     confidence: EDITED_CONFIDENCE,
     // An edited decision is asserted, not proposed: the human has said the words.
     // This is the one place `modality` is changed by the review rather than by the
-    // modality detector, and it is correct — the human asserting it IS the evidence.
+    // modality detector, and it is correct ΓÇö the human asserting it IS the evidence.
     modality: "asserted",
   };
 }
@@ -311,14 +311,14 @@ export const REVIEW_KEYS: Readonly<Record<string, string>> = {
   c: "contest",
   Enter: "approve and advance",
   Escape: "close the editor",
-  "Shift+A": "approve every expanded item (bulk — stays UNKNOWN)",
+  "Shift+A": "approve every expanded item (bulk ΓÇö stays UNKNOWN)",
   "Shift+D": "discard every collapsed item",
 };
 
 export function describeKeys(): string {
   return Object.entries(REVIEW_KEYS)
-    .map(([key, meaning]) => `${key} — ${meaning}`)
-    .join(" · ");
+    .map(([key, meaning]) => `${key} ΓÇö ${meaning}`)
+    .join(" ┬╖ ");
 }
 
 /** What an action says, in the words the audit trail will show. */
@@ -327,15 +327,15 @@ export function describeAction(action: ReviewAction | null): string {
   switch (action.type) {
     case "approve":
       return action.viaBulk
-        ? "approved in bulk — recorded, but stays UNKNOWN until approved individually"
+        ? "approved in bulk ΓÇö recorded, but stays UNKNOWN until approved individually"
         : "approved";
     case "edit":
       return `edited: ${Object.keys(action.fields).join(", ")}`;
     case "discard":
-      return `discarded — ${action.reason}`;
+      return `discarded ΓÇö ${action.reason}`;
     case "merge-into":
       return `merged into ${action.targetId}, overriding the ladder`;
     case "contest":
-      return `contested — ${action.reason}`;
+      return `contested ΓÇö ${action.reason}`;
   }
 }

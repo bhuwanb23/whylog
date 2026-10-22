@@ -1,7 +1,7 @@
 /**
  * One HTTP client for every provider.
  *
- * Phase 1 · sub-phase 1.10 (the LLM path)
+ * Phase 1 ┬╖ sub-phase 1.10 (the LLM path)
  *
  * ---------------------------------------------------------------------------
  * WHY ONE FILE AND NOT THREE
@@ -10,7 +10,7 @@
  * array, `content` strings). Anthropic speaks a near-dialect (`/messages`, a
  * `system` field, content blocks). Three provider modules would be three copies of
  * the retry policy, three copies of the timeout, and three places where the API key
- * is read — and the key handling is the part that must not have variants.
+ * is read ΓÇö and the key handling is the part that must not have variants.
  *
  * So: one client, one request shape, two response adapters.
  *
@@ -70,7 +70,7 @@ const MAX_QUOTED_BODY = 400;
 /**
  * One chat completion, with retries.
  *
- * Retries only what `retryPolicy` says is retryable — rate limit, timeout, network,
+ * Retries only what `retryPolicy` says is retryable ΓÇö rate limit, timeout, network,
  * malformed output. A 401 is not retried: three failed attempts with a bad key is
  * three chances for the provider to lock the account.
  */
@@ -271,7 +271,7 @@ function numberOf(value: unknown): number {
  * Models wrap JSON in ```json fences, in a sentence, or in both, whatever the
  * prompt says. Refusing to parse anything but a bare object would turn a correct
  * extraction into a `malformed-output` error, and the retry would probably produce
- * the same wrapping — so the fence is stripped and the outermost braces are found.
+ * the same wrapping ΓÇö so the fence is stripped and the outermost braces are found.
  */
 export function extractJson(text: string, model: string): Record<string, unknown> {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);

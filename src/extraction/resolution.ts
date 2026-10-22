@@ -1,8 +1,8 @@
 /**
- * Entity resolution — 1.7.
+ * Entity resolution ΓÇö 1.7.
  *
- * Phase 1 · sub-phase 1.7
- * Plan: plan/phase-1-extraction-pipeline.md §1.7
+ * Phase 1 ┬╖ sub-phase 1.7
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.7
  *
  * ---------------------------------------------------------------------------
  * WHY IT SITS BETWEEN EXTRACTION AND ASSERTION
@@ -17,21 +17,21 @@
  * So the ladder runs HERE, on candidates that have no ids yet, and its answer is
  * one of:
  *
- *   merge      → the commit re-asserts the EXISTING node, extending its evidence
+ *   merge      ΓåÆ the commit re-asserts the EXISTING node, extending its evidence
  *                and incrementing corroboration. No new node.
- *   candidate  → the ladder is not sure. The review UI shows both and asks.
- *   create     → a new node.
+ *   candidate  ΓåÆ the ladder is not sure. The review UI shows both and asks.
+ *   create     ΓåÆ a new node.
  *
  * ---------------------------------------------------------------------------
  * MERGE SEMANTICS, FROM THE PLAN
  *
- *   decision merge → corroboration +1, evidence extended, learned time updated,
- *                    VALID TIME UNCHANGED (the earliest wins — a decision made in
+ *   decision merge ΓåÆ corroboration +1, evidence extended, learned time updated,
+ *                    VALID TIME UNCHANGED (the earliest wins ΓÇö a decision made in
  *                    March and re-stated in October was made in March)
- *   premise merge  → corroboration +1, evidence extended. A premise asserted in
+ *   premise merge  ΓåÆ corroboration +1, evidence extended. A premise asserted in
  *                    two separate sessions is materially stronger than one
  *                    asserted once, and Phase 2's entrenchment must see that.
- *   conflict       → DO NOT MERGE. Same variable, different value. Emitted as a
+ *   conflict       ΓåÆ DO NOT MERGE. Same variable, different value. Emitted as a
  *                    contradiction candidate for Phase 2.
  *
  * The fold implements the first two; this module's job is to decide which of the
@@ -42,8 +42,8 @@
  *
  * Embeddings. Rungs 4 and 5 of the ladder are cosine thresholds, and the vectors
  * live in the disposable index (`src/substrate/index-artifacts.ts`). When the
- * index is stale or absent — which is the normal state right after an engine
- * switch — `vectors` is omitted and the ladder falls back to lexical similarity.
+ * index is stale or absent ΓÇö which is the normal state right after an engine
+ * switch ΓÇö `vectors` is omitted and the ladder falls back to lexical similarity.
  * It degrades; it does not fail, and it does not block extraction on an await.
  * ---------------------------------------------------------------------------
  */
@@ -69,8 +69,8 @@ import type { OriginClassification } from "./provenance";
 export interface ResolutionContext {
   readonly state: GraphState;
   readonly engine: EngineId;
-  /** id → vector, when the index is fresh. Omit and the ladder uses lexical
-   *  similarity, which is rung 4 with a weaker metric — not a failure. */
+  /** id ΓåÆ vector, when the index is fresh. Omit and the ladder uses lexical
+   *  similarity, which is rung 4 with a weaker metric ΓÇö not a failure. */
   readonly decisionVectors?: ReadonlyMap<DecisionId, Float32Array>;
   readonly premiseVectors?: ReadonlyMap<PremiseId, Float32Array>;
 }
@@ -295,7 +295,7 @@ function resolveOnePremise(candidate: PremiseCandidate, context: ResolutionConte
         rung: 1,
         matchedId: indexed,
         score: 1,
-        explanation: `${indexed} already carries ${candidate.predicate} — this extends its evidence and increments corroboration`,
+        explanation: `${indexed} already carries ${candidate.predicate} ΓÇö this extends its evidence and increments corroboration`,
         needsReview: false,
         conflictsWith: [],
       };
@@ -360,7 +360,7 @@ function resolveOneAlternative(candidate: AlternativeCandidate, context: Resolut
 }
 
 /**
- * The local `decisionRef` index cannot be resolved to a real id here — the
+ * The local `decisionRef` index cannot be resolved to a real id here ΓÇö the
  * decision may itself be a candidate that has not been committed yet. Returning
  * null makes the duplicate check conservative: an alternative whose decision is
  * not yet in the graph is never a duplicate of one that is.
@@ -381,13 +381,13 @@ export function describeResolution(report: ResolutionReport): string {
   ];
   const outcomes = [
     `${report.merged} merged onto existing nodes`,
-    `${report.candidates} uncertain — the review will ask`,
+    `${report.candidates} uncertain ΓÇö the review will ask`,
     `${report.created} new`,
   ];
   if (report.conflicts > 0) {
     outcomes.push(`${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`);
   }
-  return `${parts.join(", ")} → ${outcomes.join(", ")}`;
+  return `${parts.join(", ")} ΓåÆ ${outcomes.join(", ")}`;
 }
 
 /**

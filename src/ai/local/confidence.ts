@@ -1,8 +1,8 @@
 /**
- * The local confidence rubrics — 1.8.
+ * The local confidence rubrics ΓÇö 1.8.
  *
- * Phase 1 · sub-phase 1.8
- * Plan: plan/phase-1-extraction-pipeline.md §1.8
+ * Phase 1 ┬╖ sub-phase 1.8
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.8
  *
  * ---------------------------------------------------------------------------
  * ADDITIVE AND INSPECTABLE, ON PURPOSE
@@ -22,8 +22,8 @@
  * ---------------------------------------------------------------------------
  * THE TIER RULE LIVES IN `src/extraction/confidence.ts`
  *
- * Scoring is engine-specific — the LLM path scores from run agreement, not from
- * cues — but tiering is shared, because the review UI has one layout and it must
+ * Scoring is engine-specific ΓÇö the LLM path scores from run agreement, not from
+ * cues ΓÇö but tiering is shared, because the review UI has one layout and it must
  * mean the same thing whichever engine produced the item. So this module returns
  * NUMBERS and never tiers.
  * ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ import type { RecoveredAlternative } from "@/extraction/alternatives";
 import type { ValueStrength } from "@/ai/local/value-phrase";
 
 /* -------------------------------------------------------------------------- */
-/* Decision rubric — plan §1.8, verbatim                                      */
+/* Decision rubric ΓÇö plan ┬º1.8, verbatim                                      */
 /* -------------------------------------------------------------------------- */
 
 export const DECISION_WEIGHTS = {
@@ -203,7 +203,7 @@ export function scoreAlternative(alternative: RecoveredAlternative): DecisionSco
 /**
  * How much a modality discounts a decision.
  *
- * `proposed` is a real proposal and keeps most of its score — it just cannot become
+ * `proposed` is a real proposal and keeps most of its score ΓÇö it just cannot become
  * IN without a human. `hypothetical` and `reported` never reach here: they are
  * discarded in `decisions.ts`.
  */

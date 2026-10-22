@@ -1,11 +1,11 @@
 /**
  * The engine registry.
  *
- * Phase 0 · sub-phase 0.9
+ * Phase 0 ┬╖ sub-phase 0.9
  *
  * Engines register themselves here; the app resolves one by id. Keeping
  * registration separate from construction means a provider adapter can be
- * lazy-loaded — an OpenAI client is only fetched when an OpenAI key exists, which
+ * lazy-loaded ΓÇö an OpenAI client is only fetched when an OpenAI key exists, which
  * matters because the default build must work offline with no key.
  */
 

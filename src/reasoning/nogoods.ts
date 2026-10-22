@@ -1,9 +1,9 @@
 /**
- * Nogoods — 2.6.
+ * Nogoods ΓÇö 2.6.
  *
- * Phase 2 · sub-phase 2.6
- * Plan: plan/phase-2-truth-maintenance.md §2.6
- * Docs: docs/02-truth-maintenance-theory.md §3
+ * Phase 2 ┬╖ sub-phase 2.6
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.6
+ * Docs: docs/02-truth-maintenance-theory.md ┬º3
  *
  * ---------------------------------------------------------------------------
  * A NOGOOD IS THE EXPLANATION, NOT BOOKKEEPING
@@ -14,19 +14,19 @@
  * Here it is the single most useful sentence the system can produce:
  *
  *   "These two assumptions cannot both hold:
- *      · the app has one user, single machine
- *      · two people edit concurrently
+ *      ┬╖ the app has one user, single machine
+ *      ┬╖ two people edit concurrently
  *    WLD-0001 was accepted assuming both. One of them is now false."
  *
  * That is what makes the proposal legible. "WLD-0001 is unsound" tells a user a
  * label changed. "These two things cannot both be true" tells them what to think
- * about — and it is checkable without trusting the system.
+ * about ΓÇö and it is checkable without trusting the system.
  *
  * ---------------------------------------------------------------------------
  * TWO JOBS, ONE RECORD
  *
- *  1. EXPLAIN — the sentence above, quoted verbatim in the proposal.
- *  2. BLOCK — if the same conjunction is ever re-asserted, the system says "we have
+ *  1. EXPLAIN ΓÇö the sentence above, quoted verbatim in the proposal.
+ *  2. BLOCK ΓÇö if the same conjunction is ever re-asserted, the system says "we have
  *     already established these cannot both hold" instead of re-labelling from
  *     scratch and producing the same unsoundness again.
  *
@@ -39,11 +39,11 @@
  *
  * Three sources, all deterministic:
  *
- *  · gate (a) — two decisions on the same variable with antonym values, each with an
+ *  ┬╖ gate (a) ΓÇö two decisions on the same variable with antonym values, each with an
  *    IN-list. The conjunction of both IN-lists is impossible.
- *  · gate (c) — a decision's IN-list contains a world-observable premise that has
+ *  ┬╖ gate (c) ΓÇö a decision's IN-list contains a world-observable premise that has
  *    been retracted, or its OUT-list contains a premise that has been asserted.
- *  · gate (b) — a model-adjudicated contradiction. Recorded, but flagged as
+ *  ┬╖ gate (b) ΓÇö a model-adjudicated contradiction. Recorded, but flagged as
  *    engine-derived, because a nogood the user cannot verify from the graph is weaker
  *    than one they can.
  * ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ export interface NogoodDraft {
   readonly explanation: string;
   readonly gate: ContradictionGate;
   readonly decisionIds: readonly DecisionId[];
-  /** A model produced this. Shown as such — see the header. */
+  /** A model produced this. Shown as such ΓÇö see the header. */
   readonly engineDerived: boolean;
 }
 
@@ -164,7 +164,7 @@ export function explainConjunction(
   const quoted = premiseIds
     .map((premiseId) => {
       const premise = state.premises.get(premiseId);
-      return `  · ${premise?.text ?? premiseId} (${premiseId})`;
+      return `  ┬╖ ${premise?.text ?? premiseId} (${premiseId})`;
     })
     .join("\n");
 
@@ -189,10 +189,10 @@ export function explainConjunction(
 /**
  * TWO NOGOOD SHAPES, AND WHICH ONE TO USE.
  *
- * `Nogood`      (types/domain)   — what the LOG holds. Has `recordedAt`, so it can say
+ * `Nogood`      (types/domain)   ΓÇö what the LOG holds. Has `recordedAt`, so it can say
  *                                   WHEN the conjunction was found impossible, which is
  *                                   the whole force of the reuse warning.
- * `NogoodRecord`(types/reasoning)— what a PROPOSAL carries. No timestamp, because a
+ * `NogoodRecord`(types/reasoning)ΓÇö what a PROPOSAL carries. No timestamp, because a
  *                                   proposal is built in a single run and the timestamp
  *                                   belongs to the event, not the proposal.
  *

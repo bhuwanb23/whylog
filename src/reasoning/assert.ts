@@ -1,18 +1,18 @@
 /**
- * The assertion entry point — 2.1.
+ * The assertion entry point ΓÇö 2.1.
  *
- * Phase 2 · sub-phase 2.1
- * Plan: plan/phase-2-truth-maintenance.md §2.1
+ * Phase 2 ┬╖ sub-phase 2.1
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.1
  *
  * ---------------------------------------------------------------------------
  * ONE FUNCTION, FOUR INPUT KINDS, IDENTICAL DOWNSTREAM BEHAVIOUR
  *
  * Every source of new information enters here:
  *
- *   · transcript     — a reviewed extraction batch
- *   · user-decision  — something a human typed in
- *   · guard-result   — a check that ran against the repo (Phase 4)
- *   · repo-scan      — an observation about the codebase (Phase 4)
+ *   ┬╖ transcript     ΓÇö a reviewed extraction batch
+ *   ┬╖ user-decision  ΓÇö something a human typed in
+ *   ┬╖ guard-result   ΓÇö a check that ran against the repo (Phase 4)
+ *   ┬╖ repo-scan      ΓÇö an observation about the codebase (Phase 4)
  *
  * The acceptance criterion is not that all four work. It is that **the reasoning code
  * never branches on which one arrived**. `labeller`, `gates`, `backtracking`,
@@ -21,7 +21,7 @@
  * cannot be, because this module is the only place the source is known.
  *
  * That is what makes a guard failure and a transcript remark EQUIVALENT in the eyes of
- * the reasoner — and it is the reason `implementation_cost` can feed entrenchment
+ * the reasoner ΓÇö and it is the reason `implementation_cost` can feed entrenchment
  * without a special case. A system that handled guards separately would have two
  * reasoning paths, and only one of them would be tested.
  *
@@ -29,11 +29,11 @@
  * WHAT IT PRODUCES
  *
  * Event drafts, plus an optional `Newcomer` for the adjudicator. It appends nothing:
- * the store owns `append → fold → persist`, and the cycle has to run on the state
+ * the store owns `append ΓåÆ fold ΓåÆ persist`, and the cycle has to run on the state
  * AFTER these events are folded, not before. So the orchestration is two batches:
  *
- *   1. assert  → append these drafts → fold → new state
- *   2. revise  → run the cycle over the new state → append its drafts → fold
+ *   1. assert  ΓåÆ append these drafts ΓåÆ fold ΓåÆ new state
+ *   2. revise  ΓåÆ run the cycle over the new state ΓåÆ append its drafts ΓåÆ fold
  *
  * Running the labeller on the pre-assertion state would label the graph as it was
  * before the new information arrived, which is the one thing this module exists to
@@ -43,7 +43,7 @@
  * WHAT A GUARD RESULT DOES IN PHASE 2
  *
  * It asserts a PREMISE, with evidence of kind `guard`. It does not emit `GuardFailed`,
- * because guards do not exist yet — Phase 4 creates them, and a `GuardFailed` event
+ * because guards do not exist yet ΓÇö Phase 4 creates them, and a `GuardFailed` event
  * naming a guard id that was never synthesised would not fold. The observation is the
  * part that matters to the reasoner, and it arrives in the same shape as every other
  * observation. When Phase 4 lands, `GuardFailed` is emitted by the guard runner and
@@ -154,7 +154,7 @@ export interface AssertContext {
   readonly at: ISODateString;
   /** Which of the four kinds this is. Carried explicitly rather than inferred from the
    *  actor: a guard run and a repo scan both arrive as a system actor, and guessing
-   *  between them would put the wrong source in the reason string — the one field whose
+   *  between them would put the wrong source in the reason string ΓÇö the one field whose
    *  entire job is to say where the information came from. */
   readonly source: AssertionSource;
   /** Human-authored text needs a transcript to be verbatim FROM. Created on demand
@@ -168,9 +168,9 @@ export interface AssertContext {
 /**
  * An assertion that could not be resolved to a premise node.
  *
- * §2.11: "Exact predicate match only; ambiguous cases are surfaced for human
- * confirmation rather than guessed." §2.5: a false premise resolution produces "a
- * confident, spectacular, entirely wrong cascade" — so an unresolved or ambiguous match
+ * ┬º2.11: "Exact predicate match only; ambiguous cases are surfaced for human
+ * confirmation rather than guessed." ┬º2.5: a false premise resolution produces "a
+ * confident, spectacular, entirely wrong cascade" ΓÇö so an unresolved or ambiguous match
  * is REPORTED, never acted on.
  */
 export interface UnresolvedPremise {
@@ -189,7 +189,7 @@ export interface AssertionResult {
    *  an incumbent, and inventing one would run adjudication on a premise. */
   readonly newcomer: Newcomer | null;
   /**
-   * §2.6 nogood REUSE, checked at the ASSERTION rather than at the proposal.
+   * ┬º2.6 nogood REUSE, checked at the ASSERTION rather than at the proposal.
    *
    * Catching it here is strictly better: the warning arrives while the user is still
    * deciding whether to assert, instead of after the events are in the log and the
@@ -208,7 +208,7 @@ export interface AssertionResult {
  * Turn new information into events.
  *
  * The `switch` on `source` is HERE AND NOWHERE ELSE. Each branch produces the same
- * kind of thing — premise assertions and, where applicable, decision assertions — and
+ * kind of thing ΓÇö premise assertions and, where applicable, decision assertions ΓÇö and
  * the shared tail below turns those into drafts identically. That is the mechanism by
  * which the acceptance criterion holds: the branches differ in what they collect, not
  * in what the reasoner later sees.
@@ -237,7 +237,7 @@ export function assertNewInformation(
     case "guard-result": {
       /* A guard that FAILED asserts the negation of what the decision assumed. The
        * observation carries `supports: false` in that case, and the shared tail turns
-       * it into evidence that refutes — which is exactly what gate (c) reads. */
+       * it into evidence that refutes ΓÇö which is exactly what gate (c) reads. */
       premises.push({
         ...assertion.observation,
         supports: assertion.passed ? assertion.observation.supports : false,
@@ -267,7 +267,7 @@ export function assertNewInformation(
     nextTranscriptId(context, drafts, ++transcriptNumber);
 
   /* A human, a guard or a repo scan is its own authority: what it says is confirmed on
-   * arrival. A transcript is not — extracted prose enters as UNKNOWN and waits for
+   * arrival. A transcript is not ΓÇö extracted prose enters as UNKNOWN and waits for
    * review, because nothing enters the log unreviewed. */
   const authoritative = assertion.source !== "transcript";
 
@@ -287,7 +287,7 @@ export function assertNewInformation(
           explanation:
             resolution.kind === "ambiguous"
               ? `Several premises match ${premise.type}.${premise.predicate}. A refutation aimed at the wrong one produces a spectacular, entirely wrong cascade, so pick the target rather than letting this guess.`
-              : `No premise in the log matches ${premise.type}.${premise.predicate}, so there is nothing to refute. If this was meant to falsify something, the predicate does not match — check the type as well, since premises of different types are never the same node however similar their text.`,
+              : `No premise in the log matches ${premise.type}.${premise.predicate}, so there is nothing to refute. If this was meant to falsify something, the predicate does not match ΓÇö check the type as well, since premises of different types are never the same node however similar their text.`,
         });
         continue;
       }
@@ -314,14 +314,14 @@ export function assertNewInformation(
     }
 
     /* ---- resolved and SUPPORTING: re-assert on the EXISTING id ----
-     * Invariant I2 — premises are shared nodes. `PremiseAsserted` on an existing id
+     * Invariant I2 ΓÇö premises are shared nodes. `PremiseAsserted` on an existing id
      * appends evidence and takes the max confidence; minting a second node would halve
      * the corroboration count on both and leave gate (c) looking at a premise that
      * nothing rests on. */
     drafts.push(premiseDraft(premise, existingId, transcriptId, context));
     mintedPremiseIds.push(existingId);
 
-    /* If it was UNKNOWN and this source is authoritative, it becomes IN — which is the
+    /* If it was UNKNOWN and this source is authoritative, it becomes IN ΓÇö which is the
      * OUT-list half of gate (c). */
     const existing = context.state.premises.get(existingId);
     if (authoritative && existing !== undefined && existing.label !== "IN") {
@@ -337,7 +337,7 @@ export function assertNewInformation(
 
     const existingDecision = findExistingDecision(context.state, decision);
     if (existingDecision !== null) {
-      /* Not a new decision — the same one, asserted again. Attaching a justification
+      /* Not a new decision ΓÇö the same one, asserted again. Attaching a justification
        * corroborates rather than duplicating; identity resolution already decided these
        * are the same node. */
       justificationNumber += 1;
@@ -441,7 +441,7 @@ function premiseDraft(
       type: premise.type,
       predicate: canonicalPredicate(premise.type, premise.predicate),
       ...(premise.value === undefined ? {} : { value: premise.value }),
-      /* A refuting observation is still a TRUE fact about the world — "there are now
+      /* A refuting observation is still a TRUE fact about the world ΓÇö "there are now
        * two editors" is true, and it is what falsifies `single-user`. The polarity
        * lives in the justification's IN/OUT lists, never in the premise text. */
       text: premise.supports ? text : `refuted: ${text}`,
@@ -563,20 +563,20 @@ export type PremiseResolution =
 /**
  * Exact (type, predicate) match, or nothing.
  *
- * §2.5's precision discipline, implemented as a refusal to be clever. Gate (c) fires
+ * ┬º2.5's precision discipline, implemented as a refusal to be clever. Gate (c) fires
  * only on RESOLVED premise identity, and the failure mode of getting this wrong is not
- * a missed detection — it is a confident, spectacular, entirely wrong cascade.
+ * a missed detection ΓÇö it is a confident, spectacular, entirely wrong cascade.
  *
  * Two rules that are not negotiable:
  *
- *   · Predicates are canonicalised before comparison, so "max users" and "max_users"
+ *   ┬╖ Predicates are canonicalised before comparison, so "max users" and "max_users"
  *     match and "max user" does not silently become something else.
- *   · Premises of DIFFERENT TYPES never match, however similar their text. "single user"
+ *   ┬╖ Premises of DIFFERENT TYPES never match, however similar their text. "single user"
  *     (scale) and "single sign-on user flow" (requirement) are different nodes, and a
  *     false merge between them is the exact scenario the identity ladder forbids.
  *
  * A near-match is NOT promoted to a match. It is reported as `no-match` and the
- * candidates are handed to a human, which is what §2.11 means by "surfaced for human
+ * candidates are handed to a human, which is what ┬º2.11 means by "surfaced for human
  * confirmation rather than guessed".
  */
 export function resolvePremise(
@@ -591,7 +591,7 @@ export function resolvePremise(
    * one. It is the guarantee that the reasoner and the fold agree about what the same
    * premise IS. A resolver with its own notion of identity would eventually resolve a
    * premise the fold considers distinct, and gate (c) would fire on a node nothing
-   * actually rests on — the "confident, spectacular, entirely wrong cascade" §2.5 warns
+   * actually rests on ΓÇö the "confident, spectacular, entirely wrong cascade" ┬º2.5 warns
    * about, arriving through the front door instead of through fuzzy matching. */
   const byFingerprint = state.premiseByFingerprint.get(
     premiseFingerprint(assertion.type, canonical),
@@ -659,7 +659,7 @@ export function nearMatches(
  * `label: OUT` and closes the validity window, the labeller propagates, and every
  * decision whose IN-list named it loses support.
  *
- * `invalidatedBy.kind` has three members and a repo scan is not one of them — it maps to
+ * `invalidatedBy.kind` has three members and a repo scan is not one of them ΓÇö it maps to
  * `"assertion"`, which is what it is: an assertion about the world that happens to have
  * come from a scan rather than a conversation.
  */
@@ -684,7 +684,7 @@ function invalidateDraft(
       ...(premise.span === undefined ? {} : { evidenceSpan: premise.span }),
     },
     actor: context.actor,
-    reason: `${premiseId} is no longer true: "${premise.text}" — observed by ${sourceLabel(source)}. Every decision resting on it is re-examined, and this event is the record of what falsified it.`,
+    reason: `${premiseId} is no longer true: "${premise.text}" ΓÇö observed by ${sourceLabel(source)}. Every decision resting on it is re-examined, and this event is the record of what falsified it.`,
     at: context.at,
     ...(context.occurredAt === undefined ? {} : { occurredAt: context.occurredAt }),
   };
@@ -694,7 +694,7 @@ function invalidateDraft(
  * Make a premise IN.
  *
  * Only for sources that are their own authority. Without this, an OUT-list exclusion
- * stays UNKNOWN and gate (c) never fires on it — "an excluded condition arrived" is only
+ * stays UNKNOWN and gate (c) never fires on it ΓÇö "an excluded condition arrived" is only
  * an invalidation once the condition is actually believed.
  */
 function confirmDraft(
@@ -761,7 +761,7 @@ function transcriptIdFor(
  *
  * `PremiseAsserted` requires a verbatim snippet from SOME transcript. For text nobody
  * said in a recorded conversation, the honest container is a new transcript labelled
- * with its actual origin — not a fabricated span inside the user's real one, which
+ * with its actual origin ΓÇö not a fabricated span inside the user's real one, which
  * would claim they said something they did not.
  */
 function nextTranscriptId(
@@ -799,7 +799,7 @@ const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
 
 function reasonFor(premise: PremiseAssertion, context: AssertContext): string {
   const verb = premise.supports ? "supports" : "REFUTES";
-  return `${verb} ${premise.type}.${canonicalPredicate(premise.type, premise.predicate)}: "${premise.text}" — observed by ${context.actor.kind}, confidence ${premise.confidence.toFixed(2)}.`;
+  return `${verb} ${premise.type}.${canonicalPredicate(premise.type, premise.predicate)}: "${premise.text}" ΓÇö observed by ${context.actor.kind}, confidence ${premise.confidence.toFixed(2)}.`;
 }
 
 function sourceOf(source: AssertionSource): Newcomer["source"] {
@@ -852,12 +852,12 @@ function summarise(
       return accumulator;
     }, {});
 
-  const parts = Object.entries(tally).map(([type, count]) => `${count} × ${type}`);
+  const parts = Object.entries(tally).map(([type, count]) => `${count} ├ù ${type}`);
 
   const unresolvedNote =
     unresolved.length === 0
       ? ""
-      : `${unresolved.length} assertion(s) matched no premise and were NOT acted on — see the unresolved list.`;
+      : `${unresolved.length} assertion(s) matched no premise and were NOT acted on ΓÇö see the unresolved list.`;
 
   const nogoodWarning =
     reassertsNogood === null
@@ -868,7 +868,7 @@ function summarise(
     nogoodWarning,
     unresolvedNote,
     `Asserted from ${sourceLabel(assertion.source)}: ${premiseCount} premise(s), ${decisionCount} decision(s).`,
-    parts.length === 0 ? "No events — everything was already in the log." : `Events: ${parts.join(", ")}.`,
+    parts.length === 0 ? "No events ΓÇö everything was already in the log." : `Events: ${parts.join(", ")}.`,
     refuting.trim(),
   ]
     .filter((part) => part.length > 0)

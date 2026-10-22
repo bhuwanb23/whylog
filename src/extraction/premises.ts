@@ -1,8 +1,8 @@
 /**
- * Premise recovery — 1.4. THE LOAD-BEARING SUB-PHASE.
+ * Premise recovery ΓÇö 1.4. THE LOAD-BEARING SUB-PHASE.
  *
- * Phase 1 · sub-phase 1.4
- * Plan: plan/phase-1-extraction-pipeline.md §1.4
+ * Phase 1 ┬╖ sub-phase 1.4
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.4
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS THE PRODUCT
@@ -14,7 +14,7 @@
  *
  * If premises cannot be recovered from dialogue at usable precision, the
  * truth-maintenance layer has nothing to maintain and the product collapses to a
- * decision log — that is, to `ai-memory`. So this file is the one to prototype and
+ * decision log ΓÇö that is, to `ai-memory`. So this file is the one to prototype and
  * measure before anything else is built, and the one whose numbers must be reported
  * honestly.
  *
@@ -30,7 +30,7 @@
  * WHY EVERY CANDIDATE IS REVIEWED
  *
  * `needsReview` is true for every topical cue and for every explicit cue below
- * 0.9 — which, reading `premise-cues.ts`, is all of them. That is not an oversight
+ * 0.9 ΓÇö which, reading `premise-cues.ts`, is all of them. That is not an oversight
  * in the table, it is the table saying out loud that premise extraction does not
  * yet earn auto-acceptance. `TOPICAL_AUTO_ACCEPT_THRESHOLD = 1.0` is unreachable by
  * construction. When Phase 7's measurement says otherwise, the threshold moves and
@@ -225,7 +225,7 @@ function buildPremise(
  *
  * Always namespaced under the cue's own type, so rung 1 of the identity ladder can
  * still match it exactly on a re-import. An unnamespaced predicate would resolve
- * differently on each run and mint a duplicate node every time — the failure the
+ * differently on each run and mint a duplicate node every time ΓÇö the failure the
  * closed vocabulary exists to prevent.
  *
  * The result is `requirement.<free text>` when nothing better is available, which
@@ -283,7 +283,7 @@ function readValue(
   }
 
   // `string` and `enum`: the cue phrase is the value. Canonicalisation of an enum
-  // is the predicate table's job, not the extractor's — guessing a permitted value
+  // is the predicate table's job, not the extractor's ΓÇö guessing a permitted value
   // here would be inventing data.
   const trimmed = window.trim();
   return trimmed.length > 0 && trimmed.length <= 60 ? trimmed : undefined;
@@ -331,7 +331,7 @@ function windowAround(text: string, at: number, chars: number): string {
 /**
  * Additive, inspectable, and deliberately capped below the decision rubric.
  *
- * Plan §1.8: premises are always one tier lower than the decision they attach to,
+ * Plan ┬º1.8: premises are always one tier lower than the decision they attach to,
  * reflecting the published precision gap. `confidence.ts` applies the tier demotion;
  * this score is the input to it.
  */
@@ -377,7 +377,7 @@ export function describeRecovery(recovery: PremiseRecovery): string {
     const count = recovery.byType[type];
     if (count > 0) parts.push(`${type} ${count}`);
   }
-  const summary = parts.length === 0 ? "no typed premises" : parts.join(" · ");
+  const summary = parts.length === 0 ? "no typed premises" : parts.join(" ┬╖ ");
   return `${recovery.premises.length} premise${recovery.premises.length === 1 ? "" : "s"} (${summary}), ${recovery.discarded.length} discarded`;
 }
 

@@ -1,9 +1,9 @@
 /**
- * Audit — 2.10.
+ * Audit ΓÇö 2.10.
  *
- * Phase 2 · sub-phase 2.10
- * Plan: plan/phase-2-truth-maintenance.md §2.10
- * Docs: docs/02-truth-maintenance-theory.md §5
+ * Phase 2 ┬╖ sub-phase 2.10
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.10
+ * Docs: docs/02-truth-maintenance-theory.md ┬º5
  *
  * ---------------------------------------------------------------------------
  * THE QUESTION
@@ -13,7 +13,7 @@
  *
  * The answer has to be a CHAIN, not a list. "It rests on three premises" is a list.
  * "It rests on P-0002, which is an assumption nobody ever justified, and on P-0004,
- * which was itself derived from WLD-0003, which rests on P-0001" is a chain — and the
+ * which was itself derived from WLD-0003, which rests on P-0001" is a chain ΓÇö and the
  * chain is where the weak link shows up.
  *
  * ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@
  * March and imported in October produced a belief in October, and every step of the
  * reasoning that followed happened after that import. Ordering an audit by valid time
  * would claim the system reasoned about something before it knew about it, which is not
- * a small inaccuracy — it makes the audit untrustworthy in exactly the way an audit
+ * a small inaccuracy ΓÇö it makes the audit untrustworthy in exactly the way an audit
  * cannot afford to be.
  *
  * `bi-temporal.ts` in the substrate is the source of both clocks; this module uses the
@@ -36,13 +36,13 @@
  * THE WEAK LINK
  *
  * Every chain is scored, and the weakest point is named. Weakness is not low
- * confidence — it is one of four specific structural defects, in order of how much they
+ * confidence ΓÇö it is one of four specific structural defects, in order of how much they
  * should worry you:
  *
- *   1. UNSUPPORTED ASSUMPTION — a premise in an IN-list that has no evidence at all.
- *   2. CIRCULAR SUPPORT — a chain that returns to a node it already visited.
- *   3. SOLE SUPPORT — a decision held up by exactly one premise.
- *   4. STALE — nothing has corroborated it since it was learned.
+ *   1. UNSUPPORTED ASSUMPTION ΓÇö a premise in an IN-list that has no evidence at all.
+ *   2. CIRCULAR SUPPORT ΓÇö a chain that returns to a node it already visited.
+ *   3. SOLE SUPPORT ΓÇö a decision held up by exactly one premise.
+ *   4. STALE ΓÇö nothing has corroborated it since it was learned.
  *
  * Naming the weak link is the point of the audit. A chain that looks solid and is not
  * is worse than no chain, because it converts a guess into a confidence.
@@ -81,7 +81,7 @@ export interface AuditStep {
   readonly kind: "decision" | "premise" | "justification";
   readonly text: string;
   readonly label: string;
-  /** LEARNED time — when the system found out, not when it happened. */
+  /** LEARNED time ΓÇö when the system found out, not when it happened. */
   readonly learnedAt: ISODateString | null;
   /** The event that put this node in the log. The audit trail's actual anchor. */
   readonly learnedFrom: EventId | null;
@@ -117,7 +117,7 @@ export interface AuditTrail {
 /**
  * The full answer to "why do you believe this?".
  *
- * Pure and total: every decision has a trail, including one with no premises at all —
+ * Pure and total: every decision has a trail, including one with no premises at all ΓÇö
  * which is itself the most alarming possible finding and must be reported as such
  * rather than producing an empty result.
  */
@@ -154,7 +154,7 @@ export function auditDecision(
         depth,
         nodeId,
         kind: "premise",
-        text: "(already in this chain — circular)",
+        text: "(already in this chain ΓÇö circular)",
         label: labels.get(nodeId)?.label ?? "UNLABELLED",
         learnedAt: null,
         learnedFrom: null,
@@ -170,7 +170,7 @@ export function auditDecision(
     if (premise !== undefined) {
       premiseCount += 1;
       /* A premise is never a consequent in this graph, so "derived" is not a graph
-       * property — it is the Phase 1 OUT-list exclusion, recognised by its text marker.
+       * property ΓÇö it is the Phase 1 OUT-list exclusion, recognised by its text marker.
        * Testing `premise.justifications` would be testing a field that does not exist. */
       const isDerived = isDerivedPremiseText(premise.text);
       if (isDerived) derivedCount += 1;
@@ -259,7 +259,7 @@ function decisionStep(
   }
 
   /* `Decision` carries no creating-event id. The justification informant does, and
-   * materialize rewrites it to the event that created the decision — so the earliest
+   * materialize rewrites it to the event that created the decision ΓÇö so the earliest
    * one is the honest answer to "which event taught the system this?". */
   const learnedFrom = justifications
     .map((justification) => informantEventId(justification))
@@ -270,7 +270,7 @@ function decisionStep(
     depth,
     nodeId: decision.id,
     kind: "decision",
-    text: `${decision.statement} — ${decision.value}`,
+    text: `${decision.statement} ΓÇö ${decision.value}`,
     label: labels.get(decision.id)?.label ?? decision.label,
     learnedAt: decision.temporal.learned,
     learnedFrom,
@@ -278,7 +278,7 @@ function decisionStep(
   };
 }
 
-/** The event behind a justification's informant, or null for a human assertion — which
+/** The event behind a justification's informant, or null for a human assertion ΓÇö which
  *  has no event, and saying so is more honest than pointing at an unrelated one. */
 function informantEventId(justification: Justification): EventId | null {
   const informant = justification.informant;
@@ -311,7 +311,7 @@ function justificationStep(
     depth,
     nodeId: justification.consequent,
     kind: "justification",
-    text: `${justification.id} — ${justification.inList.length} in, ${justification.outList.length} out`,
+    text: `${justification.id} ΓÇö ${justification.inList.length} in, ${justification.outList.length} out`,
     label: justification.informant.kind,
     learnedAt: justification.createdAt,
     learnedFrom: informantEventId(justification),
@@ -334,8 +334,8 @@ function premiseStep(
       kind: "unsupported-assumption",
       severity: 0.9,
       explanation: isDerived
-        ? `"${premise.text}" is a DERIVED exclusion — Phase 1 composed it from an ontology rule rather than observing it, so it has no evidence of its own by construction. It inherits whatever support the premise it was derived from has, and it falls when that one does.`
-        : `"${premise.text}" is an assumption with no evidence behind it — nothing observed it, no guard checked it, nobody asserted it directly. It entered the log because a decision needed it. That is normal for a premise, but it means this is the link that will break first.`,
+        ? `"${premise.text}" is a DERIVED exclusion ΓÇö Phase 1 composed it from an ontology rule rather than observing it, so it has no evidence of its own by construction. It inherits whatever support the premise it was derived from has, and it falls when that one does.`
+        : `"${premise.text}" is an assumption with no evidence behind it ΓÇö nothing observed it, no guard checked it, nobody asserted it directly. It entered the log because a decision needed it. That is normal for a premise, but it means this is the link that will break first.`,
     });
   } else if (supporting.length === 1) {
     weakLinks.push({
@@ -346,7 +346,7 @@ function premiseStep(
     });
   }
 
-  /* A premise has no children in this graph — it is never a consequent, so there is
+  /* A premise has no children in this graph ΓÇö it is never a consequent, so there is
    * nothing underneath it to audit. That is the honest shape of the chain and the reason
    * the trail terminates here rather than continuing. */
   return {
@@ -407,7 +407,7 @@ export function soleSupportDecisions(
  *
  * This is the audit's spine and the reason the clock is named in the trail. Reading it
  * top to bottom is reading how the belief was assembled in the order the system
- * assembled it — which is not the order the conversation happened in, and pretending
+ * assembled it ΓÇö which is not the order the conversation happened in, and pretending
  * otherwise would be the one lie an audit must not tell.
  */
 export function chronologicalOrder(trail: AuditTrail): readonly AuditStep[] {
@@ -462,16 +462,16 @@ export function renderTrail(trail: AuditTrail): string {
   }
 
   const lines: string[] = [
-    `Why ${trail.root} is believed — ordered by LEARNED time (when the system found out, not when it happened)`,
+    `Why ${trail.root} is believed ΓÇö ordered by LEARNED time (when the system found out, not when it happened)`,
     "",
   ];
 
   const walk = (steps: readonly AuditStep[]): void => {
     for (const step of steps) {
       const indent = "  ".repeat(step.depth);
-      const marker = step.kind === "justification" ? "├─" : step.depth === 0 ? "" : "└─";
+      const marker = step.kind === "justification" ? "Γö£ΓöÇ" : step.depth === 0 ? "" : "ΓööΓöÇ";
       const when = step.learnedAt === null ? "" : `  [learned ${step.learnedAt}]`;
-      lines.push(`${indent}${marker} ${step.text} — ${step.label}${when}`.trimEnd());
+      lines.push(`${indent}${marker} ${step.text} ΓÇö ${step.label}${when}`.trimEnd());
       walk(step.children);
     }
   };
@@ -501,7 +501,7 @@ export function renderWeakest(trail: AuditTrail): string {
   }
 
   const label = weaknessLabel(trail.weakest.kind);
-  return `Weakest link — ${label}: ${trail.weakest.explanation}`;
+  return `Weakest link ΓÇö ${label}: ${trail.weakest.explanation}`;
 }
 
 export function weaknessLabel(kind: WeaknessKind): string {
@@ -522,5 +522,5 @@ export function renderSummary(state: GraphState, trail: AuditTrail): string {
   const decision: Decision | undefined = state.decisions.get(trail.root);
   const name = decision === undefined ? trail.root : `${trail.root} "${decision.value}"`;
   const weak = trail.weakest === null ? "no weak link" : weaknessLabel(trail.weakest.kind);
-  return `${name} — ${trail.premiseCount} premises (${trail.assumptionCount} assumed, ${trail.derivedCount} derived), ${weak}`;
+  return `${name} ΓÇö ${trail.premiseCount} premises (${trail.assumptionCount} assumed, ${trail.derivedCount} derived), ${weak}`;
 }

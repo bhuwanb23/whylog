@@ -1,7 +1,7 @@
 /**
  * Engine errors.
  *
- * Phase 0 · sub-phase 0.9
+ * Phase 0 ┬╖ sub-phase 0.9
  *
  * Every failure an engine can have is named here, because the UI's response
  * differs per failure and "something went wrong" is not a response:
@@ -105,7 +105,7 @@ export function describeError(error: EngineError): string {
       return `The provider is rate-limiting this key. Retry in about ${seconds}s, or switch to the local engine.`;
     }
     case "network":
-      return "The provider could not be reached. Nothing was sent and nothing was lost — the transcript is still in the input box.";
+      return "The provider could not be reached. Nothing was sent and nothing was lost ΓÇö the transcript is still in the input box.";
     case "timeout":
       return "The provider did not respond in time. The local engine can do this pass instead, at lower recall.";
     case "malformed-output":

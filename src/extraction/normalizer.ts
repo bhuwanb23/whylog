@@ -1,8 +1,8 @@
 /**
- * The normaliser — 1.1's orchestrator.
+ * The normaliser ΓÇö 1.1's orchestrator.
  *
- * Phase 1 · sub-phase 1.1
- * Plan: plan/phase-1-extraction-pipeline.md §1.1
+ * Phase 1 ┬╖ sub-phase 1.1
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1
  *
  * ---------------------------------------------------------------------------
  * WHAT IT PRODUCES
@@ -10,9 +10,9 @@
  * One `NormalizedTranscript` from any of the six supported input shapes, holding
  * BOTH texts:
  *
- *   `raw`  — untouched. Snippets are validated against it, the review pane
+ *   `raw`  ΓÇö untouched. Snippets are validated against it, the review pane
  *            highlights ranges in it, and the export quotes from it.
- *   `text` — what the recognisers read: tool noise collapsed, code fences lifted
+ *   `text` ΓÇö what the recognisers read: tool noise collapsed, code fences lifted
  *            out, speaker markers stripped.
  *
  * and the `anchors` that map an index in `text` back to an index in `raw`. That
@@ -24,7 +24,7 @@
  *
  * Turn bounds are stored in NORMALISED coordinates because `NormalizedTurn.text`
  * is a slice of the normalised string and the recognisers work in that string.
- * Raw bounds are needed too — for highlighting and for episode display — so the
+ * Raw bounds are needed too ΓÇö for highlighting and for episode display ΓÇö so the
  * single walk that assembles `text` builds BOTH maps. Building them separately
  * would mean walking the claims twice and keeping two cursors in agreement, which
  * is how an offset bug gets written.
@@ -33,7 +33,7 @@
  * ORDER OF OPERATIONS
  *
  * Speaker attribution runs FIRST, on the raw text. It has to: the markers it looks
- * for (`⏺`, `User:`) are exactly the things a later stage strips, and a 400-line
+ * for (`ΓÅ║`, `User:`) are exactly the things a later stage strips, and a 400-line
  * tool dump can contain lines that look like markers. Attributing before
  * collapsing also means the turn list is complete, so a code block can be
  * attributed to the turn that contains it.
@@ -62,7 +62,7 @@ export interface NormalizerOptions {
   readonly shape?: InputShape;
   readonly occurredAt?: ISODateString;
   readonly label?: string;
-  /** Default true. Set false to keep tool output in the extraction text — useful
+  /** Default true. Set false to keep tool output in the extraction text ΓÇö useful
    *  when a decision is ABOUT the noise ("we dropped the ORM because the
    *  migration output was 90 lines"). */
   readonly collapseNoise?: boolean;
@@ -197,9 +197,9 @@ function collectClaims(raw: string, turns: readonly RawTurn[], options: Normaliz
 
 interface Assembled {
   readonly text: string;
-  /** normalised → raw */
+  /** normalised ΓåÆ raw */
   readonly forward: OffsetMap;
-  /** raw → normalised */
+  /** raw ΓåÆ normalised */
   readonly inverse: OffsetMap;
   readonly noise: readonly NoiseRegion[];
   /** Per turn, the bounds of its body in the NORMALISED text. */
@@ -343,7 +343,7 @@ function turnContaining(turns: readonly RawTurn[], start: number, end: number): 
 function codePlaceholder(lang: string | null, body: string): string {
   const lineCount = body.split("\n").length;
   const label = lang === null ? "code" : `${lang} code`;
-  return `\n[${label} · ${lineCount} lines lifted]\n`;
+  return `\n[${label} ┬╖ ${lineCount} lines lifted]\n`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -356,7 +356,7 @@ export function describeNormalisation(result: NormalizedTranscript): string {
   const s = result.stats;
   const kept = s.rawChars === 0 ? 100 : Math.round((s.normalisedChars / s.rawChars) * 100);
   const parts = [
-    `${s.turns} turns (${s.humanTurns} human · ${s.agentTurns} agent · ${s.unattributedTurns} unattributed)`,
+    `${s.turns} turns (${s.humanTurns} human ┬╖ ${s.agentTurns} agent ┬╖ ${s.unattributedTurns} unattributed)`,
     `${kept}% of the raw text reached the recognisers`,
   ];
   if (s.codeBlocks > 0) parts.push(`${s.codeBlocks} code block${s.codeBlocks === 1 ? "" : "s"} lifted`);
@@ -364,7 +364,7 @@ export function describeNormalisation(result: NormalizedTranscript): string {
   if (s.unattributedTurns > 0) {
     parts.push("unattributed turns default to the LOWEST authority, never to human");
   }
-  return parts.join(" · ");
+  return parts.join(" ┬╖ ");
 }
 
 /** Raw bounds of a normalised range, for the review pane. Re-exported here so

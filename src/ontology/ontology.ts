@@ -1,8 +1,8 @@
 /**
  * The ontology facade: one place to ask the vocabulary anything.
  *
- * Phase 0 · sub-phase 0.7
- * Plan: plan/phase-0-foundation.md §0.7
+ * Phase 0 ┬╖ sub-phase 0.7
+ * Plan: plan/phase-0-foundation.md ┬º0.7
  *
  * Every extractor, gate, guard template and exporter reads through this module
  * rather than reaching into `data/`. That is what makes the vocabulary a single
@@ -42,7 +42,7 @@ import {
 } from "./data/variables";
 
 /* -------------------------------------------------------------------------- */
-/* Re-exports — the lookups named in STRUCTURE.md §4                          */
+/* Re-exports ΓÇö the lookups named in STRUCTURE.md ┬º4                          */
 /* -------------------------------------------------------------------------- */
 
 export {
@@ -96,7 +96,7 @@ export function premiseTypesFor(variable: DecisionVariable): readonly PremiseTyp
   return premiseTypesForVariable(VARIABLE_META[variable].typicalPremises);
 }
 
-/** The globs a slot usually governs — seeds `applies_to` in export and guard
+/** The globs a slot usually governs ΓÇö seeds `applies_to` in export and guard
  *  scoping in Phase 4. */
 export function typicalGlobsFor(variable: DecisionVariable): readonly string[] {
   return VARIABLE_META[variable].typicalGlobs;
@@ -134,7 +134,7 @@ export interface StructuralCheck {
  * Gate (a) in one call.
  *
  * Two decisions on the same variable whose CANONICAL values are a declared
- * antonym pair. No model, no embedding, no threshold — a table lookup. It fires
+ * antonym pair. No model, no embedding, no threshold ΓÇö a table lookup. It fires
  * while the semantic gate is still uncertain, and it fires identically every
  * time, which is the property that makes it trustworthy enough to show a user
  * without a confidence bar.
@@ -221,8 +221,8 @@ export function describeOntology(): string {
     `${size.premiseTypes} premise types with ${size.predicates} standard predicates, `,
     `${size.aliases} value aliases, ${size.antonymPairs} variable-scoped antonym pairs `
     + `and ${size.exclusions} exclusion rules over ${exclusionCoverage()} predicates. `,
-    `World-observable premise types — falsifiable by a guard: ${observable}. `,
-    `Intent-based — retractable only by a human: ${intent}.`,
+    `World-observable premise types ΓÇö falsifiable by a guard: ${observable}. `,
+    `Intent-based ΓÇö retractable only by a human: ${intent}.`,
   ].join("");
 }
 
@@ -260,7 +260,7 @@ export function validateOntology(): readonly string[] {
         const isAlias = Object.keys(ALIASES[variable]).includes(value);
         if (isAlias) {
           problems.push(
-            `${variable}: antonym pair uses the ALIAS "${value}", not its canonical form — gate (a) would never fire on it`,
+            `${variable}: antonym pair uses the ALIAS "${value}", not its canonical form ΓÇö gate (a) would never fire on it`,
           );
         }
       }
@@ -282,7 +282,7 @@ export function validateOntology(): readonly string[] {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Exclusions — the OUT-list vocabulary (Phase 1.4)                            */
+/* Exclusions ΓÇö the OUT-list vocabulary (Phase 1.4)                            */
 /* -------------------------------------------------------------------------- */
 
 export { exclusionsFor, primaryExclusion, hasExclusion, exclusionCount, exclusionCoverage };

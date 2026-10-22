@@ -1,9 +1,9 @@
 /**
- * Negation and scope — 3.6.
+ * Negation and scope ΓÇö 3.6.
  *
- * Phase 3 · sub-phase 3.6
- * Plan: plan/phase-3-retrieval.md §3.6
- * Docs: docs/03-retrieval-and-contradiction.md §4.4
+ * Phase 3 ┬╖ sub-phase 3.6
+ * Plan: plan/phase-3-retrieval.md ┬º3.6
+ * Docs: docs/03-retrieval-and-contradiction.md ┬º4.4
  *
  * ---------------------------------------------------------------------------
  * WHY NEGATION NEEDS A SCOPE WINDOW
@@ -24,7 +24,7 @@
  * THIS MODULE DOES NOT REIMPLEMENT IT
  *
  * `ai/local/negation.ts` already has the cue inventory, the scope window, verb-pattern
- * polarity and the polarity evidence type — built in Phase 1 because extraction needs it to
+ * polarity and the polarity evidence type ΓÇö built in Phase 1 because extraction needs it to
  * decide modality. Reimplementing it here would create two notions of polarity that could
  * disagree, and a classifier whose polarity disagrees with the extractor's would flag a
  * decision as contradicting itself.
@@ -36,10 +36,10 @@
 
 import {
   NEGATION_SCOPE_TOKENS,
-  type PolarityEvidence,
   isNegation,
   negationScope,
   polarityOf,
+  type PolarityEvidence,
 } from "@/ai/local/negation";
 import { foldKey } from "@/ontology/canonicalize";
 
@@ -58,8 +58,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
   const foldedText = text.toLowerCase();
   const foldedValue = foldKey(value);
 
-  if (foldedValue.length === 0)
-    return { negated: false, cue: null, window: [], reason: "no value to check" };
+  if (foldedValue.length === 0) return { negated: false, cue: null, window: [], reason: "no value to check" };
 
   const valueAt = foldedText.indexOf(foldedValue);
   if (valueAt < 0) {
@@ -92,8 +91,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
         negated: false,
         cue: token,
         window,
-        reason:
-          "a negation cue appears before the value but a conjunction resets its scope before it reaches it",
+        reason: "a negation cue appears before the value but a conjunction resets its scope before it reaches it",
       };
     }
 
@@ -101,7 +99,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
       negated: true,
       cue: token,
       window,
-      reason: `a negation cue falls within ${NEGATION_SCOPE_TOKENS} tokens before the value, with nothing resetting its scope`,
+      reason: "a negation cue falls within " + NEGATION_SCOPE_TOKENS + " tokens before the value, with nothing resetting its scope",
     };
   }
 
@@ -109,7 +107,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
     negated: false,
     cue: null,
     window,
-    reason: `no negation cue within ${NEGATION_SCOPE_TOKENS} tokens of the value`,
+    reason: "no negation cue within " + NEGATION_SCOPE_TOKENS + " tokens of the value",
   };
 }
 
@@ -150,7 +148,7 @@ export function negationBetween(
  *  tokens the decision was made over, not just the verdict. */
 export function describeScope(verdict: NegationScopeVerdict): string {
   const window = verdict.window.length === 0 ? "(empty)" : verdict.window.join(" ");
-  return `${verdict.negated ? "NEGATED" : "not negated"} — scope window: [${window}] — ${verdict.reason}`;
+  return (verdict.negated ? "NEGATED" : "not negated") + " ΓÇö scope window: [" + window + "] ΓÇö " + verdict.reason;
 }
 
 /** Re-exported for the classifier: `negationScope` needs a CueHit, which retrieval does not

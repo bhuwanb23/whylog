@@ -1,11 +1,11 @@
 /*
- * WhyLog — theme tokens and the base layer.
+ * WhyLog ΓÇö theme tokens and the base layer.
  *
  * Tailwind v4 is imported first; the tokens below are what its utilities resolve
  * against, and they are the single source of truth for the colour contract in
  * src/theme.ts: COLOUR ENCODES EPISTEMIC STATUS, NEVER SEVERITY.
  *
- * The plain-CSS base layer at the bottom is not a fallback for a broken build —
+ * The plain-CSS base layer at the bottom is not a fallback for a broken build ΓÇö
  * it is the layout skeleton, so the app is readable before any utility class is
  * applied and so an unstyled render still communicates.
  */

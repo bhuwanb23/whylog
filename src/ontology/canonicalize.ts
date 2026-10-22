@@ -1,8 +1,8 @@
 /**
  * Alias folding and value normalisation.
  *
- * Phase 0 · sub-phase 0.7
- * Plan: plan/phase-0-foundation.md §0.7
+ * Phase 0 ┬╖ sub-phase 0.7
+ * Plan: plan/phase-0-foundation.md ┬º0.7
  *
  * ---------------------------------------------------------------------------
  * WHERE THIS SITS IN THE PIPELINE
@@ -47,7 +47,7 @@ export function cleanSurface(input: string): string {
   // A leading article.
   value = value.replace(/^(the|a|an)\s+/i, "");
 
-  // "the X database" / "the X framework" — keep X.
+  // "the X database" / "the X framework" ΓÇö keep X.
   value = value.replace(/\s+(database|db|framework|library|package|provider|service|platform|tool)$/i, "");
 
   return value.trim();
@@ -97,7 +97,7 @@ export function canonicalValue(variable: DecisionVariable, value: string): Canon
     };
   }
 
-  // The value may already BE canonical — the tables map alias -> canonical and
+  // The value may already BE canonical ΓÇö the tables map alias -> canonical and
   // do not list canonical -> canonical, so a miss is not a failure.
   const known = new Set<string>(Object.values(ALIASES[variable]));
   if (known.has(key)) {
@@ -123,7 +123,7 @@ export function canonicalValueOf(variable: DecisionVariable, value: string): str
   return canonicalValue(variable, value).canonical;
 }
 
-/** Fold without a variable — used while the slot is still unknown. Less
+/** Fold without a variable ΓÇö used while the slot is still unknown. Less
  *  accurate, and the result should be re-folded once a variable is chosen. */
 export function canonicalValueUnscoped(value: string): string {
   const key = foldKey(value);
@@ -261,7 +261,7 @@ export function resolveVariable(
  * Accepts "single user", "single-user", "scale.single_user", "singleUser" and
  * returns "scale.single_user" whenever the table knows it. An unrecognised
  * predicate is snake_cased and namespaced under the declared type, so it is still
- * stable across imports — rung 1 of the ladder matches on exact canonical
+ * stable across imports ΓÇö rung 1 of the ladder matches on exact canonical
  * predicates, and an unstable predicate means a duplicate node every time.
  */
 export function canonicalPredicate(type: PremiseType, predicate: string): string {
@@ -281,7 +281,7 @@ export function canonicalPredicate(type: PremiseType, predicate: string): string
     const match = meta.predicates.find((p) => p.name === snake);
     if (match) return `${candidateType}.${match.name}`;
 
-    // Label match — "single user" is the LABEL of `scale.single_user`.
+    // Label match ΓÇö "single user" is the LABEL of `scale.single_user`.
     const byLabel = meta.predicates.find(
       (p) => normalise(p.label) === normalise(name),
     );
@@ -310,7 +310,7 @@ export function snakeCase(input: string): string {
  * The real canonicalizer, injected into src/substrate/identity.ts.
  *
  * `isAliasOf` answers "is `value` a known surface form of `canonical` under this
- * variable?" — rung 3 of the ladder. It checks both the scoped and the global
+ * variable?" ΓÇö rung 3 of the ladder. It checks both the scoped and the global
  * table, because a value can be canonical under one slot and an alias under
  * another.
  */

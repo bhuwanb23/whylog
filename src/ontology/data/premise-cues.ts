@@ -1,24 +1,24 @@
 /**
  * Premise cue phrases, per premise type.
  *
- * Phase 1 · sub-phase 1.4 ★ (data authored here in Phase 0.7)
- * Plan: plan/phase-1-extraction-pipeline.md §1.4 · docs/05 §2
+ * Phase 1 ┬╖ sub-phase 1.4 Γÿà (data authored here in Phase 0.7)
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.4 ┬╖ docs/05 ┬º2
  *
  * ---------------------------------------------------------------------------
  * THE MOST IMPORTANT TABLE IN THE PROJECT
  *
  * Premise recovery is the differentiator, and it is also the highest risk in the
- * plan (R1: prototype §1.4 and MEASURE before building on it). Everything
- * downstream — gate (c), the cascade, entrenchment's EE3 cap, the novelty claim
- * itself — reads the output of the extractor this table drives.
+ * plan (R1: prototype ┬º1.4 and MEASURE before building on it). Everything
+ * downstream ΓÇö gate (c), the cascade, entrenchment's EE3 cap, the novelty claim
+ * itself ΓÇö reads the output of the extractor this table drives.
  *
  * What makes premises hard is that they are rarely announced. "It's one person,
  * one machine, one log" contains no cue phrase at all; the premise is the whole
  * sentence. So the table carries TWO kinds of entry:
  *
- *   EXPLICIT  "we can't afford", "as long as", "assuming" — a marker that a
+ *   EXPLICIT  "we can't afford", "as long as", "assuming" ΓÇö a marker that a
  *             condition is being stated.
- *   TOPICAL   "one person", "free tier", "no server", "weekend" — a phrase whose
+ *   TOPICAL   "one person", "free tier", "no server", "weekend" ΓÇö a phrase whose
  *             mere presence identifies the TYPE of condition, even with no
  *             marker. These are what recover the unannounced majority.
  *
@@ -275,7 +275,7 @@ export function topicalCues(): readonly PremiseCue[] {
 }
 
 /** The minimum weight at which a topical cue is allowed to create a premise
- *  candidate WITHOUT going to the review queue. Nothing topical clears it — that
+ *  candidate WITHOUT going to the review queue. Nothing topical clears it ΓÇö that
  *  is the point. Topical recovery always asks. */
 export const TOPICAL_AUTO_ACCEPT_THRESHOLD = 1.0;
 
@@ -286,7 +286,7 @@ export function needsReview(cue: PremiseCue): boolean {
   return cue.kind === "topical" || cue.weight < EXPLICIT_AUTO_ACCEPT_THRESHOLD;
 }
 
-/** Cue counts per type — a quick check that the table is not lopsided. A type
+/** Cue counts per type ΓÇö a quick check that the table is not lopsided. A type
  *  with three cues will be recovered far less often than one with twenty, and
  *  that asymmetry shows up as a premise-type histogram that has nothing to do
  *  with the corpus. */

@@ -1,8 +1,8 @@
 /**
  * Identifier minting.
  *
- * Phase 0 · sub-phase 0.4
- * Plan: plan/phase-0-foundation.md §0.4
+ * Phase 0 ┬╖ sub-phase 0.4
+ * Plan: plan/phase-0-foundation.md ┬º0.4
  *
  * Ids are STABLE, ADDRESSABLE, SEQUENTIAL, never renumbered and never reused.
  * A review comment, a commit message, a CI failure or the agent itself must be
@@ -31,7 +31,7 @@ import { hash128 } from "./hash";
 /**
  * A counter that only ever moves forward. Persisted with the log so ids survive
  * a reload, and monotonically increasing so ids sort chronologically by issue
- * order (which is NOT the same as valid-time order — see bi-temporal.ts).
+ * order (which is NOT the same as valid-time order ΓÇö see bi-temporal.ts).
  */
 export interface IdCounter {
   readonly next: number;
@@ -60,7 +60,7 @@ export const formatPremiseId = (n: number): PremiseId => `P-${pad(n)}` as Premis
 export const formatJustificationId = (n: number): JustificationId =>
   `J-${pad(n)}` as JustificationId;
 
-/** G-0007a — decision id plus a letter suffix. */
+/** G-0007a ΓÇö decision id plus a letter suffix. */
 export const formatGuardId = (decisionId: DecisionId, suffix: string): GuardId =>
   `G-${decisionId.slice(4)}${suffix}` as GuardId;
 
@@ -128,7 +128,7 @@ export function nextGuardSuffix(existing: readonly GuardId[]): string {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Content fingerprint for DEDUP DETECTION ONLY — never for identity.
+ * Content fingerprint for DEDUP DETECTION ONLY ΓÇö never for identity.
  *
  * Two decisions with the same variable and canonical value are probably the same
  * decision, but the identity is the sequential id, because a decision can be

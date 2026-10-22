@@ -1,27 +1,27 @@
 /**
- * Three-run majority voting — 1.8, the LLM path only.
+ * Three-run majority voting ΓÇö 1.8, the LLM path only.
  *
- * Phase 1 · sub-phase 1.8
- * Plan: plan/phase-1-extraction-pipeline.md §1.8
+ * Phase 1 ┬╖ sub-phase 1.8
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.8
  *
  * ---------------------------------------------------------------------------
  * WHY VOTE AT ALL
  *
- * ARGUS used exactly this because single-run consistency was imperfect: α 0.64–0.88
- * across components (docs/05 §4). A model asked the same question three times at
+ * ARGUS used exactly this because single-run consistency was imperfect: ╬▒ 0.64ΓÇô0.88
+ * across components (docs/05 ┬º4). A model asked the same question three times at
  * low temperature does not answer identically, and the components it drops are not
- * random — they are the ones it was least sure about. So agreement is a usable
+ * random ΓÇö they are the ones it was least sure about. So agreement is a usable
  * confidence signal, and disagreement is a usable doubt signal.
  *
- * It costs 3× tokens and buys a measurable precision gain. That trade is worth
- * making explicit and TOGGLEABLE, so a demo can run at 1× when latency matters and
- * Phase 7 can measure what the 3× actually bought.
+ * It costs 3├ù tokens and buys a measurable precision gain. That trade is worth
+ * making explicit and TOGGLEABLE, so a demo can run at 1├ù when latency matters and
+ * Phase 7 can measure what the 3├ù actually bought.
  *
  * ---------------------------------------------------------------------------
  * WHY THE LOCAL ENGINE DOES NOT VOTE
  *
  * It is deterministic. Three runs return three byte-identical results, so voting
- * would cost 3× the time and change nothing. `LOCAL_CAPABILITIES.voting` is false
+ * would cost 3├ù the time and change nothing. `LOCAL_CAPABILITIES.voting` is false
  * and `vote()` short-circuits on a single run, so a caller cannot get this wrong by
  * accident.
  *
@@ -56,7 +56,7 @@ export interface VotingOptions {
   /** 1 disables voting: the first run is returned unchanged. */
   readonly runs: 1 | 2 | 3;
   /** Below this temperature the runs stop disagreeing and the vote stops meaning
-   *  anything. Reported, not enforced — the caller owns the request. */
+   *  anything. Reported, not enforced ΓÇö the caller owns the request. */
   readonly temperature: number;
 }
 
@@ -67,7 +67,7 @@ export interface RunAgreement {
   readonly totalRuns: number;
   readonly majority: boolean;
   /** Multiplier applied to the item's own confidence. 1 for a majority, less for
-   *  a singleton — and the reduction is enough to move it down a tier, which is
+   *  a singleton ΓÇö and the reduction is enough to move it down a tier, which is
    *  what "collapsed" means in the review UI. */
   readonly factor: number;
 }
@@ -86,7 +86,7 @@ export interface VoteOutcome {
 }
 
 /** Confidence a singleton is multiplied by. 0.55 lands a 0.7 item at 0.385, which
- *  is below `TIER_MEDIUM_AT` — so a singleton always collapses. */
+ *  is below `TIER_MEDIUM_AT` ΓÇö so a singleton always collapses. */
 export const SINGLETON_FACTOR = 0.55;
 
 /* -------------------------------------------------------------------------- */
@@ -310,7 +310,7 @@ function sumUsage(runs: readonly ExtractionResult[]): ExtractionResult["usage"] 
 
 export function describeVoting(outcome: VoteOutcome): string {
   if (outcome.runsUsed <= 1) {
-    return "voting off — one run. Turn it on in Settings to trade 3× tokens for run-agreement confidence.";
+    return "voting off ΓÇö one run. Turn it on in Settings to trade 3├ù tokens for run-agreement confidence.";
   }
 
   const percent = Math.round(outcome.agreementRate * 100);
@@ -320,18 +320,18 @@ export function describeVoting(outcome: VoteOutcome): string {
   ];
   if (outcome.singletons > 0) {
     parts.push(
-      `${outcome.singletons} appeared in only one run — kept at ${SINGLETON_FACTOR} × confidence, which collapses them`,
+      `${outcome.singletons} appeared in only one run ΓÇö kept at ${SINGLETON_FACTOR} ├ù confidence, which collapses them`,
     );
   }
-  return parts.join(" · ");
+  return parts.join(" ┬╖ ");
 }
 
 /** What a run-agreement record means, for the review UI's per-item explanation. */
 export function describeAgreement(agreement: RunAgreement): string {
   if (agreement.majority) {
-    return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs — full confidence`;
+    return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs ΓÇö full confidence`;
   }
-  return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs — confidence × ${SINGLETON_FACTOR}, collapsed by default`;
+  return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs ΓÇö confidence ├ù ${SINGLETON_FACTOR}, collapsed by default`;
 }
 
 /** The tier a voted item lands in, so callers can check that a singleton really

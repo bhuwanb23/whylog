@@ -1,8 +1,8 @@
 /**
  * Decision cue phrases.
  *
- * Phase 1 · sub-phase 1.3 (data authored here in Phase 0.7)
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phase 1.3 (data authored here in Phase 0.7)
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
  * ---------------------------------------------------------------------------
  * WHY CUES AND NOT JUST AN LLM
@@ -12,10 +12,10 @@
  * a claim rather than a behaviour.
  *
  * Cues also serve the LLM path: they mark EPISODE BOUNDARIES. A decision is
- * negotiated across several turns, and the cue is where the negotiation lands —
+ * negotiated across several turns, and the cue is where the negotiation lands ΓÇö
  * segmenting on cues rather than sentences is the deliberate deviation from
  * arXiv:2506.11005, whose single-sentence assumption holds for commit messages
- * and not for dialogue (plan/phase-1 §1.2).
+ * and not for dialogue (plan/phase-1 ┬º1.2).
  *
  * ---------------------------------------------------------------------------
  * POLARITY IS THE HARD PART
@@ -27,10 +27,10 @@
  * cue's own direction as often as from a negation word.
  *
  * Hence `direction`:
- *   accept  — the following value is CHOSEN
- *   reject  — the following value is REFUSED (feeds RejectedAlternative)
- *   pivot   — "X instead of Y": accepts X, rejects Y
- *   neutral — a decision is present, direction comes from elsewhere
+ *   accept  ΓÇö the following value is CHOSEN
+ *   reject  ΓÇö the following value is REFUSED (feeds RejectedAlternative)
+ *   pivot   ΓÇö "X instead of Y": accepts X, rejects Y
+ *   neutral ΓÇö a decision is present, direction comes from elsewhere
  * ---------------------------------------------------------------------------
  */
 
@@ -40,7 +40,7 @@ export interface DecisionCue {
   readonly phrase: string;
   readonly direction: CueDirection;
   /** 0..1. How reliably this phrase marks a real decision rather than a passing
-   *  mention. Feeds the additive confidence score (plan/phase-1 §1.8). */
+   *  mention. Feeds the additive confidence score (plan/phase-1 ┬º1.8). */
   readonly weight: number;
   /** When true the phrase usually introduces the value IMMEDIATELY after it.
    *  When false, the value is usually BEFORE it ("sqlite it is"). */
@@ -143,7 +143,7 @@ export const DECISION_CUES: readonly DecisionCue[] = [
    * agent proposes, the human says one word. "deal. Vite + React + Tailwind instead
    * of Next." is a decision, and a table without acceptance words cannot see it.
    *
-   * `valueAfter: false` because the VALUE IS USUALLY BEFORE the acceptance — the
+   * `valueAfter: false` because the VALUE IS USUALLY BEFORE the acceptance ΓÇö the
    * human is agreeing to something already on the table. `decisions.ts:pickValue`
    * reads backward first for these and forward as a fallback, so either order
    * works; getting the flag wrong only changes which is tried first.
@@ -184,7 +184,7 @@ export const DECISION_CUES: readonly DecisionCue[] = [
    *
    * `speculative: true`, so `assertiveCues()` excludes them and the modality
    * detector cannot read an assertion into a conditional. "Then I'd use SQLite" is
-   * a proposal — but it is a proposal a human accepts two turns later, and an
+   * a proposal ΓÇö but it is a proposal a human accepts two turns later, and an
    * extraction that never saw it has nothing to attribute the acceptance to.
    * ------------------------------------------------------------------------ */
   { phrase: "i'd use", direction: "accept", weight: 0.75, valueAfter: true, speculative: true },
@@ -244,7 +244,7 @@ export function speculativeCues(): readonly DecisionCue[] {
   return DECISION_CUES.filter((c) => c.speculative);
 }
 
-/** Rejection cues, in weight order — the alternative-mining vocabulary. ARGUS
+/** Rejection cues, in weight order ΓÇö the alternative-mining vocabulary. ARGUS
  *  measured 15.4% precision on alternatives, so this list is deliberately short
  *  and high-weight: a false pre-emption is worse than none. */
 export function rejectionCues(): readonly DecisionCue[] {

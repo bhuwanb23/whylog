@@ -1,8 +1,8 @@
 /**
- * Episode segmentation — 1.2, the deliberate deviation.
+ * Episode segmentation ΓÇö 1.2, the deliberate deviation.
  *
- * Phase 1 · sub-phase 1.2
- * Plan: plan/phase-1-extraction-pipeline.md §1.2
+ * Phase 1 ┬╖ sub-phase 1.2
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.2
  *
  * ---------------------------------------------------------------------------
  * WHY NOT SENTENCES
@@ -14,17 +14,17 @@
  * It does not hold for dialogue, where the decision is NEGOTIATED:
  *
  *     agent:  "Postgres via Supabase would work, but it means a hosted
- *              dependency… What's the actual concurrency requirement?"
- *     human:  "none really. it's one person, one machine, one log."   ← PREMISE
- *     agent:  "Then I'd use SQLite with better-sqlite3 instead…"       ← PROPOSAL
- *     human:  "yeah ok. going with SQLite, not Postgres. single-user   ← DECISION
- *              and no deploy hassle is the whole argument."            ← RATIONALE
+ *              dependencyΓÇª What's the actual concurrency requirement?"
+ *     human:  "none really. it's one person, one machine, one log."   ΓåÉ PREMISE
+ *     agent:  "Then I'd use SQLite with better-sqlite3 insteadΓÇª"       ΓåÉ PROPOSAL
+ *     human:  "yeah ok. going with SQLite, not Postgres. single-user   ΓåÉ DECISION
+ *              and no deploy hassle is the whole argument."            ΓåÉ RATIONALE
  *
  * Four turns, one decision, and the premise appears BEFORE the decision it
  * supports. Sentence segmentation discards turns 1 and 2 for having no cue, which
  * is precisely the premise the whole product is built on. So: segment on EPISODES
- * — a window of consecutive turns bounded by topic shift and containing at least
- * one decision cue — extract at episode granularity, then attribute individual
+ * ΓÇö a window of consecutive turns bounded by topic shift and containing at least
+ * one decision cue ΓÇö extract at episode granularity, then attribute individual
  * snippets within it.
  *
  * ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ const LEAD_TURNS = 1;
 
 /** Turns included after the last cue, so a trailing rationale is inside the
  *  window. Two rather than one: "going with SQLite" is often followed by the
- *  reason in the NEXT turn ("yeah — and the schema is tiny so migration stays
+ *  reason in the NEXT turn ("yeah ΓÇö and the schema is tiny so migration stays
  *  open"). */
 const TRAIL_TURNS = 2;
 
@@ -287,12 +287,12 @@ export function describeSegmentation(result: SegmentationResult, turnCount: numb
   parts.push(`${result.cueHits} cue${result.cueHits === 1 ? "" : "s"}`);
   if (result.uncoveredTurns > 0) {
     parts.push(
-      `${result.uncoveredTurns} of ${turnCount} turns in no episode — no decision cue, so nothing to extract`,
+      `${result.uncoveredTurns} of ${turnCount} turns in no episode ΓÇö no decision cue, so nothing to extract`,
     );
   }
   const capped = result.episodes.filter((e) => e.boundaryReason === "length-cap").length;
   if (capped > 0) parts.push(`${capped} split on length, not on topic`);
-  return parts.join(" · ");
+  return parts.join(" ┬╖ ");
 }
 
 /** The episode a normalised character position falls in. Used to attribute a

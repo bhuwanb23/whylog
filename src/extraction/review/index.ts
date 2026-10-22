@@ -1,15 +1,15 @@
 /**
- * The review model — 1.9.
+ * The review model ΓÇö 1.9.
  *
- * Phase 1 · sub-phase 1.9
- * Plan: plan/phase-1-extraction-pipeline.md §1.9
+ * Phase 1 ┬╖ sub-phase 1.9
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.9
  *
  * ---------------------------------------------------------------------------
  * THE QUEUE IS SORTED FOR REJECTION, NOT FOR ACCEPTANCE
  *
  * Extraction over-generates: ARGUS measured 155 false positives against 12 false
  * negatives, a 13:1 ratio (docs/05). So the review surface is optimised to make
- * saying NO cheap — collapsed rows, one-click discard, `j`/`k`/`d`/`a` keys — and
+ * saying NO cheap ΓÇö collapsed rows, one-click discard, `j`/`k`/`d`/`a` keys ΓÇö and
  * only incidentally easy to say yes to.
  *
  * That is a design decision with a measurable consequence, and it is the right one:
@@ -78,7 +78,7 @@ function itemFromCandidate(run: ExtractionRun, candidate: ResolvedCandidate): Re
     return {
       ...base,
       kind: "decision",
-      title: `${decision.variable} → ${decision.value}`,
+      title: `${decision.variable} ΓåÆ ${decision.value}`,
       detail: decision.yStatement ?? decision.statement,
       derived: false,
     };
@@ -105,7 +105,7 @@ function itemFromCandidate(run: ExtractionRun, candidate: ResolvedCandidate): Re
       ...base,
       kind: "alternative",
       title: `rejected: ${alternative.value}`,
-      detail: alternative.whyRejected ?? "no reason recovered — stored, but it will never pre-empt",
+      detail: alternative.whyRejected ?? "no reason recovered ΓÇö stored, but it will never pre-empt",
       derived: false,
       // Alternatives are never expanded, at any tier. Published precision is 15.4%.
       expanded: false,
@@ -119,7 +119,7 @@ function itemFromCandidate(run: ExtractionRun, candidate: ResolvedCandidate): Re
  * Is this premise an OUT-list entry rather than a quoted one?
  *
  * Detected from the text marker `premise-linker.ts` writes, because the marker is
- * the only place the derivation is recorded — a `PremiseCandidate` has no field for
+ * the only place the derivation is recorded ΓÇö a `PremiseCandidate` has no field for
  * it, and adding one would mean widening the engine interface for a local-engine
  * concern.
  */
@@ -128,7 +128,7 @@ export function isDerivedPremise(_predicate: string, text: string): boolean {
   // premise can also have an exclusion rule (that is how its OUT-list entry is
   // derived), so the predicate alone cannot distinguish the two. Only the marker
   // can.
-  return text.includes("— excluded by");
+  return text.includes("ΓÇö excluded by");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -140,7 +140,7 @@ export function isDerivedPremise(_predicate: string, text: string): boolean {
  *
  * Called after a commit. These are real nodes, so `accept` means
  * `DecisionApproved` and `discard` means `DecisionSuperseded` or
- * `PremiseRetracted` — different events, same button.
+ * `PremiseRetracted` ΓÇö different events, same button.
  */
 export function queueFromState(state: GraphState): readonly ReviewItem[] {
   const items: ReviewItem[] = [];
@@ -171,7 +171,7 @@ function itemFromDecision(decision: Decision): ReviewItem {
     key: decision.id,
     kind: "decision",
     id: decision.id,
-    title: `${decision.variable} → ${decision.value}`,
+    title: `${decision.variable} ΓåÆ ${decision.value}`,
     detail: decision.yStatement ?? decision.statement,
     quote: decision.provenance?.snippet.text ?? "",
     confidence,
@@ -201,7 +201,7 @@ function itemFromPremise(premise: Premise): ReviewItem {
     origin: premise.origin.replace(/_/g, " "),
     engine: premise.extractedBy.model,
     expanded: tierOf(confidence) !== "low" && !derived,
-    resolution: `corroborated ${premise.corroboration}×`,
+    resolution: `corroborated ${premise.corroboration}├ù`,
     conflictsWith: [],
     derived,
     action: null,
@@ -215,7 +215,7 @@ function itemFromAlternative(alternative: RejectedAlternative): ReviewItem {
     kind: "alternative",
     id: alternative.id,
     title: `rejected: ${alternative.value}`,
-    detail: alternative.whyRejected ?? "no reason recovered — stored, but it will never pre-empt",
+    detail: alternative.whyRejected ?? "no reason recovered ΓÇö stored, but it will never pre-empt",
     quote: alternative.provenance?.snippet.text ?? "",
     confidence,
     tier: tierOf(confidence),
@@ -353,16 +353,16 @@ export function describeQueue(summary: QueueSummary): string {
   if (summary.total === 0) return "nothing to review";
 
   const parts = [
-    `${summary.total} item${summary.total === 1 ? "" : "s"} — ${summary.decisions} decisions, ${summary.premises} premises, ${summary.alternatives} alternatives`,
+    `${summary.total} item${summary.total === 1 ? "" : "s"} ΓÇö ${summary.decisions} decisions, ${summary.premises} premises, ${summary.alternatives} alternatives`,
   ];
   if (summary.expanded > 0) parts.push(`${summary.expanded} expanded`);
   if (summary.low > 0) parts.push(`${summary.low} collapsed as low-confidence, probably wrong`);
-  if (summary.derived > 0) parts.push(`${summary.derived} derived rather than quoted — read those`);
+  if (summary.derived > 0) parts.push(`${summary.derived} derived rather than quoted ΓÇö read those`);
   if (summary.conflicts > 0) parts.push(`${summary.conflicts} conflict with a live decision`);
   if (summary.reviewed > 0) {
     parts.push(`${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`);
   }
-  return parts.join(" · ");
+  return parts.join(" ┬╖ ");
 }
 
 export const REVIEW_FILTERS: readonly { readonly id: ReviewFilter; readonly label: string }[] = [

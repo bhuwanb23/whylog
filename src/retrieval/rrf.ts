@@ -1,20 +1,20 @@
 /**
- * Reciprocal Rank Fusion — 3.4.
+ * Reciprocal Rank Fusion ΓÇö 3.4.
  *
- * Phase 3 · sub-phase 3.4
- * Plan: plan/phase-3-retrieval.md §3.4
- * Docs: docs/03-retrieval-and-contradiction.md §3
+ * Phase 3 ┬╖ sub-phase 3.4
+ * Plan: plan/phase-3-retrieval.md ┬º3.4
+ * Docs: docs/03-retrieval-and-contradiction.md ┬º3
  *
  * ---------------------------------------------------------------------------
  * WHY RRF AND NOT SCORE FUSION
  *
- *   RRF(d) = Σ over retrievers r of  1 / (k + rank_r(d))        k = 60
+ *   RRF(d) = ╬ú over retrievers r of  1 / (k + rank_r(d))        k = 60
  *
  * RRF is **score-agnostic**: it needs ranks, not scores. That is the entire reason it
  * is used here rather than a weighted sum of similarities.
  *
  * A cosine similarity lives in [-1, 1] and clusters near 0.8 for anything vaguely
- * topical. A BM25 score is unbounded and depends on corpus statistics — the same query
+ * topical. A BM25 score is unbounded and depends on corpus statistics ΓÇö the same query
  * against a 10-decision log and a 500-decision log produces different numbers for the
  * same decision. Normalising either one to fuse them means choosing a normalisation,
  * and every choice is a tuning decision that silently changes results when the corpus
@@ -27,7 +27,7 @@
  * stacks. It is a named constant, not a magic number, and it is NOT tuned here.
  *
  * What it does: it damps the difference between high ranks. At k=60, rank 1 scores
- * 1/61 ≈ 0.0164 and rank 2 scores 1/62 ≈ 0.0161 — nearly identical. A small k would
+ * 1/61 Γëê 0.0164 and rank 2 scores 1/62 Γëê 0.0161 ΓÇö nearly identical. A small k would
  * make the top of each list dominate the fusion; a large k flattens it. 60 is the
  * conventional middle, and deviating from it would need a metric to justify it, which
  * is Phase 7's job.
@@ -35,7 +35,7 @@
  * ---------------------------------------------------------------------------
  * DETERMINISM
  *
- * Identical inputs must produce identical rankings — §3.4's acceptance criterion, and
+ * Identical inputs must produce identical rankings ΓÇö ┬º3.4's acceptance criterion, and
  * a prerequisite for Phase 7's ablation harness, which cannot measure an improvement
  * against a ranking that moves between runs.
  *
@@ -49,7 +49,7 @@
 import type { DecisionId } from "@/types/common";
 import type { FusedHit, IndexLevel, RankedHit } from "@/types/retrieval";
 
-/** The standard RRF damping constant. Not tuned — see the header. */
+/** The standard RRF damping constant. Not tuned ΓÇö see the header. */
 export const RRF_K = 60;
 
 /** One ranked list from one level. */
@@ -65,7 +65,7 @@ export interface RankedList {
 /**
  * Assign ranks to a list of scored ids.
  *
- * Rank is 1-based, as RRF requires. Equal scores get consecutive ranks broken by id —
+ * Rank is 1-based, as RRF requires. Equal scores get consecutive ranks broken by id ΓÇö
  * NOT equal ranks. Sharing a rank between two tied documents would double-count them in
  * the fusion and quietly promote ties over documents that scored strictly between them.
  */
@@ -77,14 +77,12 @@ export function rank(
     b.score === a.score ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : b.score - a.score,
   );
 
-  return sorted.map(
-    (entry, index): RankedHit => ({
-      decisionId: entry.id,
-      rank: index + 1,
-      score: entry.score,
-      source: level,
-    }),
-  );
+  return sorted.map((entry, index): RankedHit => ({
+    decisionId: entry.id,
+    rank: index + 1,
+    score: entry.score,
+    source: level,
+  }));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -99,7 +97,10 @@ export function rank(
  * @param k the damping constant. Defaults to `RRF_K`; overridable so Phase 7 can ablate
  *   it without editing this file.
  */
-export function fuse(lists: readonly RankedList[], k: number = RRF_K): readonly FusedHit[] {
+export function fuse(
+  lists: readonly RankedList[],
+  k: number = RRF_K,
+): readonly FusedHit[] {
   const accumulator = new Map<
     DecisionId,
     { rrf: number; contributedBy: Set<IndexLevel>; bestRank: number }
@@ -132,7 +133,7 @@ export function fuse(lists: readonly RankedList[], k: number = RRF_K): readonly 
       rrf: entry.rrf,
       /* Sorted so the same set of contributing levels always renders identically. A
        * Set's iteration order is insertion order, which depends on which retriever ran
-       * first — and that is not something a UI should visibly depend on. */
+       * first ΓÇö and that is not something a UI should visibly depend on. */
       contributedBy: [...entry.contributedBy].sort(),
       bestRank: entry.bestRank,
     });
@@ -140,13 +141,7 @@ export function fuse(lists: readonly RankedList[], k: number = RRF_K): readonly 
 
   /* Deterministic: score descending, then id ascending. */
   fused.sort((a, b) =>
-    b.rrf === a.rrf
-      ? a.decisionId < b.decisionId
-        ? -1
-        : a.decisionId > b.decisionId
-          ? 1
-          : 0
-      : b.rrf - a.rrf,
+    b.rrf === a.rrf ? (a.decisionId < b.decisionId ? -1 : a.decisionId > b.decisionId ? 1 : 0) : b.rrf - a.rrf,
   );
 
   return fused;
@@ -178,17 +173,14 @@ export function explainFusion(
   for (const list of lists) {
     const hit = list.hits.find((entry) => entry.decisionId === fused.decisionId);
     if (hit === undefined) continue;
-    terms.push(
-      `${list.level} rank ${hit.rank} → 1/(${k}+${hit.rank}) = ${rrfContribution(hit.rank, k).toFixed(5)}`,
-    );
+    terms.push(`${list.level} rank ${hit.rank} ΓåÆ 1/(${k}+${hit.rank}) = ${rrfContribution(hit.rank, k).toFixed(5)}`);
   }
 
-  if (terms.length === 0)
-    return `${fused.decisionId}: no level contributed (score ${fused.rrf.toFixed(5)}).`;
+  if (terms.length === 0) return `${fused.decisionId}: no level contributed (score ${fused.rrf.toFixed(5)}).`;
 
   return [
-    `${fused.decisionId} — RRF ${fused.rrf.toFixed(5)} from ${terms.length} level(s):`,
-    ...terms.map((term) => `  · ${term}`),
+    `${fused.decisionId} ΓÇö RRF ${fused.rrf.toFixed(5)} from ${terms.length} level(s):`,
+    ...terms.map((term) => `  ┬╖ ${term}`),
     `  = ${fused.rrf.toFixed(5)}`,
     fused.contributedBy.length > 1
       ? "  Multiple levels agreeing is the strongest signal fusion can produce: lexical and dense retrieval are wrong in different ways, so agreeing is evidence."

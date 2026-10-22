@@ -1,8 +1,8 @@
 /**
- * Index construction — 3.1–3.3.
+ * Index construction ΓÇö 3.1ΓÇô3.3.
  *
- * Phase 3 · sub-phases 3.1, 3.2, 3.3
- * Plan: plan/phase-3-retrieval.md §3.1–§3.3
+ * Phase 3 ┬╖ sub-phases 3.1, 3.2, 3.3
+ * Plan: plan/phase-3-retrieval.md ┬º3.1ΓÇô┬º3.3
  *
  * ---------------------------------------------------------------------------
  * THE SPLIT THAT MAKES THE INDEX DISPOSABLE
@@ -16,7 +16,7 @@
  *
  * Nothing dense is derived and nothing derived is persisted. That is what lets the whole
  * index be thrown away to reclaim quota without losing a single event, and what lets an
- * engine switch mark L1/L2 stale while L3/L4/L5 keep working — the keyless path degrades
+ * engine switch mark L1/L2 stale while L3/L4/L5 keep working ΓÇö the keyless path degrades
  * to a still-useful system instead of failing.
  *
  * ---------------------------------------------------------------------------
@@ -24,17 +24,17 @@
  *
  * A decision whose statement hash is unchanged keeps its existing vector. Re-embedding
  * 500 decisions because one statement was edited is the kind of cost that makes people
- * stop using a feature — on the LLM path it is 500 paid API calls to fix a typo.
+ * stop using a feature ΓÇö on the LLM path it is 500 paid API calls to fix a typo.
  *
- * §3.1's acceptance criterion is the same fact stated as a requirement: L2 questions "are
+ * ┬º3.1's acceptance criterion is the same fact stated as a requirement: L2 questions "are
  * regenerated when a decision is edited". The hash is what makes regeneration cheap enough
  * to do on every edit rather than as a maintenance step nobody performs.
  *
  * ---------------------------------------------------------------------------
  * ONE BATCHED EMBED CALL
  *
- * `engine.embed` takes an array. Everything pending — L1 statements and L2 questions
- * together — goes in ONE call. The alternative is a call per decision, which on the LLM
+ * `engine.embed` takes an array. Everything pending ΓÇö L1 statements and L2 questions
+ * together ΓÇö goes in ONE call. The alternative is a call per decision, which on the LLM
  * path turns a 500-decision re-index into 1000 requests.
  *
  * ---------------------------------------------------------------------------
@@ -42,18 +42,17 @@
  *
  * `IndexRebuilt` and `IndexStale` go into the chain. The vectors do not. An index is
  * derived, and putting derived data in an append-only log turns every re-embed into a
- * history event — the chain would grow every time the model changed, and an export would
+ * history event ΓÇö the chain would grow every time the model changed, and an export would
  * carry a megabyte of floats the importer could not even use.
  * ---------------------------------------------------------------------------
  */
 
-import type { WhyLogEngine } from "@/ai/types";
-import { nowISO } from "@/lib/format";
-import { hashStable } from "@/lib/hash";
+import type { Actor, DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
+import type { NewEvent } from "@/types/events";
+import type { IndexArtifacts } from "@/types/retrieval";
 import type { GraphState } from "@/substrate/graph-state";
+import type { WhyLogEngine } from "@/ai/types";
 import {
-  type StalenessReport,
-  type StoredIndexBlob,
   assemble,
   emptyBlob,
   estimateBlobBytes,
@@ -62,6 +61,8 @@ import {
   sameSpace,
   saveBlob,
   staleness,
+  type StalenessReport,
+  type StoredIndexBlob,
 } from "@/substrate/index-artifacts";
 import {
   buildPremiseIndex,
@@ -69,9 +70,8 @@ import {
   buildStructuralIndex,
   questionsFor,
 } from "@/substrate/projections/indexes";
-import type { Actor, DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
-import type { NewEvent } from "@/types/events";
-import type { IndexArtifacts } from "@/types/retrieval";
+import { hashStable } from "@/lib/hash";
+import { nowISO } from "@/lib/format";
 import { l1Text } from "./index-levels/l1-dense";
 import { l2Text } from "./index-levels/l2-questions";
 
@@ -103,7 +103,7 @@ export interface BuildOptions {
   readonly state: GraphState;
   readonly engine: WhyLogEngine;
   readonly actor: Actor;
-  /** Skip embedding entirely — build only L3/L4/L5. The keyless fast path, and what a
+  /** Skip embedding entirely ΓÇö build only L3/L4/L5. The keyless fast path, and what a
    *  user who does not want vectors at all should be offered. */
   readonly skipDense?: boolean;
   readonly signal?: AbortSignal;
@@ -154,7 +154,7 @@ export async function buildIndex(options: BuildOptions): Promise<BuildReport> {
     questionsBuilt = dense.questionsBuilt;
     pruned = dense.pruned;
   } else {
-    /* Dense skipped deliberately. The blob is left EXACTLY as loaded — not emptied — so
+    /* Dense skipped deliberately. The blob is left EXACTLY as loaded ΓÇö not emptied ΓÇö so
      * turning dense back on does not force a re-embed of everything. */
     pruned = pruneCount(state, existing);
     blob = prune(existing, liveDecisions(state), livePremises(state));
@@ -229,15 +229,12 @@ async function embedChanged(
       pendingStatements.push({ id: decision.id, text: statementText });
     }
 
-    /* §3.1: questions are REGENERATED when a decision is edited. The question text is
-     * derived from the statement, so comparing the generated string is the check — a
+    /* ┬º3.1: questions are REGENERATED when a decision is edited. The question text is
+     * derived from the statement, so comparing the generated string is the check ΓÇö a
      * decision edited in a way that does not change its questions does not re-embed them. */
     const questionText = l2Text(questionsFor(decision));
     questions[decision.id] = questionText;
-    if (
-      blob.questions[decision.id] !== questionText ||
-      blob.questionVectors[decision.id] === undefined
-    ) {
+    if (blob.questions[decision.id] !== questionText || blob.questionVectors[decision.id] === undefined) {
       pendingQuestions.push({ id: decision.id, text: questionText });
     }
   }
@@ -360,7 +357,7 @@ function indexDrafts(
         payload: { staleEngine: blob.engine, currentEngine: engineId },
         actor,
         reason:
-          "The stored vectors were produced by a different embedding space than the active engine. Cosine similarity across spaces is meaningless — not noisy, meaningless — so L1 and L2 are disabled until the index is rebuilt. L3, L4 and L5 are pure functions of the log and keep working.",
+          "The stored vectors were produced by a different embedding space than the active engine. Cosine similarity across spaces is meaningless ΓÇö not noisy, meaningless ΓÇö so L1 and L2 are disabled until the index is rebuilt. L3, L4 and L5 are pure functions of the log and keep working.",
         at,
       },
     ];
@@ -378,7 +375,9 @@ function indexDrafts(
       reason:
         levels.length === 0
           ? "Index built with no levels available: the log has no live decisions."
-          : `Index rebuilt. Levels ${levels.join(", ")}. The vectors themselves live outside the log — this event records the FACT that an index exists, who built it and when, because that is history and the floats are not.`,
+          : "Index rebuilt. Levels " +
+            levels.join(", ") +
+            ". The vectors themselves live outside the log ΓÇö this event records the FACT that an index exists, who built it and when, because that is history and the floats are not.",
       at,
     },
   ];
@@ -443,20 +442,18 @@ function nowMs(): number {
  */
 export function describeBuild(report: BuildReport): string {
   const lines = [
-    `Index build — ${report.durationMs} ms`,
-    `  levels available: ${report.levels.length === 0 ? "none" : report.levels.join(", ")}`,
-    `  vectors embedded: ${report.embedded}  ·  decisions unchanged: ${report.skipped}`,
-    `  inverted questions: ${report.questionsBuilt}  ·  dead vectors pruned: ${report.pruned}`,
-    `  estimated blob size: ${Math.round(report.estimatedBytes / 1024)} KB`,
+    "Index build ΓÇö " + report.durationMs + " ms",
+    "  levels available: " + (report.levels.length === 0 ? "none" : report.levels.join(", ")),
+    "  vectors embedded: " + report.embedded + "  ┬╖  decisions unchanged: " + report.skipped,
+    "  inverted questions: " + report.questionsBuilt + "  ┬╖  dead vectors pruned: " + report.pruned,
+    "  estimated blob size: " + Math.round(report.estimatedBytes / 1024) + " KB",
   ];
 
   if (report.staleness.stale && report.staleness.reason !== null) {
-    lines.push(`  STALE: ${report.staleness.reason}`);
+    lines.push("  STALE: " + report.staleness.reason);
   }
   if (!report.saved && report.saveError !== null) {
-    lines.push(
-      `  NOT SAVED: ${report.saveError} — the index works this session and is rebuilt next load.`,
-    );
+    lines.push("  NOT SAVED: " + report.saveError + " ΓÇö the index works this session and is rebuilt next load.");
   }
 
   return lines.join("\n");

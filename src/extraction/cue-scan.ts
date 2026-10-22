@@ -1,20 +1,20 @@
 /**
- * Cue scanning — the shared front end of 1.3 and 1.5.
+ * Cue scanning ΓÇö the shared front end of 1.3 and 1.5.
  *
- * Phase 1 · sub-phases 1.2, 1.3, 1.5
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phases 1.2, 1.3, 1.5
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
  * ---------------------------------------------------------------------------
  * WHY THIS LIVES IN `src/extraction/` AND NOT `src/ai/local/`
  *
- * STRUCTURE.md §5 lists `ai/local/cues.ts`. It is here instead, because cue
+ * STRUCTURE.md ┬º5 lists `ai/local/cues.ts`. It is here instead, because cue
  * matching is used by THREE consumers and only one of them is the local engine:
  *
- *   • `segmentation.ts` — cues mark EPISODE BOUNDARIES on both paths. An episode
+ *   ΓÇó `segmentation.ts` ΓÇö cues mark EPISODE BOUNDARIES on both paths. An episode
  *     with no cue in it is not a decision episode, and that is true whether an LLM
  *     or a lexicon does the reading.
- *   • the local recognisers — cues are how it finds a decision at all.
- *   • the LLM path — as a sanity check. When the model returns a value that
+ *   ΓÇó the local recognisers ΓÇö cues are how it finds a decision at all.
+ *   ΓÇó the LLM path ΓÇö as a sanity check. When the model returns a value that
  *     appears nowhere near a cue, that is worth downgrading.
  *
  * Two copies of the cue table would drift, and a drift between the segmenter and
@@ -208,7 +208,7 @@ export function describeHits(hits: readonly CueHit[]): string {
   return `${hits.length} cue${hits.length === 1 ? "" : "s"}: ${phrases.join(", ")}${more}`;
 }
 
-/** Longest phrase in the table — exposed so the segmenter can size its window
+/** Longest phrase in the table ΓÇö exposed so the segmenter can size its window
  *  without re-deriving it. */
 export function longestCuePhrase(): number {
   return LONGEST_PHRASE;

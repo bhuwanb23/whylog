@@ -1,19 +1,19 @@
 /**
- * Rejected-alternative recovery — 1.5.
+ * Rejected-alternative recovery ΓÇö 1.5.
  *
- * Phase 1 · sub-phase 1.5
- * Plan: plan/phase-1-extraction-pipeline.md §1.5
+ * Phase 1 ┬╖ sub-phase 1.5
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.5
  *
  * ---------------------------------------------------------------------------
  * WHY THIS GETS ITS OWN SUB-PHASE
  *
- * ARGUS measured **15.4% precision** on Alternatives with run-consistency α = 0.64
- * — the worst of any rationale component (docs/05 §4). It is also the
+ * ARGUS measured **15.4% precision** on Alternatives with run-consistency ╬▒ = 0.64
+ * ΓÇö the worst of any rationale component (docs/05 ┬º4). It is also the
  * highest-value one, because alternatives power PRE-EMPTION: catching a mistake
  * before the decision rather than after.
  *
  * Their finding argues in WhyLog's favour, and it is testable: "Alternatives occur
- * almost exclusively in issues, pull requests, and code reviews" — that is, in
+ * almost exclusively in issues, pull requests, and code reviews" ΓÇö that is, in
  * DISCUSSION. A transcript IS continuous discussion, so it should be the richest
  * available source. Phase 7 tests that hypothesis; this file is written to make the
  * test possible rather than to assume the result.
@@ -33,7 +33,7 @@
  *      become discards, which is the denominator of the precision measurement.
  *
  *   3. **`whyRejected` gates the pre-emption index, not the store.** An
- *      alternative with no reason is recorded — losing it would lose information —
+ *      alternative with no reason is recorded ΓÇö losing it would lose information ΓÇö
  *      but it never warns anybody. Pre-empting without a reason is nagging, and a
  *      tool that nags gets switched off.
  *
@@ -118,7 +118,7 @@ export function recoverAlternatives(
 ): AlternativeRecovery {
   if (decisions.length === 0) {
     // Nothing was chosen, so nothing was chosen AGAINST. Every rejection phrase in
-    // this episode becomes a discard — recorded, so the precision denominator is
+    // this episode becomes a discard ΓÇö recorded, so the precision denominator is
     // honest, and visible in the review UI's "why was this dropped" list.
     return { alternatives: [], discarded: collectOrphans(episode), withReason: 0 };
   }
@@ -242,7 +242,7 @@ function build(
 /**
  * The reason this alternative was turned down.
  *
- * Sought after the cue ("ruled out Postgres — migrations before we have a user")
+ * Sought after the cue ("ruled out Postgres ΓÇö migrations before we have a user")
  * and, when that fails, before it ("migrations are a hassle, so not Postgres").
  * Both directions because dialogue puts the reason wherever the speaker was
  * heading.
@@ -424,7 +424,7 @@ export function describeRecovery(recovery: AlternativeRecovery): string {
   ];
   if (recovery.alternatives.length > 0) {
     parts.push(
-      `${recovery.withReason} with a reason${recovery.withReason === recovery.alternatives.length ? "" : ` — ${recovery.alternatives.length - recovery.withReason} stored but excluded from pre-emption`}`,
+      `${recovery.withReason} with a reason${recovery.withReason === recovery.alternatives.length ? "" : ` ΓÇö ${recovery.alternatives.length - recovery.withReason} stored but excluded from pre-emption`}`,
     );
   }
   if (recovery.discarded.length > 0) parts.push(`${recovery.discarded.length} discarded`);

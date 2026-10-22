@@ -1,8 +1,8 @@
 /**
- * Commit reporting — the words a commit is described in.
+ * Commit reporting ΓÇö the words a commit is described in.
  *
- * Phase 1 · sub-phase 1.9
- * Plan: plan/phase-1-extraction-pipeline.md §1.9
+ * Phase 1 ┬╖ sub-phase 1.9
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.9
  *
  * Split out of `commit.ts` because the write path is the part that must be
  * obviously correct, and three paragraphs of string building make it less so. The
@@ -31,7 +31,7 @@ export function describeCounts(counts: CommitCounts): string {
   const tail =
     counts.nonMonotonic > 0
       ? `${counts.nonMonotonic} of those justifications carry an OUT-list, so gate (c) can fire on them`
-      : "no OUT-lists, so nothing from this transcript can be invalidated by the world — only contradicted by you";
+      : "no OUT-lists, so nothing from this transcript can be invalidated by the world ΓÇö only contradicted by you";
 
   return `${counts.events} events: ${parts.join(", ")}. ${tail}.`;
 }
@@ -49,7 +49,7 @@ export function describeFailure(failure: CommitFailure): string {
       return [
         `${failure.keys.length} item${failure.keys.length === 1 ? "" : "s"} have no review action, and nothing enters the log unreviewed.`,
         `Decide each one, or discard the unreviewed ones explicitly.`,
-        `${failure.keys.slice(0, 6).join(", ")}${failure.keys.length > 6 ? ", …" : ""}`,
+        `${failure.keys.slice(0, 6).join(", ")}${failure.keys.length > 6 ? ", ΓÇª" : ""}`,
       ].join(" ");
     case "empty":
       return "There is nothing in this run to commit.";
@@ -66,12 +66,12 @@ export function describeActions(actions: readonly (ReviewAction | null)[]): stri
     tally.set(action, (tally.get(action) ?? 0) + 1);
   }
   if (tally.size === 0) return "no actions";
-  return [...tally.entries()].map(([action, count]) => `${count} ${action}`).join(" · ");
+  return [...tally.entries()].map(([action, count]) => `${count} ${action}`).join(" ┬╖ ");
 }
 
 /** The sentence shown while a commit is in flight. Committing appends a batch and
  *  re-folds, which at a few hundred events is imperceptible but not instant, and a
  *  spinner with no words reads as a hang. */
 export function describeInProgress(counts: { decisions: number; premises: number; events: number }): string {
-  return `Appending ${counts.events} events for ${counts.decisions} decisions and ${counts.premises} premises…`;
+  return `Appending ${counts.events} events for ${counts.decisions} decisions and ${counts.premises} premisesΓÇª`;
 }

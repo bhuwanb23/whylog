@@ -1,21 +1,21 @@
 /**
- * Speaker attribution — 1.1, and the input to 1.6.
+ * Speaker attribution ΓÇö 1.1, and the input to 1.6.
  *
- * Phase 1 · sub-phases 1.1 and 1.6
- * Plan: plan/phase-1-extraction-pipeline.md §1.1, §1.6
+ * Phase 1 ┬╖ sub-phases 1.1 and 1.6
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1, ┬º1.6
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS NON-NEGOTIABLE
  *
  * Origin classification (1.6) produces `source_authority`, which is the largest
- * single term in the entrenchment function (docs/02 §3.4). Entrenchment decides
+ * single term in the entrenchment function (docs/02 ┬º3.4). Entrenchment decides
  * WHICH NODE GETS RETRACTED when two conflict. So a misattributed turn is not a
- * cosmetic error in a badge — it changes what the system throws away.
+ * cosmetic error in a badge ΓÇö it changes what the system throws away.
  *
  * That is why the failure mode is asymmetric and hard-coded here:
  *
  *   **An unattributable turn falls back to the LOWEST authority, never the
- *   highest.** `unknown` → `agent_inferred` (0.4). Guessing "human" would inflate
+ *   highest.** `unknown` ΓåÆ `agent_inferred` (0.4). Guessing "human" would inflate
  *   entrenchment on every decision in a transcript the parser did not understand,
  *   and the inflation would be invisible until a real conflict arrived.
  *
@@ -43,7 +43,7 @@ import { attributeJsonl, attributeUnmarked } from "./speakers-fallback";
 
 /* The primitives moved to `./lines` to break the import cycle with
  * `speakers-fallback.ts`. They are re-exported so that `@/extraction/speakers`
- * keeps the surface STRUCTURE.md §6 describes. */
+ * keeps the surface STRUCTURE.md ┬º6 describes. */
 export {
   detectShape,
   isAcceptanceOnly,

@@ -1,7 +1,7 @@
 /**
- * The local engine's alternative vocabulary — 1.5.
+ * The local engine's alternative vocabulary ΓÇö 1.5.
  *
- * Phase 1 · sub-phase 1.5
+ * Phase 1 ┬╖ sub-phase 1.5
  *
  * `extraction/alternatives.ts` owns the pipeline-side recovery. This module owns the
  * one piece that is recognition rather than mechanics: WHICH NOUNS COUNT AS
@@ -28,7 +28,7 @@ export interface AlternativeValue {
  *
  * Two sources, in order of trust: the ontology's known values, then
  * technology-shaped tokens (kebab-case, dotted, CamelCase) that the ontology does
- * not know. A bare noun is never returned — "the database" is not an alternative,
+ * not know. A bare noun is never returned ΓÇö "the database" is not an alternative,
  * it is the topic.
  *
  * @param variable the decision's own variable, used as a hint and as the fallback
@@ -78,7 +78,7 @@ export function alternativeValues(
  * Is this a non-choice?
  *
  * "none", "nothing", "no auth" are DECISIONS, not alternatives, and treating them as
- * rejected options produces a nonsense pre-emption — "you rejected nothing" — which
+ * rejected options produces a nonsense pre-emption ΓÇö "you rejected nothing" ΓÇö which
  * is the kind of wrong that makes a user stop reading the warnings.
  */
 export function isNoneValue(value: string): boolean {

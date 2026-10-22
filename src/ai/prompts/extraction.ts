@@ -1,7 +1,7 @@
 /**
- * The extraction prompt and its output schema — 1.10, the LLM path.
+ * The extraction prompt and its output schema ΓÇö 1.10, the LLM path.
  *
- * Phase 1 · sub-phase 1.10
+ * Phase 1 ┬╖ sub-phase 1.10
  *
  * ---------------------------------------------------------------------------
  * THE PROMPT IS BUILT, NOT A TEMPLATE LITERAL
@@ -15,14 +15,14 @@
  * ---------------------------------------------------------------------------
  * WHAT THE PROMPT ASKS FOR AND WHY IT IS SHORT
  *
- * Under 200 lines of instruction, because the model is not being taught to reason —
+ * Under 200 lines of instruction, because the model is not being taught to reason ΓÇö
  * it is being told the SHAPE of the answer and the RULES that make the answer
  * checkable. The three rules that matter:
  *
- *   1. quote VERBATIM — `snippet-validation.ts` rejects anything else
- *   2. only the listed variables and premise types — a closed set is the mitigation
+ *   1. quote VERBATIM ΓÇö `snippet-validation.ts` rejects anything else
+ *   2. only the listed variables and premise types ΓÇö a closed set is the mitigation
  *      for RAAM's unbounded-assumption precision problem
- *   3. say "insufficient" rather than guessing — the RepoRationale evidence contract
+ *   3. say "insufficient" rather than guessing ΓÇö the RepoRationale evidence contract
  * ---------------------------------------------------------------------------
  */
 
@@ -65,7 +65,7 @@ export interface LlmPremise {
   readonly text: string;
   readonly confidence: number;
   readonly snippet: string;
-  /** True when this premise is a condition the decision EXCLUDES — the OUT-list.
+  /** True when this premise is a condition the decision EXCLUDES ΓÇö the OUT-list.
    *  The model is asked directly because it can see the argument; the local engine
    *  has to derive it from the exclusion table. */
   readonly excluded?: boolean;
@@ -125,10 +125,10 @@ function buildSystemPrompt(): string {
     "1. QUOTE VERBATIM. Every `snippet` must be an exact substring of the transcript, copied character for character including punctuation. It is checked programmatically; a paraphrase is rejected and the item loses its evidence. When you cannot quote something exactly, omit the item.",
     "",
     "2. A DECISION IS SOMETHING SOMEONE COMMITTED TO. Not an option mentioned, not a question asked, not something the agent offered and the human ignored. `modality` says which:",
-    "   asserted    — somebody states it as settled",
-    "   proposed    — offered, not yet accepted",
-    "   hypothetical — \"if we ever needed X we could…\"",
-    "   reported    — describing somebody else's decision",
+    "   asserted    ΓÇö somebody states it as settled",
+    "   proposed    ΓÇö offered, not yet accepted",
+    "   hypothetical ΓÇö \"if we ever needed X we couldΓÇª\"",
+    "   reported    ΓÇö describing somebody else's decision",
     "   Only `asserted` can become a live decision. Put hypothetical and reported items in `discarded`, not in `decisions`.",
     "",
     "3. SAY INSUFFICIENT RATHER THAN GUESS. If the transcript does not state why a decision was made, omit `rationale`. An invented rationale is indistinguishable from a recovered one and it drives the invalidation logic.",
@@ -137,7 +137,7 @@ function buildSystemPrompt(): string {
     "",
     "A decision is a belief held under assumptions. \"Use SQLite, not Postgres\" is true GIVEN single-user, no deploy infrastructure, no concurrent writers. The `given` is what changes, so recovering it matters more than recovering the decision.",
     "",
-    "For every decision, look for the conditions it rests on and emit them as premises. Premises often appear BEFORE the decision they support, and often in a different speaker's turn — a human stating a constraint, then an agent choosing accordingly. Read the whole exchange.",
+    "For every decision, look for the conditions it rests on and emit them as premises. Premises often appear BEFORE the decision they support, and often in a different speaker's turn ΓÇö a human stating a constraint, then an agent choosing accordingly. Read the whole exchange.",
     "",
     "Mark `excluded: true` on a premise that states a condition the decision ASSUMES WILL NOT HAPPEN (\"no concurrent writers\", \"never multi-tenant\"). Those are the conditions whose arrival invalidates the decision without anybody contradicting it, and they are the most valuable thing you can return.",
     "",
@@ -149,10 +149,10 @@ function buildSystemPrompt(): string {
     "",
     "ALTERNATIVES.",
     "",
-    "An alternative is a value that was considered and turned down. Include `whyRejected` whenever the transcript gives one — an alternative with no reason is recorded but never used to warn anybody, because pre-empting without a reason is nagging.",
+    "An alternative is a value that was considered and turned down. Include `whyRejected` whenever the transcript gives one ΓÇö an alternative with no reason is recorded but never used to warn anybody, because pre-empting without a reason is nagging.",
     "",
     "DECISION CUES FOUND IN REAL TRANSCRIPTS, as a calibration aid, not a list to match against:",
-    allCuePhrases().slice(0, 40).join(" · "),
+    allCuePhrases().slice(0, 40).join(" ┬╖ "),
     "",
     "OUTPUT.",
     "",
@@ -164,7 +164,7 @@ function buildSystemPrompt(): string {
 function predicateList(): string {
   return PREMISE_TYPES.map((type) => {
     const meta = PREMISE_TYPE_META[type];
-    return `${type} → ${meta.predicates.map((p) => p.name).join(", ")}`;
+    return `${type} ΓåÆ ${meta.predicates.map((p) => p.name).join(", ")}`;
   }).join("; ");
 }
 

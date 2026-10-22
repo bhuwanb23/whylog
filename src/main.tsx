@@ -1,12 +1,12 @@
 /**
  * React entry.
  *
- * Phase 0 · sub-phase 0.10
+ * Phase 0 ┬╖ sub-phase 0.10
  *
  * The imports of "@/ai/local" and "@/ai/llm" are SIDE EFFECTS: they register the
  * engines in the registry. That must happen before the store boots, because
  * `getEngine()` resolves against the registry and a registry with no `local` entry
- * would leave the app with no engine at all — in the one configuration that is
+ * would leave the app with no engine at all ΓÇö in the one configuration that is
  * supposed to always work.
  *
  * `@/ai/llm` registers three providers that all require a key. Registering them

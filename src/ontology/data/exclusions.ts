@@ -1,8 +1,8 @@
 /**
- * Excluded conditions — the OUT-list vocabulary.
+ * Excluded conditions ΓÇö the OUT-list vocabulary.
  *
- * Phase 1 · sub-phase 1.4 (data authored in Phase 0.7's style)
- * Plan: plan/phase-1-extraction-pipeline.md §1.4
+ * Phase 1 ┬╖ sub-phase 1.4 (data authored in Phase 0.7's style)
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.4
  *
  * ---------------------------------------------------------------------------
  * WHY AN OUT-LIST EXISTS AT ALL
@@ -12,7 +12,7 @@
  * NON-MONOTONIC justification, and it is the only mechanism in the system that
  * detects invalidation when the user never states a contradiction:
  *
- *   nothing contradicts you — the world just moved.
+ *   nothing contradicts you ΓÇö the world just moved.
  *
  * That is gate (c), and gate (c) is the differentiator. Gate (a) fires when YOU
  * contradict yourself; gate (c) fires when reality does.
@@ -28,14 +28,14 @@
  *
  * So each entry pairs a predicate with the condition that would BREAK it, in words.
  * Predicates with no entry fall back to the mechanical negation in
- * `src/extraction/premise-linker.ts` — the fallback is honest, just less readable.
+ * `src/extraction/premise-linker.ts` ΓÇö the fallback is honest, just less readable.
  *
  * ---------------------------------------------------------------------------
  * EVERY `breaks` PREDICATE MUST BE A REAL PREDICATE IN THE TYPE TABLE
  *
  * `validateExclusions()` checks this, and `validateOntology()` calls it. An OUT-list
  * node whose predicate is not in `premise-types.ts` cannot be resolved by rung 1 of
- * the identity ladder, so it would create a fresh node on every import — the exact
+ * the identity ladder, so it would create a fresh node on every import ΓÇö the exact
  * failure the closed vocabulary exists to prevent.
  * ---------------------------------------------------------------------------
  */
@@ -46,7 +46,7 @@ import { PREMISE_TYPE_META } from "./premise-types";
 export interface ExclusionRule {
   /** The predicate a SUPPORTING premise carries. */
   readonly whenPredicate: string;
-  /** The condition that would break it — the OUT-list entry's predicate. */
+  /** The condition that would break it ΓÇö the OUT-list entry's predicate. */
   readonly breaksPredicate: string;
   /** Its type, so the ladder can pool correctly. Cross-type premise comparison is
    *  forbidden, and an OUT-list node in the wrong pool is unreachable. */
@@ -135,7 +135,7 @@ export const EXCLUSIONS: readonly ExclusionRule[] = [
     breaksType: "team",
     text: "somebody else joins the project",
     breaksValue: 2,
-    why: "A solo premise justifies skipping coordination machinery — review, migrations discipline, access control. A second person makes each of those a real requirement.",
+    why: "A solo premise justifies skipping coordination machinery ΓÇö review, migrations discipline, access control. A second person makes each of those a real requirement.",
   },
   {
     whenPredicate: "team.expertise",
@@ -168,7 +168,7 @@ export const EXCLUSIONS: readonly ExclusionRule[] = [
     breaksPredicate: "capability.supports",
     breaksType: "capability",
     text: "the capability the project lacked becomes supported",
-    why: "'We can't do X, so we chose Y' is falsified the moment X becomes possible — and this is the premise type a repo scan can actually check.",
+    why: "'We can't do X, so we chose Y' is falsified the moment X becomes possible ΓÇö and this is the premise type a repo scan can actually check.",
   },
   {
     whenPredicate: "capability.offline_required",
@@ -281,7 +281,7 @@ export function exclusionCoverage(): number {
  *
  * Called by `validateOntology()`. Without it a typo here produces an OUT-list node
  * whose predicate the identity ladder cannot resolve, which means a fresh node on
- * every import — invisible until the graph fills with duplicates.
+ * every import ΓÇö invisible until the graph fills with duplicates.
  */
 export function validateExclusions(): readonly string[] {
   const problems: string[] = [];

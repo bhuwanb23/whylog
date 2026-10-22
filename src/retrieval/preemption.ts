@@ -1,19 +1,19 @@
 /**
- * Rejected-alternative pre-emption — 3.6 / 3.10.
+ * Rejected-alternative pre-emption ΓÇö 3.6 / 3.10.
  *
- * Phase 3 · sub-phases 3.6, 3.10
- * Plan: plan/phase-3-retrieval.md §3.10
+ * Phase 3 ┬╖ sub-phases 3.6, 3.10
+ * Plan: plan/phase-3-retrieval.md ┬º3.10
  *
  * ---------------------------------------------------------------------------
  * THE HIGHEST-VALUE SENTENCE THE RETRIEVAL LAYER CAN PRODUCE
  *
- *   "You're asking about Supabase. You REJECTED it on 3 Oct — reason: hosted dependency,
+ *   "You're asking about Supabase. You REJECTED it on 3 Oct ΓÇö reason: hosted dependency,
  *    no budget. That rejection rests on P-0004 (budget = none), which is still IN.
  *    Has that changed?"
  *
  * Everything else in this layer answers a question that was asked. This one answers the
  * question that SHOULD have been asked, and it catches the mistake BEFORE the decision
- * rather than after — which is the entire difference between a memory and an immune system.
+ * rather than after ΓÇö which is the entire difference between a memory and an immune system.
  *
  * It is only possible because alternatives are indexed first-class (Phase 1.5). A tool that
  * stores decisions and not the things it turned down cannot produce this sentence at any
@@ -22,7 +22,7 @@
  * ---------------------------------------------------------------------------
  * ONLY CONFIRMED REJECTIONS WITH A REASON
  *
- * §3.10's contract, and the reason this is not spam. An alternative enters the pre-emption
+ * ┬º3.10's contract, and the reason this is not spam. An alternative enters the pre-emption
  * index only when it has a `whyRejected` AND explicit human confirmation, because **a false
  * pre-emption is worse than no pre-emption**: telling a user they already rejected something
  * they merely discussed, and then being wrong about why, destroys trust in every correct
@@ -41,13 +41,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import { foldKey } from "@/ontology/canonicalize";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 import type { PreemptionNotice } from "@/types/retrieval";
 import { isClassifiable } from "./contradiction";
+import { foldKey } from "@/ontology/canonicalize";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
 
 /* -------------------------------------------------------------------------- */
 /* Detection                                                                  */
@@ -56,7 +56,7 @@ import { isClassifiable } from "./contradiction";
 /**
  * Does this query match a REJECTED alternative rather than an accepted decision?
  *
- * Matching is lexical and exact — the alternative's canonical value folded against the
+ * Matching is lexical and exact ΓÇö the alternative's canonical value folded against the
  * query's folded tokens. Not semantic: a pre-emption that fires on a vague topical match is
  * a false pre-emption, and the cost of one is higher than the cost of missing one.
  */
@@ -71,7 +71,7 @@ export function findPreemptions(
   const out: PreemptionNotice[] = [];
 
   for (const alternative of state.alternatives.values()) {
-    /* §3.10 requires BOTH conditions, and this is the contract's whole point:
+    /* ┬º3.10 requires BOTH conditions, and this is the contract's whole point:
      *
      *   a `whyRejected`, because "you rejected this" without a reason is just nagging; and
      *   `confirmedByHuman`, because a rejection the model inferred was never a rejection the
@@ -79,8 +79,8 @@ export function findPreemptions(
      *
      * Phase 1 measured alternatives at 15.4% precision. On that base rate, an unconfirmed
      * inferred rejection is far more likely to be wrong than right, and a false pre-emption
-     * — telling someone they already rejected something they merely discussed, with a reason
-     * they never gave — costs more trust than every correct pre-emption in the session earns
+     * ΓÇö telling someone they already rejected something they merely discussed, with a reason
+     * they never gave ΓÇö costs more trust than every correct pre-emption in the session earns
      * back. Missing one is a small loss; inventing one is why the feature gets switched off.
      */
     if (alternative.whyRejected === undefined || alternative.whyRejected.length === 0) continue;
@@ -90,7 +90,7 @@ export function findPreemptions(
     if (decision === undefined) continue;
 
     /* Only a rejection made by a LIVE decision counts. Pre-empting on the basis of a
-     * superseded or proposed one would cite a reason the log has already withdrawn — or one
+     * superseded or proposed one would cite a reason the log has already withdrawn ΓÇö or one
      * it never adopted. `isClassifiable` is the same predicate the classifier uses, so a
      * decision the classifier refuses to judge cannot pre-empt either. */
     if (!isClassifiable(decision.status)) continue;
@@ -98,9 +98,7 @@ export function findPreemptions(
     const canonical = foldKey(alternative.value);
     const matched =
       foldedQuery.includes(canonical) ||
-      [...foldedTerms].some(
-        (term) => term.length > 2 && (canonical.includes(term) || term.includes(canonical)),
-      );
+      [...foldedTerms].some((term) => term.length > 2 && (canonical.includes(term) || term.includes(canonical)));
 
     if (!matched) continue;
 
@@ -169,17 +167,18 @@ export function renderPreemption(notice: PreemptionNotice): string {
     notice.restsOn.length === 0
       ? "It rests on no recorded premise, so there is nothing to check it against."
       : notice.restsOn
-          .map((entry) => `${entry.premiseId} "${entry.text}" (${entry.label})`)
+          .map((entry) => entry.premiseId + ' "' + entry.text + '" (' + entry.label + ")")
           .join(", ");
 
   const status = notice.stillHolds
-    ? "That reason still holds — every premise it rests on is still IN."
+    ? "That reason still holds ΓÇö every premise it rests on is still IN."
     : "At least one premise it rests on is no longer IN, so the reason may have expired.";
 
   return [
-    `You are asking about ${notice.alternativeValue}. You REJECTED it on ${decided} in ${notice.rejectedByDecisionId}.`,
-    `Reason: ${notice.whyRejected}`,
-    `It rests on ${premises}.`,
+    'You are asking about ' + notice.alternativeValue + ". You REJECTED it on " + decided +
+      " in " + notice.rejectedByDecisionId + ".",
+    "Reason: " + notice.whyRejected,
+    "It rests on " + premises + ".",
     status,
     notice.stillHolds
       ? "Has anything changed since then?"
@@ -187,15 +186,10 @@ export function renderPreemption(notice: PreemptionNotice): string {
   ].join(" ");
 }
 
-/** How many alternatives are pre-emption eligible — both §3.10 conditions met. The gap
+/** How many alternatives are pre-emption eligible ΓÇö both ┬º3.10 conditions met. The gap
  *  between this and the total alternative count is what Phase 1's 15.4% precision costs,
  *  and showing it is more honest than showing a pre-emption feature that never fires. */
-export function countPreemptions(state: GraphState): {
-  eligible: number;
-  total: number;
-  missingReason: number;
-  unconfirmed: number;
-} {
+export function countPreemptions(state: GraphState): { eligible: number; total: number; missingReason: number; unconfirmed: number } {
   let eligible = 0;
   let total = 0;
   let missingReason = 0;
@@ -213,7 +207,7 @@ export function countPreemptions(state: GraphState): {
 }
 
 /** Whether the answer should LEAD with the pre-emption rather than bury it.
- *  A rejection whose premises have expired always leads — that is the case the user most
+ *  A rejection whose premises have expired always leads ΓÇö that is the case the user most
  *  needs to see and the one most likely to be scrolled past. */
 export function leadsTheAnswer(notice: PreemptionNotice): boolean {
   return !notice.stillHolds;

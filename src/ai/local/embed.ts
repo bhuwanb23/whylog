@@ -1,8 +1,8 @@
 /**
  * The hashed n-gram vectoriser.
  *
- * Phase 0 · sub-phase 0.8 — the local engine's embedding implementation
- * Plan: plan/phase-0-foundation.md §0.8 · docs/03 §2 (the four-level index)
+ * Phase 0 ┬╖ sub-phase 0.8 ΓÇö the local engine's embedding implementation
+ * Plan: plan/phase-0-foundation.md ┬º0.8 ┬╖ docs/03 ┬º2 (the four-level index)
  *
  * ---------------------------------------------------------------------------
  * WHAT THIS IS
@@ -19,7 +19,7 @@
  *
  * The task is not open-domain semantic similarity. It is: does this query concern
  * the same technology, the same slot, the same constraint as this decision? For
- * that, shared character n-grams do a great deal of work — "postgres",
+ * that, shared character n-grams do a great deal of work ΓÇö "postgres",
  * "postgresql" and "pg-backed store" overlap heavily in trigram space, and
  * "sqlite" and "postgres" barely overlap at all.
  *
@@ -31,8 +31,8 @@
  * WHAT IT CANNOT DO, STATED PLAINLY
  *
  * It cannot detect contradiction. "Use Postgres" and "Do not use Postgres" share
- * almost every feature and will land at cosine ~0.9. That is not a bug to fix —
- * it is the load-bearing fact behind the whole three-gate design (docs/03 §3), and
+ * almost every feature and will land at cosine ~0.9. That is not a bug to fix ΓÇö
+ * it is the load-bearing fact behind the whole three-gate design (docs/03 ┬º3), and
  * it is why `classify` is a separate capability from `embed` and why the
  * structural gate runs before either. A vectoriser that could tell those apart
  * would be a polarity classifier, and that is a different job.
@@ -90,7 +90,7 @@ export interface EmbedOptions {
   /** Prefix every feature with this tag. Used to keep decision vectors and
    *  premise vectors in distinguishable sub-spaces when they share one blob. */
   readonly namespace?: string;
-  /** Extra features whose presence matters more than their frequency — a decision
+  /** Extra features whose presence matters more than their frequency ΓÇö a decision
    *  variable name, a premise predicate. */
   readonly tags?: readonly string[];
 }
@@ -117,11 +117,11 @@ export function embedText(text: string, options: EmbedOptions = {}): Float32Arra
     vector[bucket] = (vector[bucket] ?? 0) + sign * weight;
   };
 
-  /* unigrams — content words only, so "we", "the" and "use" do not push every
+  /* unigrams ΓÇö content words only, so "we", "the" and "use" do not push every
      decision in the corpus towards each other */
   for (const token of tokens) add(token, WEIGHTS.unigram);
 
-  /* bigrams — this is what separates "no postgres" from "postgres". The bigram
+  /* bigrams ΓÇö this is what separates "no postgres" from "postgres". The bigram
      containing the negation is a DIFFERENT FEATURE from the unigram, so the
      vectoriser is not blind to polarity; it merely does not treat it as a
      contradiction, which is the classifier's job. */
@@ -132,7 +132,7 @@ export function embedText(text: string, options: EmbedOptions = {}): Float32Arra
     add(`${a}_${b}`, WEIGHTS.bigram);
   }
 
-  /* character 3-grams — morphological robustness without a stemmer or a
+  /* character 3-grams ΓÇö morphological robustness without a stemmer or a
      vocabulary. "postgresql" and "postgres" share nine trigrams. */
   for (const gram of charNgrams(normalised.replace(/\s+/g, " "), 3)) {
     add(gram, WEIGHTS.trigramChar);

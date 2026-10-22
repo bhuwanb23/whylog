@@ -1,15 +1,15 @@
 /**
  * The internal contracts of the extraction pipeline.
  *
- * Phase 1 · all sub-phases
- * Plan: plan/phase-1-extraction-pipeline.md · notes/PHASE-1-PLAN.md §1
+ * Phase 1 ┬╖ all sub-phases
+ * Plan: plan/phase-1-extraction-pipeline.md ┬╖ notes/PHASE-1-PLAN.md ┬º1
  *
  * ---------------------------------------------------------------------------
  * WHY THIS FILE EXISTS
  *
  * The pipeline has ten stages and two engines. Without one place to put the
  * shapes that pass between them, every stage invents its own and the offset map
- * stops being honoured — which is the failure mode that breaks the evidence
+ * stops being honoured ΓÇö which is the failure mode that breaks the evidence
  * contract silently, because a snippet that does not resolve still LOOKS like a
  * snippet in the review UI.
  *
@@ -45,7 +45,7 @@ import type {
 } from "@/ai/types";
 
 /* -------------------------------------------------------------------------- */
-/* 1.1 — input shapes                                                         */
+/* 1.1 ΓÇö input shapes                                                         */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -80,11 +80,11 @@ export const INPUT_SHAPES: readonly InputShape[] = [
 export type NoiseKind = "tool-call" | "diff" | "stack-trace" | "long-output" | "file-listing";
 
 /* -------------------------------------------------------------------------- */
-/* 1.1 — the offset map                                                       */
+/* 1.1 ΓÇö the offset map                                                       */
 /* -------------------------------------------------------------------------- */
 
 /**
- * One entry of the normalised→raw index map.
+ * One entry of the normalisedΓåÆraw index map.
  *
  * Stored as a sparse array of ANCHORS rather than one entry per character: a
  * 200 KB transcript would otherwise allocate a 200 KB array to describe text
@@ -98,13 +98,13 @@ export interface OffsetAnchor {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 1.1 — normalised transcript                                                */
+/* 1.1 ΓÇö normalised transcript                                                */
 /* -------------------------------------------------------------------------- */
 
 /**
  * One speaker turn.
  *
- * `start`/`end` index the NORMALISED text — that is what `text` is a slice of, and
+ * `start`/`end` index the NORMALISED text ΓÇö that is what `text` is a slice of, and
  * it is what `spanFrom()` consumes. Use `rawBounds()` from `offset-map.ts` to get
  * the corresponding range in the raw input for highlighting.
  *
@@ -183,7 +183,7 @@ export interface NormalizedTranscript {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 1.2 — episodes                                                             */
+/* 1.2 ΓÇö episodes                                                             */
 /* -------------------------------------------------------------------------- */
 
 /** Why an episode ended. Recorded so a bad boundary is diagnosable rather than
@@ -201,7 +201,7 @@ export type EpisodeBoundaryReason =
  * THE DELIBERATE DEVIATION from arXiv:2506.11005, which assumes rationale sits in
  * a single sentence containing both decision and rationale. That holds for Linux
  * commit messages. In dialogue a decision is negotiated across four turns and the
- * premise often appears BEFORE the decision it supports — so sentence-level
+ * premise often appears BEFORE the decision it supports ΓÇö so sentence-level
  * segmentation loses exactly the premise the product is built on.
  */
 export interface EpisodeWindow {
@@ -216,7 +216,7 @@ export interface EpisodeWindow {
    *  it is the range that CONTAINS the window, so a lifted code block inside the
    *  episode still shows. */
   readonly rawRange: readonly [start: number, end: number];
-  /** The concatenated turn bodies — what the recognisers read. Not a slice of
+  /** The concatenated turn bodies ΓÇö what the recognisers read. Not a slice of
    *  either transcript: it is built from the turns, which is why `charRange`
    *  describes where the window sits rather than where `text` came from. */
   readonly text: string;
@@ -234,7 +234,7 @@ export interface EpisodeWindow {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 1.6 — provenance                                                           */
+/* 1.6 ΓÇö provenance                                                           */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -268,7 +268,7 @@ export interface ExtractionOptions {
   /** ~12k characters, on turn boundaries, one turn of overlap. */
   readonly chunkChars?: number;
   /** Three-run majority voting. LLM path only; the local engine is deterministic
-   *  so voting would return three identical runs and cost 3× for nothing. */
+   *  so voting would return three identical runs and cost 3├ù for nothing. */
   readonly voting?: boolean;
   readonly signal?: AbortSignal;
 }
@@ -294,7 +294,7 @@ export interface StageReport {
  * One extraction, before human review.
  *
  * Carries the normalised transcript as well as the candidates because the review
- * UI needs the raw text and the offset map to highlight spans — and because
+ * UI needs the raw text and the offset map to highlight spans ΓÇö and because
  * `snippet-validation.ts` must re-check every snippet against `normalized.raw`
  * at review time, not only at extraction time.
  */
@@ -313,7 +313,7 @@ export interface ExtractionRun {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 1.7 + 1.9 — resolved candidates, the review queue's unit                   */
+/* 1.7 + 1.9 ΓÇö resolved candidates, the review queue's unit                   */
 /* -------------------------------------------------------------------------- */
 
 /** What the identity ladder decided about one candidate. */
@@ -330,7 +330,7 @@ export interface ResolutionOutcome {
    *
    * Not a merge and not a duplicate: a conflict. The ladder never merges across
    * values, so without this field the conflict would be invisible until Phase 2
-   * re-derived it from the graph — and Phase 1 is where the human is already
+   * re-derived it from the graph ΓÇö and Phase 1 is where the human is already
    * looking at the item. Surfacing it here is what lets the review UI say "this
    * contradicts WLD-0003" at the moment the user is deciding whether to keep it.
    */
@@ -370,14 +370,14 @@ export interface ResolvedCandidate {
    *
    * This is the field `commit.ts` refuses to work without: an item with
    * `action === null` is not committed, and a commit containing one is refused
-   * outright. Invariant I4 — the system proposes, the human disposes — is enforced
+   * outright. Invariant I4 ΓÇö the system proposes, the human disposes ΓÇö is enforced
    * by making this field the only route from a candidate to an event.
    */
   readonly action: ReviewAction | null;
 }
 
 /* -------------------------------------------------------------------------- */
-/* 1.8 — confidence tiers                                                     */
+/* 1.8 ΓÇö confidence tiers                                                     */
 /* -------------------------------------------------------------------------- */
 
 export type ConfidenceTier = "high" | "medium" | "low";
@@ -400,13 +400,13 @@ export function demoteTier(tier: ConfidenceTier): ConfidenceTier {
 }
 
 export const TIER_LABELS: Readonly<Record<ConfidenceTier, string>> = {
-  high: "Expanded — bulk-approvable",
+  high: "Expanded ΓÇö bulk-approvable",
   medium: "Normal review",
-  low: "Collapsed — one-click discard",
+  low: "Collapsed ΓÇö one-click discard",
 };
 
 /* -------------------------------------------------------------------------- */
-/* 1.10 — the commit                                                          */
+/* 1.10 ΓÇö the commit                                                          */
 /* -------------------------------------------------------------------------- */
 
 /**

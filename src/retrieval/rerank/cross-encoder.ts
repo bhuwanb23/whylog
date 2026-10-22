@@ -1,14 +1,14 @@
 /**
- * Cross-encoder reranking — 3.5.
+ * Cross-encoder reranking ΓÇö 3.5.
  *
- * Phase 3 · sub-phase 3.5
- * Plan: plan/phase-3-retrieval.md §3.5
+ * Phase 3 ┬╖ sub-phase 3.5
+ * Plan: plan/phase-3-retrieval.md ┬º3.5
  *
  * ---------------------------------------------------------------------------
  * WHY A SECOND STAGE AT ALL
  *
  * A bi-encoder embeds query and document INDEPENDENTLY and compares the vectors. It
- * structurally cannot represent the relationship between them — it never saw them together.
+ * structurally cannot represent the relationship between them ΓÇö it never saw them together.
  * A cross-encoder reads them JOINTLY, so it can attend to negation, scope and qualification:
  * the things that decide whether "use Postgres" answers "why didn't we use Postgres?".
  *
@@ -18,9 +18,9 @@
  * ---------------------------------------------------------------------------
  * THREE IMPLEMENTATIONS, AND WHICH ONE THIS FILE ACTUALLY SHIPS
  *
- *   LLM                    provider model as a listwise reranker      — IMPLEMENTED
- *   local + download       cross-encoder/ms-marco-MiniLM-L-6-v2       — NOT AVAILABLE
- *   local, zero download   the five weighted components               — local-weights.ts
+ *   LLM                    provider model as a listwise reranker      ΓÇö IMPLEMENTED
+ *   local + download       cross-encoder/ms-marco-MiniLM-L-6-v2       ΓÇö NOT AVAILABLE
+ *   local, zero download   the five weighted components               ΓÇö local-weights.ts
  *
  * The middle row needs a ~6M-parameter model file and an inference runtime. Both are
  * outside the dependency budget (no NLP package, no model download), and adding either
@@ -29,7 +29,7 @@
  * and the weighted path otherwise, and the downloaded-model path is documented rather than
  * faked.
  *
- * Faking it — shipping a "cross-encoder" that is secretly the weighted scorer — would be
+ * Faking it ΓÇö shipping a "cross-encoder" that is secretly the weighted scorer ΓÇö would be
  * worse than not having it, because the UI would report a capability the system does not
  * have.
  *
@@ -43,8 +43,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { WhyLogEngine } from "@/ai/types";
 import type { DecisionId, EngineId } from "@/types/common";
+import type { WhyLogEngine } from "@/ai/types";
 
 export interface ModelRerankInput {
   readonly id: DecisionId;
@@ -109,7 +109,7 @@ function nowMs(): number {
  */
 export function describeUnavailablePath(): string {
   return [
-    "cross-encoder/ms-marco-MiniLM-L-6-v2 (~6M params) — NOT AVAILABLE.",
+    "cross-encoder/ms-marco-MiniLM-L-6-v2 (~6M params) ΓÇö NOT AVAILABLE.",
     "",
     "It needs a model file and an inference runtime. Both are outside the dependency budget",
     "(no NLP package, no model download, no network in the sandbox), and either one would",

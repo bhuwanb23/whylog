@@ -1,9 +1,9 @@
 /**
- * Adjudication — 2.8.
+ * Adjudication ΓÇö 2.8.
  *
- * Phase 2 · sub-phase 2.8
- * Plan: plan/phase-2-truth-maintenance.md §2.8
- * Docs: docs/02-truth-maintenance-theory.md §3.5
+ * Phase 2 ┬╖ sub-phase 2.8
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.8
+ * Docs: docs/02-truth-maintenance-theory.md ┬º3.5
  *
  * ---------------------------------------------------------------------------
  * THE POSTULATE WE REFUSE
@@ -12,8 +12,8 @@
  * Every textbook treatment assumes it, and most implementations inherit it.
  *
  * It is wrong here. WhyLog's inputs are EXTRACTED PROSE from transcripts of
- * conversations with language models. If Success held, any passing remark — "yeah
- * maybe we should use Postgres after all" said while thinking aloud — could retract a
+ * conversations with language models. If Success held, any passing remark ΓÇö "yeah
+ * maybe we should use Postgres after all" said while thinking aloud ΓÇö could retract a
  * decision that took three days and six guards to make. A noisy input stream must not
  * be able to corrupt a well-founded log.
  *
@@ -25,7 +25,7 @@
  *
  *   The newcomer is accepted only if it OUTRANKS EVERY contradictor.
  *
- * Not "outranks the weakest". Not "outranks on average". Every one — because accepting
+ * Not "outranks the weakest". Not "outranks on average". Every one ΓÇö because accepting
  * it means retracting all of them, and a single incumbent that is more entrenched than
  * the newcomer makes that trade a loss.
  *
@@ -43,8 +43,8 @@
  * contradiction while adjudication declines to screen against it, so nothing is
  * retracted and the conflict is warned about but never resolved.
  *
- * Gate (a) fires on TWO conditions — a declared antonym pair, or simply two different
- * live values for one variable — and excludes superseded decisions and non-overlapping
+ * Gate (a) fires on TWO conditions ΓÇö a declared antonym pair, or simply two different
+ * live values for one variable ΓÇö and excludes superseded decisions and non-overlapping
  * validity windows. All four of those properties are inherited here by delegation.
  * ---------------------------------------------------------------------------
  */
@@ -68,7 +68,7 @@ import { entrenchmentOf, type GuardStatus } from "./entrenchment";
 /**
  * Information arriving from outside the log.
  *
- * Not a decision yet — it has no id, no event, no provenance beyond what is given
+ * Not a decision yet ΓÇö it has no id, no event, no provenance beyond what is given
  * here. Adjudication decides whether it becomes one.
  */
 export interface Newcomer {
@@ -98,7 +98,7 @@ export interface AdjudicationInput {
 /**
  * Screen a newcomer against everything it contradicts.
  *
- * Pure: reads the graph, computes entrenchments, returns a verdict. Commits nothing —
+ * Pure: reads the graph, computes entrenchments, returns a verdict. Commits nothing ΓÇö
  * the cycle in `revise.ts` owns event creation, and an adjudicator that wrote to the
  * log could not be reasoned about.
  */
@@ -137,7 +137,7 @@ export function adjudicate(
       blockingDecisionId: blocker.decisionId,
       newcomerEntrenchment: round4(newcomerScore),
       incumbentEntrenchment: blocker.breakdown.capped,
-      /* §2.8 requires the FULL breakdown of both sides in the Contested queue. Two
+      /* ┬º2.8 requires the FULL breakdown of both sides in the Contested queue. Two
        * totals cannot show that the newcomer lost on corroboration and implementation
        * cost rather than on authority, and "override anyway" is only an informed choice
        * if the arithmetic is visible. */
@@ -186,7 +186,7 @@ export interface Contradictor {
  *
  * This DELEGATES to gate (a) rather than re-implementing the test. That is not
  * tidiness, it is correctness: if the adjudicator used a narrower rule than the
- * detector — antonym pairs only, say — then a newcomer could be ACCEPTED while gate (a)
+ * detector ΓÇö antonym pairs only, say ΓÇö then a newcomer could be ACCEPTED while gate (a)
  * was simultaneously reporting a structural contradiction between it and an incumbent.
  * The system would retract nothing and warn about a conflict it had just declined to
  * adjudicate. One predicate, one answer, everywhere.
@@ -218,16 +218,16 @@ export function contradictorIds(contradictors: readonly Contradictor[]): readonl
 /**
  * The entrenchment a newcomer WOULD have if it were accepted.
  *
- * It cannot be looked up — it has no corroboration, no justifications, no guards. So
+ * It cannot be looked up ΓÇö it has no corroboration, no justifications, no guards. So
  * it is scored on the two terms it does have, and penalised on the two it cannot have:
  *
- *   · source authority — from `origin`, same table as an incumbent
- *   · confidence — from the extraction or the human
- *   · corroboration — ZERO. One observation is one observation. This is the term that
+ *   ┬╖ source authority ΓÇö from `origin`, same table as an incumbent
+ *   ┬╖ confidence ΓÇö from the extraction or the human
+ *   ┬╖ corroboration ΓÇö ZERO. One observation is one observation. This is the term that
  *     stops a single remark from outranking a decision three sources agree on.
- *   · implementation cost — ZERO. Nothing is built on it yet, so it costs nothing to
+ *   ┬╖ implementation cost ΓÇö ZERO. Nothing is built on it yet, so it costs nothing to
  *     give up. Symmetric with corroboration: the newcomer is cheap in both directions.
- *   · recency — full score. It just arrived.
+ *   ┬╖ recency ΓÇö full score. It just arrived.
  *
  * The asymmetry is deliberate and it is the whole mechanism: an incumbent has had time
  * to accumulate corroboration and guards; a newcomer has had time to accumulate
@@ -244,9 +244,9 @@ export function scoreNewcomer(newcomer: Newcomer): number {
  * Two terms are structurally zero and one is unknown, and the shape makes that visible
  * rather than hiding it inside a total:
  *
- *   · corroboration 0 — one observation is one observation
- *   · implementation cost 0 — nothing is built on it yet
- *   · recency 1 — it just arrived
+ *   ┬╖ corroboration 0 ΓÇö one observation is one observation
+ *   ┬╖ implementation cost 0 ΓÇö nothing is built on it yet
+ *   ┬╖ recency 1 ΓÇö it just arrived
  *
  * `implementationCostUnknown` is true here for a different reason than it is for an
  * unguarded incumbent: an incumbent's cost is UNMEASURED (a guard could exist later),
@@ -287,8 +287,8 @@ export function newcomerBreakdownOf(newcomer: Newcomer): EntrenchmentBreakdown {
 /** What an unguarded incumbent's unknown cost means, versus a newcomer's zero. */
 export function describeNewcomerCost(): string {
   return [
-    "implementation cost 0.00 — nothing is built on it yet, so it costs nothing to give up.",
-    "corroboration 0.00 — one observation. This is the term that stops a single remark",
+    "implementation cost 0.00 ΓÇö nothing is built on it yet, so it costs nothing to give up.",
+    "corroboration 0.00 ΓÇö one observation. This is the term that stops a single remark",
     "from outranking a decision three independent sources agree on.",
     "An incumbent's unknown cost is UNMEASURED (a guard could exist later); a newcomer's",
     "is genuinely ZERO. Both show as unknown in the breakdown, and only this note tells",
@@ -315,7 +315,7 @@ function authorityOf(origin: Newcomer["origin"]): number {
  *
  * This text is shown to the user verbatim and is the difference between a system that
  * looks arbitrary and one that looks principled. It names the blocking decision, both
- * scores, the term that decided it, and — critically — what would change the answer.
+ * scores, the term that decided it, and ΓÇö critically ΓÇö what would change the answer.
  * A refusal with no path to overturning it is just a veto.
  */
 export function explainRefusal(
@@ -333,12 +333,12 @@ export function explainRefusal(
     `Refused: "${newcomer.text}" would contradict ${blockingName}.`,
     blocker.why,
     blocker.via === "different-value"
-      ? "Note that the ontology has no antonym pair for these two values — they conflict because one variable cannot hold two live answers, not because the table says so."
+      ? "Note that the ontology has no antonym pair for these two values ΓÇö they conflict because one variable cannot hold two live answers, not because the table says so."
       : "",
     `The newcomer scores ${newcomerScore.toFixed(2)}; the incumbent scores ${blocker.breakdown.capped.toFixed(2)}.`,
     `The newcomer has one observation, no corroboration and nothing built on it. ${blockingName} has had time to accumulate both.`,
     `What decides it: ${dominantTerm(state, blockingId)}.`,
-    "This is a refusal, not a deletion — it is in the Contested queue.",
+    "This is a refusal, not a deletion ΓÇö it is in the Contested queue.",
     `To overturn it: retract or weaken ${blockingId} first, or record this as a human override, which outranks everything.`,
   ].join(" ");
 }

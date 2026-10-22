@@ -1,15 +1,15 @@
 /**
- * Gate orchestration — 2.3–2.5.
+ * Gate orchestration ΓÇö 2.3ΓÇô2.5.
  *
- * Phase 2 · sub-phases 2.3, 2.4, 2.5
- * Plan: plan/phase-2-truth-maintenance.md §2.3–2.5
+ * Phase 2 ┬╖ sub-phases 2.3, 2.4, 2.5
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.3ΓÇô2.5
  *
  * ---------------------------------------------------------------------------
  * THE ORDER IS THE DESIGN
  *
- *   (a) structural — O(1), no model, no network, no threshold. Always runs.
- *   (c) premise    — a label lookup over justifications. Always runs.
- *   (b) semantic   — retrieval plus a model call. Runs only if it is available.
+ *   (a) structural ΓÇö O(1), no model, no network, no threshold. Always runs.
+ *   (c) premise    ΓÇö a label lookup over justifications. Always runs.
+ *   (b) semantic   ΓÇö retrieval plus a model call. Runs only if it is available.
  *
  * Cheapest and most certain first, for two reasons that are not about speed. One:
  * gate (a)'s answer is passed INTO gate (b) as `structuralVerdict`, so a model that
@@ -43,7 +43,7 @@ import type { Labelled, NodeId } from "../labeller";
 
 /** One finding, whichever gate produced it. The cycle downstream
  *  (`backtracking`, `cascade`, `adjudication`, `proposals`) reads this shape and
- *  never branches on which gate fired — which is the point of unifying it. */
+ *  never branches on which gate fired ΓÇö which is the point of unifying it. */
 export interface GateFinding {
   readonly gate: ContradictionGate;
   readonly verdict: ContradictionVerdict;
@@ -71,7 +71,7 @@ export interface GateOptions {
   /** Phase 3 supplies this. Absent means gate (b) reports itself unavailable rather
    *  than guessing at candidates. */
   readonly retrieve?: (state: GraphState) => Promise<readonly CandidatePair[]>;
-  /** Skip gate (b) even when a retriever exists — used by the keyless demo path and
+  /** Skip gate (b) even when a retriever exists ΓÇö used by the keyless demo path and
    *  by Phase 7 when measuring gates (a) and (c) in isolation. */
   readonly skipSemantic?: boolean;
 }
@@ -165,7 +165,7 @@ function fromSemantic(hit: SemanticHit): GateFinding {
 /**
  * One finding per (decision, gate) pair.
  *
- * A decision can be invalidated by two premises at once, and both matter — but the
+ * A decision can be invalidated by two premises at once, and both matter ΓÇö but the
  * same premise reported twice through two justifications is one fact, not two, and
  * counting it twice would double the cascade and double the proposal.
  */
@@ -196,12 +196,12 @@ export function describeRun(run: GateRun): string {
   if (!run.anyFired) {
     return [
       "no gate fired",
-      `${run.structural.length} structural · ${run.premise.length} premise · ${run.semantic.hits.length} semantic`,
+      `${run.structural.length} structural ┬╖ ${run.premise.length} premise ┬╖ ${run.semantic.hits.length} semantic`,
       run.semantic.available ? "" : "gate (b) unavailable",
       `${run.durationMs} ms`,
     ]
       .filter((part) => part.length > 0)
-      .join(" · ");
+      .join(" ┬╖ ");
   }
 
   const parts: string[] = [];
@@ -217,7 +217,7 @@ export function describeRun(run: GateRun): string {
   if (run.semantic.hits.length > 0) parts.push(`${run.semantic.hits.length} semantic`);
   parts.push(`${run.durationMs} ms`);
 
-  return parts.join(" · ");
+  return parts.join(" ┬╖ ");
 }
 
 /**
@@ -229,11 +229,11 @@ export function describeRun(run: GateRun): string {
  */
 export function describeAvailability(run: GateRun): string {
   return [
-    "gate (a) structural — available, deterministic, always runs",
-    "gate (c) premise — available, deterministic, always runs",
+    "gate (a) structural ΓÇö available, deterministic, always runs",
+    "gate (c) premise ΓÇö available, deterministic, always runs",
     run.semantic.available
-      ? `gate (b) semantic — available, considered ${run.semantic.pairsConsidered} candidate pairs`
-      : `gate (b) semantic — UNAVAILABLE: ${run.semantic.unavailableReason}`,
+      ? `gate (b) semantic ΓÇö available, considered ${run.semantic.pairsConsidered} candidate pairs`
+      : `gate (b) semantic ΓÇö UNAVAILABLE: ${run.semantic.unavailableReason}`,
   ].join("\n");
 }
 

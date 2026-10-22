@@ -1,16 +1,16 @@
 /**
- * Entrenchment — 2.8.
+ * Entrenchment ΓÇö 2.8.
  *
- * Phase 2 · sub-phase 2.8
- * Plan: plan/phase-2-truth-maintenance.md §2.8
- * Docs: docs/02-truth-maintenance-theory.md §3.4, docs/04 §4.5
+ * Phase 2 ┬╖ sub-phase 2.8
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.8
+ * Docs: docs/02-truth-maintenance-theory.md ┬º3.4, docs/04 ┬º4.5
  *
  * ---------------------------------------------------------------------------
  * WHAT IT IS FOR
  *
  * When new information contradicts something already in the log, exactly one of two
  * things happens: the newcomer is accepted and the incumbent retracted, or the
- * newcomer is refused. That choice needs an ordering, and recency is the wrong one —
+ * newcomer is refused. That choice needs an ordering, and recency is the wrong one ΓÇö
  * it would let a passing remark in a transcript overwrite a decision made over three
  * days.
  *
@@ -19,11 +19,11 @@
  * ---------------------------------------------------------------------------
  * THE FIVE TERMS, AND THE ONE NOBODY ELSE HAS
  *
- *   E(d) = 0.30 · source_authority     who said it
- *        + 0.20 · implementation_cost  what it would take to undo it  <- NOVEL
- *        + 0.20 · corroboration        how many independent sources
- *        + 0.15 · confidence           how sure the extraction was
- *        + 0.15 · recency              how recently it was valid
+ *   E(d) = 0.30 ┬╖ source_authority     who said it
+ *        + 0.20 ┬╖ implementation_cost  what it would take to undo it  <- NOVEL
+ *        + 0.20 ┬╖ corroboration        how many independent sources
+ *        + 0.15 ┬╖ confidence           how sure the extraction was
+ *        + 0.15 ┬╖ recency              how recently it was valid
  *
  * `source_authority`, `corroboration`, `confidence` and `recency` all exist in prior
  * belief-revision systems. Veritas computes `0.40 reliability + 0.25 corroboration +
@@ -33,7 +33,7 @@
  * `implementation_cost` is the fraction of a decision's accepted guards that currently
  * PASS. A decision with six passing guards is baked in: reversing it means changing
  * six things that are already built and verified. A decision with no guards has cost
- * 0.5 — and that is reported as UNKNOWN, never as "medium". A missing measurement must
+ * 0.5 ΓÇö and that is reported as UNKNOWN, never as "medium". A missing measurement must
  * not masquerade as a measurement. Phase 4 supplies the real number; until then every
  * breakdown carries `implementationCostUnknown: true` and the UI says so.
  *
@@ -44,7 +44,7 @@
  *
  * A derived belief is never more entrenched than its weakest premise. Without this,
  * a decision resting entirely on `single-user` could out-rank the arrival of a second
- * user on corroboration and recency alone — and the system would refuse the very
+ * user on corroboration and recency alone ΓÇö and the system would refuse the very
  * evidence that invalidates it. The cap is what makes premise invalidation able to
  * beat entrenchment, which is the demo.
  *
@@ -85,7 +85,7 @@ export interface GuardStatus {
  *
  * @param now the instant recency is measured against. Passed in rather than read from
  *   the clock so that a batch run over the whole log orders every decision against the
- *   same instant — otherwise the last decision scored is systematically the freshest.
+ *   same instant ΓÇö otherwise the last decision scored is systematically the freshest.
  * @param guards Phase 4. Absent means cost is UNKNOWN, not zero and not medium.
  */
 export function entrenchmentOf(
@@ -158,8 +158,8 @@ export function entrenchmentOf(
 /**
  * E(p). The same idea, one term fewer.
  *
- * A premise has no guards — there is nothing to run against an assumption about the
- * world — so `implementation_cost` is dropped and the remaining four weights are
+ * A premise has no guards ΓÇö there is nothing to run against an assumption about the
+ * world ΓÇö so `implementation_cost` is dropped and the remaining four weights are
  * RENORMALISED to sum to 1. Renormalising rather than leaving a hole matters: an
  * unrenormalised premise score would max out at 0.80 and would therefore ALWAYS bind
  * the EE3 cap, making the cap a formality instead of a constraint that bites only when
@@ -199,7 +199,7 @@ export function premiseEntrenchmentOf(
  * Who vouches for this premise.
  *
  * The highest-authority SUPPORTING observation wins, and a premise whose only evidence
- * is agent inference is capped low regardless of how confident the extraction was —
+ * is agent inference is capped low regardless of how confident the extraction was ΓÇö
  * an inference cannot be more trustworthy than the inference it came from.
  */
 function premiseAuthority(premise: Premise): number {
@@ -260,7 +260,7 @@ function validFromMsOfWindow(valid: string): number {
  *
  * IN-list only. An OUT-list premise is a condition the decision EXCLUDES, not one it
  * rests on, and including it would let the EE3 cap bind on a premise the decision is
- * arguing against — capping a decision's entrenchment by the strength of its own
+ * arguing against ΓÇö capping a decision's entrenchment by the strength of its own
  * negation.
  */
 export function premisesOf(state: GraphState, decisionId: DecisionId): readonly PremiseId[] {
@@ -318,14 +318,14 @@ export function describeEntrenchment(
   const w = breakdown.weights;
 
   const lines = [
-    `${decisionId} — entrenchment ${breakdown.capped.toFixed(2)} (${entrenchmentBand(breakdown.capped)})`,
-    `  ${w.sourceAuthority.toFixed(2)} × source authority ${c.sourceAuthority.toFixed(2)}`,
+    `${decisionId} ΓÇö entrenchment ${breakdown.capped.toFixed(2)} (${entrenchmentBand(breakdown.capped)})`,
+    `  ${w.sourceAuthority.toFixed(2)} ├ù source authority ${c.sourceAuthority.toFixed(2)}`,
     breakdown.implementationCostUnknown
-      ? `  ${w.implementationCost.toFixed(2)} × implementation cost UNKNOWN (no guard yet — counted as ${c.implementationCost.toFixed(2)}, not measured)`
-      : `  ${w.implementationCost.toFixed(2)} × implementation cost ${c.implementationCost.toFixed(2)}`,
-    `  ${w.corroboration.toFixed(2)} × corroboration ${c.corroboration.toFixed(2)}`,
-    `  ${w.confidence.toFixed(2)} × confidence ${c.confidence.toFixed(2)}`,
-    `  ${w.recency.toFixed(2)} × recency ${c.recency.toFixed(2)} (half-life ${RECENCY_HALF_LIFE_DAYS}d, valid time)`,
+      ? `  ${w.implementationCost.toFixed(2)} ├ù implementation cost UNKNOWN (no guard yet ΓÇö counted as ${c.implementationCost.toFixed(2)}, not measured)`
+      : `  ${w.implementationCost.toFixed(2)} ├ù implementation cost ${c.implementationCost.toFixed(2)}`,
+    `  ${w.corroboration.toFixed(2)} ├ù corroboration ${c.corroboration.toFixed(2)}`,
+    `  ${w.confidence.toFixed(2)} ├ù confidence ${c.confidence.toFixed(2)}`,
+    `  ${w.recency.toFixed(2)} ├ù recency ${c.recency.toFixed(2)} (half-life ${RECENCY_HALF_LIFE_DAYS}d, valid time)`,
     `  = ${breakdown.total.toFixed(2)} uncapped`,
   ];
 

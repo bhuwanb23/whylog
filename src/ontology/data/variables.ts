@@ -1,8 +1,8 @@
 /**
  * The 14 decision variables, plus OTHER.
  *
- * Phase 0 · sub-phase 0.7 · table A
- * Plan: plan/phase-0-foundation.md §0.7
+ * Phase 0 ┬╖ sub-phase 0.7 ┬╖ table A
+ * Plan: plan/phase-0-foundation.md ┬º0.7
  *
  * ---------------------------------------------------------------------------
  * WHY A CLOSED SET OF SLOTS
@@ -38,12 +38,12 @@ export interface VariableMeta {
    *  `premiseTypeOf` to rank candidate types during premise recovery. */
   readonly typicalPremises: readonly PremiseType[];
   /** File globs this slot usually governs. Seeds `applies_to` in export
-   *  (plan/phase-5 §5.3) and guard scoping (plan/phase-4 §4.2). */
+   *  (plan/phase-5 ┬º5.3) and guard scoping (plan/phase-4 ┬º4.2). */
   readonly typicalGlobs: readonly string[];
   /** Whether a decision in this slot can usually be checked mechanically.
-   *  Drives guard-template coverage and the `unverifiable` flag — a decision
+   *  Drives guard-template coverage and the `unverifiable` flag ΓÇö a decision
    *  with no synthesizable guard is MARKED unverifiable, never silently
-   *  skipped (docs/04 §4.2). */
+   *  skipped (docs/04 ┬º4.2). */
   readonly verifiableByTemplate: boolean;
 }
 
@@ -151,7 +151,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
   STORAGE: {
     variable: "STORAGE",
     label: "Blob & file storage",
-    description: "Where files and large objects live — distinct from the database.",
+    description: "Where files and large objects live ΓÇö distinct from the database.",
     commonValues: ["s3", "r2", "gcs", "azure-blob", "local-fs", "indexeddb", "localstorage", "uploadthing", "none"],
     typicalPremises: ["budget", "scale", "deployment", "external"],
     typicalGlobs: ["src/storage/**", "src/**/uploads/**", "src/lib/storage*"],
@@ -291,7 +291,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     variable: "OTHER",
     label: "Other",
     description:
-      "Escape hatch. Anything landing here is evidence the fourteen slots are incomplete — watch the rate.",
+      "Escape hatch. Anything landing here is evidence the fourteen slots are incomplete ΓÇö watch the rate.",
     commonValues: [],
     typicalPremises: ["requirement", "capability", "external", "time"],
     typicalGlobs: [],

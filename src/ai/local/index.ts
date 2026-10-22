@@ -1,8 +1,8 @@
 /**
- * The local engine — the DEFAULT, not the fallback.
+ * The local engine ΓÇö the DEFAULT, not the fallback.
  *
- * Phase 0 · sub-phase 0.9 (seam + registration); completed in Phase 1
- * Plan: plan/OVERVIEW.md §8 · plan/phase-1-extraction-pipeline.md
+ * Phase 0 ┬╖ sub-phase 0.9 (seam + registration); completed in Phase 1
+ * Plan: plan/OVERVIEW.md ┬º8 ┬╖ plan/phase-1-extraction-pipeline.md
  *
  * ---------------------------------------------------------------------------
  * WHAT "DEFAULT" COMMITS US TO
@@ -11,7 +11,7 @@
  * one. Keyless mode is therefore a product, not a demo: it extracts, it embeds, it
  * classifies structurally, it composes from templates, and it synthesises guards
  * from templates. The two things it genuinely cannot do are declared honestly in
- * `capabilities()` — cross-encoder RERANKING, which needs a model, and LLM-written
+ * `capabilities()` ΓÇö cross-encoder RERANKING, which needs a model, and LLM-written
  * guard rationales.
  *
  * ---------------------------------------------------------------------------
@@ -25,12 +25,12 @@
  * ---------------------------------------------------------------------------
  * WHAT IS COMPLETE AND WHAT IS NOT
  *
- *   embed      COMPLETE since Phase 0 — the 0.8 deliverable, and the index is real
- *   extract    COMPLETE since Phase 1 — cue-driven, episode-based, keyless. This is
+ *   embed      COMPLETE since Phase 0 ΓÇö the 0.8 deliverable, and the index is real
+ *   extract    COMPLETE since Phase 1 ΓÇö cue-driven, episode-based, keyless. This is
  *              the walking skeleton: a messy transcript becomes reviewed,
  *              structured, persisted decisions WITH PREMISES.
  *   compose    template implementation, replaced in Phase 3
- *   classify   thin delegate to the §3.6 rule engine (retrieval/contradiction.ts);
+ *   classify   thin delegate to the ┬º3.6 rule engine (retrieval/contradiction.ts);
  *              gate (a)'s verdict passes through unchanged
  *   synthesizeGuards  empty, with an `unverifiableReason`. Phase 4.
  *
@@ -118,7 +118,7 @@ export function createLocalEngine(): WhyLogEngine {
     /* ---------------- extraction: COMPLETE ---------------- */
 
     /**
-     * normalise → segment → recognise → score → stamp.
+     * normalise ΓåÆ segment ΓåÆ recognise ΓåÆ score ΓåÆ stamp.
      *
      * Snippet spans come from the offset map BY CONSTRUCTION, so the local path
      * cannot produce a paraphrased citation. `snippet-validation.ts` still checks
@@ -152,7 +152,7 @@ export function createLocalEngine(): WhyLogEngine {
      * Gate (b) on the local path: four NLI-style rules, no model.
      *
      * Implemented in `./classify` so the rules can be listed and audited independently
-     * of the engine that hosts them — `describeLocalRules()` is the classifier's whole
+     * of the engine that hosts them ΓÇö `describeLocalRules()` is the classifier's whole
      * behaviour in text, which is the strongest possible answer to "what is this
      * actually deciding?".
      *
@@ -165,7 +165,7 @@ export function createLocalEngine(): WhyLogEngine {
 
     rerank: async (_request: RerankRequest): Promise<RerankResult> => {
       // Declared false in capabilities(), so the UI never offers it. Throwing is
-      // the backstop for a caller that ignored the flag — and it must throw rather
+      // the backstop for a caller that ignored the flag ΓÇö and it must throw rather
       // than return the input order, because a "reranker" that does nothing is
       // indistinguishable from one that is broken.
       throw unsupportedError("reranking", id.model);
@@ -176,7 +176,7 @@ export function createLocalEngine(): WhyLogEngine {
     compose: async (request: CompositionRequest): Promise<CompositionResult> => {
       const started = performanceSafeNow();
 
-      /* Template composition is a real implementation, not a stub — it is what the
+      /* Template composition is a real implementation, not a stub ΓÇö it is what the
        * keyless path ships. The fuller Phase 3 templates live in ./compose.ts and emit
        * every sentence with its decision id inline, which is what lets
        * retrieval/answer.ts attribute claims to citations by the same rule it applies to

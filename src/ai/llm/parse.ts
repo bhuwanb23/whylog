@@ -1,8 +1,8 @@
 /**
- * Parsing and coercion for the LLM path — 1.10.
+ * Parsing and coercion for the LLM path ΓÇö 1.10.
  *
- * Phase 1 · sub-phase 1.10
- * Plan: STRUCTURE.md §5 names this file; `ai/llm/index.ts` owns the engine object
+ * Phase 1 ┬╖ sub-phase 1.10
+ * Plan: STRUCTURE.md ┬º5 names this file; `ai/llm/index.ts` owns the engine object
  * and this owns everything between "the model answered" and "here are candidates".
  *
  * ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@
  * that invents a variable produces an OTHER decision; a model that paraphrases a
  * quote produces `null` and the item is dropped.
  *
- * The alternative — parsing into the declared interfaces with a cast — would let a
+ * The alternative ΓÇö parsing into the declared interfaces with a cast ΓÇö would let a
  * malformed answer reach the review queue looking well-formed, and the review is
  * the one place the system is allowed to be wrong in public.
  *
@@ -250,7 +250,7 @@ function toAlternative(
 /**
  * Locate a model's quote in the input.
  *
- * Returns null when it is not a literal substring — which is the rule, not an
+ * Returns null when it is not a literal substring ΓÇö which is the rule, not an
  * error: the item is dropped here and counted in `discarded` by the validation pass
  * downstream. Guessing a span would produce a highlight over the wrong words, and
  * that is undetectable by reading it.
@@ -269,7 +269,7 @@ function resolveSpan(request: ExtractionRequest, raw: string, snippet: string): 
  * Split a long transcript on TURN boundaries for the prompt.
  *
  * `chunkTurns` is the same chunker the local path uses, so a transcript that fits
- * locally and does not fit remotely is split identically — which matters because
+ * locally and does not fit remotely is split identically ΓÇö which matters because
  * Phase 7 compares the two engines on the same fixture and a different split would
  * be a confound.
  */

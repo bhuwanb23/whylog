@@ -1,15 +1,15 @@
 /**
  * Deterministic non-cryptographic hashing.
  *
- * Phase 0 · sub-phase 0.5
- * Plan: plan/phase-0-foundation.md §0.5
+ * Phase 0 ┬╖ sub-phase 0.5
+ * Plan: plan/phase-0-foundation.md ┬º0.5
  *
  * ---------------------------------------------------------------------------
  * WHY NOT SHA-256
  *
  * The hash chain is for AUDITABILITY, not security. The requirement is: "this
  * CLAUDE.md corresponds to log head a3f91c..., 14 decisions, 11 guards
- * passing" — and later, detect that the file no longer matches.
+ * passing" ΓÇö and later, detect that the file no longer matches.
  *
  * WebCrypto's subtle.digest is ASYNC, which would make the fold async, which
  * would make materialisation async, which would poison every layer above it.
@@ -21,7 +21,7 @@
  * ---------------------------------------------------------------------------
  */
 
-/** cyrb128 — four 32-bit lanes, well-distributed, fast, synchronous. */
+/** cyrb128 ΓÇö four 32-bit lanes, well-distributed, fast, synchronous. */
 export function hash128(input: string): string {
   let h1 = 0xdeadbeef;
   let h2 = 0x41c6ce57;
@@ -89,9 +89,9 @@ export function canonicalJson(value: unknown): string {
     .join(",")}}`;
 }
 
-/** Short form for display: `a3f91c7e2b…` */
+/** Short form for display: `a3f91c7e2bΓÇª` */
 export function shortHash(hash: string, length = 10): string {
-  return hash.length <= length ? hash : `${hash.slice(0, length)}…`;
+  return hash.length <= length ? hash : `${hash.slice(0, length)}ΓÇª`;
 }
 
 /** Hash a Float32Array without allocating an intermediate string. */

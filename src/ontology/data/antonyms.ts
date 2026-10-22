@@ -1,8 +1,8 @@
 /**
  * Variable-scoped antonym pairs.
  *
- * Phase 0 · sub-phase 0.7
- * Plan: plan/phase-0-foundation.md §0.7 · docs/03 §4 (gate a)
+ * Phase 0 ┬╖ sub-phase 0.7
+ * Plan: plan/phase-0-foundation.md ┬º0.7 ┬╖ docs/03 ┬º4 (gate a)
  *
  * ---------------------------------------------------------------------------
  * THE CHEAPEST CONTRADICTION DETECTOR IN THE SYSTEM
@@ -14,7 +14,7 @@
  *
  * This matters because of the load-bearing fact from docs/03: "use Postgres" and
  * "don't use Postgres" are ~0.9 cosine similar. Embeddings cannot detect
- * contradiction — they detect TOPICAL similarity, and a negation changes almost
+ * contradiction ΓÇö they detect TOPICAL similarity, and a negation changes almost
  * nothing in vector space. Gate (a) is what fires while the semantic gate is
  * still uncertain, and it fires deterministically.
  *
@@ -27,7 +27,7 @@
  * unrelated slots, which is the fastest route to a tool that cries wolf and gets
  * switched off.
  *
- * Every pair is over CANONICAL values — aliases are folded first by
+ * Every pair is over CANONICAL values ΓÇö aliases are folded first by
  * src/ontology/canonicalize.ts, so ("pg", "sqlite") is caught via
  * ("postgres", "sqlite").
  * ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
   ],
 
   LANGUAGE: [
-    { a: "typescript", b: "javascript", why: "Typed and untyped source for the same codebase — one is a migration of the other, not a coexisting choice." },
+    { a: "typescript", b: "javascript", why: "Typed and untyped source for the same codebase ΓÇö one is a migration of the other, not a coexisting choice." },
     { a: "python", b: "typescript", why: "Two implementation languages for the same component." },
     { a: "go", b: "rust", why: "Two implementation languages for the same component." },
     { a: "java", b: "kotlin", why: "Two JVM languages for the same component; usually a migration, which should be recorded as a supersession." },
@@ -169,7 +169,7 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
   ],
 
   SCOPE: [
-    { a: "single-user", b: "multi-user", why: "One user and many users contradict — and this pair is the one that invalidates the most downstream decisions." },
+    { a: "single-user", b: "multi-user", why: "One user and many users contradict ΓÇö and this pair is the one that invalidates the most downstream decisions." },
     { a: "single-user", b: "multi-tenant", why: "One user and a tenanted product contradict." },
     { a: "browser-only", b: "desktop", why: "Two target platforms." },
     { a: "cli", b: "browser-only", why: "A command-line tool and a browser-only app are different surfaces." },
@@ -196,7 +196,7 @@ const PAIR_INDEX: ReadonlyMap<string, string> = (() => {
  * Are these two canonical values mutually exclusive under this variable?
  *
  * This is gate (a) in one function. It returns the REASON as well as the verdict
- * because the conflict view must show the rule that fired — "these two cannot
+ * because the conflict view must show the rule that fired ΓÇö "these two cannot
  * both hold because X" is actionable, and "similarity 0.91" is not.
  */
 export function areAntonyms(

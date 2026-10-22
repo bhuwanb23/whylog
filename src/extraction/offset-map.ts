@@ -1,16 +1,16 @@
 /**
- * The offset map — 1.1's non-negotiable.
+ * The offset map ΓÇö 1.1's non-negotiable.
  *
- * Phase 1 · sub-phase 1.1
- * Plan: plan/phase-1-extraction-pipeline.md §1.1
+ * Phase 1 ┬╖ sub-phase 1.1
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS ITS OWN FILE
  *
  * Acceptance criterion: "any extracted snippet can be resolved to an exact
- * character range in the raw input." Without that, a citation is decoration —
+ * character range in the raw input." Without that, a citation is decoration ΓÇö
  * the review UI highlights the wrong characters, the export ships a quote nobody
- * can find, and the evidence contract (docs/03 §5) collapses silently, because a
+ * can find, and the evidence contract (docs/03 ┬º5) collapses silently, because a
  * snippet that resolves to the WRONG range still looks exactly like one that
  * resolves to the right range.
  *
@@ -32,7 +32,7 @@
  * `rawAt()` walks the anchor list. It is linear, which is fine: the list is short
  * and lookups happen once per extracted item, not once per character. If a
  * transcript ever produces enough anchors for that to matter, swap in a binary
- * search — the interface does not change.
+ * search ΓÇö the interface does not change.
  * ---------------------------------------------------------------------------
  */
 
@@ -69,7 +69,7 @@ export function identityMap(raw: string): OffsetMap {
  *
  * The normaliser calls `keep(rawChars)` for text it passes through unchanged and
  * `skip(rawChars, normalisedChars)` for text it collapses, removes or replaces.
- * Those two calls are the whole contract — there is no way to advance the
+ * Those two calls are the whole contract ΓÇö there is no way to advance the
  * normalised position without saying what happened to the raw position, which is
  * what makes an offset bug impossible to write by accident.
  */
@@ -136,7 +136,7 @@ export class OffsetMapBuilder {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Normalised index → raw index.
+ * Normalised index ΓåÆ raw index.
  *
  * Between two anchors the mapping is a pure translation, so interpolation is
  * exact rather than approximate: if `a.normalised + d` is inside the run, then
@@ -155,7 +155,7 @@ export function rawAt(map: OffsetMap, normalisedIndex: number): number {
   return Math.min(Math.max(raw, 0), map.rawLength);
 }
 
-/** Raw index → normalised index. The inverse, used by the review UI to highlight
+/** Raw index ΓåÆ normalised index. The inverse, used by the review UI to highlight
  *  a raw range the user selected. Returns null when the raw index falls inside a
  *  collapsed region, which has no normalised counterpart. */
 export function normalisedAt(map: OffsetMap, rawIndex: number): number | null {
@@ -222,7 +222,7 @@ export function spanFrom(
 /**
  * Resolve a snippet the ENGINE returned back to a raw range.
  *
- * The LLM path returns text, not offsets — it cannot know them. So the snippet is
+ * The LLM path returns text, not offsets ΓÇö it cannot know them. So the snippet is
  * located by literal search, preferring a hit inside the span the candidate came
  * from. Anything that is not a literal substring is rejected here rather than
  * later, at the point where the reason is still known.
@@ -258,7 +258,7 @@ function normaliseWhitespace(input: string): string {
 }
 
 /**
- * Normalised bounds → raw bounds.
+ * Normalised bounds ΓåÆ raw bounds.
  *
  * The forward direction of `normalisedAt`, and the one the review UI needs: turns
  * and episodes are stored in normalised coordinates because that is the text the

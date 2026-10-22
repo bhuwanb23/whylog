@@ -1,8 +1,8 @@
 /**
- * Snippet validation — 1.6's hard rule.
+ * Snippet validation ΓÇö 1.6's hard rule.
  *
- * Phase 1 · sub-phase 1.6
- * Plan: plan/phase-1-extraction-pipeline.md §1.6, §1.10
+ * Phase 1 ┬╖ sub-phase 1.6
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.6, ┬º1.10
  *
  * ---------------------------------------------------------------------------
  * THE RULE
@@ -11,7 +11,7 @@
  * downgraded, and its span is dropped.**
  *
  * This is the single most important check on the LLM path, and it is cheap. A
- * model that is asked to quote will usually quote — and will occasionally
+ * model that is asked to quote will usually quote ΓÇö and will occasionally
  * paraphrase, tidy punctuation, fix a typo, or compose a sentence that reads like
  * the transcript but was never in it. Every one of those produces a citation that
  * looks perfect and resolves to nothing.
@@ -25,7 +25,7 @@
  * at full confidence loses the evidence contract.
  *
  * Downgrading to the LOW tier does neither. The item survives, collapsed, with no
- * resolvable span — so the review UI shows it as "unverifiable quote" and the user
+ * resolvable span ΓÇö so the review UI shows it as "unverifiable quote" and the user
  * decides. And an engine that paraphrases everything produces an entirely
  * collapsed queue, which is a visible, self-diagnosing failure rather than a
  * silent one.
@@ -35,7 +35,7 @@
  *
  * Its spans come from the offset map by construction. The check still runs, because
  * a check that only applies to one engine is a check that will be skipped by the
- * next one — and because it costs one `indexOf` per item.
+ * next one ΓÇö and because it costs one `indexOf` per item.
  * ---------------------------------------------------------------------------
  */
 
@@ -113,7 +113,7 @@ export function validateSnippet(
   }
 
   // The engine may also have supplied offsets. Trust them only if they agree with
-  // the text — an offset that disagrees with its own quote is wrong, and the quote
+  // the text ΓÇö an offset that disagrees with its own quote is wrong, and the quote
   // is the thing the user will read.
   if (snippet.start >= 0 && snippet.end > snippet.start && raw.slice(snippet.start, snippet.end) === text) {
     return { ok: true, span: snippet, reason: null };
@@ -234,8 +234,8 @@ function downgradePremise(candidate: PremiseCandidate): PremiseCandidate {
     ...candidate,
     confidence: FAILED_VALIDATION_CONFIDENCE,
     snippet: emptySpan(candidate.snippet.transcriptId),
-    // A premise whose evidence cannot be shown must be reviewed. It already is —
-    // `needsReview` is true for every premise in Phase 1 — but the flag is set
+    // A premise whose evidence cannot be shown must be reviewed. It already is ΓÇö
+    // `needsReview` is true for every premise in Phase 1 ΓÇö but the flag is set
     // here too so that loosening the threshold later does not silently admit
     // unverifiable premises.
     needsReview: true,
@@ -292,7 +292,7 @@ export function discardsFromFailures(
 
 export const FAILURE_EXPLANATIONS: Readonly<Record<SnippetFailure, string>> = {
   "not-a-substring":
-    "the engine returned text that does not appear in the transcript — a paraphrase, not a quote",
+    "the engine returned text that does not appear in the transcript ΓÇö a paraphrase, not a quote",
   empty: "the engine returned no snippet at all",
   "too-long": `the snippet exceeded ${MAX_SNIPPET_CHARS} characters, which is a paragraph rather than a citation`,
   ambiguous: "the snippet appears in the transcript but could not be located to a single range",
@@ -312,5 +312,5 @@ export function describeValidation(report: ValidationReport): string {
     `${report.passed} of ${report.checked} snippets resolve verbatim`,
     `${report.failed} failed (${reasons.join(", ")})`,
     "those items keep their structure, lose their span, and drop to the collapsed tier",
-  ].join(" — ");
+  ].join(" ΓÇö ");
 }

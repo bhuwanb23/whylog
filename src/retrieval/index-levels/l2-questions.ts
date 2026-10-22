@@ -1,29 +1,29 @@
 /**
- * L2 — inverted questions (HyPE). 3.1
+ * L2 ΓÇö inverted questions (HyPE). 3.1
  *
- * Phase 3 · sub-phase 3.1
- * Plan: plan/phase-3-retrieval.md §3.1
- * Research: docs/03 §2.2
+ * Phase 3 ┬╖ sub-phase 3.1
+ * Plan: plan/phase-3-retrieval.md ┬º3.1
+ * Research: docs/03 ┬º2.2
  *
  * ---------------------------------------------------------------------------
  * THE ASYMMETRY THIS REMOVES
  *
  *   NAIVE                            WhyLog
- *   ─────                            ──────
+ *   ΓöÇΓöÇΓöÇΓöÇΓöÇ                            ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
  *   "why did we drop auth?"          "why did we drop auth?"
- *            │                                │
- *            ▼                                ▼
+ *            Γöé                                Γöé
+ *            Γû╝                                Γû╝
  *   match against STATEMENTS         match against INVERTED QUESTIONS
- *   "Drop auth entirely — local      "why is there no login?"
+ *   "Drop auth entirely ΓÇö local      "why is there no login?"
  *    single-user tool"               "did we decide about auth?"
- *            │                                │
- *            ▼                                ▼
- *   interrogative vs declarative     question ↔ question
- *   — a dialect mismatch             — same shape, same dialect
+ *            Γöé                                Γöé
+ *            Γû╝                                Γû╝
+ *   interrogative vs declarative     question Γåö question
+ *   ΓÇö a dialect mismatch             ΓÇö same shape, same dialect
  *
  * HyPE (Vake et al. 2025) precomputes hypothetical questions per chunk at INDEX time, so
  * query matching becomes question-to-question retrieval. WhyLog's queries are ALREADY
- * questions — "why did we drop auth?" is not a document-shaped query needing HyDE's
+ * questions ΓÇö "why did we drop auth?" is not a document-shaped query needing HyDE's
  * dialect translation, it wants another question. So the asymmetry is removed completely
  * rather than approximately.
  *
@@ -39,7 +39,7 @@
  * ---------------------------------------------------------------------------
  * ONE VECTOR PER DECISION, NOT ONE PER QUESTION
  *
- * `index-artifacts.ts` stores `questionVectors` keyed by decision id — a single slot.
+ * `index-artifacts.ts` stores `questionVectors` keyed by decision id ΓÇö a single slot.
  * So the questions for one decision are concatenated and embedded together. That is a
  * real trade: it loses the ability to match a single question precisely, and it is taken
  * because five vectors per decision is five times the storage and five times the
@@ -47,13 +47,13 @@
  * are already near-duplicates of each other.
  *
  * If Phase 7's ablation shows L2 underperforming, the fix is to store one vector per
- * question and max-pool the scores — not to tune the templates.
+ * question and max-pool the scores ΓÇö not to tune the templates.
  * ---------------------------------------------------------------------------
  */
 
-import { cosine } from "@/lib/cosine";
 import type { DecisionId } from "@/types/common";
 import type { IndexArtifacts, RankedHit } from "@/types/retrieval";
+import { cosine } from "@/lib/cosine";
 import { rank } from "../rrf";
 
 /**
@@ -108,10 +108,10 @@ export function l2Text(questions: readonly string[]): string {
 
 export function describeL2(artifacts: IndexArtifacts): string {
   if (artifacts.stale) {
-    return "L2 inverted questions — DISABLED with L1, for the same reason.";
+    return "L2 inverted questions ΓÇö DISABLED with L1, for the same reason.";
   }
   const count = l2Count(artifacts);
   return count === 0
-    ? "L2 inverted questions — none built. Question-shaped queries fall back to L1 and L3."
-    : `L2 inverted questions (HyPE) — ${count} decision(s). Query matching becomes question-to-question, which removes the interrogative/declarative asymmetry entirely. Cost: zero extra model calls.`;
+    ? "L2 inverted questions ΓÇö none built. Question-shaped queries fall back to L1 and L3."
+    : "L2 inverted questions (HyPE) ΓÇö " + count + " decision(s). Query matching becomes question-to-question, which removes the interrogative/declarative asymmetry entirely. Cost: zero extra model calls.";
 }

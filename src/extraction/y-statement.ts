@@ -1,19 +1,19 @@
 /**
- * Y-statement formation — 1.3, component 6.
+ * Y-statement formation ΓÇö 1.3, component 6.
  *
- * Phase 1 · sub-phase 1.3
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phase 1.3
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
  * ---------------------------------------------------------------------------
  * WHY Y-STATEMENTS RATHER THAN FREE PROSE
  *
- *   "In the context of ⟨premises⟩, facing ⟨concern⟩, we decided for ⟨value⟩
- *    to achieve ⟨quality⟩, accepting ⟨downside⟩."
+ *   "In the context of Γƒ¿premisesΓƒ⌐, facing Γƒ¿concernΓƒ⌐, we decided for Γƒ¿valueΓƒ⌐
+ *    to achieve Γƒ¿qualityΓƒ⌐, accepting Γƒ¿downsideΓƒ⌐."
  *
  * Two properties matter, and neither is about sounding formal:
  *
  *   1. **The slots are named, so they are extractable.** A statement in this form
- *      can be parsed back into premises, concern, value, quality and downside —
+ *      can be parsed back into premises, concern, value, quality and downside ΓÇö
  *      which is what lets the export compiler emit `applies_to`, a rationale line
  *      and a guard from ONE field instead of three that can disagree.
  *
@@ -28,7 +28,7 @@
  *
  * A Y-statement with two slots missing is not a Y-statement, it is a sentence
  * wearing one. `complete` is false unless every slot was recovered, and a partial
- * is stored as `statement` plus whatever slots were found — never padded with
+ * is stored as `statement` plus whatever slots were found ΓÇö never padded with
  * "unspecified" placeholders, which read as content and are not.
  * ---------------------------------------------------------------------------
  */
@@ -42,7 +42,7 @@ export interface YStatementSlots {
   readonly value: string;
   /** The imperative form: "Use SQLite, not Postgres". */
   readonly statement: string;
-  /** Supporting conditions — the IN-list, in plain words. */
+  /** Supporting conditions ΓÇö the IN-list, in plain words. */
   readonly context: readonly string[];
   readonly concern: string | null;
   readonly quality: string | null;
@@ -79,7 +79,7 @@ export const Y_SLOT_LABELS: Readonly<Record<YSlot, string>> = {
  * `context` comes from the PREMISES attached to the decision, not from the
  * rationale clause: the rationale is the sentence the human wrote, the premises are
  * the nodes the truth-maintenance layer will actually reason over. Using the
- * premises keeps the Y-statement honest about what the decision rests on — if a
+ * premises keeps the Y-statement honest about what the decision rests on ΓÇö if a
  * premise is later invalidated, the statement names it.
  */
 export function slotsFrom(
@@ -186,7 +186,7 @@ export function parseYStatement(text: string): YStatementSlots | null {
   if (value === null) return null;
 
   // The variable is not written in the statement, so it is re-derived from the
-  // value. `OTHER` is the honest answer when the ontology has no opinion — which
+  // value. `OTHER` is the honest answer when the ontology has no opinion ΓÇö which
   // is also the signal that the alias table needs this value added.
   return {
     variable: variableFromValue(value.trim())?.variable ?? "OTHER",
@@ -243,5 +243,5 @@ function capitalise(input: string): string {
 
 export function describeCompleteness(result: YStatementResult): string {
   if (result.complete) return "all five Y-statement slots recovered";
-  return `partial — missing ${result.missing.map((slot) => Y_SLOT_LABELS[slot].toLowerCase()).join(", ")}`;
+  return `partial ΓÇö missing ${result.missing.map((slot) => Y_SLOT_LABELS[slot].toLowerCase()).join(", ")}`;
 }

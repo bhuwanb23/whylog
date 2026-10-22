@@ -1,13 +1,13 @@
 /**
- * Decision recovery — 1.3.
+ * Decision recovery ΓÇö 1.3.
  *
- * Phase 1 · sub-phase 1.3
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phase 1.3
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
  * ---------------------------------------------------------------------------
  * THE SIX COMPONENTS, IN ORDER
  *
- *   1. cue detection          `cue-scan.ts`   — shared with the segmenter and the LLM path
+ *   1. cue detection          `cue-scan.ts`   ΓÇö shared with the segmenter and the LLM path
  *   2. variable + value       `value-phrase.ts` + `@/ontology`
  *   3. polarity               `ai/local/negation.ts`
  *   4. modality               `ai/local/modality.ts`
@@ -21,20 +21,20 @@
  * ---------------------------------------------------------------------------
  * WHAT BECOMES A NODE
  *
- *   modality `hypothetical`  → DISCARDED, with `discardedBy: "modality"`. A
+ *   modality `hypothetical`  ΓåÆ DISCARDED, with `discardedBy: "modality"`. A
  *                              question is not a decision, and keeping it as a
  *                              low-confidence candidate invites a bulk approve
  *                              that turns "what if we used Redis?" into a Redis
  *                              decision.
- *   modality `reported`      → DISCARDED. Somebody else's decision is context, not
+ *   modality `reported`      ΓåÆ DISCARDED. Somebody else's decision is context, not
  *                              a commitment this project made.
- *   modality `proposed`      → KEPT. The fold labels it UNKNOWN and only a
+ *   modality `proposed`      ΓåÆ KEPT. The fold labels it UNKNOWN and only a
  *                              non-bulk human approval promotes it to IN, so a
  *                              proposal can never become a decision without
  *                              someone clicking on it. Discarding proposals would
  *                              lose the most useful thing in a transcript: what
  *                              the agent suggested and the human has not ruled out.
- *   modality `asserted`      → KEPT, and the only kind that can become IN at
+ *   modality `asserted`      ΓåÆ KEPT, and the only kind that can become IN at
  *                              creation.
  *
  * That is acceptance criterion "zero hypothetical or proposed statements become
@@ -44,7 +44,7 @@
  * COORDINATE SYSTEMS
  *
  * Three of them, and mixing them up is the easiest bug in this pipeline to write
- * and the hardest to see — a snippet still renders, it just highlights the wrong
+ * and the hardest to see ΓÇö a snippet still renders, it just highlights the wrong
  * characters:
  *
  *   EPISODE     `episode.text` is assembled from turn bodies, so a cue position
@@ -59,8 +59,8 @@
  * ---------------------------------------------------------------------------
  * DEDUPLICATION IS BY VARIABLE + CANONICAL VALUE
  *
- * One negotiation routinely fires several cues: "we decided to use SQLite … going
- * with SQLite … SQLite it is". Three cues, ONE decision. Keeping all three would
+ * One negotiation routinely fires several cues: "we decided to use SQLite ΓÇª going
+ * with SQLite ΓÇª SQLite it is". Three cues, ONE decision. Keeping all three would
  * triple the corroboration on a node that was decided once, and corroboration is an
  * input to entrenchment, which decides what gets retracted.
  * ---------------------------------------------------------------------------
@@ -115,7 +115,7 @@ export interface DecisionRecovery {
 const MIN_VALUE_SCORE = 0.3;
 
 /** Below this a cue is a passing mention. "deal" and "for now" are in the table at
- *  low weight so that they can be RECORDED as weak rather than silently dropped —
+ *  low weight so that they can be RECORDED as weak rather than silently dropped ΓÇö
  *  but weak is not extractable. */
 const MIN_CUE_WEIGHT = 0.35;
 
@@ -301,7 +301,7 @@ function rejectedValues(text: string, hit: CueHit, chosen: ValueCandidate): read
 
   // "instead of Y" / "over Y" put the refusal after the cue. Restricted to values
   // the ontology knows, so that an ordinary noun never becomes a rejected
-  // alternative — the precision problem ARGUS measured at 15.4%.
+  // alternative ΓÇö the precision problem ARGUS measured at 15.4%.
   const window = text.slice(hit.start, Math.min(text.length, hit.end + 140));
   const pivot = /\b(?:instead of|rather than|over|in preference to)\s+([A-Za-z0-9@/._+-]+)/i.exec(window);
   const pivotValue = pivot?.[1];
@@ -323,7 +323,7 @@ function canonicalFold(value: string): string {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Episode-relative position → the turn it falls in, plus the same position made
+ * Episode-relative position ΓåÆ the turn it falls in, plus the same position made
  * turn-relative.
  *
  * Returning the TURN rather than just an offset is what lets the caller get back to
@@ -340,7 +340,7 @@ function shiftHit(hit: CueHit, delta: number): CueHit {
 /**
  * The verbatim span for this decision, in RAW coordinates.
  *
- * Runs cue start → value end, so the snippet reads as the sentence the user would
+ * Runs cue start ΓåÆ value end, so the snippet reads as the sentence the user would
  * point at ("going with SQLite, not Postgres") rather than as the cue alone.
  */
 function spanFor(
@@ -353,7 +353,7 @@ function spanFor(
 
   // The value's bounds came from `rankValues` over the EPISODE text, so they cannot
   // be added to a turn offset. It is re-located inside the turn by literal search
-  // instead — cheaper than threading a second coordinate system, and it fails
+  // instead ΓÇö cheaper than threading a second coordinate system, and it fails
   // safely: when the value is not in this turn at all (a pivot construction that
   // spans two speakers) the snippet falls back to the cue, which is still a true
   // quote of the text that produced the decision.
@@ -374,10 +374,10 @@ function spanFor(
 /* -------------------------------------------------------------------------- */
 
 /**
- * The additive score from plan §1.8, computed here because every term is already
+ * The additive score from plan ┬º1.8, computed here because every term is already
  * in hand.
  *
- * `confidence.ts` recomputes and OVERRIDES this with the full rubric — including
+ * `confidence.ts` recomputes and OVERRIDES this with the full rubric ΓÇö including
  * origin, which needs the whole turn list and is not available inside one episode.
  * A provisional score exists so that a discard can carry an honest number: the
  * discarded list is the denominator of the precision metric, and a denominator of
@@ -425,5 +425,5 @@ export function confidenceOf(candidate: DecisionCandidate): Confidence {
 /** How many cues fired and how many survived to become candidates. The gap is the
  *  discard rate, which is the number the review UI's "why so many?" answer needs. */
 export function describeRecovery(recovery: DecisionRecovery, cueCount: number): string {
-  return `${cueCount} cue${cueCount === 1 ? "" : "s"} → ${recovery.decisions.length} decision${recovery.decisions.length === 1 ? "" : "s"}, ${recovery.discarded.length} discarded`;
+  return `${cueCount} cue${cueCount === 1 ? "" : "s"} ΓåÆ ${recovery.decisions.length} decision${recovery.decisions.length === 1 ? "" : "s"}, ${recovery.discarded.length} discarded`;
 }

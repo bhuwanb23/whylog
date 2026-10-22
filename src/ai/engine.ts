@@ -1,7 +1,7 @@
 /**
- * The engine facade — `getEngine()`.
+ * The engine facade ΓÇö `getEngine()`.
  *
- * Phase 0 · sub-phase 0.9
+ * Phase 0 ┬╖ sub-phase 0.9
  *
  * ---------------------------------------------------------------------------
  * THE ONE CALL SITE
@@ -18,7 +18,7 @@
  *
  * Step 3 is not an error and is not silent. `getEngine()` returns the reason
  * alongside the engine so the UI can say "you asked for GPT, there is no key, this
- * is local" — the one behaviour the seam must never have is a quiet substitution.
+ * is local" ΓÇö the one behaviour the seam must never have is a quiet substitution.
  * ---------------------------------------------------------------------------
  */
 
@@ -138,7 +138,7 @@ export function getLocalEngine(): WhyLogEngine {
 }
 
 /** The engine id that will stamp the NEXT extraction. Shown next to the Extract
- *  button, before the user presses it — the badge is a promise, not a footnote. */
+ *  button, before the user presses it ΓÇö the badge is a promise, not a footnote. */
 export function activeEngineId(): EngineId {
   return getEngine().id;
 }

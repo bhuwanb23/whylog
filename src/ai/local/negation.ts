@@ -1,8 +1,8 @@
 /**
- * Polarity and negation scope — 1.3, component 3.
+ * Polarity and negation scope ΓÇö 1.3, component 3.
  *
- * Phase 1 · sub-phase 1.3
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phase 1.3
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
  * ---------------------------------------------------------------------------
  * WHY POLARITY IS ITS OWN PROBLEM
@@ -11,19 +11,19 @@
  * "instead of Postgres" mentions Postgres and REJECTS it; "going with Postgres"
  * mentions Postgres and ACCEPTS it. Rationale Miner found negation explicit in
  * only 12% of rationale sentences (docs/05), so polarity has to come from the
- * cue's own direction as often as from a negation word — and when both are
+ * cue's own direction as often as from a negation word ΓÇö and when both are
  * present they can disagree.
  *
  * Getting this backwards is the worst available extraction error, worse than
  * missing the decision entirely: a polarity flip records the REJECTED option as
- * the chosen one, and every downstream layer — contradiction detection, export,
- * guard synthesis — then reasons correctly from a false premise.
+ * the chosen one, and every downstream layer ΓÇö contradiction detection, export,
+ * guard synthesis ΓÇö then reasons correctly from a false premise.
  *
  * ---------------------------------------------------------------------------
  * THE RULE WHEN CUE AND NEGATION DISAGREE
  *
  * A negation word INSIDE THE SCOPE WINDOW flips the cue's direction. "not going
- * with Postgres" is −Postgres, not +Postgres.
+ * with Postgres" is ΓêÆPostgres, not +Postgres.
  *
  * But a negation OUTSIDE the window does not: "we're not a big team, so going with
  * SQLite" is +SQLite, and the "not" belongs to the PREMISE. That is what the
@@ -36,7 +36,7 @@ import type { CueDirection } from "@/ontology/data/decision-cues";
 import type { CueHit } from "@/extraction/cue-scan";
 import { tokenise } from "@/lib/text";
 
-/** +X means X is chosen. −X means X is refused and belongs in
+/** +X means X is chosen. ΓêÆX means X is refused and belongs in
  *  `RejectedAlternative`. */
 export type Polarity = "positive" | "negative";
 
@@ -107,7 +107,7 @@ const CLAUSE_BREAK = /[.!?\n;]/;
  *
  * This is the ONLY region a negation may flip polarity from. Extending it past the
  * clause boundary is how "we're not a big team, so going with SQLite" becomes
- * −SQLite.
+ * ΓêÆSQLite.
  */
 export function negationScope(text: string, hit: CueHit): readonly string[] {
   const clauseStart = clauseStartBefore(text, hit.start);
@@ -131,7 +131,7 @@ function clauseStartBefore(text: string, from: number): number {
   for (let i = Math.min(from, text.length) - 1; i >= 0; i -= 1) {
     const ch = text[i] ?? "";
     if (CLAUSE_BREAK.test(ch)) return i + 1;
-    // A comma also bounds the window, but only when it follows a conjunction —
+    // A comma also bounds the window, but only when it follows a conjunction ΓÇö
     // "single file, synchronous API" is one thought, while "not a big team, so"
     // is two.
     if (ch === "," && /\b(?:so|because|since|but|and so)\s*$/i.test(text.slice(Math.max(0, i - 24), i))) {
@@ -220,7 +220,7 @@ export function isNegation(token: string): boolean {
  *
  * Phase 2 kept this list inside `ai/local/classify.ts`; Phase 3 collapsed that file into a
  * thin delegate over `retrieval/contradiction.ts` (one rule engine, not two that can
- * disagree — the Phase 2 audit's gap 3). The vocabulary is a NEGATION concern, so it moved
+ * disagree ΓÇö the Phase 2 audit's gap 3). The vocabulary is a NEGATION concern, so it moved
  * here with the rest of the negation machinery rather than staying behind in a file that no
  * longer implements any rules.
  *
@@ -232,7 +232,7 @@ export const NEGATION_CUES: readonly string[] = NEGATIONS;
 /**
  * The value REJECTED by an "X, not Y" construction.
  *
- * "going with SQLite, not Postgres" → "postgres". This is the highest-precision
+ * "going with SQLite, not Postgres" ΓåÆ "postgres". This is the highest-precision
  * alternative source available on the local path, because the rejection is
  * syntactically explicit rather than inferred.
  */
@@ -248,12 +248,12 @@ export const POLARITY_EXPLANATIONS: Readonly<Record<PolarityEvidence["via"], str
   "cue-direction": "the cue phrase itself carries the direction",
   "negation-flip": "a negation inside the cue's clause reversed it",
   "verb-pattern": "the verb decided, because the cue was direction-neutral",
-  default: "no polarity evidence — defaulted to chosen, which the review can correct",
+  default: "no polarity evidence ΓÇö defaulted to chosen, which the review can correct",
 };
 
 export function describePolarity(evidence: PolarityEvidence): string {
   const marker = evidence.marker === null ? "" : ` ("${evidence.marker}")`;
-  return `${evidence.polarity === "positive" ? "CHOSEN" : "REFUSED"}${marker} — ${POLARITY_EXPLANATIONS[evidence.via]}`;
+  return `${evidence.polarity === "positive" ? "CHOSEN" : "REFUSED"}${marker} ΓÇö ${POLARITY_EXPLANATIONS[evidence.via]}`;
 }
 
 /** Which cue directions exist, for the review UI's legend. */
@@ -264,7 +264,7 @@ export function describeDirection(direction: CueDirection): string {
     case "reject":
       return "the value after this cue is refused";
     case "pivot":
-      return "\"X instead of Y\" — accepts X, refuses Y";
+      return "\"X instead of Y\" ΓÇö accepts X, refuses Y";
     case "neutral":
       return "a decision is present; direction comes from the verb or a negation";
   }

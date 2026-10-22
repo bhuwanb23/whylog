@@ -1,16 +1,16 @@
 /**
- * Dependency-directed backtracking — 2.6.
+ * Dependency-directed backtracking ΓÇö 2.6.
  *
- * Phase 2 · sub-phase 2.6
- * Plan: plan/phase-2-truth-maintenance.md §2.6
- * Docs: docs/02-truth-maintenance-theory.md §3
+ * Phase 2 ┬╖ sub-phase 2.6
+ * Plan: plan/phase-2-truth-maintenance.md ┬º2.6
+ * Docs: docs/02-truth-maintenance-theory.md ┬º3
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS NOT A GRAPH SEARCH
  *
  * The naive move is to walk the justification graph from the failed decision and
- * report everything reachable. That answers "what depends on this?" — which the
- * cascade in `cascade.ts` already does — and not the question backtracking exists to
+ * report everything reachable. That answers "what depends on this?" ΓÇö which the
+ * cascade in `cascade.ts` already does ΓÇö and not the question backtracking exists to
  * answer: **which assumptions, minimally, are responsible for this belief being
  * unsound?**
  *
@@ -20,7 +20,7 @@
  *   New information arrives: two users.
  *
  * Reachability says: "all four premises, plus the decision, plus everything below".
- * Backtracking says: "ONE premise — `single-user` — is the culprit. The other three
+ * Backtracking says: "ONE premise ΓÇö `single-user` ΓÇö is the culprit. The other three
  * still hold. Give up that one and nothing else."
  *
  * Minimal retraction is the entire point of dependency-directed backtracking, and it
@@ -38,11 +38,11 @@
  * So the culprit set is not found by depth. It is found by asking which premises
  * actually broke the justification:
  *
- *   · an IN-list premise that is no longer IN   — the support was withdrawn
- *   · an OUT-list premise that is now IN        — an excluded condition arrived
+ *   ┬╖ an IN-list premise that is no longer IN   ΓÇö the support was withdrawn
+ *   ┬╖ an OUT-list premise that is now IN        ΓÇö an excluded condition arrived
  *
- * That set is minimal BY CONSTRUCTION, which is what §2.6's ATMS borrowing asks for.
- * Premises that still hold are examined and cleared, and the explanation says so —
+ * That set is minimal BY CONSTRUCTION, which is what ┬º2.6's ATMS borrowing asks for.
+ * Premises that still hold are examined and cleared, and the explanation says so ΓÇö
  * "the other three still hold" is the half of the diagnosis that makes it actionable.
  *
  * Depth does exist in this graph, but it comes from `Decision.edges.dependsOn`, not from
@@ -162,7 +162,7 @@ export function backtrack(
  * separate.
  *
  * This is the conjunction that goes into a nogood: "these cannot all hold". It is
- * deliberately NOT filtered to the culprits — a nogood records the whole set that was
+ * deliberately NOT filtered to the culprits ΓÇö a nogood records the whole set that was
  * believed together, because that is what cannot be re-asserted together.
  */
 export function assumptionSetOf(
@@ -201,8 +201,8 @@ export function assumptionSetOf(
  * The derived premises the walk could not get underneath.
  *
  * In a bipartite graph this is only ever non-empty when the DEPTH CAP bound a
- * `dependsOn` chain — there is no derived-premise layer to fail to reach. Kept because
- * §2.6 requires a partial result to be labelled partial rather than presented as
+ * `dependsOn` chain ΓÇö there is no derived-premise layer to fail to reach. Kept because
+ * ┬º2.6 requires a partial result to be labelled partial rather than presented as
  * complete, and the cap is the one way this walk can come up short.
  */
 export function partialCulprits(
@@ -226,7 +226,7 @@ export function partialCulprits(
 
 export function describeBacktrack(state: GraphState, result: BacktrackResult): string {
   if (result.culpritPremises.length === 0) {
-    return "No culprit found — the decision is supported by assumptions that still hold.";
+    return "No culprit found ΓÇö the decision is supported by assumptions that still hold.";
   }
 
   const named = result.culpritPremises
@@ -243,10 +243,10 @@ export function describeBacktrack(state: GraphState, result: BacktrackResult): s
     `${singular ? "One assumption is" : `${result.culpritPremises.length} assumptions are`} responsible: ${named}.`,
     singular
       ? "Retracting it alone is enough. Every other premise this decision rests on was examined and still holds."
-      : "This is the smallest set that resolves it — give up as little of it as the new evidence requires. The other premises were examined and still hold.",
+      : "This is the smallest set that resolves it ΓÇö give up as little of it as the new evidence requires. The other premises were examined and still hold.",
     `Searched to depth ${result.depthReached}.`,
     result.truncated
-      ? `TRUNCATED at depth ${MAX_BACKTRACK_DEPTH} — there may be culprits deeper than this result shows.`
+      ? `TRUNCATED at depth ${MAX_BACKTRACK_DEPTH} ΓÇö there may be culprits deeper than this result shows.`
       : "",
   ]
     .filter((part) => part.length > 0)

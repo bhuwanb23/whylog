@@ -98,12 +98,12 @@ export function daysBetween(a: ISODateString | string, b: ISODateString | string
 /* -------------------------------------------------------------------------- */
 
 export function formatPercent(value: number, decimals = 0): string {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return "ΓÇö";
   return `${(value * 100).toFixed(decimals)}%`;
 }
 
 export function formatScore(value: number, decimals = 2): string {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return "ΓÇö";
   return value.toFixed(decimals);
 }
 
@@ -139,7 +139,7 @@ export function heading(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): string {
   return `${"#".repeat(level)} ${text}`;
 }
 
-/** Join non-empty lines, dropping blanks — keeps exported files inside the
+/** Join non-empty lines, dropping blanks ΓÇö keeps exported files inside the
  *  ~200-line budget without accidental gaps. */
 export function joinLines(lines: readonly (string | null | undefined)[]): string {
   return lines
@@ -155,5 +155,5 @@ export function truncate(input: string, max: number): string {
   if (input.length <= max) return input;
   const cut = input.slice(0, max - 1);
   const lastSpace = cut.lastIndexOf(" ");
-  return `${lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut}…`;
+  return `${lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut}ΓÇª`;
 }

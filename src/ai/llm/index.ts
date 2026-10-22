@@ -1,7 +1,7 @@
 /**
- * The LLM engine — 1.10, the second path.
+ * The LLM engine ΓÇö 1.10, the second path.
  *
- * Phase 1 · sub-phase 1.10
+ * Phase 1 ┬╖ sub-phase 1.10
  *
  * ---------------------------------------------------------------------------
  * IT IS NOT A FALLBACK
@@ -176,7 +176,7 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
      * Anthropic has no first-party embedding model, so a provider-dependent
      * embedding would make the index unreadable after an engine switch. Hashing
      * tokens into 512 dimensions is weaker than a trained embedder and it is stable,
-     * reproducible and free — and `embeddingEngineIdOf` exists precisely so the
+     * reproducible and free ΓÇö and `embeddingEngineIdOf` exists precisely so the
      * index can be tagged with what actually built it.
      */
     embed: async (texts: readonly string[], signal?: AbortSignal): Promise<EmbeddingResult> => {
@@ -251,7 +251,7 @@ function compositionPrompt(request: CompositionRequest): string {
   const material = request.material
     .map((fact) => {
       const premises = fact.premises.length > 0 ? ` [given: ${fact.premises.join("; ")}]` : "";
-      const rationale = fact.rationale !== undefined && fact.rationale.length > 0 ? ` — because ${fact.rationale}` : "";
+      const rationale = fact.rationale !== undefined && fact.rationale.length > 0 ? ` ΓÇö because ${fact.rationale}` : "";
       return `- ${fact.decisionId} (${fact.label}): ${fact.statement}${premises}${rationale}`;
     })
     .join("\n");
@@ -278,7 +278,7 @@ function compositionPrompt(request: CompositionRequest): string {
  * `available: true` means the ENGINE EXISTS, not that it can be used: whether a key
  * is present changes per provider and per moment, and registration happens once at
  * import. Settings reads `providerWithKey()` for the live answer, so a greyed row
- * says "no key saved" rather than "not installed" — and `requiresKey: true` makes
+ * says "no key saved" rather than "not installed" ΓÇö and `requiresKey: true` makes
  * `createEngine` throw `no-key` BEFORE the factory runs, which is what turns "asked
  * for an LLM with no key" into the visible fallback in `resolveEngine` rather than
  * a failed request.
@@ -292,7 +292,7 @@ const LLM_PROVIDERS: readonly { id: Exclude<ProviderId, "local">; label: string 
 for (const entry of LLM_PROVIDERS) {
   registerEngine({
     id: entry.id,
-    label: `${entry.label} — ${DEFAULT_MODELS[entry.id]}`,
+    label: `${entry.label} ΓÇö ${DEFAULT_MODELS[entry.id]}`,
     factory: (options) => {
       const id: EngineId = { kind: "llm", model: options.model };
       return createLlmEngine({

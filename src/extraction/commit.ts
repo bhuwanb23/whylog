@@ -1,8 +1,8 @@
 /**
- * Commit — 1.9's write path. THE ENFORCEMENT POINT.
+ * Commit ΓÇö 1.9's write path. THE ENFORCEMENT POINT.
  *
- * Phase 1 · sub-phase 1.9
- * Plan: plan/phase-1-extraction-pipeline.md §1.9
+ * Phase 1 ┬╖ sub-phase 1.9
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.9
  *
  * ---------------------------------------------------------------------------
  * THE RULE THIS FILE EXISTS TO ENFORCE
@@ -10,7 +10,7 @@
  * **Nothing enters the log unreviewed.**
  *
  * `commitReview` REFUSES an item with no `ReviewAction`. Not "accepts it at low
- * confidence", not "marks it needsReview" — refuses, and reports which items were
+ * confidence", not "marks it needsReview" ΓÇö refuses, and reports which items were
  * the problem. An extraction that has not been looked at by a person is a set of
  * guesses, and guesses in an append-only hash-chained log are worse than guesses in
  * a scratchpad: they cannot be deleted, they drive cascades, and they get exported
@@ -19,29 +19,29 @@
  * ---------------------------------------------------------------------------
  * WHY ONE BATCH
  *
- * A commit is all-or-nothing. Half a justification — a decision whose premise was
- * written but whose `JustificationAttached` was not — is worse than nothing,
+ * A commit is all-or-nothing. Half a justification ΓÇö a decision whose premise was
+ * written but whose `JustificationAttached` was not ΓÇö is worse than nothing,
  * because the decision looks justified while resting on nothing, and the cascade
  * has no edge to walk. `recordBatch` is already all-or-nothing; this module's job
  * is to build the batch so that its ordering makes the references resolvable.
  *
  * Ordering, therefore:
  *
- *   1. `PremiseAsserted`      — premises exist before anything refers to them
- *   2. `DecisionProposed`     — carries `premiseIds`, so premises come first
- *   3. `JustificationAttached`— carries the IN and OUT lists
- *   4. `AlternativeRejected`  — carries `decisionId`, so decisions come first
- *   5. the review events       — `DecisionApproved` / `DecisionEdited` /
+ *   1. `PremiseAsserted`      ΓÇö premises exist before anything refers to them
+ *   2. `DecisionProposed`     ΓÇö carries `premiseIds`, so premises come first
+ *   3. `JustificationAttached`ΓÇö carries the IN and OUT lists
+ *   4. `AlternativeRejected`  ΓÇö carries `decisionId`, so decisions come first
+ *   5. the review events       ΓÇö `DecisionApproved` / `DecisionEdited` /
  *                               `DecisionRejected` / `PremiseConfirmed` /
  *                               `PremiseCorrected`
- *   6. `ExtractionDiscarded`  — the precision denominator
+ *   6. `ExtractionDiscarded`  ΓÇö the precision denominator
  *
  * ---------------------------------------------------------------------------
  * THE IN/OUT SPLIT IS RECOVERED HERE, NOT CARRIED
  *
  * `DecisionCandidate.premiseRefs` is one list, because the engine interface has one
  * list. Splitting it into a justification's IN-list and OUT-list needs the
- * exclusion table, and the table is ontology data — so the split happens here, at
+ * exclusion table, and the table is ontology data ΓÇö so the split happens here, at
  * the boundary between candidates and events, where both are in scope. An OUT-list
  * entry is recognised by the marker `premise-linker.ts` writes into its text.
  *
@@ -317,7 +317,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
       drafts.push(reviewEvent("DecisionEdited", {
         decisionId: id,
         fields: item.action.fields,
-      }, `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`, reasons));
+      }, `Decision ${id} (${item.decision.variable} ΓåÆ ${item.decision.value}) edited by hand before acceptance`, reasons));
       edits += 1;
     } else {
       const viaBulk = item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
@@ -436,7 +436,7 @@ interface ResolvedRefs {
  * The split is by the derived-premise marker: an OUT-list entry was inferred from
  * another premise rather than quoted, and `premise-linker.ts` says so in its text.
  * A premise the human DISCARDED is dropped from both lists rather than referenced
- * by id — a justification that points at a premise nobody accepted rests on
+ * by id ΓÇö a justification that points at a premise nobody accepted rests on
  * nothing, and "rests on nothing" is indistinguishable from "rests on something
  * unrecorded" once the graph is written.
  */
@@ -469,7 +469,7 @@ function justificationReason(justification: Justification): string {
   const parts = [`${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`];
   if (justification.outList.length > 0) {
     parts.push(
-      `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} — non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
+      `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} ΓÇö non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
     );
   }
   return `Attaching a justification for ${justification.consequent}: ${parts.join(", ")}.`;
@@ -482,7 +482,7 @@ function justificationReason(justification: Justification): string {
 /**
  * A review event with its reason.
  *
- * Every one of the five review types is STATE_CHANGING, so `reason` is mandatory —
+ * Every one of the five review types is STATE_CHANGING, so `reason` is mandatory ΓÇö
  * and it should say WHICH item it was about, because the reason is what the audit
  * trail shows six months later when somebody asks why a decision is IN.
  */
@@ -497,7 +497,7 @@ function reviewEvent<T extends "DecisionApproved" | "DecisionEdited" | "Decision
 }
 
 function approvalReason(item: ResolvedCandidate, bulk: boolean): string {
-  const label = item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
+  const label = item.decision === null ? item.key : `${item.decision.variable} ΓåÆ ${item.decision.value}`;
   return bulk
     ? `Approved ${label} in a bulk action, so it stays UNKNOWN rather than IN until it is approved individually.`
     : `Approved ${label}: the extraction is accepted and the decision is asserted.`;
@@ -508,8 +508,8 @@ function approvalReason(item: ResolvedCandidate, bulk: boolean): string {
  *  human disagreed" from "the human is not sure yet". */
 function contestedReason(action: ReviewAction | null, snippet: string, fallback: string): string {
   const base = snippet.length > 0 ? snippet : fallback;
-  if (action?.type === "contest") return `CONTESTED: ${action.reason} — ${base}`;
-  if (action?.type === "discard") return `DISCARDED: ${action.reason} — ${base}`;
+  if (action?.type === "contest") return `CONTESTED: ${action.reason} ΓÇö ${base}`;
+  if (action?.type === "discard") return `DISCARDED: ${action.reason} ΓÇö ${base}`;
   return base;
 }
 

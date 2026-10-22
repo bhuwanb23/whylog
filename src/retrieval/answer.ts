@@ -1,8 +1,8 @@
 /**
- * Answer synthesis — 3.9.
+ * Answer synthesis ΓÇö 3.9.
  *
- * Phase 3 · sub-phase 3.9
- * Plan: plan/phase-3-retrieval.md §3.9
+ * Phase 3 ┬╖ sub-phase 3.9
+ * Plan: plan/phase-3-retrieval.md ┬º3.9
  *
  * ---------------------------------------------------------------------------
  * THE ANSWER IS ASSEMBLED FROM FACTS, NEVER WRITTEN FROM SCRATCH
@@ -12,7 +12,7 @@
  * is what makes the evidence contract enforceable: if the prose could reach outside the
  * material, no citation rule could bind it.
  *
- * Both engines go through `engine.compose()` — the interface requires it and the local engine
+ * Both engines go through `engine.compose()` ΓÇö the interface requires it and the local engine
  * implements it with the templates in `ai/local/compose.ts`. There is deliberately no
  * local-shaped branch here: a second template engine living in the retrieval layer would be
  * two implementations of one judgement, which is exactly the failure the Phase 2 audit found
@@ -25,14 +25,14 @@
  * A composer returns prose plus the ids it believes it cited. Those ids are NOT taken at face
  * value. Each sentence of the prose is checked for the ids that actually appear in it, and:
  *
- *   a sentence containing a cited id that resolved this run → a grounded claim
- *   a sentence containing no cited id                       → an UNGROUNDED claim
+ *   a sentence containing a cited id that resolved this run ΓåÆ a grounded claim
+ *   a sentence containing no cited id                       ΓåÆ an UNGROUNDED claim
  *
  * Ungrounded claims are kept, marked, and counted against groundedness. The local templates
  * end every sentence with its decision id, so they attribute cleanly and score high; a model
  * that generalises beyond its citations does not, and PARTIAL is how the answer says so
  * instead of hiding it. A composer that cites nothing produces zero grounded claims and is
- * refused — the correct outcome for a hallucinated answer rather than an embarrassing one.
+ * refused ΓÇö the correct outcome for a hallucinated answer rather than an embarrassing one.
  *
  * ---------------------------------------------------------------------------
  * REFUSAL IS A COMPLETE ANSWER, NOT AN ERROR PATH
@@ -45,31 +45,30 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { DecisionId, EngineId } from "@/types/common";
 import type { CompositionFact, CompositionRequest, WhyLogEngine } from "@/ai/types";
-import type { DecisionId, EngineId, ISODateString } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import type {
   Answer,
   Claim,
   GroundednessVerdict,
-  IndexLevel,
   PreemptionNotice,
   RetrievedHit,
 } from "@/types/retrieval";
+import { groundednessOf, PARTIAL_FLOOR } from "./groundedness";
 import {
   MAX_SEARCHES,
-  type SearchTrace,
   groundClaims,
   resolveCitations,
   unresolvedCount,
+  type SearchTrace,
 } from "./evidence-contract";
-import { PARTIAL_FLOOR, groundednessOf } from "./groundedness";
 import { renderPreemption } from "./preemption";
 
 /**
  * Below this final score a hit is not treated as on-topic.
  *
- * This is a RETRIEVAL threshold, and using one here does not touch invariant I3 — I3 forbids
+ * This is a RETRIEVAL threshold, and using one here does not touch invariant I3 ΓÇö I3 forbids
  * similarity from producing a CONTRADICTION verdict, not from deciding whether a document is
  * worth reading. Nothing here classifies a pair of decisions.
  *
@@ -90,7 +89,7 @@ export interface ComposeInput {
   readonly engineId: EngineId;
   readonly trace: SearchTrace;
   readonly labels: ReadonlyMap<DecisionId, DecisionLabel>;
-  /** decision → its premises, rendered "P-0002 \"single-user desktop app\" (IN)".
+  /** decision ΓåÆ its premises, rendered "P-0002 \"single-user desktop app\" (IN)".
    *
    *  Supplied by the pipeline, which holds the graph state. Carrying the `given` into the
    *  composed fact is what makes the answer actionable rather than merely informative: the
@@ -101,56 +100,14 @@ export interface ComposeInput {
   /** Total decisions in the log. Zero changes the assessment entirely: an empty log is not
    *  a failed search, and saying "nothing matched" when nothing exists is misleading. */
   readonly logSize: number;
-  readonly answeredAt: ISODateString;
+  readonly answeredAt: string;
   readonly signal?: AbortSignal;
 }
 
-/** The dense levels. Their evidence is statistical, and statistical evidence
- *  needs a domain to be statistical WITHIN. */
-const DENSE_LEVELS: readonly IndexLevel[] = ["L1", "L2"];
-
-/**
- * Is this hit actually about the question?
- *
- * A promoted hit carries EXACT evidence — a variable match, a value match, a
- * shared premise — and exact evidence is evidence whatever the score says.
- *
- * A hit carried ONLY by the dense levels is a different matter. The local
- * vectoriser is a hashed n-gram bag, and two short unrelated strings score
- * around 0.19 of cosine similarity against each other. That clears a 0.15
- * floor, so a dense-only hit is admitted even when the question shares not one
- * word, not one variable and not one premise with the log.
- *
- * The consequence was concrete: "What did we decide about the payment
- * provider?" came back GROUNDED at 100%, listing the six decisions least
- * unlike it. The evidence contract is not decorative — the whole point of
- * refusing is that a system which always answers has implemented a guess.
- *
- * So a dense-only hit is admissible only when some OTHER level also matched
- * something for this question. The dense level ranks WITHIN a domain; it does
- * not establish the domain. If the question has no lexical, structural or
- * premise overlap with the log at all, then a dense match is a coincidence
- * between two bags of characters, and the honest answer is that the log does
- * not say.
- */
-function isOnTopic(hit: RetrievedHit, all: readonly RetrievedHit[]): boolean {
-  if (hit.promoted) return true;
-
-  const onlyDense =
-    hit.matchedOn.length > 0 && hit.matchedOn.every((level) => DENSE_LEVELS.includes(level));
-
-  if (onlyDense) {
-    const someNonDenseEvidence = all.some((other) =>
-      other.matchedOn.some((level) => !DENSE_LEVELS.includes(level)),
-    );
-    if (!someNonDenseEvidence) return false;
-  }
-
-  return hit.finalScore >= TOPICALITY_FLOOR;
-}
-
 export async function composeAnswer(input: ComposeInput): Promise<Answer> {
-  const onTopic = input.retrieved.filter((hit) => isOnTopic(hit, input.retrieved));
+  const onTopic = input.retrieved.filter(
+    (hit) => hit.promoted || hit.finalScore >= TOPICALITY_FLOOR,
+  );
 
   const facts = onTopic.map((hit) => factFor(hit, input));
 
@@ -241,7 +198,7 @@ async function composeWithEngine(
  * Split prose into sentences and attribute each to the decision ids it mentions.
  *
  * Attribution is by id SUBSTRING, which is why every composed sentence is expected to carry
- * its citation inline. A sentence mentioning no id is an ungrounded claim — kept, marked, and
+ * its citation inline. A sentence mentioning no id is an ungrounded claim ΓÇö kept, marked, and
  * counted, never dropped.
  */
 function claimsFromProse(text: string, cited: readonly DecisionId[]): readonly Claim[] {
@@ -261,7 +218,7 @@ function claimsFromProse(text: string, cited: readonly DecisionId[]): readonly C
 /* -------------------------------------------------------------------------- */
 
 /**
- * The unanswerable case — gate G3's second half.
+ * The unanswerable case ΓÇö gate G3's second half.
  *
  * Says what is missing, offers the nearest related decisions, and makes no claim about the
  * question. Zero claims means groundedness is INSUFFICIENT_EVIDENCE by the zero-claim rule in
@@ -274,24 +231,29 @@ function refuse(input: ComposeInput): Answer {
     input.logSize === 0
       ? "The log is empty, so nothing can answer this yet. Paste a transcript on the Foundation tab and the decisions in it become searchable."
       : nearest.length === 0
-        ? `The log holds ${input.logSize} decisions and none of them came back for this question, at any score. Either the wording does not overlap the vocabulary the decisions were recorded in, or the decision was never recorded.`
-        : `The log holds ${input.logSize} decisions and none of them cleared the topicality floor of ${TOPICALITY_FLOOR} for this question.`;
+        ? "The log holds " + input.logSize + " decisions and none of them came back for this question, at any score. Either the wording does not overlap the vocabulary the decisions were recorded in, or the decision was never recorded."
+        : "The log holds " + input.logSize + " decisions and none of them cleared the topicality floor of " + TOPICALITY_FLOOR + " for this question.";
 
   const offering =
     nearest.length === 0
       ? ""
-      : `\n\nNearest related decisions — offered as the closest thing the log has, NOT as an answer:\n${nearest
+      : "\n\nNearest related decisions ΓÇö offered as the closest thing the log has, NOT as an answer:\n" +
+        nearest
           .map(
             (hit, index) =>
-              `  ${index + 1}. ${hit.decision.id} · ${hit.decision.statement}  (score ${hit.finalScore.toFixed(3)}${hit.promoted ? ", promoted on an exact match" : ""})`,
+              "  " + (index + 1) + ". " + hit.decision.id + " ┬╖ " + hit.decision.statement +
+              "  (score " + hit.finalScore.toFixed(3) +
+              (hit.promoted ? ", promoted on an exact match" : "") + ")",
           )
-          .join("\n")}`;
+          .join("\n");
 
   const firstPreemption = input.preemptions[0];
-  const preemption =
-    firstPreemption === undefined ? "" : `\n\n${renderPreemption(firstPreemption)}`;
+  const preemption = firstPreemption === undefined ? "" : "\n\n" + renderPreemption(firstPreemption);
 
-  const text = `INSUFFICIENT EVIDENCE. ${body}${offering}${preemption}\n\n${input.trace.searchCount} of a maximum of ${MAX_SEARCHES} searches were used; each is recorded in the trace below.`;
+  const text =
+    "INSUFFICIENT EVIDENCE. " + body + offering + preemption +
+    "\n\n" + input.trace.searchCount + " of a maximum of " + MAX_SEARCHES +
+    " searches were used; each is recorded in the trace below.";
 
   return {
     question: input.question,
@@ -303,8 +265,8 @@ function refuse(input: ComposeInput): Answer {
     retrieved: input.retrieved,
     trace: input.trace.freeze(
       input.logSize === 0
-        ? "No searches could answer this because the log is empty. This is not a retrieval failure — there is nothing to retrieve from."
-        : `Nothing cleared the topicality floor of ${TOPICALITY_FLOOR}. Refusing and offering the nearest related decisions rather than composing an answer from material that does not bear on the question.`,
+        ? "No searches could answer this because the log is empty. This is not a retrieval failure ΓÇö there is nothing to retrieve from."
+        : "Nothing cleared the topicality floor of " + TOPICALITY_FLOOR + ". Refusing and offering the nearest related decisions rather than composing an answer from material that does not bear on the question.",
     ),
     engine: input.engineId,
     answeredAt: input.answeredAt,
@@ -328,17 +290,15 @@ function assembleText(
   score: number,
   unresolved: number,
 ): string {
-  const banner = `${verdict} · ${(score * 100).toFixed(0)}% grounded${
-    unresolved > 0 ? ` · ${unresolved} citation(s) could not be checked against this run` : ""
-  }`;
+  const banner =
+    verdict + " ┬╖ " + (score * 100).toFixed(0) + "% grounded" +
+    (unresolved > 0 ? " ┬╖ " + unresolved + " citation(s) could not be checked against this run" : "");
 
   const firstPreemption = input.preemptions[0];
   const preemption =
-    firstPreemption === undefined
-      ? ""
-      : `\n\nBEFORE THE ANSWER — ${renderPreemption(firstPreemption)}`;
+    firstPreemption === undefined ? "" : "\n\nBEFORE THE ANSWER ΓÇö " + renderPreemption(firstPreemption);
 
-  return `${banner + preemption}\n\n${body}`;
+  return banner + preemption + "\n\n" + body;
 }
 
 /** The thresholds and the floor, printed for the health panel. */
@@ -346,9 +306,9 @@ export function describeComposition(): string {
   return [
     "Answers are assembled from retrieved facts, never written from scratch.",
     "",
-    `  topicality floor   ${TOPICALITY_FLOOR}  (promoted hits bypass it — an exact match is evidence)`,
-    `  partial floor      ${PARTIAL_FLOOR}  (below this the system refuses)`,
-    `  nearest related    ${NEAREST_RELATED_LIMIT}  (offered on refusal, explicitly NOT as an answer)`,
+    "  topicality floor   " + TOPICALITY_FLOOR + "  (promoted hits bypass it ΓÇö an exact match is evidence)",
+    "  partial floor      " + PARTIAL_FLOOR + "  (below this the system refuses)",
+    "  nearest related    " + NEAREST_RELATED_LIMIT + "  (offered on refusal, explicitly NOT as an answer)",
     "",
     "Both engines go through engine.compose(); there is no local-shaped branch here. A second",
     "template engine in the retrieval layer would be two implementations of one judgement.",
@@ -358,7 +318,7 @@ export function describeComposition(): string {
     "counted against the score. That is how PARTIAL becomes reachable.",
     "",
     "The local templates end every sentence with its decision id, so they attribute cleanly.",
-    "What they cannot do is synthesise ACROSS decisions — that gap is disclosed on every local",
+    "What they cannot do is synthesise ACROSS decisions ΓÇö that gap is disclosed on every local",
     "answer by ai/local/compose.ts rather than left for the reader to discover.",
   ].join("\n");
 }

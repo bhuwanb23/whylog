@@ -1,18 +1,18 @@
 /**
- * One review row — the unit the queue is built from.
+ * One review row ΓÇö the unit the queue is built from.
  *
- * Phase 1 · sub-phase 1.9
+ * Phase 1 ┬╖ sub-phase 1.9
  *
  * ---------------------------------------------------------------------------
  * THE ROW IS WHERE THE 13:1 RATIO IS PAID
  *
- * ARGUS measured 155 false positives against 12 false negatives (docs/05 §4), so a
+ * ARGUS measured 155 false positives against 12 false negatives (docs/05 ┬º4), so a
  * review surface is judged on how fast it lets you say NO. Three properties of this
  * row serve that:
  *
- *   • it renders ONE LINE when collapsed, and low-tier items arrive collapsed
- *   • approve / edit / discard are always visible, never behind a menu
- *   • the decision is recorded the moment the button is pressed — there is no
+ *   ΓÇó it renders ONE LINE when collapsed, and low-tier items arrive collapsed
+ *   ΓÇó approve / edit / discard are always visible, never behind a menu
+ *   ΓÇó the decision is recorded the moment the button is pressed ΓÇö there is no
  *     "pending changes" state to lose track of
  *
  * An item with no verifiable quote says so in a warning rather than rendering an
@@ -90,7 +90,7 @@ export function ReviewRow({
           }}
           style={{ width: 16, padding: 0 }}
         >
-          {open ? "−" : "+"}
+          {open ? "ΓêÆ" : "+"}
         </button>
 
         <span className="badge" title={TIER_HINTS[item.tier]}>{item.kind}</span>
@@ -164,7 +164,7 @@ export function ReviewRow({
                 <p className="notice notice-warning" style={{ fontSize: 12, margin: 0 }}>
                   This item has no verifiable quote. The engine returned text that is not a literal
                   substring of your transcript, so its span was dropped and its confidence cut. The
-                  structure may still be right — read it and decide.
+                  structure may still be right ΓÇö read it and decide.
                 </p>
               )}
 

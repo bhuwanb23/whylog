@@ -1,16 +1,16 @@
 /**
- * Value-phrase extraction and the known-value lexicon — 1.3, component 2.
+ * Value-phrase extraction and the known-value lexicon ΓÇö 1.3, component 2.
  *
- * Phase 1 · sub-phase 1.3
- * Plan: plan/phase-1-extraction-pipeline.md §1.3
+ * Phase 1 ┬╖ sub-phase 1.3
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
  *
- * STRUCTURE.md §5 calls this file `lexicon.ts` and describes it as "synonym
- * folding — the file that decides whether the local path feels intelligent".
+ * STRUCTURE.md ┬º5 calls this file `lexicon.ts` and describes it as "synonym
+ * folding ΓÇö the file that decides whether the local path feels intelligent".
  * Synonym folding proper already exists and is better placed: it is
  * `src/ontology/canonicalize.ts`, backed by ~560 aliases authored in Phase 0.7.
  * What is genuinely local-only, and lives here, is the other half of the job:
  *
- *   1. finding WHICH WORDS in a clause are the value at all — "going with SQLite
+ *   1. finding WHICH WORDS in a clause are the value at all ΓÇö "going with SQLite
  *      with better-sqlite3 instead of Postgres" has three nouns and one of them is
  *      the decision;
  *   2. ranking candidate values by how much the ontology knows about them, so the
@@ -53,7 +53,7 @@ export interface ValueCandidate {
 /* -------------------------------------------------------------------------- */
 
 /**
- * folded value → the variables that claim it. Built once at module load.
+ * folded value ΓåÆ the variables that claim it. Built once at module load.
  *
  * Seeded from `canonicalToVariables()` (aliases.ts) so the canonical direction is
  * defined in exactly one place, then extended with the ALIAS direction and with
@@ -130,7 +130,7 @@ const LEADING_STOP = new Set(["the", "a", "an", "some", "any", "this", "that", "
  * The value phrase that follows a cue.
  *
  * @param text      the turn or episode body
- * @param from      index to start reading at — normally the end of the cue phrase
+ * @param from      index to start reading at ΓÇö normally the end of the cue phrase
  * @param maxChars  hard cap; a value phrase longer than this is a sentence the
  *                  extractor mistook for a noun phrase
  */
@@ -331,7 +331,7 @@ export function isTechShaped(surface: string): boolean {
  * Feeds 1.5: "going with SQLite instead of Postgres" has two known values and the
  * cue direction says which is which. Restricting rejected-alternative recovery to
  * values the ontology recognises is what keeps its precision above the published
- * 15.4% — an unknown noun rejected for unknown reasons is not worth pre-empting
+ * 15.4% ΓÇö an unknown noun rejected for unknown reasons is not worth pre-empting
  * on.
  */
 export function knownValuesIn(text: string, start: number, end: number): readonly ValueCandidate[] {
@@ -345,7 +345,7 @@ export function describeStrength(strength: ValueStrength): string {
     case "scoped-known":
       return "claimed by the alias table AND scoped to the variable under negotiation";
     case "tech-shaped":
-      return "looks like a product name, but the ontology does not know it — worth adding";
+      return "looks like a product name, but the ontology does not know it ΓÇö worth adding";
     case "bare":
       return "an ordinary word; probably not the value, review before accepting";
   }

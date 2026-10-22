@@ -1,23 +1,23 @@
 /**
- * The local recogniser — the engine-side half of Phase 1.
+ * The local recogniser ΓÇö the engine-side half of Phase 1.
  *
- * Phase 1 · sub-phase 1.10 (the local path)
- * Plan: plan/phase-1-extraction-pipeline.md §1.10
+ * Phase 1 ┬╖ sub-phase 1.10 (the local path)
+ * Plan: plan/phase-1-extraction-pipeline.md ┬º1.10
  *
  * ---------------------------------------------------------------------------
  * WHAT THIS FILE IS
  *
  * `LocalEngine.extract()` is one call: normalised text in, candidates out. This is
  * the composition of the recognisers around that call, and it is deliberately thin
- * — every stage it calls lives in `src/extraction/` or `src/ai/local/` and is
+ * ΓÇö every stage it calls lives in `src/extraction/` or `src/ai/local/` and is
  * separately tunable, because Phase 7 measures them separately.
  *
  * What it adds that no single stage can:
  *
- *   • the EPISODE LOOP, so candidates carry the episode they came from;
- *   • PROVENANCE, which needs the whole turn list and therefore cannot be computed
+ *   ΓÇó the EPISODE LOOP, so candidates carry the episode they came from;
+ *   ΓÇó PROVENANCE, which needs the whole turn list and therefore cannot be computed
  *     inside one episode;
- *   • the LOCAL-INDEX WIRING that connects premises and alternatives to the
+ *   ΓÇó the LOCAL-INDEX WIRING that connects premises and alternatives to the
  *     decisions they belong to.
  *
  * ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@
  * Candidates refer to each other by index (`premiseRefs`, `alternativeRefs`,
  * `decisionRef`) because ids are minted at COMMIT, not at extraction. Minting them
  * earlier would make a re-run over the same transcript produce a different graph
- * shape depending on what was already in the log — and "import twice, get zero new
+ * shape depending on what was already in the log ΓÇö and "import twice, get zero new
  * nodes" would stop being true.
  *
  * The indices are GLOBAL across the whole extraction, not per episode, so a
@@ -231,7 +231,7 @@ export function extractLocal(request: ExtractionRequest, context: LocalExtractio
  * The offset map, rebuilt from the anchors the normaliser stored.
  *
  * Rebuilding rather than threading the map through `NormalizedTranscript` keeps the
- * transcript serialisable — it is persisted with the extraction run so a review can
+ * transcript serialisable ΓÇö it is persisted with the extraction run so a review can
  * be resumed after a reload, and a class instance would not survive that.
  */
 function mapOf(normalized: NormalizedTranscript): OffsetMap {
@@ -244,7 +244,7 @@ function mapOf(normalized: NormalizedTranscript): OffsetMap {
 
 /** An exclusion whose source premise was somehow not kept still needs a scoreable
  *  shape. Synthesising one is cheaper than threading a nullable through
- *  `scorePremise`, and the synthesised source is never emitted — only its score is
+ *  `scorePremise`, and the synthesised source is never emitted ΓÇö only its score is
  *  used. */
 function synthesisedSource(excluded: { type: PremiseCandidate["type"]; candidate: PremiseCandidate }): RecoveredPremise {
   return {
@@ -269,7 +269,7 @@ function nowMs(): number {
 }
 
 /** The `occurredAt` every event from this extraction will carry. Exposed because
- *  `commit.ts` needs the same value and deriving it twice would risk a mismatch —
+ *  `commit.ts` needs the same value and deriving it twice would risk a mismatch ΓÇö
  *  and a mismatch between a premise's valid time and its decision's would put them
  *  in the wrong order on the timeline. */
 export function occurredAtOf(normalized: NormalizedTranscript, fallback: ISODateString): ISODateString {
