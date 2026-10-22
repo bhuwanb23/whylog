@@ -1,13 +1,14 @@
 # Phase 1 notes — the extraction pipeline
 
-Status: **all fifteen build steps (A–O) written.** Nothing has been executed —
-per the working agreement, the build, typecheck and fixture run happen on the
-user's machine.
+Status: **all fifteen build steps (A–O) written and now compiled, linted and
+executed.** A verification pass found and fixed a set of defects; the measured
+numbers are in **§8**.
 
 ```
 npm install
-npm run check:structure     # 109 source files, 31,424 lines, exit 0
-npm run dev                 # open the Import & review view
+npm run verify             # typecheck + biome + 21 tests — all green
+npm run check:structure
+npm run dev                # open the Import & review view
 ```
 
 ---
@@ -152,9 +153,8 @@ time and reported a false positive.
 
 ## 6. Known gaps — what to expect when you run it
 
-1. **Nothing has been executed.** No typecheck, no build, no fixture run. Type
-   errors are likely and should be read as the normal cost of writing 31k lines
-   blind.
+1. ~~**Nothing has been executed.**~~ Fixed: the verification pass (§8) compiled,
+   linted and ran it. `npm run verify` is green.
 2. **`ResolutionContext.decisionVectors` is never supplied.** `resolveExtraction` is
    called without vectors, so rungs 4 and 5 of the identity ladder fall back to
    lexical similarity. Wiring the index in is a Phase 2 job.
@@ -192,3 +192,122 @@ The three things Phase 2 needs and now has:
 
 The thing Phase 2 must not assume: that premise extraction works. `predicateFromCueRate()`
 and the `byType` histogram in `PremiseRecovery` are the two numbers to read first.
+
+---
+
+## 8. The verification pass — what was broken, what was fixed, what was measured
+
+Phase 1 was written without ever being compiled. A verification pass ran the
+real gates and found **90 type errors, 117 lint errors, and two defects that
+silently disabled a mechanism the plan depends on.** All fixed. The measured
+numbers are at the end.
+
+### 8.1 The substrate had been reverted
+
+The Phase 1 work was written against a **pre-verification** snapshot of Phase 0:
+`materialize.ts` called `linkHash` without importing it, `hash-chain.ts` had no
+`selfHash`, `bi-temporal.ts` had no `byTemporalValidDesc`, and `ai/config.ts`
+reported `"openai"` for a locally-running log. Every one of those was fixed in
+the Phase 0 pass and every one of them was gone again.
+
+Restored from `def9f30` (45 files), with the two genuinely mixed files —
+`src/types/events.ts` and `src/substrate/materialize.ts` — hand-merged so the
+Phase 1 additions survived: `DecisionProposed.{yStatement, appliesTo, episode}`,
+the episode bounds in the fold, and the informant's `eventId` rewrite.
+
+### 8.2 Two defects that silently disabled a mechanism
+
+**`decisionIdForRef` always returned `null`.** An alternative's `decisionRef` is
+an index into the run's decisions, and the resolver stubbed the lookup out. So
+alternatives could never match an existing alternative, and every one of them
+resolved to "create" — 21 spurious nodes on a re-import, and no link between a
+rejected value and the decision that rejected it.
+
+Fixed by threading the run's decision resolutions through the alternative
+resolution. The alternative's parent is looked up by what the parent RESOLVED
+to, not by a name.
+
+**Within-run duplicate decisions were not suppressed.** The same decision
+recovered from two episodes produced two candidates, the ladder had nothing to
+merge them against (no node exists yet), and the commit wrote two nodes. It
+also broke idempotence: on a re-import one candidate merged onto the first node
+and the other onto the second, so their alternatives stopped matching.
+
+Fixed in `src/ai/local/extract.ts` with a canonical `(variable, value)` key, and
+the alternative's index mapping changed from arithmetic to an explicit map — a
+suppressed decision shifts every index after it.
+
+### 8.3 The other 60 type errors
+
+Mechanical, and each one is in the list of "things you would find on the first
+`npm run typecheck`". The ones that mattered beyond the compiler:
+
+- `NewEvent<T>.actor` and `.reason` were required on the *input* contract even
+  though `seal()` fills both from the append context. A batch producer that
+  commits 139 events in one call legitimately does not know the actor for each
+  one. Both are now optional on input and mandatory on the sealed event, and
+  validation still runs on the sealed event.
+- `Premise` and `RejectedAlternative` had no `provenance`, so the review UI
+  could not show where a premise came from. Plan §1.6 says every extracted item
+  carries a snippet, an origin and an engine; `Decision` already did. Added, and
+  the payloads grew `episodeId` and `origin` to feed it.
+- `NormalizedTurn` had no raw bounds, so the chunker could not report a raw
+  range for the review pane. Added `rawStart` / `rawEnd`.
+- `commit.ts` produced drafts with no `reason`. Every state-changing event needs
+  one, and the store falls back to the context — but a per-draft reason is
+  better, so each one now says what it was about.
+
+### 8.4 The measured numbers
+
+On `fixtures/demo-transcript.txt`, keyless, on the local engine:
+
+| Measure | Value |
+|---|---|
+| Episodes | 4 |
+| Decision candidates | 19 (22 before within-run dedup) |
+| Premise candidates | 32 |
+| Alternative candidates | 18 |
+| Machine discards | 6 (4 confidence, 2 duplicate) |
+| Ladder rungs on a re-import | 32 @ rung 1, 41 @ rung 2, **0 @ rung 6** |
+| Re-import: nodes created | **0** |
+| Ladder merges on a re-import | 69 |
+| Snippets resolving verbatim to a raw char range | 19/19 decisions, 32/32 premises, 18/18 alternatives |
+| Hypothetical decisions | 0 |
+
+**What works.** The OUT-list derivation is the headline: `scale.single_user`
+("it's one person, one machine, one log") produces the derived exclusion
+`scale.concurrent_writers`, which is Doyle's non-monotonic justification and the
+only mechanism that lets gate (c) fire. `deployment.local_only`, `time.hackathon`
+and `scale.single_user` all recover. Every snippet resolves verbatim. A re-import
+creates zero nodes. The review gate refuses to commit anything unreviewed.
+
+**What does not work yet.** The precision is well below the plan's bar:
+
+- **The variable is often wrong.** Of 19 decisions, the ones that land on the
+  right variable are `DATABASE=sqlite`, `AUTH=auth`, `FRAMEWORK=tailwind` and
+  `TESTING=golden-file`. The rest land on `SCOPE`, `ARCHITECTURE`, `OTHER` or a
+  wrong typed slot (`RETRIEVAL=embeddings` should be `STORAGE`).
+- **The value phrase overruns.** "Use sqlite, not pos or postgres" — the reader
+  takes a window and does not stop at the clause boundary.
+- **Premise values are mostly `undefined`.** The plan's criterion names
+  `scale.max_users = 1`; the extractor produces `scale.single_user` with no
+  value. The predicate is right and the value is missing.
+- **The OUT-list inherits a junk predicate.** `requirement.must` with the text
+  "a stated requirement is dropped or changed" is the exclusion table's fallback
+  firing on every unclassifiable premise.
+- **Alternatives are mostly junk.** `SCOPE=post`, `AUTH=re-litigate`,
+  `RETRIEVAL=200` alongside the correct `DATABASE=postgres` and
+  `FRAMEWORK=next.js`.
+- **The fixture's own documentation is read as transcript.** The trailing
+  "EXPECTED EXTRACTION" and "DEMO SEQUENCE" blocks produce a `DATABASE=postgres`
+  decision. The fixture should be split — the transcript in one file, the
+  expectations in `fixtures/expected/`.
+
+None of this is surprising for a first run, and none of it is a bug in the
+machinery — the machinery works, the recognisers need tuning. But it is the
+number R1 says to look at before building Phase 2 on top of it, and on this
+fixture the premise precision is well under the ~0.5 threshold the plan names.
+
+**The two numbers to read first** are `predicateFromCueRate()` and the `byType`
+histogram in `PremiseRecovery`. Neither is exposed yet — they are the first
+thing to add.

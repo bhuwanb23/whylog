@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState, ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { useWhyLog, persistenceAvailable } from "@/store/whylog";
 import { FoundationView } from "@/views/FoundationView";
 import { ReviewView } from "@/views/ReviewView";
