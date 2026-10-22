@@ -36,13 +36,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import { canonicalValueOf } from "@/ontology/canonicalize";
-import { areAntonyms } from "@/ontology/data/antonyms";
-import { overlaps } from "@/substrate/bi-temporal";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ValidityWindow } from "@/types/common";
 import type { DecisionVariable } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 import type { ContradictionVerdict } from "@/types/retrieval";
+import { areAntonyms } from "@/ontology/data/antonyms";
+import { canonicalValueOf } from "@/ontology/canonicalize";
+import { overlaps } from "@/substrate/bi-temporal";
 
 export interface StructuralHit {
   readonly gate: "structural";
@@ -198,8 +198,7 @@ export function wouldContradict(
 /* -------------------------------------------------------------------------- */
 
 export function describeHits(hits: readonly StructuralHit[]): string {
-  if (hits.length === 0)
-    return "no structural contradictions — no two live decisions answer the same question differently";
+  if (hits.length === 0) return "no structural contradictions — no two live decisions answer the same question differently";
   const antonyms = hits.filter((hit) => hit.via === "antonym-pair").length;
   return [
     `${hits.length} structural contradiction${hits.length === 1 ? "" : "s"}`,

@@ -43,16 +43,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
-import type { DecisionLabel } from "@/types/domain";
+import type { DecisionLabel, Justification } from "@/types/domain";
 import type { CascadeResult, CascadeStep } from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
 import {
-  type ReasoningIndex,
   decisionsRestingOn,
   indexGraph,
   justificationsFor,
   premisesNamedBy,
+  type ReasoningIndex,
 } from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
 
@@ -237,7 +237,7 @@ function firstRetractedPremiseOf(
  * truncation explicitly, because "we checked four and three were fine" is a different
  * message from "we checked one".
  */
-export function describeCascade(_state: GraphState, result: CascadeResult): string {
+export function describeCascade(state: GraphState, result: CascadeResult): string {
   if (result.steps.length === 0) {
     return "Nothing else depended on it. No other decision changed.";
   }

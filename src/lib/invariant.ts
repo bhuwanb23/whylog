@@ -54,6 +54,7 @@ export function mustGet<K, V>(map: ReadonlyMap<K, V>, key: K, label: string): V 
  */
 export function devAssert(condition: boolean, message: string): boolean {
   if (!condition && import.meta.env.DEV) {
+    // biome-ignore lint/suspicious/noConsole: development-only diagnostic
     console.error(`[whylog] ${message}`);
   }
   return condition;
