@@ -1,7 +1,7 @@
-import { URL, fileURLToPath } from "node:url";
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath, URL } from "node:url";
 
 /**
  * WhyLog is client-only by design.

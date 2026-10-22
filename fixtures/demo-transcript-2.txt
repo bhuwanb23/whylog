@@ -1,0 +1,67 @@
+Started: Nov 18, 09:41
+
+User: six weeks later. the tool works but the situation changed and I need to redo some decisions.
+
+Assistant: Tell me what changed and we will go through them one at a time. What is different?
+
+User: it's not one person any more. there are four of us on it now, and two of us edit decisions at the same time. last week the sqlite file locked and one of us lost an edit.
+
+Assistant: That is the exact condition the SQLite decision excluded. The original justification was scale.single_user, and the OUT-list carried scale.concurrent_writers — more than one process writing at once. Both have now moved.
+
+User: right. so sqlite is wrong for us now?
+
+Assistant: Not wrong when it was made — wrong now. The decision was sound given one writer. With four people and concurrent edits, the premise is false, so the decision has to be revisited rather than defended.
+
+User: ok. we decided to move to postgres. we're going with postgres, hosted on neon.
+
+Assistant: Noted. Before I record that, what makes Postgres the answer rather than something else — is it the concurrent writers, or the fact that you are deployed now?
+
+User: both, but mostly the writers. we need real transactions across four people. sqlite can't arbitrate them and there's no server to do it.
+
+Assistant: Then the premise that carries this decision is scale.concurrent_writers, at four. And deployment has changed too — you said hosted.
+
+User: yeah. we're deployed on fly.io now. it went live three weeks ago. no longer a local tool.
+
+Assistant: That is a second premise: deployment.local_only is false. It matters independently, because a hosted Postgres needs a network connection the local tool never had to make.
+
+User: makes sense. what about auth? we skipped it entirely in october.
+
+Assistant: The October premise was that the app is a local tool with nothing to protect. That premise is gone: it is on the public internet and four named people use it. Do you need to know WHO made a decision now?
+
+User: yes, definitely. we need auth. we'll use clerk, I don't want to build login myself.
+
+Assistant: Clerk it is. Why Clerk rather than rolling your own or using Supabase auth, given you are already on Postgres?
+
+User: because building login is two weeks I don't have, and supabase auth would mean moving the database too. I'm not doing that migration in the same week as this one.
+
+Assistant: Understood — so the constraint is time, not capability. Recording: auth is clerk, given a hard time constraint and an unwillingness to couple the auth choice to a second database migration.
+
+User: exactly. next. the export thing. we used to write a markdown file by hand.
+
+Assistant: And now?
+
+User: now we want it to write AGENTS.md and CLAUDE.md directly so the coding agents pick it up. we're dropping the plain markdown export.
+
+Assistant: Dropped in favour of agent-native formats. One question: is markdown gone, or is it still the human-readable artifact and the agent files are generated from it?
+
+User: markdown stays, it's just not the thing we maintain. the agent files are compiled from the log, markdown included.
+
+Assistant: Then the decision is about the SOURCE OF TRUTH rather than about a format: the log is authoritative and every export target is generated. That is a stronger claim than "we added two formats" and it is the one worth recording.
+
+User: yes. that's right. the log is the source of truth.
+
+User: last thing. testing. in october I said golden tests on the extractor only.
+
+Assistant: And that has not changed?
+
+User: it has. we have users now, so a silent regression in the extractor becomes a wrong decision in somebody's AGENTS.md. I want unit tests on the extractor and an integration test on the export path.
+
+Assistant: So the October testing decision is superseded rather than contradicted — the scope grew because the consequence of a wrong extraction grew. Worth saying explicitly: the original decision was not wrong, its premise was that only you would read the output.
+
+User: correct. supersede it. and note that the reason is other people read the output now.
+
+Assistant: Recorded. Summary of this session: four decisions revisited because three premises moved — scale.single_user, deployment.local_only, and who reads the export.
+
+User: that's the whole point of this tool isn't it. nothing contradicted me, the world just moved.
+
+Assistant: Precisely. And that is the case a decision log cannot catch on its own, because every original decision was correct when it was written.

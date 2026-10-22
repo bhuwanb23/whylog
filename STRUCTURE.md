@@ -286,7 +286,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 | File | Purpose |
 |---|---|
-| `hash.ts` | cyrb128 over canonical JSON — the hash chain and fingerprints. Synchronous and non-cryptographic on purpose: an async digest would make `fold()` async, and therefore every projection, selector and store action async. The chain is tamper-*evidence*, not security. See notes/PHASE-0-NOTES.md §2.2 |
+| `hash.ts` | SHA-256 via WebCrypto — the hash chain and fingerprints |
 | `ids.ts` | Sequential, addressable ids: `WLD-0007`, `P-0002`, `G-0007a`, `J-0007` |
 | `cosine.ts` | Cosine similarity over `Float32Array` |
 | `bm25.ts` | Sparse scoring |
@@ -385,15 +385,12 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ## 15. `tests/`
 
-**Phase 0 ships two files.** Everything else below is the plan for later phases.
-
 | Path | Covers | Gate |
 |---|---|---|
-| `unit/substrate/round-trip.test.ts` | **Exists.** Append → materialise → export → import → materialise, identical state and head hash; fold purity; projections rebuildable; hash chain detects an edited payload **at the edited event**; bi-temporal replay by learned time | G1 |
-| `unit/substrate/boot-reload.test.ts` | **Exists.** Boots empty, records, persists, survives a reload; a broken chain boots read-only and reports the damage | G1 |
 | `setup.ts` | jsdom + localStorage shim | — |
 | `helpers/events.ts` · `fixtures.ts` · `graph.ts` | Event builders, corpus loader, graph builders | — |
-| `unit/subraction/*` | Normalisation, episode segmentation, decisions, **premises**, OUT-list recovery, alternatives, provenance, snippet validation, confidence, voting | G1 |
+| `unit/substrate/*` | Event validation, fold purity, bi-temporal ordering, resolution ladder, hash chain, portability round-trip | G1 |
+| `unit/extraction/*` | Normalisation, episode segmentation, decisions, **premises**, OUT-list recovery, alternatives, provenance, snippet validation, confidence, voting | G1 |
 | `unit/reasoning/*` | Labeller, **non-monotonic OUT-list**, well-foundedness, gates a/b/c, backtracking, nogoods, **cascade stop condition**, entrenchment + EE3 cap, screening, proposals | **G2** |
 | `unit/retrieval/*` | All five levels, RRF determinism, reranking, classifier verdicts, pre-emption, evidence contract, groundedness, citations | G3 |
 | `unit/guards/*` | Templates, all six deterministic evaluators, metrics, baseline/ratchet, **feedback into `REVISE()`**, CI export | G4 |
@@ -432,43 +429,73 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 18. `reference/` — pre-drafted contracts
+## 18. `reference/` — pre-drafted contracts (now moved)
 
-Three type files written ahead of the build, because they are the contracts every module codes against:
+The three pre-drafted type files were moved into `src/types/` when Phase 0 started, and four more
+were written alongside them. `reference/MOVED.md` records the move.
 
-| File | Contents |
-|---|---|
-| `reference/types-common.ts` | Branded ids, `EngineId`, `Actor`, `BiTemporal`, `ValidityWindow`, `SourceSpan`, `Confidence` |
-| `reference/types-events.ts` | The **closed event vocabulary** (35 types), payloads, `EventPayloadMap`, `TypedEvent<T>`, validation rules |
-| `reference/types-domain.ts` | `DecisionLabel`, `DecisionStatus`, the 14 variables, the **closed set of 8 premise types**, `Premise`, `RejectedAlternative`, `Decision`, `Justification`, `Nogood`, `Episode`, `DecisionKnowledgeBase` |
+| Was | Now | Contents |
+|---|---|---|
+| `reference/types-common.ts` | `src/types/common.ts` | Branded ids, `EngineId`, `Actor`, `BiTemporal`, `ValidityWindow`, `SourceSpan`, `Confidence` |
+| `reference/types-events.ts` | `src/types/events.ts` | The **closed event vocabulary** (36 types), payloads, `EventPayloadMap`, `TypedEvent<T>`, validation rules |
+| `reference/types-domain.ts` | `src/types/domain.ts` | `DecisionLabel`, `DecisionStatus`, the 14 variables, the **closed set of 8 premise types**, `Premise`, `RejectedAlternative`, `Decision`, `Justification`, `Nogood`, `Episode`, `DecisionKnowledgeBase` |
+| — | `src/types/guards.ts` | 8 guard kinds, per-kind specs, `Guard`, `VirtualProject`, metrics, baseline ratchet |
+| — | `src/types/retrieval.ts` | Index levels L1–L5, `IndexArtifacts`, ranked/fused hits, the 5 verdicts, the evidence contract |
+| — | `src/types/reasoning.ts` | Entrenchment weights, cascade and backtrack results, nogoods, the seven-part `RevisionProposal` |
+| — | `src/types/export.ts` | Export targets, budget and priority weights, `IntegrityStamp`, `CompiledArtifact` |
+| — | `src/types/index.ts` | Barrel |
 
-Move these to `src/types/` when Phase 0 starts.
+Two deviations from the original map, both deliberate and both recorded in
+[`notes/PHASE-0-NOTES.md`](notes/PHASE-0-NOTES.md): the event vocabulary is **36** types rather than
+35 (`GuardRan` and `GuardFailed` are separate so a failure carries its own evidence fields), and
+`src/lib/hash.ts` uses a **synchronous non-cryptographic hash** rather than WebCrypto SHA-256, so
+that `fold()` can stay pure and synchronous.
 
 ---
 
+### 18.1 Phase 1 deviations
+
+| Planned file | Delivered as | Why |
+| --- | --- | --- |
+| `ai/local/normalize.ts` | `extraction/normalizer.ts` | Normalisation is mechanical and **shared by both engines**. Putting it under `ai/local/` would have forced the LLM path to import the local engine's internals or duplicate it |
+| `ai/local/segment.ts` | `extraction/segmentation.ts` | Same reason |
+| `ai/local/cues.ts` | `extraction/cue-scan.ts` | Same reason |
+| `ai/local/decisions.ts` | `extraction/decisions.ts` | Same reason |
+| `ai/local/premises.ts` | `extraction/premises.ts` | Same reason |
+| `ai/local/lexicon.ts` | `ai/local/value-phrase.ts` | Synonym folding already lives in `ontology/canonicalize.ts` with ~560 aliases. What is local-only is *finding which words in a sentence are the value*, so the file is named for that |
+| *(not planned)* | `extraction/{lines,episode-position,commit-report}.ts` | `lines.ts` breaks the `speakers.ts` ⇄ `speakers-fallback.ts` import cycle; `episode-position.ts` is the one place that reasons about all three coordinate systems; `commit-report.ts` keeps string-building out of the write path |
+| *(not planned)* | `ontology/data/exclusions.ts` | The **OUT-list vocabulary**. `premise-linker.ts` derives an excluded condition from each supporting predicate, which is what makes gate (c) — invalidation by the world rather than by contradiction — possible at all |
+| *(not planned)* | `ai/prompts/extraction.ts`, `ai/providers/openai-compatible.ts` | §5 listed `ai/prompts/` and `ai/providers/` as directories without naming their Phase 1 files |
+| `views/ImportView.tsx` | `views/ReviewView.tsx` | Import and review are one screen: the queue is empty until something is imported, and a separate import view would be a form with nowhere to go |
+
+`decision-cues.ts` grew from 85 to 120 cues during Phase 1. The additions are
+dialogue patterns the original table was missing — human acceptance of a proposal
+the agent just made ("deal.", "fine,"), future-tense commitment ("we'll do", "we're
+dropping"), the conditional recommendation ("I'd use", `speculative: true` so it
+cannot be read as an assertion), and the conclusion of a Socratic exchange ("then
+no ", "is pure cost"). The fixture audit that found the gap is in
+`notes/PHASE-1-PLAN.md`.
+
 ## 19. Counts
 
-**Shipped (Phase 0).** 66 TypeScript files under `src/`, ~19,300 lines, plus 2 test
-files. The right-hand column below is the plan's estimate for the whole project.
-
-| Area | Directories | Files | Phase 0 actual | Plan total |
-|---|---|---|---|---|
-| Setup (written) | 4 | 19 | 4 | 19 |
-| `src/substrate` | 2 | 20 | 22 | 20 |
-| `src/ontology` | 2 | 10 | 9 | 10 |
-| `src/ai` | 4 | 26 | 8 | 26 |
-| `src/extraction` | 2 | 21 | 0 | 21 |
-| `src/reasoning` | 2 | 14 | 0 | 14 |
-| `src/retrieval` | 3 | 19 | 0 | 19 |
-| `src/guards` | 5 | 24 | 0 | 24 |
-| `src/export` | 4 | 18 | 0 | 18 |
-| `src/store` + `src/lib` | 2 | 13 | 14 | 13 |
-| UI (components + views) | 12 | 71 | 1 | 71 |
-| `src/eval` | 4 | 21 | 0 | 21 |
-| `tests` | 8 | 26 | 2 | 26 |
-| `fixtures` | 1 | 14 | 1 | 14 |
-| `scripts` | 1 | 3 | 1 | 3 |
-| **Total** | **59** | **~320** | **66 + 2** | **~320** |
+| Area | Directories | Files |
+|---|---|---|
+| Setup (written) | 4 | 19 |
+| `src/substrate` | 2 | 20 |
+| `src/ontology` | 2 | 10 |
+| `src/ai` | 4 | 26 |
+| `src/extraction` | 2 | 21 |
+| `src/reasoning` | 2 | 14 |
+| `src/retrieval` | 3 | 19 |
+| `src/guards` | 5 | 24 |
+| `src/export` | 4 | 18 |
+| `src/store` + `src/lib` | 2 | 13 |
+| UI (components + views) | 12 | 71 |
+| `src/eval` | 4 | 21 |
+| `tests` | 8 | 26 |
+| `fixtures` | 1 | 14 |
+| `scripts` | 1 | 3 |
+| **Total** | **59** | **~320** |
 
 ---
 

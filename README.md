@@ -18,18 +18,39 @@ WhyLog stores the premises. When one breaks, it tells you which decisions just b
 
 ## Current status
 
-**Phase 0 (Foundation & Substrate) is complete and verified.** Phases 1–7 are not started.
+**Phase 0 (Foundation & Substrate) and Phase 1 (Extraction Pipeline) are written.
+Gate G1 — the walking skeleton — is code-complete but has never been executed.**
 
 | Area | State |
 |---|---|
 | Research library | ✅ Written — 9 documents in [`docs/`](docs/) |
 | Master plan + phase plans | ✅ Written — [`plan/`](plan/) |
 | Toolchain & config | ✅ Written — see [STRUCTURE.md §1](STRUCTURE.md) |
-| Directory structure | ✅ 66 directories, mapped file-by-file in [STRUCTURE.md](STRUCTURE.md) |
-| Type contracts | ✅ Phase 0 types landed in `src/types/`; the 3 pre-drafted files remain in [`reference/`](reference/) as the contracts later phases code against |
-| Demo fixture | ✅ [`fixtures/demo-transcript.txt`](fixtures/demo-transcript.txt) (a second fixture is needed for the premise-invalidation demo) |
-| **Phase 0 — Foundation** | ✅ **66 source files, ~19,300 lines.** Append-only bi-temporal event log, hash chain, the fold, 7 projections, the domain ontology, the AI engine seam, the store, and the Foundation view. `npm run verify` is green. See [notes/PHASE-0-NOTES.md](notes/PHASE-0-NOTES.md) |
-| Phases 1–7 | ⬜ Not started — next is [Phase 1, sub-phase 1.4](plan/phase-1-extraction-pipeline.md) (premise extraction) |
+| Directory structure | ✅ 67 directories, mapped file-by-file in [STRUCTURE.md](STRUCTURE.md) |
+| Type contracts | ✅ 8 files in [`src/types/`](src/types/) — the closed 36-type event vocabulary and every domain shape |
+| Demo fixtures | ✅ [`fixtures/demo-transcript.txt`](fixtures/demo-transcript.txt) (October: the SQLite decision and its premises) · [`fixtures/demo-transcript-2.txt`](fixtures/demo-transcript-2.txt) (November: the same premises, falsified by the world) |
+| **Phase 0 — substrate** | ✅ Log · fold · bi-temporal · identity · hash chain · persistence · portability · ontology · engine seam · store · boot |
+| **Phase 1 — extraction** | ✅ **109 source files, ~31.4k lines.** Normalise · segment · cue scan · decisions · **premises and the OUT-list** · alternatives · provenance · snippet validation · identity resolution · confidence tiers · review queue · commit · both engines |
+| Phases 2–7 | ⬜ Not started |
+| Tests | ⬜ Deliberately deferred — see [`notes/PHASE-0-NOTES.md`](notes/PHASE-0-NOTES.md) and [`notes/PHASE-1-NOTES.md`](notes/PHASE-1-NOTES.md) |
+
+Paste a transcript into the **Import & review** view — the default screen — and the local engine,
+with no API key, returns decisions with their Y-statements, the premises each one rests on, the
+conditions each one *excludes*, and the alternatives that were turned down. Nothing enters the log
+until a human decides each item; `commit.ts` refuses an item with no review action.
+
+Fixture 2 exists to demo the thing nobody else does: six weeks later the app has four users and is
+deployed, so `scale.single_user` and `deployment.local_only` are false. Nobody contradicts the
+original SQLite decision — it was correct when it was made. The world moved, and the OUT-list is what
+lets the system notice.
+
+Nothing has been installed, built, typechecked or run in the authoring environment. Run
+`npm install && npm run verify` locally and expect a first pass of type errors —
+[`notes/PHASE-1-NOTES.md` §6](notes/PHASE-1-NOTES.md) lists the seven known gaps.
+
+`npm run check:structure` passes: **109 source files, 31,424 lines**, imports resolve, every named
+import and re-export exists, zero import cycles across 503 internal edges, brackets balance, and the
+event vocabulary agrees with the fold.
 
 ---
 
@@ -46,17 +67,16 @@ npm run dev             # http://localhost:5173, bound to 0.0.0.0
 Other entry points:
 
 ```bash
+npm run check:structure # python3 only — no node_modules needed. Import paths, bracket
+                        # balance, event-vocabulary drift, forbidden patterns.
 npm run verify          # typecheck + lint/format check + tests  (pre-push gate)
 npm run typecheck
 npm run check           # Biome lint + format
 npm run test
-npm run check:structure # import resolution, bracket balance, vocabulary drift, secret leaks
 npm run build && npm run preview
 ```
 
 `npm run eval`, `npm run eval:ablation` and `npm run guards:ci` are wired to Phase 7 and Phase 4.6 respectively and will fail until those modules exist.
-
-`npm run check:structure` needs only Python 3 and no `node_modules` — it is the one gate that works before `npm install`.
 
 **No API key is required for anything.** The local engine is the default, not a fallback — extraction, premise invalidation, cascade, entrenchment, guards and export all run offline and deterministically. `.env.example` documents the optional provider config; keys live in `localStorage` at runtime and never reach the event log or an export.
 
