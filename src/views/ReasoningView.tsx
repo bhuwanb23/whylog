@@ -186,7 +186,15 @@ export function ReasoningView(): ReactElement {
         onText={setNewcomerText}
         onVariable={setNewcomerVariable}
         onValue={setNewcomerValue}
-        onSubmit={(newcomer) => void reasoning.run({ newcomer })}
+        onSubmit={(newcomer) => {
+          // Remember it. A rejected newcomer is not recoverable from the run's
+          // result — the adjudication carries the BREAKDOWN, not the information
+          // itself — and the Contested card's "override anyway" has to force the
+          // SAME information through rather than making the user retype it. An
+          // override that requires re-entry is an override nobody performs.
+          setPendingNewcomer(newcomer);
+          void reasoning.run({ newcomer });
+        }}
       />
 
       {result?.adjudication?.kind === "reject-newcomer" ? (
