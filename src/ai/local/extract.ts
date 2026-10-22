@@ -119,7 +119,7 @@ export function extractLocal(request: ExtractionRequest, context: LocalExtractio
     const linking = linkPremises(episodeDecisions, premiseRecovery.premises);
 
     /* ---- provenance + scoring, per decision ---- */
-    const episodePremises: RecoveredPremise[] = premiseRecovery.premises;
+    const episodePremises: readonly RecoveredPremise[] = premiseRecovery.premises;
     const episodeExcluded = linking.excluded;
 
     episodeDecisions.forEach((decision, localIndex) => {

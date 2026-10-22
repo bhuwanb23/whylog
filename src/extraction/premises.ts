@@ -175,7 +175,7 @@ function buildPremise(
 
   /* ---- text: the clause, verbatim ---- */
   const clause = readClause(located.turn.text, at - located.offset, cue.phrase.length);
-  if (clause.trim().length < 4) return null;
+  if (clause.text.trim().length < 4) return null;
 
   /* ---- span, in raw coordinates ---- */
   const normalisedStart = located.turn.start + clause.start;

@@ -120,6 +120,10 @@ export interface NormalizedTurn {
   /** Bounds of `text` in the NORMALISED string. */
   readonly start: number;
   readonly end: number;
+  /** The same bounds in the RAW input. The chunker and the review pane need
+   *  raw coordinates to highlight the source. */
+  readonly rawStart: number;
+  readonly rawEnd: number;
   /** How the speaker was decided, so a wrong attribution is diagnosable. */
   readonly attribution: "marker" | "jsonl-role" | "indentation" | "inherited" | "none";
 }

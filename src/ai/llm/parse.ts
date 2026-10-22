@@ -34,7 +34,7 @@ import type { DecisionVariable, PremiseType } from "@/types/domain";
 import { DECISION_VARIABLES, PREMISE_TYPES } from "@/types/domain";
 import type { ExtractionRequest, ExtractionResult } from "../types";
 import { canonicalPredicate, canonicalValueOf, foldKey, resolveVariable } from "@/ontology/canonicalize";
-import { contextTokens } from "@/extraction/cue-scan";
+import { contentTokens } from "@/lib/text";
 import { chunkTurns } from "@/extraction/chunking";
 import { normaliseTranscript } from "@/extraction/normalizer";
 import { locateSnippet } from "@/extraction/offset-map";
@@ -57,10 +57,10 @@ export function readExtraction(text: string, model: string): LlmExtraction {
   const parsed = extractJson(text, model);
 
   return {
-    decisions: arrayOf(parsed["decisions"]).filter(isRecord) as readonly LlmDecision[],
-    premises: arrayOf(parsed["premises"]).filter(isRecord) as readonly LlmPremise[],
-    alternatives: arrayOf(parsed["alternatives"]).filter(isRecord) as readonly LlmAlternative[],
-    discarded: arrayOf(parsed["discarded"]).filter(isRecord) as readonly LlmDiscard[],
+    decisions: arrayOf(parsed["decisions"]).filter(isRecord) as unknown as readonly LlmDecision[],
+    premises: arrayOf(parsed["premises"]).filter(isRecord) as unknown as readonly LlmPremise[],
+    alternatives: arrayOf(parsed["alternatives"]).filter(isRecord) as unknown as readonly LlmAlternative[],
+    discarded: arrayOf(parsed["discarded"]).filter(isRecord) as unknown as readonly LlmDiscard[],
   };
 }
 
@@ -137,7 +137,7 @@ function toDecision(
   const snippet = resolveSpan(request, raw, stringOf(decision["snippet"]));
   if (snippet === null) return null;
 
-  const guess = resolveVariable(value, contextTokens(snippet.text));
+  const guess = resolveVariable(value, contentTokens(snippet.text));
   const variable: DecisionVariable = isVariable(decision["variable"])
     ? (decision["variable"] as DecisionVariable)
     : guess.variable;
@@ -223,7 +223,7 @@ function toAlternative(
   const snippet = resolveSpan(request, raw, stringOf(alternative["snippet"]));
   if (snippet === null) return null;
 
-  const guess = resolveVariable(value, contextTokens(snippet.text));
+  const guess = resolveVariable(value, contentTokens(snippet.text));
   const variable: DecisionVariable = isVariable(alternative["variable"])
     ? (alternative["variable"] as DecisionVariable)
     : guess.variable;
@@ -279,8 +279,8 @@ export function splitForPrompt(raw: string, transcriptId: ExtractionRequest["tra
 
   if (chunks.length === 0) return [raw];
   return chunks.map((chunk) =>
-    chunk.turnIndexes
-      .map((index) => normalized.turns[index]?.text ?? "")
+    chunk.turns
+      .map((turn) => turn.text)
       .filter((text) => text.length > 0)
       .join("\n\n"),
   );

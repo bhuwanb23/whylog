@@ -158,7 +158,7 @@ function openaiBody(
     max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
   };
   if (request.json === true && provider === "openai") {
-    body.response_format = { type: "json_object" };
+    body["response_format"] = { type: "json_object" };
   }
   return body;
 }
@@ -196,7 +196,7 @@ function headers(
     return base;
   }
 
-  base.authorization = `Bearer ${apiKey}`;
+  base["authorization"] = `Bearer ${apiKey}`;
   if (provider === "openrouter") {
     base["http-referer"] = "https://github.com/whylog";
     base["x-title"] = "WhyLog";

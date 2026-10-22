@@ -29,6 +29,7 @@
 
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
+import { performanceSafeNow } from "@/lib/format";
 import { EngineError, unsupportedError } from "../errors";
 import {
   llmCapabilities,
@@ -62,7 +63,11 @@ import {
   SYSTEM_PROMPT,
   needsChunking,
   userPrompt,
+  type LlmAlternative,
+  type LlmDecision,
+  type LlmDiscard,
   type LlmExtraction,
+  type LlmPremise,
 } from "../prompts/extraction";
 import { readExtraction, splitForPrompt, toExtractionResult } from "./parse";
 import { chunkTurns } from "@/extraction/chunking";
@@ -108,12 +113,12 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
       let promptTokens = 0;
       let completionTokens = 0;
-      const merged: LlmExtraction = {
-        decisions: [],
-        premises: [],
-        alternatives: [],
-        discarded: [],
-      };
+      // Mutable while merging: a transcript is split into chunks and each
+      // chunk's candidates are appended.
+      const decisions: LlmDecision[] = [];
+      const premises: LlmPremise[] = [];
+      const alternatives: LlmAlternative[] = [];
+      const discarded: LlmDiscard[] = [];
 
       for (const piece of pieces) {
         if (request.signal?.aborted) {
@@ -139,11 +144,13 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
         completionTokens += response.completionTokens;
 
         const parsed = readExtraction(response.text, id.model);
-        merged.decisions.push(...parsed.decisions);
-        merged.premises.push(...parsed.premises);
-        merged.alternatives.push(...parsed.alternatives);
-        merged.discarded.push(...parsed.discarded);
+        decisions.push(...parsed.decisions);
+        premises.push(...parsed.premises);
+        alternatives.push(...parsed.alternatives);
+        discarded.push(...parsed.discarded);
       }
+
+      const merged: LlmExtraction = { decisions, premises, alternatives, discarded };
 
       return toExtractionResult(merged, request, id, performanceSafeNow() - started, promptTokens, completionTokens);
     },

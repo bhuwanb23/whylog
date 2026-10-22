@@ -207,7 +207,7 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       // every candidate any run produced.
       discarded: dedupeDiscards(runs),
       durationMs: runs.reduce((sum, run) => sum + run.durationMs, 0),
-      usage: sumUsage(runs),
+      ...(usage === undefined ? {} : { usage }),
     },
     runsUsed: total,
     decisionAgreement,

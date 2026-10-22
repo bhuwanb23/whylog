@@ -115,6 +115,7 @@ export function initialSettings(): SettingsState {
     capabilities: null,
     hasKey: hasKey(config),
     keyHint: view.apiKeyHint,
+    wantsLlm: config.wantsLlmWithoutKey,
     fallbackNotice: config.wantsLlmWithoutKey
       ? `${config.provider} is selected but no API key is stored. WhyLog is running the local engine — nothing has been sent anywhere.`
       : null,

@@ -71,6 +71,7 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
       episodeId: null,
       inRefs: candidate.premiseRefs,
       outRefs: [],
+      action: null,
     });
   });
 
@@ -91,6 +92,7 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 
@@ -111,6 +113,7 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 

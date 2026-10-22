@@ -71,6 +71,8 @@ import {
 } from "@/reasoning";
 import type { Newcomer } from "@/reasoning/adjudication";
 import { useWhyLog } from "./whylog";
+import type { EventType, NewEvent } from "@/types/events";
+import { get } from "zustand";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
 
