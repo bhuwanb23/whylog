@@ -32,9 +32,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { CueDirection } from "@/ontology/data/decision-cues";
 import type { CueHit } from "@/extraction/cue-scan";
 import { tokenise } from "@/lib/text";
-import type { CueDirection } from "@/ontology/data/decision-cues";
 
 /** +X means X is chosen. −X means X is refused and belongs in
  *  `RejectedAlternative`. */
@@ -60,45 +60,12 @@ export interface PolarityEvidence {
 export const NEGATION_SCOPE_TOKENS = 6;
 
 const NEGATIONS: readonly string[] = [
-  "not",
-  "no",
-  "never",
-  "neither",
-  "nor",
-  "without",
-  "avoid",
-  "avoiding",
-  "skip",
-  "skipping",
-  "skipped",
-  "drop",
-  "dropping",
-  "dropped",
-  "dont",
-  "don't",
-  "doesnt",
-  "doesn't",
-  "didnt",
-  "didn't",
-  "wont",
-  "won't",
-  "cant",
-  "can't",
-  "cannot",
-  "couldnt",
-  "couldn't",
-  "shouldnt",
-  "shouldn't",
-  "isnt",
-  "isn't",
-  "arent",
-  "aren't",
-  "wasnt",
-  "wasn't",
-  "hardly",
-  "barely",
-  "rather",
-  "instead",
+  "not", "no", "never", "neither", "nor", "without", "avoid", "avoiding",
+  "skip", "skipping", "skipped", "drop", "dropping", "dropped",
+  "dont", "don't", "doesnt", "doesn't", "didnt", "didn't",
+  "wont", "won't", "cant", "can't", "cannot", "couldnt", "couldn't",
+  "shouldnt", "shouldn't", "isnt", "isn't", "arent", "aren't", "wasnt", "wasn't",
+  "hardly", "barely", "rather", "instead",
 ];
 
 /** Verb patterns that carry polarity independent of any cue. Checked when the cue
@@ -167,10 +134,7 @@ function clauseStartBefore(text: string, from: number): number {
     // A comma also bounds the window, but only when it follows a conjunction —
     // "single file, synchronous API" is one thought, while "not a big team, so"
     // is two.
-    if (
-      ch === "," &&
-      /\b(?:so|because|since|but|and so)\s*$/i.test(text.slice(Math.max(0, i - 24), i))
-    ) {
+    if (ch === "," && /\b(?:so|because|since|but|and so)\s*$/i.test(text.slice(Math.max(0, i - 24), i))) {
       return i + 1;
     }
   }
@@ -225,13 +189,10 @@ export function polarityOf(text: string, hit: CueHit, value?: string): PolarityE
   const positive = POSITIVE_VERBS.some((pattern) => pattern.test(verbText));
   const negative = NEGATIVE_VERBS.some((pattern) => pattern.test(verbText));
 
-  if (negative && !positive)
-    return { polarity: "negative", via: "verb-pattern", marker: verbText, scope };
-  if (positive && !negative)
-    return { polarity: "positive", via: "verb-pattern", marker: verbText, scope };
+  if (negative && !positive) return { polarity: "negative", via: "verb-pattern", marker: verbText, scope };
+  if (positive && !negative) return { polarity: "positive", via: "verb-pattern", marker: verbText, scope };
 
-  if (negated !== null)
-    return { polarity: "negative", via: "negation-flip", marker: negated, scope };
+  if (negated !== null) return { polarity: "negative", via: "negation-flip", marker: negated, scope };
 
   // No evidence either way. DEFAULT POSITIVE: a decision cue with no polarity
   // signal is far more often a commitment than a refusal, and the review UI shows
@@ -255,6 +216,20 @@ export function isNegation(token: string): boolean {
 }
 
 /**
+ * The cue inventory, exported.
+ *
+ * Phase 2 kept this list inside `ai/local/classify.ts`; Phase 3 collapsed that file into a
+ * thin delegate over `retrieval/contradiction.ts` (one rule engine, not two that can
+ * disagree — the Phase 2 audit's gap 3). The vocabulary is a NEGATION concern, so it moved
+ * here with the rest of the negation machinery rather than staying behind in a file that no
+ * longer implements any rules.
+ *
+ * Exported because the health panel prints it: the cue list is the classifier's entire
+ * polarity vocabulary, and a list the user cannot read is a list they cannot audit.
+ */
+export const NEGATION_CUES: readonly string[] = NEGATIONS;
+
+/**
  * The value REJECTED by an "X, not Y" construction.
  *
  * "going with SQLite, not Postgres" → "postgres". This is the highest-precision
@@ -263,10 +238,9 @@ export function isNegation(token: string): boolean {
  */
 export function rejectedAfterCue(text: string, hit: CueHit): string | null {
   const trailing = text.slice(hit.end, hit.end + 90);
-  const match =
-    /(?:^|[\s,])(?:not|rather than|instead of|over|no)\s+([A-Za-z0-9@/._+-]+(?:\s+[A-Za-z0-9@/._+-]+)?)/i.exec(
-      trailing,
-    );
+  const match = /(?:^|[\s,])(?:not|rather than|instead of|over|no)\s+([A-Za-z0-9@/._+-]+(?:\s+[A-Za-z0-9@/._+-]+)?)/i.exec(
+    trailing,
+  );
   return match?.[1]?.trim() ?? null;
 }
 
@@ -290,7 +264,7 @@ export function describeDirection(direction: CueDirection): string {
     case "reject":
       return "the value after this cue is refused";
     case "pivot":
-      return '"X instead of Y" — accepts X, refuses Y';
+      return "\"X instead of Y\" — accepts X, refuses Y";
     case "neutral":
       return "a decision is present; direction comes from the verb or a negation";
   }

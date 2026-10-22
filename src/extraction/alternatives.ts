@@ -44,16 +44,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import { type ValueCandidate, rankValues } from "@/ai/local/value-phrase";
-import type { AlternativeCandidate, DiscardedCandidate } from "@/ai/types";
-import { normalise } from "@/lib/text";
-import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
-import { asConfidence } from "@/types/common";
+import type { DiscardedCandidate, AlternativeCandidate } from "@/ai/types";
 import type { DecisionVariable } from "@/types/domain";
-import type { DecisionContext, RecoveredDecision } from "./decisions";
-import { locateInEpisode, toNormalised } from "./episode-position";
-import { spanFrom } from "./offset-map";
+import { asConfidence } from "@/types/common";
 import type { EpisodeWindow } from "./types";
+import type { DecisionContext, RecoveredDecision } from "./decisions";
+import { spanFrom } from "./offset-map";
+import { locateInEpisode, toNormalised } from "./episode-position";
+import { rankValues, type ValueCandidate } from "@/ai/local/value-phrase";
+import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
+import { normalise } from "@/lib/text";
 
 export interface RecoveredAlternative {
   readonly candidate: AlternativeCandidate;
@@ -137,16 +137,7 @@ export function recoverAlternatives(
       if (value === null) continue;
       seen.add(key);
 
-      const built = build(
-        episode,
-        decisionIndex,
-        decisions,
-        value,
-        "pivot",
-        null,
-        context,
-        discarded,
-      );
+      const built = build(episode, decisionIndex, decisions, value, "pivot", null, context, discarded);
       if (built !== null) found.push(built);
     }
   });
@@ -172,25 +163,11 @@ export function recoverAlternatives(
       }
 
       const decisionIndex = nearestDecision(decisions, episode, at);
-      const key = dedupeKey(
-        value.variable ?? decisions[decisionIndex]?.candidate.variable ?? "OTHER",
-        value.canonical,
-      );
+      const key = dedupeKey(value.variable ?? decisions[decisionIndex]?.candidate.variable ?? "OTHER", value.canonical);
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const built = build(
-        episode,
-        decisionIndex,
-        decisions,
-        value,
-        "cue",
-        cue,
-        context,
-        discarded,
-        at,
-        cue.whyAfter,
-      );
+      const built = build(episode, decisionIndex, decisions, value, "cue", cue, context, discarded, at, cue.whyAfter);
       if (built !== null) found.push(built);
     }
   }
@@ -227,8 +204,7 @@ function build(
   if (normalise(value.canonical) === normalise(decision.candidate.value)) return null;
 
   const variable: DecisionVariable = value.variable ?? decision.candidate.variable;
-  const canonical =
-    variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
+  const canonical = variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
 
   const why = findWhyRejected(episode.text, cueAt ?? value.start, whyAfter ?? true);
   const confidence = score(value, via, cue, why !== null);
@@ -287,47 +263,24 @@ function findWhyRejected(text: string, at: number, afterFirst: boolean): string 
 }
 
 const REASON_MARKERS = [
-  "because",
-  "since",
-  "due to",
-  "as it",
-  "as they",
-  "so ",
-  "which means",
-  "that means",
-  "but it",
-  "but that",
-  "but you",
-  "but we",
-  "too much",
-  "too many",
-  "requires",
-  "would need",
-  "would mean",
-  "means",
-  "the problem",
-  "the catch",
-  "overkill",
-  "heavier",
-  "more complex",
-  "dependency",
-  "ceremony",
-  "hassle",
+  "because", "since", "due to", "as it", "as they", "so ", "which means",
+  "that means", "but it", "but that", "but you", "but we", "too much", "too many",
+  "requires", "would need", "would mean", "means", "the problem", "the catch",
+  "overkill", "heavier", "more complex", "dependency", "ceremony", "hassle",
 ];
 
 function reasonClause(window: string, reversed: boolean): string | null {
   const lower = window.toLowerCase();
-  const positions = REASON_MARKERS.map((marker) => ({
-    marker,
-    at: reversed ? lower.lastIndexOf(marker) : lower.indexOf(marker),
-  }))
+  const positions = REASON_MARKERS.map((marker) => ({ marker, at: reversed ? lower.lastIndexOf(marker) : lower.indexOf(marker) }))
     .filter((entry) => entry.at >= 0)
     .sort((a, b) => (reversed ? b.at - a.at : a.at - b.at));
 
   const best = positions[0];
   if (best === undefined) return null;
 
-  const body = reversed ? window.slice(0, best.at).trim() : window.slice(best.at).trim();
+  const body = reversed
+    ? window.slice(0, best.at).trim()
+    : window.slice(best.at).trim();
 
   const clause = body.split(/[.!?\n;]/)[0]?.trim() ?? "";
   if (clause.length < 10 || clause.length > 200) return null;
@@ -354,11 +307,7 @@ function valueNear(
   return shaped ?? null;
 }
 
-function valueFromText(
-  text: string,
-  surface: string,
-  hint: DecisionVariable,
-): ValueCandidate | null {
+function valueFromText(text: string, surface: string, hint: DecisionVariable): ValueCandidate | null {
   const at = text.toLowerCase().indexOf(surface.toLowerCase());
   if (at < 0) {
     const variable = variableFromValue(surface)?.variable ?? hint;
@@ -399,11 +348,7 @@ function nearestDecision(
   return best;
 }
 
-function spanFor(
-  episode: EpisodeWindow,
-  value: ValueCandidate,
-  context: DecisionContext,
-): ReturnType<typeof spanFrom> {
+function spanFor(episode: EpisodeWindow, value: ValueCandidate, context: DecisionContext): ReturnType<typeof spanFrom> {
   const located = locateInEpisode(episode, value.start);
   if (located === null) return null;
 
