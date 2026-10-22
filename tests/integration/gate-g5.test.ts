@@ -19,23 +19,13 @@
  * outcome, not a broken test.
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
-
-import { createLocalEngine } from "@/ai/local";
 import { compile } from "@/export/compiler";
 import { checkGateG5, renderGateG5 } from "@/export/gate-g5";
-import { commitReview } from "@/extraction/commit";
-import { runExtraction } from "@/extraction/pipeline";
-import { applyAction, approve } from "@/extraction/review/actions";
 import { useGuards } from "@/store/guards";
 import { useWhyLog } from "@/store/whylog";
-import { type TranscriptId, asISO } from "@/types/common";
+import { beforeEach, describe, expect, it } from "vitest";
 
-const FIXTURE = resolve(process.cwd(), "fixtures", "demo-transcript.txt");
-const ENGINE_ID = { kind: "local", model: "cue-extractor-v1" } as const;
-const NOW = asISO("2026-10-03T15:00:00.000Z");
+import { buildDemoLog } from "../helpers/demo-log";
 
 /** The manifest G4 uses, so the guards have something to check. */
 const MANIFEST = JSON.stringify({
@@ -45,36 +35,12 @@ const MANIFEST = JSON.stringify({
 });
 
 async function buildLog() {
-  const raw = readFileSync(FIXTURE, "utf-8");
-  const engine = createLocalEngine();
-
-  const run = await runExtraction(
-    { transcriptId: "T-0001" as TranscriptId, raw, occurredAt: NOW },
-    { engine, engineId: ENGINE_ID, state: useWhyLog.getState().state },
-  );
-  if (!run.ok) throw new Error(`extraction failed: ${run.failure.kind}`);
-
-  const reviewed = run.outcome.queue.map((candidate) => applyAction(candidate, approve(false)));
-  const committed = commitReview(
-    {
-      transcriptId: "T-0001" as TranscriptId,
-      engine: ENGINE_ID,
-      occurredAt: NOW,
-      items: reviewed,
-      machineDiscards: [],
-    },
-    useWhyLog.getState().state,
-  );
-  if (!committed.ok) throw new Error("commit failed");
-
-  const recorded = useWhyLog.getState().recordBatch(committed.drafts, {
-    reason: "Reviewed and approved: the Oct-3 transcript.",
-    actor: { kind: "human" },
-    occurredAt: NOW,
-  });
-  if (!recorded.ok) throw new Error(`record failed: ${recorded.error}`);
-
-  return useWhyLog.getState().state;
+  /* The CURATED review: the six decisions the fixture's own EXPECTED EXTRACTION names, and
+   * nothing else. The local engine extracts nineteen candidates, including the assistant's
+   * questions and the rejected alternatives; approving all of them leaves the log
+   * contradicting itself, and the pre-export consistency gate (5.6) then refuses to compile
+   * it — correctly. `tests/integration/consistency-gate.test.ts` asserts that refusal. */
+  return buildDemoLog("curated");
 }
 
 /** Synthesise, accept and run the guards, so the decisions have verify commands. */

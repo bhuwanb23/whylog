@@ -27,58 +27,21 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { commitReview } from "../src/extraction/commit";
-import { runExtraction } from "../src/extraction/pipeline";
-import { applyAction, approve } from "../src/extraction/review/actions";
 import "../src/ai/local";
 import { compile } from "../src/export/compiler";
 import { useGuards } from "../src/store/guards";
 import { useWhyLog } from "../src/store/whylog";
-import { type TranscriptId, asISO } from "../src/types/common";
+
+/* The demo log is built by the same helper the tests use, so the keep-list cannot drift
+ * between the test suite and the CI step. */
+import { buildDemoLog } from "../tests/helpers/demo-log";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const TRANSCRIPT = resolve(ROOT, "fixtures", "demo-transcript.txt");
 const SAMPLE_PROJECT = resolve(ROOT, "fixtures", "sample-project");
-
-const ENGINE_ID = { kind: "local", model: "cue-extractor-v1" } as const;
-const NOW = asISO("2026-10-03T15:00:00.000Z");
 
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
-}
-
-async function buildLog(): Promise<void> {
-  const raw = readFileSync(TRANSCRIPT, "utf-8");
-  const whylog = useWhyLog.getState();
-  const engine = whylog.engine?.engine;
-  if (engine === null || engine === undefined) fail("the store booted without an engine");
-
-  const run = await runExtraction(
-    { transcriptId: "T-0001" as TranscriptId, raw, occurredAt: NOW },
-    { engine, engineId: ENGINE_ID, state: whylog.state },
-  );
-  if (!run.ok) fail(`extraction failed: ${run.failure.kind}`);
-
-  const reviewed = run.outcome.queue.map((candidate) => applyAction(candidate, approve(false)));
-  const committed = commitReview(
-    {
-      transcriptId: "T-0001" as TranscriptId,
-      engine: ENGINE_ID,
-      occurredAt: NOW,
-      items: reviewed,
-      machineDiscards: [],
-    },
-    whylog.state,
-  );
-  if (!committed.ok) fail("commit failed");
-
-  const recorded = useWhyLog.getState().recordBatch(committed.drafts, {
-    reason: "Reviewed and approved: the Oct-3 transcript.",
-    actor: { kind: "human" },
-    occurredAt: NOW,
-  });
-  if (!recorded.ok) fail(`record failed: ${recorded.error}`);
 }
 
 function write(relative: string, contents: string): void {
@@ -91,7 +54,14 @@ async function main(): Promise<number> {
   useWhyLog.getState().boot();
   /* The local engine has to be REGISTERED before the store can resolve it. */
   useWhyLog.getState().refreshEngine();
-  await buildLog();
+
+  /* The CURATED review: the six decisions the fixture's own EXPECTED EXTRACTION names.
+   *
+   * The previous version approved all nineteen candidates the local engine proposes, which
+   * leaves the log contradicting itself on five variables — and the pre-export consistency
+   * gate (5.6), which used to be inert, now correctly REFUSES to compile it. A guard set
+   * compiled from a log that says two different answers is not a guard set worth shipping. */
+  await buildDemoLog("curated");
 
   /* The project the decisions describe. The runner will check THIS one, so the
    * manifest and the directory the runner runs in have to be the same project. */

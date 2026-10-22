@@ -48,7 +48,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { wouldContradict } from "@/reasoning/gates/structural";
+import { detectStructural } from "@/reasoning/gates/structural";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
@@ -60,6 +60,19 @@ export interface GateInput {
   readonly labels: ReadonlyMap<NodeId, Labelled>;
   /** The decisions the caller intends to emit. */
   readonly candidates: readonly DecisionId[];
+  /**
+   * The subset of `candidates` that will actually be WRITTEN.
+   *
+   * Two sets, because two different questions are being asked. "Does the log contradict
+   * itself?" is answered over every candidate, and every conflict is reported. "Would the
+   * file tell an agent to do two incompatible things?" is answered over the emitted set
+   * only: a decision that is labelled OUT, or superseded, is excluded from the file, so a
+   * conflict with it is the log's problem and not the file's.
+   *
+   * Defaults to `candidates` when the caller does not say, so a standalone preview of the
+   * gate blocks on anything it can see.
+   */
+  readonly emitted?: readonly DecisionId[];
 }
 
 export interface GateReport {
@@ -89,10 +102,32 @@ export interface Annotation {
  */
 export function consistencyGate(input: GateInput): GateReport {
   const candidateSet = new Set(input.candidates);
+  /* The decisions that will actually be WRITTEN. See `GateInput.emitted`: the two sets answer
+   * two different questions, and blocking is about the file, not about the log. */
+  const emittedSet = new Set(input.emitted ?? input.candidates);
   const conflicts: ConflictPair[] = [];
   const warnings: ExportWarning[] = [];
   const annotations: Annotation[] = [];
   const seenPairs = new Set<string>();
+
+  /* ---- conflicts: delegated to gate (a) ----
+   *
+   * `detectStructural` is gate (a)'s POST-HOC form: it looks at decisions that ALREADY EXIST and
+   * returns pairs of them. `wouldContradict` is gate (a)'s PRE-COMMIT form: it answers "would
+   * asserting this value contradict something live?", so the side it names as `decisionB` is the
+   * NEWCOMER sentinel - the decision that does not exist yet.
+   *
+   * This file used the pre-commit form and copied `hit.decisionA`/`hit.decisionB` straight into
+   * the conflict pair. Every pair therefore contained "WLD-NEW", which is never in the candidate
+   * set, so `candidateSet.has(a) && candidateSet.has(b)` was never true and `blocking` was always
+   * empty: the gate DETECTED contradictions, REPORTED them, and could never REFUSE anything. A
+   * gate that cannot block is a comment.
+   *
+   * Both forms share one detector - `canonicalValueOf` plus `areAntonyms` plus the same
+   * exclusions - so using the post-hoc form does not give the export a second opinion about what
+   * a contradiction is. It gives it the right SHAPE: two real decisions.
+   */
+  const structural = detectStructural(input.state);
 
   for (const decisionId of input.candidates) {
     const decision = input.state.decisions.get(decisionId);
@@ -105,8 +140,10 @@ export function consistencyGate(input: GateInput): GateReport {
       warnings.push({ kind: "out-decision-excluded", decisionId });
     }
 
-    /* ---- conflicts: delegated to gate (a) ---- */
-    const hits = wouldContradict(input.state, decision.variable, decision.value, decision.temporal);
+    /* ---- conflicts ---- */
+    const hits = structural.filter(
+      (hit) => hit.decisionA === decisionId || hit.decisionB === decisionId,
+    );
 
     for (const hit of hits) {
       const other = hit.decisionA === decisionId ? hit.decisionB : hit.decisionA;
@@ -120,7 +157,7 @@ export function consistencyGate(input: GateInput): GateReport {
         b: hit.decisionB,
         explanation:
           hit.explanation +
-          (candidateSet.has(hit.decisionA) && candidateSet.has(hit.decisionB)
+          (emittedSet.has(hit.decisionA) && emittedSet.has(hit.decisionB)
             ? " BOTH are being exported, so the compiled file would tell an agent to do two incompatible things."
             : " Only one of the two is being exported, so the file itself stays consistent — but the log does not."),
       };
@@ -168,8 +205,10 @@ export function consistencyGate(input: GateInput): GateReport {
     }
   }
 
-  /* Only a conflict where BOTH sides are emitted blocks. Anything else the file survives. */
-  const blocking = conflicts.filter((pair) => candidateSet.has(pair.a) && candidateSet.has(pair.b));
+  /* Only a conflict where BOTH sides are EMITTED blocks. A conflict with an excluded
+   * decision is the log's inconsistency, not the file's: the file never contains both
+   * answers, so the file is not wrong. It is still reported, because the log is. */
+  const blocking = conflicts.filter((pair) => emittedSet.has(pair.a) && emittedSet.has(pair.b));
 
   const result: ConsistencyGateResult =
     blocking.length === 0 ? { ok: true } : { ok: false, blocking, warnings };

@@ -117,8 +117,17 @@ export function buildCif(
   /* ---- 1. candidate set ---- */
   const candidates = candidateIds(state, labels, options);
 
-  /* ---- 2. the gate, before anything is rendered ---- */
-  const gate = consistencyGate({ state, labels, candidates: candidates.map((entry) => entry.id) });
+  /* ---- 2. the gate, before anything is rendered ----
+   *
+   * The gate gets BOTH sets: every candidate (so a conflict is reported even when the file
+   * dodges it) and the ones that will actually be written (so the file is only blocked when
+   * the file itself would be wrong). */
+  const gate = consistencyGate({
+    state,
+    labels,
+    candidates: candidates.map((entry) => entry.id),
+    emitted: candidates.filter((entry) => entry.excluded === null).map((entry) => entry.id),
+  });
 
   /* ---- 3. rank ---- */
   const priorities = new Map<DecisionId, PriorityBreakdown>();

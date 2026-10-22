@@ -7,8 +7,8 @@
  * This file is what makes those lines true. It is compiled from the same graph in the same
  * pass, so a verify command cannot name a guard this runner does not have.
  *
- * Log head: 17d357d17f0d4c
- * Guards:   53
+ * Log head: 25c2b0a8d1ea22
+ * Guards:   17
  *
  * Re-export after any change to the log. Editing this file by hand is detected as a stamp
  * mismatch, and the edit is lost on the next export.
@@ -16,8 +16,8 @@
 /**
  * WhyLog decision guards — generated. Do not edit by hand.
  *
- * Log head: 17d357d17f0d4c
- * Guards:   53
+ * Log head: 25c2b0a8d1ea22
+ * Guards:   17
  *
  * Exits non-zero if any BLOCKING guard fails. Warning failures are printed
  * as advice and do not affect the exit code.
@@ -33,104 +33,11 @@ const GUARDS = [
   {
     "id": "G-00010",
     "decisionId": "WLD-0001",
-    "statement": "Use postgres",
-    "kind": "dependency_present",
-    "target": "pg",
-    "severity": "blocking",
-    "rationale": "WLD-0001 chose postgres, so a postgres driver must be in the dependency tree. `pg` is the usual one; postgres, postgresql, @neondatabase/serverless, drizzle-orm would also satisfy the decision, and if you use one of those, edit this guard rather than suppressing it.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "pg",
-      "includeDev": false
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0001",
-        "text": "I need somewhere to put decisions,",
-        "label": "IN"
-      },
-      {
-        "id": "P-0002",
-        "text": "It contains 6 extractable decisions, one of which (Postgres, Oct 3) is the trap",
-        "label": "OUT"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "Supabase?"
-    ]
-  },
-  {
-    "id": "G-00011",
-    "decisionId": "WLD-0001",
-    "statement": "Use postgres",
-    "kind": "dependency_present",
-    "target": "postgres",
-    "severity": "warning",
-    "rationale": "WLD-0001 settled DATABASE on postgres, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "postgres",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0001",
-        "text": "I need somewhere to put decisions,",
-        "label": "IN"
-      },
-      {
-        "id": "P-0002",
-        "text": "It contains 6 extractable decisions, one of which (Postgres, Oct 3) is the trap",
-        "label": "OUT"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "Supabase?"
-    ]
-  },
-  {
-    "id": "G-00012",
-    "decisionId": "WLD-0001",
-    "statement": "Use postgres",
-    "kind": "dependency_absent",
-    "target": "better-sqlite3",
-    "severity": "blocking",
-    "rationale": "`better-sqlite3` is mutually exclusive with postgres under DATABASE, which WLD-0001 settled. Its presence would mean the decision has been reversed in code without being reversed in the log.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "better-sqlite3",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0001",
-        "text": "I need somewhere to put decisions,",
-        "label": "IN"
-      },
-      {
-        "id": "P-0002",
-        "text": "It contains 6 extractable decisions, one of which (Postgres, Oct 3) is the trap",
-        "label": "OUT"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "Supabase?"
-    ]
-  },
-  {
-    "id": "G-00020",
-    "decisionId": "WLD-0002",
     "statement": "Use sqlite, not pos or postgres",
     "kind": "dependency_present",
     "target": "sqlite",
     "severity": "warning",
-    "rationale": "WLD-0002 settled SCOPE on sqlite, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
+    "rationale": "WLD-0001 settled SCOPE on sqlite, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
     "spec": {
       "kind": "dependency_present",
       "package": "sqlite",
@@ -151,7 +58,7 @@ const GUARDS = [
       {
         "id": "P-0006",
         "text": "it's one person, one machine, one log",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0007",
@@ -204,13 +111,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00021",
-    "decisionId": "WLD-0002",
+    "id": "G-00011",
+    "decisionId": "WLD-0001",
     "statement": "Use sqlite, not pos or postgres",
     "kind": "dependency_absent",
     "target": "post",
     "severity": "blocking",
-    "rationale": "WLD-0002 rejected post — \"so no async ceremony everywhere, zero deploy\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0001 rejected post — \"so no async ceremony everywhere, zero deploy\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "post",
@@ -231,7 +138,7 @@ const GUARDS = [
       {
         "id": "P-0006",
         "text": "it's one person, one machine, one log",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0007",
@@ -284,13 +191,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00022",
-    "decisionId": "WLD-0002",
+    "id": "G-00012",
+    "decisionId": "WLD-0001",
     "statement": "Use sqlite, not pos or postgres",
     "kind": "dependency_absent",
     "target": "postgres",
     "severity": "blocking",
-    "rationale": "WLD-0002 rejected postgres — \"so no async ceremony everywhere, zero deploy\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0001 rejected postgres — \"so no async ceremony everywhere, zero deploy\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "postgres",
@@ -311,7 +218,7 @@ const GUARDS = [
       {
         "id": "P-0006",
         "text": "it's one person, one machine, one log",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0007",
@@ -364,1055 +271,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00030",
-    "decisionId": "WLD-0003",
-    "statement": "Use single, not async ceremony",
-    "kind": "dependency_present",
-    "target": "single",
-    "severity": "warning",
-    "rationale": "WLD-0003 settled SCOPE on single, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "single",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0004",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0010",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "async",
-        "whyRejected": "ceremony everywhere, zero deploy"
-      }
-    ],
-    "appliesTo": [
-      "here?"
-    ]
-  },
-  {
-    "id": "G-00031",
-    "decisionId": "WLD-0003",
-    "statement": "Use single, not async ceremony",
-    "kind": "dependency_absent",
-    "target": "async",
-    "severity": "blocking",
-    "rationale": "WLD-0003 rejected async — \"ceremony everywhere, zero deploy\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "async",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0004",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0010",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "async",
-        "whyRejected": "ceremony everywhere, zero deploy"
-      }
-    ],
-    "appliesTo": [
-      "here?"
-    ]
-  },
-  {
-    "id": "G-00032",
-    "decisionId": "WLD-0003",
-    "statement": "Use single, not async ceremony",
-    "kind": "path_glob_exists",
-    "target": "here?",
-    "severity": "warning",
-    "rationale": "WLD-0003 declares that it governs `here?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to SCOPE.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "here?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0004",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0010",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "async",
-        "whyRejected": "ceremony everywhere, zero deploy"
-      }
-    ],
-    "appliesTo": [
-      "here?"
-    ]
-  },
-  {
-    "id": "G-00040",
-    "decisionId": "WLD-0004",
-    "statement": "Use multi-user, not postgres for or postgres",
-    "kind": "dependency_present",
-    "target": "multi-user",
-    "severity": "warning",
-    "rationale": "WLD-0004 settled DATABASE on multi-user, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "multi-user",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "postgres",
-        "whyRejected": "because the schema is small"
-      },
-      {
-        "value": "postgres",
-        "whyRejected": "so no async ceremony everywhere, zero deploy"
-      }
-    ],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00041",
-    "decisionId": "WLD-0004",
-    "statement": "Use multi-user, not postgres for or postgres",
-    "kind": "dependency_absent",
-    "target": "postgres",
-    "severity": "blocking",
-    "rationale": "WLD-0004 rejected postgres — \"because the schema is small\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "postgres",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "postgres",
-        "whyRejected": "because the schema is small"
-      },
-      {
-        "value": "postgres",
-        "whyRejected": "so no async ceremony everywhere, zero deploy"
-      }
-    ],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00042",
-    "decisionId": "WLD-0004",
-    "statement": "Use multi-user, not postgres for or postgres",
-    "kind": "path_glob_exists",
-    "target": "auth?",
-    "severity": "warning",
-    "rationale": "WLD-0004 declares that it governs `auth?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to DATABASE.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "auth?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "postgres",
-        "whyRejected": "because the schema is small"
-      },
-      {
-        "value": "postgres",
-        "whyRejected": "so no async ceremony everywhere, zero deploy"
-      }
-    ],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00050",
-    "decisionId": "WLD-0005",
-    "statement": "Use sqlite, not postgres for or postgres",
-    "kind": "dependency_present",
-    "target": "better-sqlite3",
-    "severity": "blocking",
-    "rationale": "WLD-0005 chose sqlite, so a sqlite driver must be in the dependency tree. `better-sqlite3` is the usual one; sql.js, libsql, @libsql/client, sqlite3 would also satisfy the decision, and if you use one of those, edit this guard rather than suppressing it.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "better-sqlite3",
-      "includeDev": false
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00051",
-    "decisionId": "WLD-0005",
-    "statement": "Use sqlite, not postgres for or postgres",
-    "kind": "dependency_present",
-    "target": "sqlite",
-    "severity": "warning",
-    "rationale": "WLD-0005 settled DATABASE on sqlite, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "sqlite",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00052",
-    "decisionId": "WLD-0005",
-    "statement": "Use sqlite, not postgres for or postgres",
-    "kind": "dependency_absent",
-    "target": "pg",
-    "severity": "blocking",
-    "rationale": "`pg` is mutually exclusive with sqlite under DATABASE, which WLD-0005 settled. Its presence would mean the decision has been reversed in code without being reversed in the log.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "pg",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00060",
-    "decisionId": "WLD-0006",
-    "statement": "Use single-user, not postgres for or postgres",
-    "kind": "dependency_present",
-    "target": "single-user",
-    "severity": "warning",
-    "rationale": "WLD-0006 settled DATABASE on single-user, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "single-user",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00061",
-    "decisionId": "WLD-0006",
-    "statement": "Use single-user, not postgres for or postgres",
-    "kind": "path_glob_exists",
-    "target": "auth?",
-    "severity": "warning",
-    "rationale": "WLD-0006 declares that it governs `auth?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to DATABASE.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "auth?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00062",
-    "decisionId": "WLD-0006",
-    "statement": "Use single-user, not postgres for or postgres",
-    "kind": "path_glob_exists",
-    "target": "machine?",
-    "severity": "warning",
-    "rationale": "WLD-0006 declares that it governs `machine?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to DATABASE.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "machine?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00070",
-    "decisionId": "WLD-0007",
-    "statement": "Use schema",
-    "kind": "dependency_present",
-    "target": "schema",
-    "severity": "warning",
-    "rationale": "WLD-0007 settled AUTH on schema, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "schema",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00071",
-    "decisionId": "WLD-0007",
-    "statement": "Use schema",
-    "kind": "path_glob_exists",
-    "target": "auth?",
-    "severity": "warning",
-    "rationale": "WLD-0007 declares that it governs `auth?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to AUTH.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "auth?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00072",
-    "decisionId": "WLD-0007",
-    "statement": "Use schema",
-    "kind": "path_glob_exists",
-    "target": "machine?",
-    "severity": "warning",
-    "rationale": "WLD-0007 declares that it governs `machine?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to AUTH.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "machine?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00080",
-    "decisionId": "WLD-0008",
-    "statement": "Use local",
-    "kind": "dependency_present",
-    "target": "local",
-    "severity": "warning",
-    "rationale": "WLD-0008 settled AUTH on local, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "local",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00081",
-    "decisionId": "WLD-0008",
-    "statement": "Use local",
-    "kind": "path_glob_exists",
-    "target": "auth?",
-    "severity": "warning",
-    "rationale": "WLD-0008 declares that it governs `auth?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to AUTH.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "auth?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00082",
-    "decisionId": "WLD-0008",
-    "statement": "Use local",
-    "kind": "path_glob_exists",
-    "target": "machine?",
-    "severity": "warning",
-    "rationale": "WLD-0008 declares that it governs `machine?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to AUTH.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "machine?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0005",
-        "text": "What's the actual concurrency requirement here",
-        "label": "IN"
-      },
-      {
-        "id": "P-0006",
-        "text": "it's one person, one machine, one log",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0007",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0008",
-        "text": "single file, synchronous API so no async ceremony everywhere, zero deploy",
-        "label": "IN"
-      },
-      {
-        "id": "P-0009",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0011",
-        "text": "Migration path stays open because the schema is small",
-        "label": "IN"
-      },
-      {
-        "id": "P-0012",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0013",
-        "text": "What does auth protect, given the data lives in a local SQLite file on",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "auth?",
-      "machine?"
-    ]
-  },
-  {
-    "id": "G-00090",
-    "decisionId": "WLD-0009",
+    "id": "G-00020",
+    "decisionId": "WLD-0002",
     "statement": "Use auth, not login",
     "kind": "dependency_present",
     "target": "auth",
     "severity": "warning",
-    "rationale": "WLD-0009 settled AUTH on auth, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
+    "rationale": "WLD-0002 settled AUTH on auth, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
     "spec": {
       "kind": "dependency_present",
       "package": "auth",
@@ -1428,7 +293,7 @@ const GUARDS = [
       {
         "id": "P-0006",
         "text": "it's one person, one machine, one log",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0007",
@@ -1472,13 +337,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00091",
-    "decisionId": "WLD-0009",
+    "id": "G-00021",
+    "decisionId": "WLD-0002",
     "statement": "Use auth, not login",
     "kind": "dependency_absent",
     "target": "login",
     "severity": "blocking",
-    "rationale": "WLD-0009 rejected login. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0002 rejected login. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "login",
@@ -1494,7 +359,7 @@ const GUARDS = [
       {
         "id": "P-0006",
         "text": "it's one person, one machine, one log",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0007",
@@ -1538,13 +403,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00092",
-    "decisionId": "WLD-0009",
+    "id": "G-00022",
+    "decisionId": "WLD-0002",
     "statement": "Use auth, not login",
     "kind": "path_glob_exists",
     "target": "machine?",
     "severity": "warning",
-    "rationale": "WLD-0009 declares that it governs `machine?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to AUTH.",
+    "rationale": "WLD-0002 declares that it governs `machine?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to AUTH.",
     "spec": {
       "kind": "path_glob_exists",
       "glob": "machine?"
@@ -1559,7 +424,7 @@ const GUARDS = [
       {
         "id": "P-0006",
         "text": "it's one person, one machine, one log",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0007",
@@ -1603,150 +468,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00100",
-    "decisionId": "WLD-0010",
-    "statement": "Use hackathon",
-    "kind": "dependency_present",
-    "target": "hackathon",
-    "severity": "warning",
-    "rationale": "WLD-0010 settled OTHER on hackathon, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "hackathon",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0018",
-        "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0019",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0021",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0022",
-        "text": "I'll note that as a deliberate decision so we don't",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "re-litigate",
-        "whyRejected": "so we don't"
-      }
-    ],
-    "appliesTo": [
-      "presence?"
-    ]
-  },
-  {
-    "id": "G-00101",
-    "decisionId": "WLD-0010",
-    "statement": "Use hackathon",
-    "kind": "dependency_absent",
-    "target": "re-litigate",
-    "severity": "blocking",
-    "rationale": "WLD-0010 rejected re-litigate — \"so we don't\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "re-litigate",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0018",
-        "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0019",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0021",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0022",
-        "text": "I'll note that as a deliberate decision so we don't",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "re-litigate",
-        "whyRejected": "so we don't"
-      }
-    ],
-    "appliesTo": [
-      "presence?"
-    ]
-  },
-  {
-    "id": "G-00102",
-    "decisionId": "WLD-0010",
-    "statement": "Use hackathon",
-    "kind": "path_glob_exists",
-    "target": "presence?",
-    "severity": "warning",
-    "rationale": "WLD-0010 declares that it governs `presence?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to OTHER.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "presence?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0018",
-        "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0019",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0021",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0022",
-        "text": "I'll note that as a deliberate decision so we don't",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "re-litigate",
-        "whyRejected": "so we don't"
-      }
-    ],
-    "appliesTo": [
-      "presence?"
-    ]
-  },
-  {
-    "id": "G-00110",
-    "decisionId": "WLD-0011",
+    "id": "G-00030",
+    "decisionId": "WLD-0003",
     "statement": "Use single",
     "kind": "dependency_present",
     "target": "single",
     "severity": "warning",
-    "rationale": "WLD-0011 settled ARCHITECTURE on single, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
+    "rationale": "WLD-0003 settled ARCHITECTURE on single, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
     "spec": {
       "kind": "dependency_present",
       "package": "single",
@@ -1762,7 +490,7 @@ const GUARDS = [
       {
         "id": "P-0018",
         "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0019",
@@ -1796,13 +524,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00111",
-    "decisionId": "WLD-0011",
+    "id": "G-00031",
+    "decisionId": "WLD-0003",
     "statement": "Use single",
     "kind": "dependency_absent",
     "target": "local",
     "severity": "blocking",
-    "rationale": "WLD-0011 rejected local. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0003 rejected local. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "local",
@@ -1818,7 +546,7 @@ const GUARDS = [
       {
         "id": "P-0018",
         "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0019",
@@ -1852,13 +580,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00112",
-    "decisionId": "WLD-0011",
+    "id": "G-00032",
+    "decisionId": "WLD-0003",
     "statement": "Use single",
     "kind": "path_glob_exists",
     "target": "presence?",
     "severity": "warning",
-    "rationale": "WLD-0011 declares that it governs `presence?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to ARCHITECTURE.",
+    "rationale": "WLD-0003 declares that it governs `presence?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to ARCHITECTURE.",
     "spec": {
       "kind": "path_glob_exists",
       "glob": "presence?"
@@ -1873,7 +601,7 @@ const GUARDS = [
       {
         "id": "P-0018",
         "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0019",
@@ -1907,196 +635,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00120",
-    "decisionId": "WLD-0012",
-    "statement": "Use single-page, not server-side sur",
-    "kind": "dependency_present",
-    "target": "single-page",
-    "severity": "warning",
-    "rationale": "WLD-0012 settled FRAMEWORK on single-page, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "single-page",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0017",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0018",
-        "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0019",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0020",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0021",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0022",
-        "text": "I'll note that as a deliberate decision so we don't",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "server-side",
-        "whyRejected": "so search works"
-      },
-      {
-        "value": "next",
-        "whyRejected": "so search works"
-      }
-    ],
-    "appliesTo": [
-      "presence?",
-      "works?"
-    ]
-  },
-  {
-    "id": "G-00121",
-    "decisionId": "WLD-0012",
-    "statement": "Use single-page, not server-side sur",
-    "kind": "dependency_absent",
-    "target": "server-side",
-    "severity": "blocking",
-    "rationale": "WLD-0012 rejected server-side — \"so search works\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "server-side",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0017",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0018",
-        "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0019",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0020",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0021",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0022",
-        "text": "I'll note that as a deliberate decision so we don't",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "server-side",
-        "whyRejected": "so search works"
-      },
-      {
-        "value": "next",
-        "whyRejected": "so search works"
-      }
-    ],
-    "appliesTo": [
-      "presence?",
-      "works?"
-    ]
-  },
-  {
-    "id": "G-00122",
-    "decisionId": "WLD-0012",
-    "statement": "Use single-page, not server-side sur",
-    "kind": "dependency_absent",
-    "target": "next",
-    "severity": "blocking",
-    "rationale": "WLD-0012 rejected next — \"so search works\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "next",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0017",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0018",
-        "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
-      },
-      {
-        "id": "P-0019",
-        "text": "there's no server",
-        "label": "IN"
-      },
-      {
-        "id": "P-0020",
-        "text": "we'll revisit, but not for the hackathon",
-        "label": "IN"
-      },
-      {
-        "id": "P-0021",
-        "text": "if it ever gets a hosted version",
-        "label": "IN"
-      },
-      {
-        "id": "P-0022",
-        "text": "I'll note that as a deliberate decision so we don't",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "server-side",
-        "whyRejected": "so search works"
-      },
-      {
-        "value": "next",
-        "whyRejected": "so search works"
-      }
-    ],
-    "appliesTo": [
-      "presence?",
-      "works?"
-    ]
-  },
-  {
-    "id": "G-00130",
-    "decisionId": "WLD-0013",
+    "id": "G-00040",
+    "decisionId": "WLD-0004",
     "statement": "Use tailwind, not next. how or next",
     "kind": "dependency_present",
     "target": "tailwind",
     "severity": "warning",
-    "rationale": "WLD-0013 settled FRAMEWORK on tailwind, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
+    "rationale": "WLD-0004 settled FRAMEWORK on tailwind, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
     "spec": {
       "kind": "dependency_present",
       "package": "tailwind",
@@ -2112,7 +657,7 @@ const GUARDS = [
       {
         "id": "P-0018",
         "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0019",
@@ -2154,13 +699,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00131",
-    "decisionId": "WLD-0013",
+    "id": "G-00041",
+    "decisionId": "WLD-0004",
     "statement": "Use tailwind, not next. how or next",
     "kind": "dependency_absent",
     "target": "next",
     "severity": "blocking",
-    "rationale": "WLD-0013 rejected next — \"hosted version\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0004 rejected next — \"hosted version\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "next",
@@ -2176,7 +721,7 @@ const GUARDS = [
       {
         "id": "P-0018",
         "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0019",
@@ -2218,13 +763,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00132",
-    "decisionId": "WLD-0013",
+    "id": "G-00042",
+    "decisionId": "WLD-0004",
     "statement": "Use tailwind, not next. how or next",
     "kind": "dependency_absent",
     "target": "next.js",
     "severity": "blocking",
-    "rationale": "WLD-0013 rejected next.js. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0004 rejected next.js. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "next.js",
@@ -2240,7 +785,7 @@ const GUARDS = [
       {
         "id": "P-0018",
         "text": "it's a single page, three views, everything runs client side",
-        "label": "OUT"
+        "label": "IN"
       },
       {
         "id": "P-0019",
@@ -2282,13 +827,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00140",
-    "decisionId": "WLD-0014",
+    "id": "G-00050",
+    "decisionId": "WLD-0005",
     "statement": "Use embeddings, not 200 vectors or 200",
     "kind": "dependency_present",
     "target": "embeddings",
     "severity": "warning",
-    "rationale": "WLD-0014 settled RETRIEVAL on embeddings, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
+    "rationale": "WLD-0005 settled RETRIEVAL on embeddings, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
     "spec": {
       "kind": "dependency_present",
       "package": "embeddings",
@@ -2324,13 +869,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00141",
-    "decisionId": "WLD-0014",
+    "id": "G-00051",
+    "decisionId": "WLD-0005",
     "statement": "Use embeddings, not 200 vectors or 200",
     "kind": "dependency_absent",
     "target": "200",
     "severity": "blocking",
-    "rationale": "WLD-0014 rejected 200. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0005 rejected 200. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "200",
@@ -2366,13 +911,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00142",
-    "decisionId": "WLD-0014",
+    "id": "G-00052",
+    "decisionId": "WLD-0005",
     "statement": "Use embeddings, not 200 vectors or 200",
     "kind": "path_glob_exists",
     "target": "realistically?",
     "severity": "warning",
-    "rationale": "WLD-0014 declares that it governs `realistically?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to RETRIEVAL.",
+    "rationale": "WLD-0005 declares that it governs `realistically?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to RETRIEVAL.",
     "spec": {
       "kind": "path_glob_exists",
       "glob": "realistically?"
@@ -2407,341 +952,13 @@ const GUARDS = [
     ]
   },
   {
-    "id": "G-00150",
-    "decisionId": "WLD-0015",
-    "statement": "Use infra",
-    "kind": "dependency_present",
-    "target": "infra",
-    "severity": "warning",
-    "rationale": "WLD-0015 settled OTHER on infra, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "infra",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "sub-millisecond",
-        "whyRejected": null
-      },
-      {
-        "value": "testing",
-        "whyRejected": null
-      }
-    ],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00151",
-    "decisionId": "WLD-0015",
-    "statement": "Use infra",
-    "kind": "dependency_absent",
-    "target": "sub-millisecond",
-    "severity": "blocking",
-    "rationale": "WLD-0015 rejected sub-millisecond. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "sub-millisecond",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "sub-millisecond",
-        "whyRejected": null
-      },
-      {
-        "value": "testing",
-        "whyRejected": null
-      }
-    ],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00152",
-    "decisionId": "WLD-0015",
-    "statement": "Use infra",
-    "kind": "dependency_absent",
-    "target": "testing",
-    "severity": "blocking",
-    "rationale": "WLD-0015 rejected testing. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "testing",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "sub-millisecond",
-        "whyRejected": null
-      },
-      {
-        "value": "testing",
-        "whyRejected": null
-      }
-    ],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00160",
-    "decisionId": "WLD-0016",
-    "statement": "Use text-in, not doing full",
-    "kind": "dependency_present",
-    "target": "text-in",
-    "severity": "warning",
-    "rationale": "WLD-0016 settled OTHER on text-in, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "text-in",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "doing",
-        "whyRejected": "I write unit tests for the extractor"
-      }
-    ],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00161",
-    "decisionId": "WLD-0016",
-    "statement": "Use text-in, not doing full",
-    "kind": "dependency_absent",
-    "target": "doing",
-    "severity": "blocking",
-    "rationale": "WLD-0016 rejected doing — \"I write unit tests for the extractor\". Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
-    "spec": {
-      "kind": "dependency_absent",
-      "package": "doing",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "doing",
-        "whyRejected": "I write unit tests for the extractor"
-      }
-    ],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00162",
-    "decisionId": "WLD-0016",
-    "statement": "Use text-in, not doing full",
-    "kind": "path_glob_exists",
-    "target": "extractor?",
-    "severity": "warning",
-    "rationale": "WLD-0016 declares that it governs `extractor?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to OTHER.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "extractor?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [
-      {
-        "value": "doing",
-        "whyRejected": "I write unit tests for the extractor"
-      }
-    ],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00170",
-    "decisionId": "WLD-0017",
-    "statement": "Use cheap, not doing full",
-    "kind": "dependency_present",
-    "target": "cheap",
-    "severity": "warning",
-    "rationale": "WLD-0017 settled OTHER on cheap, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "cheap",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00171",
-    "decisionId": "WLD-0017",
-    "statement": "Use cheap, not doing full",
-    "kind": "path_glob_exists",
-    "target": "extractor?",
-    "severity": "warning",
-    "rationale": "WLD-0017 declares that it governs `extractor?`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to OTHER.",
-    "spec": {
-      "kind": "path_glob_exists",
-      "glob": "extractor?"
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
-    "appliesTo": [
-      "extractor?"
-    ]
-  },
-  {
-    "id": "G-00180",
-    "decisionId": "WLD-0018",
+    "id": "G-00060",
+    "decisionId": "WLD-0006",
     "statement": "Use golden-file, not ui test",
     "kind": "dependency_present",
     "target": "golden-file",
     "severity": "warning",
-    "rationale": "WLD-0018 settled TESTING on golden-file, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
+    "rationale": "WLD-0006 settled TESTING on golden-file, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
     "spec": {
       "kind": "dependency_present",
       "package": "golden-file",
@@ -2789,13 +1006,13 @@ const GUARDS = [
     "appliesTo": []
   },
   {
-    "id": "G-00181",
-    "decisionId": "WLD-0018",
+    "id": "G-00061",
+    "decisionId": "WLD-0006",
     "statement": "Use golden-file, not ui test",
     "kind": "dependency_absent",
     "target": "ui",
     "severity": "blocking",
-    "rationale": "WLD-0018 rejected ui. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
+    "rationale": "WLD-0006 rejected ui. Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
     "spec": {
       "kind": "dependency_absent",
       "package": "ui",
@@ -2840,55 +1057,6 @@ const GUARDS = [
         "whyRejected": null
       }
     ],
-    "appliesTo": []
-  },
-  {
-    "id": "G-00190",
-    "decisionId": "WLD-0019",
-    "statement": "Use fixture, not ui test",
-    "kind": "dependency_present",
-    "target": "fixture",
-    "severity": "warning",
-    "rationale": "WLD-0019 settled TESTING on fixture, which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
-    "spec": {
-      "kind": "dependency_present",
-      "package": "fixture",
-      "includeDev": true
-    },
-    "decidedAt": "2026-10-22",
-    "restsOn": [
-      {
-        "id": "P-0024",
-        "text": "I don't have time",
-        "label": "IN"
-      },
-      {
-        "id": "P-0025",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0026",
-        "text": "the UI is throwaway for the demo",
-        "label": "IN"
-      },
-      {
-        "id": "P-0027",
-        "text": "reasoning: dozens of decisions, sub-ms scan, no infra",
-        "label": "IN"
-      },
-      {
-        "id": "P-0028",
-        "text": "Quick-log → \"Actually let's switch to Postgres, we need concurrent writes",
-        "label": "IN"
-      },
-      {
-        "id": "P-0029",
-        "text": "how many decisions are we talking about realistically",
-        "label": "IN"
-      }
-    ],
-    "rejected": [],
     "appliesTo": []
   }
 ];

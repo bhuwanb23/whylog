@@ -11,26 +11,16 @@
  * fails, the product has a dependency it never admitted to.
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
-
-import { createLocalEngine } from "@/ai/local";
 import { compile } from "@/export/compiler";
 import { checkGateG5 } from "@/export/gate-g5";
 import { parseStamp, verifyStamp } from "@/export/stamp/verify";
-import { commitReview } from "@/extraction/commit";
-import { runExtraction } from "@/extraction/pipeline";
-import { applyAction, approve } from "@/extraction/review/actions";
 import { label } from "@/reasoning/labeller";
 import { useGuards } from "@/store/guards";
 import { useReasoning } from "@/store/reasoning";
 import { useWhyLog } from "@/store/whylog";
-import { type TranscriptId, asISO } from "@/types/common";
+import { beforeEach, describe, expect, it } from "vitest";
 
-const FIXTURE = resolve(process.cwd(), "fixtures", "demo-transcript.txt");
-const ENGINE_ID = { kind: "local", model: "cue-extractor-v1" } as const;
-const NOW = asISO("2026-10-03T15:00:00.000Z");
+import { buildDemoLog } from "../helpers/demo-log";
 
 const MANIFEST = JSON.stringify({
   name: "demo",
@@ -46,41 +36,14 @@ describe("the keyless path, end to end", () => {
 
   it("transcript in, agent file out, with no key and no model", async () => {
     /* 1. IMPORT — the local engine reads a transcript and proposes decisions. */
-    const engine = createLocalEngine();
-    const raw = readFileSync(FIXTURE, "utf-8");
-
-    const run = await runExtraction(
-      { transcriptId: "T-0001" as TranscriptId, raw, occurredAt: NOW },
-      { engine, engineId: ENGINE_ID, state: useWhyLog.getState().state },
-    );
-    expect(run.ok).toBe(true);
-    if (!run.ok) return;
-
-    /* 2. REVIEW — a human approves what was proposed. */
-    const reviewed = run.outcome.queue.map((candidate) => applyAction(candidate, approve(false)));
-    const committed = commitReview(
-      {
-        transcriptId: "T-0001" as TranscriptId,
-        engine: ENGINE_ID,
-        occurredAt: NOW,
-        items: reviewed,
-        machineDiscards: [],
-      },
-      useWhyLog.getState().state,
-    );
-    expect(committed.ok).toBe(true);
-    if (!committed.ok) return;
-
-    const recorded = useWhyLog.getState().recordBatch(committed.drafts, {
-      reason: "Reviewed and approved: the Oct-3 transcript.",
-      actor: { kind: "human" },
-      occurredAt: NOW,
-    });
-    expect(recorded.ok).toBe(true);
-    if (!recorded.ok) return;
+    /* 2. REVIEW — a human approves what was proposed: the six decisions the fixture's
+     *    EXPECTED EXTRACTION names, and discards the rest. The local engine also proposes
+     *    the assistant's QUESTIONS and the REJECTED ALTERNATIVES, and approving those would
+     *    leave the log contradicting itself — which the pre-export gate (5.6) refuses to
+     *    compile, correctly. See tests/helpers/demo-log.ts. */
+    const state = await buildDemoLog("curated");
 
     /* 3. THE LOG — decisions and premises, with labels. */
-    const state = useWhyLog.getState().state;
     expect(state.decisions.size).toBeGreaterThan(0);
     expect(state.premises.size).toBeGreaterThan(0);
 
@@ -145,36 +108,7 @@ describe("the keyless path, end to end", () => {
   });
 
   it("the reasoning store runs keyless and reports no error", async () => {
-    const engine = createLocalEngine();
-    const raw = readFileSync(FIXTURE, "utf-8");
-    const run = await runExtraction(
-      { transcriptId: "T-0002" as TranscriptId, raw, occurredAt: NOW },
-      { engine, engineId: ENGINE_ID, state: useWhyLog.getState().state },
-    );
-    expect(run.ok).toBe(true);
-    if (!run.ok) return;
-
-    const reviewed = run.outcome.queue.map((candidate) => applyAction(candidate, approve(false)));
-    const committed = commitReview(
-      {
-        transcriptId: "T-0002" as TranscriptId,
-        engine: ENGINE_ID,
-        occurredAt: NOW,
-        items: reviewed,
-        machineDiscards: [],
-      },
-      useWhyLog.getState().state,
-    );
-    expect(committed.ok).toBe(true);
-    if (!committed.ok) return;
-
-    const recorded = useWhyLog.getState().recordBatch(committed.drafts, {
-      reason: "Reviewed and approved.",
-      actor: { kind: "human" },
-      occurredAt: NOW,
-    });
-    expect(recorded.ok).toBe(true);
-    if (!recorded.ok) return;
+    await buildDemoLog("curated");
 
     const reasoning = useReasoning.getState();
     expect(reasoning.error).toBeNull();
