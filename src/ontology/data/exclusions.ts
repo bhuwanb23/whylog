@@ -295,14 +295,10 @@ export function validateExclusions(): readonly string[] {
 
   for (const rule of EXCLUSIONS) {
     if (!known.has(rule.whenPredicate)) {
-      problems.push(
-        `exclusions.ts: whenPredicate "${rule.whenPredicate}" is not a declared predicate`,
-      );
+      problems.push(`exclusions.ts: whenPredicate "${rule.whenPredicate}" is not a declared predicate`);
     }
     if (!known.has(rule.breaksPredicate)) {
-      problems.push(
-        `exclusions.ts: breaksPredicate "${rule.breaksPredicate}" is not a declared predicate`,
-      );
+      problems.push(`exclusions.ts: breaksPredicate "${rule.breaksPredicate}" is not a declared predicate`);
     }
 
     const meta = PREMISE_TYPE_META[rule.breaksType];

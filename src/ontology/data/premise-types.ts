@@ -65,30 +65,19 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
   scale: {
     type: "scale",
     label: "Scale",
-    description:
-      "How many users, records, requests or machines. The premise that dies most often, and the one whose death invalidates the most.",
+    description: "How many users, records, requests or machines. The premise that dies most often, and the one whose death invalidates the most.",
     namespace: "scale",
     worldObservable: true,
     predicates: [
       { name: "single_user", label: "single user", valueKind: "boolean" },
       { name: "max_users", label: "maximum users", valueKind: "number", constraint: "count" },
       { name: "max_records", label: "maximum records", valueKind: "number", constraint: "count" },
-      {
-        name: "concurrent_writers",
-        label: "concurrent writers",
-        valueKind: "number",
-        constraint: "count",
-      },
-      {
-        name: "requests_per_second",
-        label: "requests per second",
-        valueKind: "number",
-        constraint: "rps",
-      },
+      { name: "concurrent_writers", label: "concurrent writers", valueKind: "number", constraint: "count" },
+      { name: "requests_per_second", label: "requests per second", valueKind: "number", constraint: "rps" },
       { name: "multi_tenant", label: "multi-tenant", valueKind: "boolean" },
       { name: "data_residency", label: "data residency requirement", valueKind: "string" },
     ],
-    example: 'scale.single_user = true — "it\'s one person, one machine, one log"',
+    example: "scale.single_user = true — \"it's one person, one machine, one log\"",
   },
 
   team: {
@@ -114,22 +103,12 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
     namespace: "budget",
     worldObservable: false,
     predicates: [
-      {
-        name: "monthly_usd",
-        label: "monthly spend ceiling",
-        valueKind: "number",
-        constraint: "USD",
-      },
+      { name: "monthly_usd", label: "monthly spend ceiling", valueKind: "number", constraint: "USD" },
       { name: "free_tier_only", label: "free tier only", valueKind: "boolean" },
       { name: "no_paid_saas", label: "no paid SaaS", valueKind: "boolean" },
-      {
-        name: "token_budget",
-        label: "LLM token budget",
-        valueKind: "number",
-        constraint: "tokens",
-      },
+      { name: "token_budget", label: "LLM token budget", valueKind: "number", constraint: "tokens" },
     ],
-    example: 'budget.free_tier_only = true — "I\'m not paying for a database"',
+    example: "budget.free_tier_only = true — \"I'm not paying for a database\"",
   },
 
   time: {
@@ -141,15 +120,10 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
     predicates: [
       { name: "deadline", label: "deadline", valueKind: "string", constraint: "date" },
       { name: "hackathon", label: "hackathon / demo deadline", valueKind: "boolean" },
-      {
-        name: "hours_available",
-        label: "hours available",
-        valueKind: "number",
-        constraint: "hours",
-      },
+      { name: "hours_available", label: "hours available", valueKind: "number", constraint: "hours" },
       { name: "prototype_only", label: "prototype, will be discarded", valueKind: "boolean" },
     ],
-    example: 'time.hackathon = true — "I have until Sunday"',
+    example: "time.hackathon = true — \"I have until Sunday\"",
   },
 
   deployment: {
@@ -159,12 +133,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
     namespace: "deployment",
     worldObservable: true,
     predicates: [
-      {
-        name: "model",
-        label: "deployment model",
-        valueKind: "enum",
-        constraint: "local-only | serverless | container | vm | edge | static",
-      },
+      { name: "model", label: "deployment model", valueKind: "enum", constraint: "local-only | serverless | container | vm | edge | static" },
       { name: "serverless", label: "serverless", valueKind: "boolean" },
       { name: "local_only", label: "runs only on this machine", valueKind: "boolean" },
       { name: "has_infra", label: "infrastructure is provisioned", valueKind: "boolean" },
@@ -172,7 +141,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "regions", label: "regions", valueKind: "number", constraint: "count" },
       { name: "ci_present", label: "CI is configured", valueKind: "boolean" },
     ],
-    example: 'deployment.local_only = true — "this never leaves my laptop"',
+    example: "deployment.local_only = true — \"this never leaves my laptop\"",
   },
 
   capability: {
@@ -185,15 +154,10 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "supports", label: "the dependency supports X", valueKind: "string" },
       { name: "lacks", label: "the dependency lacks X", valueKind: "string" },
       { name: "browser_api", label: "a browser API is available", valueKind: "string" },
-      {
-        name: "version_floor",
-        label: "minimum version",
-        valueKind: "string",
-        constraint: "semver",
-      },
+      { name: "version_floor", label: "minimum version", valueKind: "string", constraint: "semver" },
       { name: "offline_required", label: "must work offline", valueKind: "boolean" },
     ],
-    example: 'capability.lacks = "server-side runtime" — "there\'s no backend to put it on"',
+    example: "capability.lacks = \"server-side runtime\" — \"there's no backend to put it on\"",
   },
 
   requirement: {
@@ -210,7 +174,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "no_network", label: "no network calls", valueKind: "boolean" },
       { name: "accessibility", label: "accessibility level", valueKind: "string" },
     ],
-    example: 'requirement.portability = true — "one JSON file I can email to someone"',
+    example: "requirement.portability = true — \"one JSON file I can email to someone\"",
   },
 
   external: {
@@ -226,7 +190,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "legal", label: "legal constraint", valueKind: "string" },
       { name: "third_party_api", label: "a third-party API is depended on", valueKind: "string" },
     ],
-    example: 'external.provider_lacks = "managed postgres on the free tier"',
+    example: "external.provider_lacks = \"managed postgres on the free tier\"",
   },
 };
 
@@ -304,7 +268,9 @@ export function splitPredicate(namespaced: string): { type: string | null; name:
 /** Rank premise types for a given decision variable, so the extractor tries the
  *  likely ones first. Reads `typicalPremises` off the variable table, which
  *  keeps one source of truth for the pairing. */
-export function premiseTypesForVariable(typical: readonly PremiseType[]): readonly PremiseType[] {
+export function premiseTypesForVariable(
+  typical: readonly PremiseType[],
+): readonly PremiseType[] {
   const ranked = [...typical];
   for (const type of PREMISE_TYPE_ORDER) {
     if (!ranked.includes(type)) ranked.push(type);
