@@ -340,6 +340,10 @@ export interface PremiseInvalidatedPayload {
     | { readonly kind: "guard"; readonly guardId: GuardId }
     | { readonly kind: "human" };
   readonly evidenceSpan?: SourceSpan;
+  /** VERBATIM text of what falsified it, when there is no span to point at.
+   *  A guard failure carries the line of the manifest that falsified the
+   *  premise, and that line is the evidence the proposal must quote. */
+  readonly evidenceQuote?: string;
 }
 
 export interface NogoodRecordedPayload {
@@ -372,6 +376,16 @@ export interface RevisionProposedPayload {
   readonly cascade: readonly { decisionId: DecisionId; became: DecisionLabel }[];
   readonly survivors: readonly DecisionId[];
   readonly entrenchment: EntrenchmentBreakdown;
+  /** Part 2 of the proposal: the verbatim quote, where it came from, and how much
+   *  it is worth. It has to be IN the event, because the event is the log: a
+   *  proposal reconstructed from the log has to carry the same evidence the
+   *  reasoning cycle saw. Without it the fold has nothing to store but the
+   *  event's reason, and the reason is the "why not auto-applied" note. */
+  readonly evidence: {
+    readonly quote: string;
+    readonly source: "transcript" | "guard" | "human" | "repo-scan";
+    readonly confidence: Confidence;
+  };
   /** Set when the newcomer was screened out rather than applied. */
   readonly rejectedNewcomer?: { readonly eventId: EventId; readonly why: string };
   readonly availableActions: readonly ("reverse" | "rejustify" | "contest")[];

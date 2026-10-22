@@ -500,6 +500,11 @@ function proposalDraft(
         .map((step) => ({ decisionId: step.to, became: step.became })),
       survivors: proposal.cascade.survivors,
       entrenchment: proposal.entrenchment,
+      evidence: {
+        quote: proposal.evidence.quote,
+        source: proposal.evidence.source,
+        confidence: proposal.evidence.confidence,
+      },
       ...(adjudication?.kind === "reject-newcomer"
         ? { rejectedNewcomer: { eventId: PLACEHOLDER_EVENT_ID, why: adjudication.why } }
         : {}),

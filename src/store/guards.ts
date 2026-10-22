@@ -222,8 +222,20 @@ export const useGuards = create<GuardState>()((set, get) => ({
 
   loadProject: (input) => {
     const report = buildProject(input);
-    set({ project: report.project, parse: report });
-    persist(report.project, get().baseline);
+    /* The baseline is CLEARED, and this is load-bearing rather than tidy.
+     *
+     * A baseline records the failures that were known when it was frozen, and
+     * it is keyed by guard id. Guard ids are derived from the DECISION id, so
+     * the same log produces the same ids whatever project is pasted. Keeping a
+     * baseline across a paste would therefore mark every failure in the NEW
+     * project as already-known: the run would report no new violations, and a
+     * silent all-clear would enter the compliance score. That is the failure
+     * mode the baseline pattern exists to prevent.
+     *
+     * A baseline describes ONE project. Pasting another means nothing is known
+     * about it yet, and the user freezes again on purpose. */
+    set({ project: report.project, parse: report, baseline: null });
+    persist(report.project, null);
   },
 
   /* ---------------------------------------------------------------------- */

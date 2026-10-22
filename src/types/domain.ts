@@ -258,6 +258,11 @@ export interface PremiseEvidence {
   readonly kind: "transcript" | "guard" | "human" | "repo-scan";
   readonly supports: boolean;
   readonly span?: SourceSpan;
+  /** VERBATIM text of the observation, for an observation that is NOT a span of a
+   *  transcript. A guard's finding is a line of a manifest, not a slice of a
+   *  conversation, so there is no span to point at - but the line is the
+   *  evidence, and evidence without a quote is not evidence. */
+  readonly quote?: string;
   readonly eventId: EventId;
   readonly at: ISODateString;
 }

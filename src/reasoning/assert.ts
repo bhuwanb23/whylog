@@ -723,6 +723,10 @@ function invalidateDraft(
       premiseId,
       invalidatedBy,
       ...(premise.span === undefined ? {} : { evidenceSpan: premise.span }),
+      /* A guard's finding is a line of a manifest, not a slice of a
+       * conversation, so there is no span - but the text is the evidence, and
+       * it is what the revision proposal has to quote. */
+      ...(premise.span === undefined ? { evidenceQuote: premise.text } : {}),
     },
     actor: context.actor,
     reason: `${premiseId} is no longer true: "${premise.text}" — observed by ${sourceLabel(source)}. Every decision resting on it is re-examined, and this event is the record of what falsified it.`,
