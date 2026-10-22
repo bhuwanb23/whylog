@@ -12,22 +12,19 @@
 
 import type { DecisionVariable, PremiseType } from "@/types/domain";
 import { DECISION_VARIABLES, PREMISE_TYPES } from "@/types/domain";
-import { ALIASES, GLOBAL_ALIASES, NONE_VALUES } from "./data/aliases";
 import { ANTONYMS, antonymPairCount, antonymsOf, areAntonyms } from "./data/antonyms";
+import { ALIASES, GLOBAL_ALIASES, NONE_VALUES } from "./data/aliases";
+import { DECISION_CUES, assertiveCues, pivotCues, rejectionCues, speculativeCues } from "./data/decision-cues";
+import { PREMISE_CUES, cueCountByType, cuesFor, explicitCues, topicalCues } from "./data/premise-cues";
 import {
-  DECISION_CUES,
-  assertiveCues,
-  pivotCues,
-  rejectionCues,
-  speculativeCues,
-} from "./data/decision-cues";
-import {
-  PREMISE_CUES,
-  cueCountByType,
-  cuesFor,
-  explicitCues,
-  topicalCues,
-} from "./data/premise-cues";
+  EXCLUSIONS,
+  exclusionCount,
+  exclusionCoverage,
+  exclusionsFor,
+  hasExclusion,
+  primaryExclusion,
+  validateExclusions,
+} from "./data/exclusions";
 import {
   PREMISE_TYPE_META,
   PREMISE_TYPE_ORDER,
@@ -81,8 +78,7 @@ export const PREMISE_ORDER: readonly PremiseType[] = PREMISE_TYPE_ORDER;
 
 /** World-observable = falsifiable by a guard or repo scan. Intent-based = only a
  *  human can retract it. */
-export const WORLD_OBSERVABLE_TYPES: readonly PremiseType[] =
-  PREMISE_ORDER.filter(isWorldObservable);
+export const WORLD_OBSERVABLE_TYPES: readonly PremiseType[] = PREMISE_ORDER.filter(isWorldObservable);
 export const INTENT_BASED_TYPES: readonly PremiseType[] = PREMISE_ORDER.filter(
   (t) => !isWorldObservable(t),
 );
@@ -155,7 +151,9 @@ export function structuralContradiction(
   valueB: string,
 ): StructuralCheck {
   const result = areAntonyms(variable, valueA, valueB);
-  return result.antonym ? { contradicts: true, why: result.why } : { contradicts: false, why: "" };
+  return result.antonym
+    ? { contradicts: true, why: result.why }
+    : { contradicts: false, why: "" };
 }
 
 /** Is this value a deliberate absence? "no auth at all" is a DECISION, not a
@@ -185,6 +183,9 @@ export interface OntologySize {
   readonly decisionCues: number;
   readonly premiseCues: number;
   readonly worldObservableTypes: number;
+  /** Curated OUT-list rules. Zero would mean every excluded condition is emitted
+   *  as a mechanical negation, which is correct logic and unreadable English. */
+  readonly exclusions: number;
 }
 
 /** Counts, for the health panel and for the pitch. Every number here is derived
@@ -205,6 +206,7 @@ export function ontologySize(): OntologySize {
     decisionCues: DECISION_CUES.length,
     premiseCues: PREMISE_CUES.length,
     worldObservableTypes: WORLD_OBSERVABLE_TYPES.length,
+    exclusions: exclusionCount(),
   };
 }
 
@@ -217,7 +219,8 @@ export function describeOntology(): string {
   return [
     `${size.typedVariables} typed decision slots (plus OTHER as a tracked escape hatch), `,
     `${size.premiseTypes} premise types with ${size.predicates} standard predicates, `,
-    `${size.aliases} value aliases and ${size.antonymPairs} variable-scoped antonym pairs. `,
+    `${size.aliases} value aliases, ${size.antonymPairs} variable-scoped antonym pairs `
+    + `and ${size.exclusions} exclusion rules over ${exclusionCoverage()} predicates. `,
     `World-observable premise types — falsifiable by a guard: ${observable}. `,
     `Intent-based — retractable only by a human: ${intent}.`,
   ].join("");
@@ -270,5 +273,18 @@ export function validateOntology(): readonly string[] {
     }
   }
 
+  // The OUT-list vocabulary must resolve too: an exclusion naming a predicate that
+  // does not exist produces a node the identity ladder cannot pool, which means a
+  // fresh duplicate on every import.
+  problems.push(...validateExclusions());
+
   return problems;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Exclusions — the OUT-list vocabulary (Phase 1.4)                            */
+/* -------------------------------------------------------------------------- */
+
+export { exclusionsFor, primaryExclusion, hasExclusion, exclusionCount, exclusionCoverage };
+export const EXCLUSION_RULES = EXCLUSIONS;
+export type { ExclusionRule } from "./data/exclusions";

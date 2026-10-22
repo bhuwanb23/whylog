@@ -5,15 +5,7 @@
  * touches localStorage, the hash chain, or the fold.
  */
 
-export {
-  useWhyLog,
-  bootOnce,
-  isBooted,
-  persistenceAvailable,
-  type BootStatus,
-  type Notice,
-  type WhyLogState,
-} from "./whylog";
+export { useWhyLog, bootOnce, isBooted, persistenceAvailable, type BootStatus, type Notice, type WhyLogState } from "./whylog";
 export * as selectors from "./selectors";
 export {
   DEFAULT_CASCADE_DEPTH_CAP,
@@ -23,3 +15,12 @@ export {
   initialSettings,
   type SettingsState,
 } from "./settings";
+
+export {
+  REVIEW_KEY,
+  hasPendingReview,
+  pendingReviewAge,
+  useExtraction,
+  type ExtractionState,
+  type ExtractionStatus,
+} from "./extraction";
