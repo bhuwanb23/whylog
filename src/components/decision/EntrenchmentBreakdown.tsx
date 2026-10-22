@@ -34,10 +34,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { ReactElement } from "react";
 import type { DecisionId } from "@/types/common";
 import type { EntrenchmentBreakdown as Breakdown } from "@/types/reasoning";
 import { entrenchmentBand } from "@/types/reasoning";
+import type { ReactElement } from "react";
 import { SectionLabel } from "./PremiseList";
 
 const TERM_LABEL: Readonly<Record<keyof Breakdown["components"], { name: string; why: string }>> = {
@@ -76,7 +76,9 @@ export function EntrenchmentBreakdown({
     <div>
       <SectionLabel>entrenchment</SectionLabel>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginTop: 4, flexWrap: "wrap" }}>
+      <div
+        style={{ display: "flex", gap: 10, alignItems: "baseline", marginTop: 4, flexWrap: "wrap" }}
+      >
         <span className="mono" style={{ fontSize: 20, fontWeight: 600 }}>
           {breakdown.capped.toFixed(2)}
         </span>
@@ -97,33 +99,62 @@ export function EntrenchmentBreakdown({
           <span
             className="badge"
             style={{ color: "var(--label-unknown)" }}
-            title={
-              "The EE3 cap binds: a derived belief is never more entrenched than its weakest premise. " +
-              (breakdown.weakestPremiseId === undefined
+            title={`The EE3 cap binds: a derived belief is never more entrenched than its weakest premise. ${
+              breakdown.weakestPremiseId === undefined
                 ? ""
-                : "Capped by " + breakdown.weakestPremiseId + ".")
-            }
+                : `Capped by ${breakdown.weakestPremiseId}.`
+            }`}
           >
             EE3 cap
-            {breakdown.weakestPremiseId !== undefined ? " · " + breakdown.weakestPremiseId : ""}
+            {breakdown.weakestPremiseId !== undefined ? ` · ${breakdown.weakestPremiseId}` : ""}
           </span>
         ) : null}
       </div>
 
       {/* The bar, with the cap marked when it binds, so "0.78 raw but 0.31 after the cap" is
           visible as two positions rather than as one number with a footnote. */}
-      <div style={{ position: "relative", height: 6, background: "var(--surface-sunken)", border: "1px solid var(--border)", borderRadius: 3, marginTop: 8 }}>
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pct(breakdown.total), background: "var(--text-faint)", opacity: 0.45, borderRadius: 3 }} />
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pct(breakdown.capped), background: "var(--label-in)", borderRadius: 3 }} />
+      <div
+        style={{
+          position: "relative",
+          height: 6,
+          background: "var(--surface-sunken)",
+          border: "1px solid var(--border)",
+          borderRadius: 3,
+          marginTop: 8,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: pct(breakdown.total),
+            background: "var(--text-faint)",
+            opacity: 0.45,
+            borderRadius: 3,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: pct(breakdown.capped),
+            background: "var(--label-in)",
+            borderRadius: 3,
+          }}
+        />
       </div>
 
       {breakdown.ee3CapApplied ? (
         <div className="faint" style={{ fontSize: 10, marginTop: 4 }}>
-          Raw {breakdown.total.toFixed(2)} (grey), capped to {breakdown.capped.toFixed(2)} (green) by
-          its weakest premise. This is what lets premise invalidation beat entrenchment — without the
-          cap, a decision resting entirely on `single-user` could out-rank the arrival of a second
-          user on corroboration and recency alone, and the system would refuse the very evidence that
-          invalidates it.
+          Raw {breakdown.total.toFixed(2)} (grey), capped to {breakdown.capped.toFixed(2)} (green)
+          by its weakest premise. This is what lets premise invalidation beat entrenchment — without
+          the cap, a decision resting entirely on `single-user` could out-rank the arrival of a
+          second user on corroboration and recency alone, and the system would refuse the very
+          evidence that invalidates it.
         </div>
       ) : null}
 
@@ -166,7 +197,7 @@ export function EntrenchmentBreakdown({
 }
 
 function pct(value: number): string {
-  return (Math.max(0, Math.min(1, value)) * 100).toFixed(1) + "%";
+  return `${(Math.max(0, Math.min(1, value)) * 100).toFixed(1)}%`;
 }
 
 export type { DecisionId };

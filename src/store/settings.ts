@@ -30,14 +30,11 @@ import {
   writeConfig,
 } from "@/ai/config";
 import { invalidateEngine } from "@/ai/engine";
-<<<<<<< 800657a
 import type { EngineCapabilities } from "@/ai/types";
 import type { Result } from "@/lib/result";
-=======
-import { create } from "zustand";
->>>>>>> 1e61ad6
 import { TAU_HIGH, TAU_LOW } from "@/substrate/identity";
 import type { EngineId } from "@/types/common";
+import { create } from "zustand";
 
 export interface SettingsState {
   readonly config: EngineConfig;
@@ -258,7 +255,9 @@ function numberOr(value: number | undefined, fallback: number, min: number, max:
   return Math.min(max, Math.max(min, value));
 }
 
-function writeTuning(state: Omit<TuningState, "setThresholds" | "setCascadeDepthCap" | "setMaxSearchSteps" | "reset">): void {
+function writeTuning(
+  state: Omit<TuningState, "setThresholds" | "setCascadeDepthCap" | "setMaxSearchSteps" | "reset">,
+): void {
   try {
     localStorage.setItem(
       TUNING_KEY,
@@ -285,13 +284,23 @@ export const useTuning = create<TuningState>()((set, get) => ({
     const high = numberOr(tauHigh, TAU_HIGH, 0.5, 1);
     const low = numberOr(Math.min(tauLow, high - 0.01), TAU_LOW, 0, 0.99);
     set({ tauHigh: high, tauLow: low });
-    writeTuning({ tauHigh: high, tauLow: low, cascadeDepthCap: get().cascadeDepthCap, maxSearchSteps: get().maxSearchSteps });
+    writeTuning({
+      tauHigh: high,
+      tauLow: low,
+      cascadeDepthCap: get().cascadeDepthCap,
+      maxSearchSteps: get().maxSearchSteps,
+    });
   },
 
   setCascadeDepthCap: (cap) => {
     const next = numberOr(cap, DEFAULT_CASCADE_DEPTH_CAP, 1, 12);
     set({ cascadeDepthCap: next });
-    writeTuning({ tauHigh: get().tauHigh, tauLow: get().tauLow, cascadeDepthCap: next, maxSearchSteps: get().maxSearchSteps });
+    writeTuning({
+      tauHigh: get().tauHigh,
+      tauLow: get().tauLow,
+      cascadeDepthCap: next,
+      maxSearchSteps: get().maxSearchSteps,
+    });
   },
 
   setMaxSearchSteps: (steps) => {
@@ -300,7 +309,12 @@ export const useTuning = create<TuningState>()((set, get) => ({
      * setting can only lower it. */
     const next = numberOr(steps, DEFAULT_MAX_SEARCH_STEPS, 1, 3);
     set({ maxSearchSteps: next });
-    writeTuning({ tauHigh: get().tauHigh, tauLow: get().tauLow, cascadeDepthCap: get().cascadeDepthCap, maxSearchSteps: next });
+    writeTuning({
+      tauHigh: get().tauHigh,
+      tauLow: get().tauLow,
+      cascadeDepthCap: get().cascadeDepthCap,
+      maxSearchSteps: next,
+    });
   },
 
   reset: () => {

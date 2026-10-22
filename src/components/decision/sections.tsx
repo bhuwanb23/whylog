@@ -12,12 +12,12 @@
  * are the ones with their own files, because each carries an argument worth stating at length.
  */
 
-import type { ReactElement } from "react";
+import type { GraphState } from "@/substrate/graph-state";
+import { EDGE_STYLE } from "@/theme";
 import type { DecisionId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { GuardSpec } from "@/types/guards";
-import type { GraphState } from "@/substrate/graph-state";
-import { EDGE_STYLE } from "@/theme";
+import type { ReactElement } from "react";
 import { SectionLabel } from "./PremiseList";
 
 /* -------------------------------------------------------------------------- */
@@ -53,7 +53,10 @@ export function YStatement({ decision }: { decision: Decision }): ReactElement |
  *  reason is shown as having none, rather than omitted: the absence is information, because it means
  *  the rejection cannot pre-empt a repeat question and cannot appear in the export's
  *  do-not-re-propose block. */
-export function AlternativeList({ state, decision }: { state: GraphState; decision: Decision }): ReactElement {
+export function AlternativeList({
+  state,
+  decision,
+}: { state: GraphState; decision: Decision }): ReactElement {
   const alternatives = decision.alternativeIds
     .map((id) => state.alternatives.get(id))
     .filter((entry) => entry !== undefined);
@@ -74,12 +77,24 @@ export function AlternativeList({ state, decision }: { state: GraphState; decisi
   return (
     <div>
       <SectionLabel>rejected</SectionLabel>
-      <ul style={{ margin: "6px 0 0", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul
+        style={{
+          margin: "6px 0 0",
+          paddingLeft: 18,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+        }}
+      >
         {alternatives.map((alternative) => (
           <li key={alternative.id} style={{ fontSize: 12 }}>
             <strong>{alternative.value}</strong>
             {alternative.whyRejected === undefined ? (
-              <span className="faint" style={{ marginLeft: 8 }} title="A rejection with no reason cannot pre-empt a repeat question and is excluded from the export's do-not-re-propose block.">
+              <span
+                className="faint"
+                style={{ marginLeft: 8 }}
+                title="A rejection with no reason cannot pre-empt a repeat question and is excluded from the export's do-not-re-propose block."
+              >
                 — no reason recorded
               </span>
             ) : (
@@ -88,7 +103,11 @@ export function AlternativeList({ state, decision }: { state: GraphState; decisi
               </span>
             )}
             {!alternative.confirmedByHuman ? (
-              <span className="faint mono" style={{ fontSize: 9, marginLeft: 8 }} title="Alternatives need explicit human confirmation before entering the pre-emption index. At 15.4% extraction precision, an unconfirmed inferred rejection is more likely wrong than right.">
+              <span
+                className="faint mono"
+                style={{ fontSize: 9, marginLeft: 8 }}
+                title="Alternatives need explicit human confirmation before entering the pre-emption index. At 15.4% extraction precision, an unconfirmed inferred rejection is more likely wrong than right."
+              >
                 unconfirmed
               </span>
             ) : null}
@@ -112,7 +131,8 @@ export function AlternativeList({ state, decision }: { state: GraphState; decisi
  * response is a supersession rather than a discovery.
  */
 export function AcceptedDownside({ decision }: { decision: Decision }): ReactElement | null {
-  if (decision.acceptedDownside === undefined || decision.acceptedDownside.trim().length === 0) return null;
+  if (decision.acceptedDownside === undefined || decision.acceptedDownside.trim().length === 0)
+    return null;
 
   return (
     <div>
@@ -136,7 +156,10 @@ export function AcceptedDownside({ decision }: { decision: Decision }): ReactEle
 /* Guards                                                                     */
 /* -------------------------------------------------------------------------- */
 
-export function GuardSummary({ state, decision }: { state: GraphState; decision: Decision }): ReactElement {
+export function GuardSummary({
+  state,
+  decision,
+}: { state: GraphState; decision: Decision }): ReactElement {
   const guards = decision.guardIds
     .map((id) => state.guards.get(id))
     .filter((guard) => guard !== undefined && guard.lifecycle !== "deleted");
@@ -160,31 +183,59 @@ export function GuardSummary({ state, decision }: { state: GraphState; decision:
             <strong style={{ color: failing > 0 ? "var(--edge-conflict)" : "var(--label-in)" }}>
               {passing}/{accepted} passing
             </strong>
-            {failing > 0 ? <span style={{ color: "var(--edge-conflict)" }}> · {failing} FAILING</span> : null}
+            {failing > 0 ? (
+              <span style={{ color: "var(--edge-conflict)" }}> · {failing} FAILING</span>
+            ) : null}
             {guards.length - accepted > 0 ? (
               <span className="faint"> · {guards.length - accepted} not yet accepted</span>
             ) : null}
           </div>
 
-          <ul style={{ margin: "6px 0 0", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 3 }}>
+          <ul
+            style={{
+              margin: "6px 0 0",
+              paddingLeft: 18,
+              display: "flex",
+              flexDirection: "column",
+              gap: 3,
+            }}
+          >
             {guards.map((guard) => {
               if (guard === undefined) return null;
               const outcome = guard.lastRun?.outcome ?? "never run";
               const mark = outcome === "pass" ? "✓" : outcome === "fail" ? "✗" : "–";
-              const colour = outcome === "pass" ? "var(--label-in)" : outcome === "fail" ? "var(--edge-conflict)" : "var(--text-faint)";
+              const colour =
+                outcome === "pass"
+                  ? "var(--label-in)"
+                  : outcome === "fail"
+                    ? "var(--edge-conflict)"
+                    : "var(--text-faint)";
 
               return (
                 <li key={guard.id} style={{ fontSize: 11.5 }}>
-                  <span className="mono" style={{ color: colour }}>{mark}</span>{" "}
+                  <span className="mono" style={{ color: colour }}>
+                    {mark}
+                  </span>{" "}
                   <span className="mono faint">{guard.id}</span>{" "}
                   <span className="mono">{guard.spec.kind}</span>{" "}
                   <span className="dim">{guardTarget(guard.spec)}</span>{" "}
-                  <span className="badge" style={{ color: guard.severity === "blocking" ? "var(--edge-conflict)" : "var(--label-unknown)" }}>
+                  <span
+                    className="badge"
+                    style={{
+                      color:
+                        guard.severity === "blocking"
+                          ? "var(--edge-conflict)"
+                          : "var(--label-unknown)",
+                    }}
+                  >
                     {guard.severity}
                   </span>{" "}
                   <span className="badge faint">{guard.lifecycle}</span>
                   {guard.disabledByDecisionLabel ? (
-                    <span className="faint" style={{ fontSize: 10 }}> disabled — decision not IN</span>
+                    <span className="faint" style={{ fontSize: 10 }}>
+                      {" "}
+                      disabled — decision not IN
+                    </span>
                   ) : null}
                 </li>
               );
@@ -209,11 +260,11 @@ function guardTarget(spec: GuardSpec): string {
       return spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return JSON.stringify(spec.pattern) + " in " + spec.glob;
+      return `${JSON.stringify(spec.pattern)} in ${spec.glob}`;
     case "command_exit_zero":
       return spec.command;
     case "llm_judge":
-      return "rubric over " + spec.scopeGlobs.join(", ");
+      return `rubric over ${spec.scopeGlobs.join(", ")}`;
   }
 }
 
@@ -223,7 +274,10 @@ function guardTarget(spec: GuardSpec): string {
 
 /** The five edge kinds, each with the style the lattice gives it, so the card and the picture agree
  *  about what a relationship means. */
-export function RelationList({ state, decision }: { state: GraphState; decision: Decision }): ReactElement {
+export function RelationList({
+  state,
+  decision,
+}: { state: GraphState; decision: Decision }): ReactElement {
   const groups: { kind: keyof Decision["edges"]; label: string; ids: readonly DecisionId[] }[] = [
     { kind: "dependsOn", label: "depends on", ids: decision.edges.dependsOn },
     { kind: "sharesPremiseWith", label: "shares a premise", ids: decision.edges.sharesPremiseWith },
@@ -241,7 +295,8 @@ export function RelationList({ state, decision }: { state: GraphState; decision:
         <SectionLabel>relates to</SectionLabel>
         <div className="dim" style={{ fontSize: 12, marginTop: 4 }}>
           Nothing. This decision shares no premise with another, depends on nothing and supersedes
-          nothing — so falsifying any other premise cannot reach it, and it cannot reach anything else.
+          nothing — so falsifying any other premise cannot reach it, and it cannot reach anything
+          else.
         </div>
       </div>
     );
@@ -254,9 +309,20 @@ export function RelationList({ state, decision }: { state: GraphState; decision:
         {present.map((group) => {
           const style = EDGE_STYLE[group.kind];
           return (
-            <div key={group.kind} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 12 }}>
+            <div
+              key={group.kind}
+              style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 12 }}
+            >
               <svg width="24" height="8" aria-hidden="true" style={{ flexShrink: 0 }}>
-                <line x1="0" y1="4" x2="24" y2="4" stroke={style.stroke} strokeWidth={style.width} strokeDasharray={style.dash} />
+                <line
+                  x1="0"
+                  y1="4"
+                  x2="24"
+                  y2="4"
+                  stroke={style.stroke}
+                  strokeWidth={style.width}
+                  strokeDasharray={style.dash}
+                />
               </svg>
               <span className="faint" style={{ fontSize: 11, minWidth: 110 }} title={style.label}>
                 {group.label}
@@ -269,8 +335,8 @@ export function RelationList({ state, decision }: { state: GraphState; decision:
         })}
       </div>
       <div className="faint" style={{ fontSize: 10, marginTop: 6 }}>
-        Edge styles match the premise lattice exactly, so a relationship means the same thing in both
-        views. `conflicts` is the only red: red means an action is available.
+        Edge styles match the premise lattice exactly, so a relationship means the same thing in
+        both views. `conflicts` is the only red: red means an action is available.
       </div>
     </div>
   );

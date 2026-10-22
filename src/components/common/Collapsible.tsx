@@ -10,7 +10,7 @@
  * affordance looks and behaves the same on every section of every screen.
  */
 
-import { useState, type ReactElement, type ReactNode } from "react";
+import { type ReactElement, type ReactNode, useState } from "react";
 
 export interface CollapsibleProps {
   readonly title: string;
@@ -44,7 +44,10 @@ export function Collapsible(props: CollapsibleProps): ReactElement {
         <span className="mono faint" style={{ fontSize: 11, width: 12 }}>
           {open ? "▾" : "▸"}
         </span>
-        <span className="faint" style={{ fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" }}>
+        <span
+          className="faint"
+          style={{ fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" }}
+        >
           {props.title}
         </span>
         {props.summary !== undefined ? (

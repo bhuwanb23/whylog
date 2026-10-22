@@ -36,17 +36,19 @@
  * ---------------------------------------------------------------------------
  */
 
+import { type Labelled, type NodeId, label as labelGraph } from "@/reasoning/labeller";
+import { isKnownAt, isValidAt } from "@/substrate/bi-temporal";
+import type { GraphState } from "@/substrate/graph-state";
+import { materializeAsOf } from "@/substrate/materialize";
 import type { DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import type { AnyEvent } from "@/types/events";
-import type { GraphState } from "@/substrate/graph-state";
-import { materializeAsOf } from "@/substrate/materialize";
-import { isValidAt, isKnownAt } from "@/substrate/bi-temporal";
-import { label as labelGraph, type Labelled, type NodeId } from "@/reasoning/labeller";
 
 export type TimeAxis = "valid" | "learned";
 
-export const AXIS_LABEL: Readonly<Record<TimeAxis, { short: string; question: string; long: string }>> = {
+export const AXIS_LABEL: Readonly<
+  Record<TimeAxis, { short: string; question: string; long: string }>
+> = {
   valid: {
     short: "when it happened",
     question: "What was TRUE at this point?",
@@ -107,7 +109,8 @@ export function visibleAt(state: GraphState, at: ISODateString, axis: TimeAxis):
   }
 
   for (const premise of state.premises.values()) {
-    const visible = axis === "valid" ? isValidAt(premise.temporal, at) : isKnownAt(premise.temporal, at);
+    const visible =
+      axis === "valid" ? isValidAt(premise.temporal, at) : isKnownAt(premise.temporal, at);
     if (visible) premises.push(premise.id);
     else hiddenPremises.push(premise.id);
   }
@@ -119,7 +122,12 @@ export function visibleAt(state: GraphState, at: ISODateString, axis: TimeAxis):
 /* The diff strip                                                             */
 /* -------------------------------------------------------------------------- */
 
-export type DiffKind = "decision-added" | "premise-invalidated" | "label-flipped" | "reversal" | "guard-failed";
+export type DiffKind =
+  | "decision-added"
+  | "premise-invalidated"
+  | "label-flipped"
+  | "reversal"
+  | "guard-failed";
 
 export interface DiffEntry {
   readonly kind: DiffKind;
@@ -157,7 +165,7 @@ export function diffGraphs(
       entries.push({
         kind: "decision-added",
         node: decision.id,
-        detail: '"' + decision.statement + '" (' + decision.variable + " = " + decision.value + ")",
+        detail: `"${decision.statement}" (${decision.variable} = ${decision.value})`,
       });
     }
   }
@@ -168,7 +176,7 @@ export function diffGraphs(
       entries.push({
         kind: "premise-invalidated",
         node: premise.id,
-        detail: '"' + premise.text + '" went OUT' + (premise.temporal.reason === undefined ? "" : " — " + premise.temporal.reason),
+        detail: `"${premise.text}" went OUT${premise.temporal.reason === undefined ? "" : ` — ${premise.temporal.reason}`}`,
       });
     }
   }
@@ -181,7 +189,7 @@ export function diffGraphs(
     entries.push({
       kind: "label-flipped",
       node: nodeId,
-      detail: fromLabel + " → " + labelled.label,
+      detail: `${fromLabel} → ${labelled.label}`,
     });
   }
 
@@ -192,7 +200,7 @@ export function diffGraphs(
       entries.push({
         kind: "reversal",
         node: decision.id,
-        detail: '"' + decision.statement + '" was superseded by ' + (decision.edges.supersededBy[0] ?? "a later decision"),
+        detail: `"${decision.statement}" was superseded by ${decision.edges.supersededBy[0] ?? "a later decision"}`,
       });
     }
   }
@@ -220,36 +228,35 @@ export function describeDiff(diff: TimelineDiff): string {
   const axis = AXIS_LABEL[diff.axis];
 
   if (diff.entries.length === 0) {
-    return (
-      "Nothing changed between " + diff.from.slice(0, 10) + " and " + diff.to.slice(0, 10) +
-      " on the " + axis.short + " axis."
-    );
+    return `Nothing changed between ${diff.from.slice(0, 10)} and ${diff.to.slice(0, 10)} on the ${axis.short} axis.`;
   }
 
   const counts = new Map<DiffKind, number>();
   for (const entry of diff.entries) counts.set(entry.kind, (counts.get(entry.kind) ?? 0) + 1);
 
   const lines = [
-    "Between " + diff.from.slice(0, 10) + " and " + diff.to.slice(0, 10) + ", measured along " +
-      axis.short + " (" + axis.question + "):",
+    `Between ${diff.from.slice(0, 10)} and ${diff.to.slice(0, 10)}, measured along ${axis.short} (${axis.question}):`,
     "",
   ];
 
   for (const [kind, count] of counts) {
-    lines.push("  " + String(count).padStart(3) + "  " + DIFF_KIND_LABEL[kind]);
+    lines.push(`  ${String(count).padStart(3)}  ${DIFF_KIND_LABEL[kind]}`);
   }
 
   lines.push("");
   for (const entry of diff.entries.slice(0, 24)) {
-    lines.push("  " + entry.node.padEnd(10) + " " + entry.detail);
+    lines.push(`  ${entry.node.padEnd(10)} ${entry.detail}`);
   }
-  if (diff.entries.length > 24) lines.push("  … " + (diff.entries.length - 24) + " more");
+  if (diff.entries.length > 24) lines.push(`  … ${diff.entries.length - 24} more`);
 
   return lines.join("\n");
 }
 
 /** The slider's bounds, from the log itself. */
-export function timeRange(events: readonly AnyEvent[], state: GraphState): {
+export function timeRange(
+  events: readonly AnyEvent[],
+  state: GraphState,
+): {
   earliest: ISODateString;
   latest: ISODateString;
 } {

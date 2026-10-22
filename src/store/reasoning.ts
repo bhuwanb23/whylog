@@ -77,44 +77,9 @@ import type { Justification, PremiseType } from "@/types/domain";
  * error the structural checker cannot see, because it verifies that imports RESOLVE, not that
  * every identifier used is declared. Found by a string-aware scan for undeclared identifiers. */
 import type { EventType, NewEvent } from "@/types/events";
-<<<<<<< 800657a
 import { create } from "zustand";
-=======
-import type { Justification, PremiseType } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import { foldKey } from "@/ontology/canonicalize";
-import { canonicalPredicate } from "@/ontology/canonicalize";
-import {
-  formatJustificationId,
-  formatPremiseId,
-  formatProposalId,
-  formatTranscriptId,
-} from "@/lib/ids";
-import type { Result } from "@/lib/result";
-import { err, ok } from "@/lib/result";
-import { nowISO } from "@/lib/format";
-import {
-  assertNewInformation,
-  revise,
-  type AssertContext,
-  type Assertion,
-  type AssertionResult,
-  type UnresolvedPremise,
-  type DecisionAssertion,
-  type ReviseInput,
-  type ReviseResult,
-  type RevisionCase,
-} from "@/reasoning";
-import type { Newcomer } from "@/reasoning/adjudication";
-import type { CandidatePair } from "@/reasoning/gates/semantic";
-/* Imported from the module rather than the `@/guards` barrel: the barrel pulls in the CI
- * exporter and the metrics, none of which the reasoning store needs, and a narrower import keeps
- * the dependency edge honest about what is actually used. */
-import { guardStatusMap } from "@/guards/feedback";
-import { useTuning } from "./settings";
-import { useWhyLog } from "./whylog";
->>>>>>> 1e61ad6
 import { useAsk } from "./ask";
+import { useTuning } from "./settings";
 import { useWhyLog } from "./whylog";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";

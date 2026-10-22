@@ -14,36 +14,25 @@
  * ---------------------------------------------------------------------------
  */
 
-<<<<<<< 800657a
+import { type KeybindAction, describeKeybinds, useKeybinds } from "@/components/common";
+import { useExtraction } from "@/store/extraction";
 import { persistenceAvailable, useWhyLog } from "@/store/whylog";
 import { MODE_BADGE } from "@/theme";
 import { AskView } from "@/views/AskView";
-import { FoundationView } from "@/views/FoundationView";
-import { GuardsView } from "@/views/GuardsView";
-import { ReasoningView } from "@/views/ReasoningView";
-import { ReviewView } from "@/views/ReviewView";
-import { type ReactElement, useEffect, useState } from "react";
-=======
-import { useEffect, useState, ReactElement } from "react";
-import { useWhyLog, persistenceAvailable } from "@/store/whylog";
-import { FoundationView } from "@/views/FoundationView";
-import { ReviewView } from "@/views/ReviewView";
-import { ReasoningView } from "@/views/ReasoningView";
-import { AskView } from "@/views/AskView";
-import { GuardsView } from "@/views/GuardsView";
 import { ExportView } from "@/views/ExportView";
+import { FoundationView } from "@/views/FoundationView";
 import { GraphView } from "@/views/GraphView";
+import { GuardsView } from "@/views/GuardsView";
 import { HealthView } from "@/views/HealthView";
+import { ReasoningView } from "@/views/ReasoningView";
+import { ReviewView } from "@/views/ReviewView";
 import { SettingsView } from "@/views/SettingsView";
 import { TimeMachineView } from "@/views/TimeMachineView";
 import { TimelineView } from "@/views/TimelineView";
-import { MODE_BADGE } from "@/theme";
-import { describeKeybinds, useKeybinds, type KeybindAction } from "@/components/common";
-import { useExtraction } from "@/store/extraction";
+import { type ReactElement, useEffect, useState } from "react";
 /* Bundled rather than fetched: the sandboxed preview has no network, and §6.9 requires the demo to
  * be one click from a cold start. */
 import demoTranscript from "../fixtures/demo-transcript.txt?raw";
->>>>>>> 1e61ad6
 
 type ViewId =
   | "review"
@@ -84,15 +73,10 @@ const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   // Gate G4 — "it verifies". Synthesis, the interpreter, the metrics and the feedback loop all
   // land in Phase 4.
   { id: "guards", label: "Guards", phase: "4" },
-<<<<<<< 800657a
-  { id: "export", label: "Export", phase: "6.11" },
-  { id: "health", label: "Health", phase: "6.9" },
-=======
   // Gate G5 — "it closes the loop". The compiler, the gate and the stamp all land in Phase 5.
   { id: "export", label: "Export", phase: "5" },
   { id: "health", label: "Health", phase: "6.4" },
   { id: "settings", label: "Settings", phase: "6.8" },
->>>>>>> 1e61ad6
 ];
 
 export function App(): ReactElement {
@@ -162,7 +146,12 @@ export function App(): ReactElement {
           <ModeBadge mode={mode} />
           <ChainBadge status={status} />
           {state.decisions.size === 0 ? (
-            <button type="button" className="badge" onClick={loadDemo} title="Load fixtures/demo-transcript.txt and extract it — the same path a real paste takes.">
+            <button
+              type="button"
+              className="badge"
+              onClick={loadDemo}
+              title="Load fixtures/demo-transcript.txt and extract it — the same path a real paste takes."
+            >
               load demo
             </button>
           ) : null}
@@ -183,8 +172,6 @@ export function App(): ReactElement {
           <AskView />
         ) : view === "guards" ? (
           <GuardsView />
-<<<<<<< 800657a
-=======
         ) : view === "export" ? (
           <ExportView />
         ) : view === "timeline" ? (
@@ -197,7 +184,6 @@ export function App(): ReactElement {
           <HealthView />
         ) : view === "settings" ? (
           <SettingsView />
->>>>>>> 1e61ad6
         ) : (
           <NotYet view={VIEWS.find((v) => v.id === view)} />
         )}

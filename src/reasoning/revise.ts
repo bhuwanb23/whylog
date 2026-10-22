@@ -261,7 +261,6 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
     const retracted = refused ? [] : backtrackResult.culpritPremises;
     const cascadeResult: CascadeResult =
       retracted.length === 0
-<<<<<<< 800657a
         ? {
             steps: [],
             flipped: [],
@@ -269,9 +268,6 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
             truncated: false,
             potentiallyAffectedBeyondCap: 0,
           }
-        : cascade(state, labels, retracted);
-=======
-        ? { steps: [], flipped: [], survivors: [], truncated: false, potentiallyAffectedBeyondCap: 0 }
         : cascade(
             state,
             labels,
@@ -282,7 +278,6 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
              * 12. A parameter nobody passes is not a configuration surface. */
             input.cascadeDepthCap ?? MAX_CASCADE_DEPTH,
           );
->>>>>>> 1e61ad6
 
     for (const step of cascadeResult.steps) {
       drafts.push(cascadeDraft(input, step));

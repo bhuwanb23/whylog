@@ -612,8 +612,6 @@ worse than reporting nothing, because it sends you looking for a bug in the sour
 the checker. It is now a character scanner that tracks string state, and strips line comments too.
 Globs like `**/*` are common in this codebase, so this would have recurred constantly.
 
-<<<<<<< 800657a
-=======
 ### 18.5 Phase 5 deviations
 
 | # | Plan says | Built | Why |
@@ -682,4 +680,3 @@ inlined is a config file containing a key.
   showing IN for a decision the replayed graph has already retracted.
 - `GraphView.tsx` had a `require_layout()` indirection wrapping a top-level import. Removed.
 
->>>>>>> 1e61ad6

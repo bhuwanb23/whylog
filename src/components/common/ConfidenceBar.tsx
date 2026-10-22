@@ -9,8 +9,8 @@
  * confidence fast, which a bar communicates at a glance in a way a shade of amber does not.
  */
 
-import type { ReactElement } from "react";
 import { confidenceTier, confidenceWidth } from "@/theme";
+import type { ReactElement } from "react";
 
 export function ConfidenceBar({
   confidence,
@@ -24,9 +24,7 @@ export function ConfidenceBar({
   return (
     <span
       style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-      title={
-        (confidence * 100).toFixed(0) + "% confidence — " + tier.label + " tier: " + tier.action
-      }
+      title={`${(confidence * 100).toFixed(0)}% confidence — ${tier.label} tier: ${tier.action}`}
     >
       <span
         style={{
@@ -52,7 +50,7 @@ export function ConfidenceBar({
       </span>
       <span className="mono faint" style={{ fontSize: 10 }}>
         {confidence.toFixed(2)}
-        {showTier ? " · " + tier.label : ""}
+        {showTier ? ` · ${tier.label}` : ""}
       </span>
     </span>
   );

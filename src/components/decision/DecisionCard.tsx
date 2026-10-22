@@ -43,20 +43,26 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useState, type ReactElement } from "react";
-import type { DecisionId } from "@/types/common";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
+import { LABEL_COLOUR } from "@/theme";
+import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { EntrenchmentBreakdown as Breakdown } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { LABEL_COLOUR } from "@/theme";
-import { LabelBadge, StatusBadge } from "../common/StatusBadge";
+import { type ReactElement, useState } from "react";
 import { Collapsible } from "../common/Collapsible";
-import { premiseEntries, PremiseList, SectionLabel } from "./PremiseList";
-import { ProvenanceBlock } from "./ProvenanceBlock";
-import { EntrenchmentBreakdown } from "./EntrenchmentBreakdown";
+import { LabelBadge, StatusBadge } from "../common/StatusBadge";
 import { AuditTrail } from "./AuditTrail";
-import { AcceptedDownside, AlternativeList, GuardSummary, RelationList, YStatement } from "./sections";
+import { EntrenchmentBreakdown } from "./EntrenchmentBreakdown";
+import { PremiseList, SectionLabel, premiseEntries } from "./PremiseList";
+import { ProvenanceBlock } from "./ProvenanceBlock";
+import {
+  AcceptedDownside,
+  AlternativeList,
+  GuardSummary,
+  RelationList,
+  YStatement,
+} from "./sections";
 
 export interface DecisionCardProps {
   readonly state: GraphState;
@@ -66,8 +72,11 @@ export interface DecisionCardProps {
   /** Rendered in the header. Kept as a prop so a list of cards can show a compact variant without
    *  a second component. */
   readonly compact?: boolean;
-  readonly onSelectPremise?: (id: string) => void;
-  readonly onSelectDecision?: (id: DecisionId) => void;
+  /* `| undefined` is explicit because `exactOptionalPropertyTypes` is on: a caller that has no
+   * handler to give must be able to pass `undefined` rather than omit the prop, and the card
+   * renders identically either way. */
+  readonly onSelectPremise?: ((id: PremiseId) => void) | undefined;
+  readonly onSelectDecision?: ((id: DecisionId) => void) | undefined;
   readonly actions?: readonly CardAction[];
 }
 
@@ -103,7 +112,7 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
     <div
       style={{
         border: "1px solid var(--border-strong)",
-        borderLeft: "3px solid " + LABEL_COLOUR[label],
+        borderLeft: `3px solid ${LABEL_COLOUR[label]}`,
         borderRadius: 6,
         padding: "12px 14px",
         background: "var(--surface-raised)",
@@ -152,25 +161,39 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
 
       <Collapsible
         title="entrenchment"
-        summary={props.entrenchment.capped.toFixed(2) + (props.entrenchment.ee3CapApplied ? " (EE3-capped from " + props.entrenchment.total.toFixed(2) + ")" : "")}
+        summary={
+          props.entrenchment.capped.toFixed(2) +
+          (props.entrenchment.ee3CapApplied
+            ? ` (EE3-capped from ${props.entrenchment.total.toFixed(2)})`
+            : "")
+        }
         defaultOpen={false}
       >
         <EntrenchmentBreakdown breakdown={props.entrenchment} expanded={showBreakdown} />
-        <button type="button" className="badge faint" style={{ marginTop: 8, fontSize: 10 }} onClick={() => setShowBreakdown((previous) => !previous)}>
+        <button
+          type="button"
+          className="badge faint"
+          style={{ marginTop: 8, fontSize: 10 }}
+          onClick={() => setShowBreakdown((previous) => !previous)}
+        >
           {showBreakdown ? "hide the five terms" : "show all five weighted terms"}
         </button>
       </Collapsible>
 
       <Collapsible
         title="provenance"
-        summary={decision.provenance.origin + " · " + decision.temporal.valid.slice(0, 10)}
+        summary={`${decision.provenance.origin} · ${decision.temporal.valid.slice(0, 10)}`}
         defaultOpen={false}
         note="The snippet is verbatim, with its character offsets, so it can be checked against the source. A paraphrase here would make everything else on this card unauditable."
       >
         <ProvenanceBlock state={props.state} decision={decision} />
       </Collapsible>
 
-      <Collapsible title="relates to" summary={relationCount(decision) + " relationship(s)"} defaultOpen={false}>
+      <Collapsible
+        title="relates to"
+        summary={`${relationCount(decision)} relationship(s)`}
+        defaultOpen={false}
+      >
         <RelationList state={props.state} decision={decision} />
       </Collapsible>
 
@@ -183,7 +206,16 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
       </Collapsible>
 
       {props.actions !== undefined && props.actions.length > 0 ? (
-        <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginTop: 14,
+            flexWrap: "wrap",
+            borderTop: "1px solid var(--border)",
+            paddingTop: 12,
+          }}
+        >
           {props.actions.map((action) => (
             <button
               key={action.label}
@@ -192,7 +224,11 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
               title={action.title}
               disabled={action.disabled === true}
               onClick={action.onClick}
-              style={action.tone === "danger" ? { color: "var(--action)", borderColor: "var(--action)" } : undefined}
+              style={
+                action.tone === "danger"
+                  ? { color: "var(--action)", borderColor: "var(--action)" }
+                  : undefined
+              }
             >
               {action.label}
             </button>
@@ -211,7 +247,7 @@ function CompactRow({
 }: {
   decision: Decision;
   label: Labelled["label"];
-  onSelect?: (id: DecisionId) => void;
+  onSelect?: ((id: DecisionId) => void) | undefined;
 }): ReactElement {
   return (
     <button
@@ -224,16 +260,20 @@ function CompactRow({
         width: "100%",
         textAlign: "left",
         border: "none",
-        borderLeft: "3px solid " + LABEL_COLOUR[label],
+        borderLeft: `3px solid ${LABEL_COLOUR[label]}`,
         background: "transparent",
         padding: "6px 8px",
         cursor: "pointer",
       }}
     >
-      <span className="mono faint" style={{ fontSize: 10 }}>{decision.id}</span>
+      <span className="mono faint" style={{ fontSize: 10 }}>
+        {decision.id}
+      </span>
       <span style={{ fontSize: 12 }}>{decision.statement}</span>
       <LabelBadge label={label} />
-      <span className="mono faint" style={{ fontSize: 10, marginLeft: "auto" }}>{decision.temporal.valid.slice(0, 10)}</span>
+      <span className="mono faint" style={{ fontSize: 10, marginLeft: "auto" }}>
+        {decision.temporal.valid.slice(0, 10)}
+      </span>
     </button>
   );
 }
@@ -249,7 +289,7 @@ function guardSummary(state: GraphState, decision: Decision): string {
     if (guard.lastRun?.outcome === "pass") passing += 1;
   }
 
-  return total === 0 ? "none — unverifiable" : passing + "/" + total + " passing";
+  return total === 0 ? "none — unverifiable" : `${passing}/${total} passing`;
 }
 
 function relationCount(decision: Decision): number {

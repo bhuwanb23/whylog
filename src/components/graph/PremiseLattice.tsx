@@ -49,33 +49,37 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import type { DecisionId, PremiseId } from "@/types/common";
-import type { DecisionLabel } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import { label as labelGraph, describeReason, type Labelled, type NodeId } from "@/reasoning/labeller";
+import {
+  type Labelled,
+  type NodeId,
+  describeReason,
+  label as labelGraph,
+} from "@/reasoning/labeller";
 import { assertPremiseFalsified } from "@/store/reasoning";
 import { useWhyLog } from "@/store/whylog";
+import type { GraphState } from "@/substrate/graph-state";
 import { LABEL_COLOUR } from "@/theme";
-import { EdgeLegend, LatticeEdgeView } from "./LatticeEdge";
-import { DecisionNode } from "./DecisionNode";
-import { PremiseNode } from "./PremiseNode";
+import type { DecisionId, PremiseId } from "@/types/common";
+import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  layoutLattice,
-  describeLayout,
-  type LatticeLayout,
-  type LayoutOptions,
-} from "./LatticeLayout";
-import {
+  type CascadeAnimationPlan,
   FLIP_INTERVAL_MS,
   SETTLE_MS,
   isPremiseId,
   planCascade,
   revealedAt,
   stepAt,
-  type CascadeAnimationPlan,
 } from "./CascadeAnimation";
-import { dependentsOf, type Highlight } from "./LatticeHighlight";
+import { DecisionNode } from "./DecisionNode";
+import { EdgeLegend, LatticeEdgeView } from "./LatticeEdge";
+import { type Highlight, dependentsOf } from "./LatticeHighlight";
+import {
+  type LatticeLayout,
+  type LayoutOptions,
+  describeLayout,
+  layoutLattice,
+} from "./LatticeLayout";
+import { PremiseNode } from "./PremiseNode";
 
 export interface PremiseLatticeProps {
   readonly state: GraphState;
@@ -110,7 +114,10 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
   }, [props.state, labels, props.includeSuperseded, props.includeRelated, props.focus, showHidden]);
 
   const highlight: Highlight = useMemo(
-    () => (selected === null ? { origin: null, nodes: new Set(), edges: new Set() } : dependentsOf(props.state, layout, selected)),
+    () =>
+      selected === null
+        ? { origin: null, nodes: new Set(), edges: new Set() }
+        : dependentsOf(props.state, layout, selected),
     [selected, props.state, layout],
   );
 
@@ -134,7 +141,10 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
     };
   }, [plan]);
 
-  const revealed = useMemo(() => (plan === null ? new Set<NodeId>() : revealedAt(plan, elapsed)), [plan, elapsed]);
+  const revealed = useMemo(
+    () => (plan === null ? new Set<NodeId>() : revealedAt(plan, elapsed)),
+    [plan, elapsed],
+  );
   const currentStep = plan === null ? null : stepAt(plan, elapsed);
 
   const select = useCallback(
@@ -150,7 +160,9 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
   const falsify = async (premiseId: PremiseId): Promise<void> => {
     const text = observation.trim();
     if (text.length === 0) {
-      setNote("Say what you observed. A falsification with no observation is an opinion, and the log records observations.");
+      setNote(
+        "Say what you observed. A falsification with no observation is an opinion, and the log records observations.",
+      );
       return;
     }
 
@@ -192,28 +204,49 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
     setFalsifyFor(null);
     setNote(
       next.steps.length === 0
-        ? "Falsified " + premiseId + ". Nothing flipped: " + (next.survivors.length > 0
-            ? next.survivors.length + " node(s) were in the blast radius and every one survived, because each has support that does not depend on this premise."
-            : "nothing depended on it.")
-        : "Falsified " + premiseId + ". " + next.steps.length + " label(s) flipped and " +
-          next.survivors.length + " survived. The animation shows the real diff, not a simulation.",
+        ? `Falsified ${premiseId}. Nothing flipped: ${
+            next.survivors.length > 0
+              ? `${next.survivors.length} node(s) were in the blast radius and every one survived, because each has support that does not depend on this premise.`
+              : "nothing depended on it."
+          }`
+        : `Falsified ${premiseId}. ${next.steps.length} label(s) flipped and ${next.survivors.length} survived. The animation shows the real diff, not a simulation.`,
     );
   };
 
-  const selectedPremise = selected !== null && isPremiseId(selected) ? (selected as PremiseId) : null;
+  const selectedPremise =
+    selected !== null && isPremiseId(selected) ? (selected as PremiseId) : null;
   const selectedNode = selected === null ? null : layout.nodes.get(selected);
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: 10,
+        }}
+      >
         <EdgeLegend />
         <label className="faint" style={{ fontSize: 11, marginLeft: "auto" }}>
-          <input type="checkbox" checked={showHidden} onChange={(event) => setShowHidden(event.target.checked)} />{" "}
+          <input
+            type="checkbox"
+            checked={showHidden}
+            onChange={(event) => setShowHidden(event.target.checked)}
+          />{" "}
           show superseded and topical edges
         </label>
       </div>
 
-      <div style={{ overflowX: "auto", border: "1px solid var(--border)", borderRadius: 6, background: "var(--surface-sunken)" }}>
+      <div
+        style={{
+          overflowX: "auto",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          background: "var(--surface-sunken)",
+        }}
+      >
         <svg
           width={Math.max(layout.width, 480)}
           height={props.height ?? Math.max(320, layout.height)}
@@ -222,11 +255,20 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
         >
           {/* column headers */}
           {layout.columns.map((column) => (
-            <g key={column.type} transform={"translate(" + column.x + ",26)"}>
-              <text textAnchor="middle" className="mono" style={{ fontSize: 10, fill: "var(--text-faint)", letterSpacing: 0.6 }}>
+            <g key={column.type} transform={`translate(${column.x},26)`}>
+              <text
+                textAnchor="middle"
+                className="mono"
+                style={{ fontSize: 10, fill: "var(--text-faint)", letterSpacing: 0.6 }}
+              >
                 {column.type.toUpperCase()}
               </text>
-              <text textAnchor="middle" dy={12} className="mono" style={{ fontSize: 9, fill: "var(--text-faint)" }}>
+              <text
+                textAnchor="middle"
+                dy={12}
+                className="mono"
+                style={{ fontSize: 9, fill: "var(--text-faint)" }}
+              >
                 {column.count}
               </text>
             </g>
@@ -242,10 +284,20 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
             stroke="var(--border)"
             strokeDasharray="3 5"
           />
-          <text x={8} y={bandY(layout) - 6} className="mono" style={{ fontSize: 9, fill: "var(--text-faint)" }}>
+          <text
+            x={8}
+            y={bandY(layout) - 6}
+            className="mono"
+            style={{ fontSize: 9, fill: "var(--text-faint)" }}
+          >
             PREMISES — the assumptions
           </text>
-          <text x={8} y={bandY(layout) + 14} className="mono" style={{ fontSize: 9, fill: "var(--text-faint)" }}>
+          <text
+            x={8}
+            y={bandY(layout) + 14}
+            className="mono"
+            style={{ fontSize: 9, fill: "var(--text-faint)" }}
+          >
             DECISIONS — what hangs off them
           </text>
 
@@ -255,7 +307,7 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
             const to = layout.nodes.get(edge.to);
             if (from === undefined || to === undefined) return null;
 
-            const key = edge.from + "\u0000" + edge.to + "\u0000" + edge.kind;
+            const key = `${edge.from}\u0000${edge.to}\u0000${edge.kind}`;
             const isHighlighted = highlight.edges.has(key);
 
             /* An edge turns red when the node it feeds has flipped in this animation. Red means an
@@ -269,7 +321,12 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
                 from={from}
                 to={to}
                 highlighted={isHighlighted}
-                dimmed={selected !== null && !isHighlighted && !highlight.nodes.has(edge.from) && !highlight.nodes.has(edge.to)}
+                dimmed={
+                  selected !== null &&
+                  !isHighlighted &&
+                  !highlight.nodes.has(edge.from) &&
+                  !highlight.nodes.has(edge.to)
+                }
                 turnedRed={turnedRed}
               />
             );
@@ -320,7 +377,10 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
         </svg>
       </div>
 
-      <pre className="mono faint" style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontSize: 10 }}>
+      <pre
+        className="mono faint"
+        style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontSize: 10 }}
+      >
         {describeLayout(layout)}
       </pre>
 
@@ -328,7 +388,11 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
       {currentStep !== null ? (
         <div
           className="notice notice-info"
-          style={{ marginTop: 10, borderLeft: "3px solid " + LABEL_COLOUR[currentStep.to], fontSize: 12 }}
+          style={{
+            marginTop: 10,
+            borderLeft: `3px solid ${LABEL_COLOUR[currentStep.to]}`,
+            fontSize: 12,
+          }}
         >
           <strong>
             {currentStep.node}: {currentStep.from} → {currentStep.to}
@@ -381,7 +445,7 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
           ) : (
             <div className="dim" style={{ fontSize: 11, marginTop: 6 }}>
               {selectedNode.collapsedPremises.length > 0
-                ? selectedNode.collapsedPremises.length + " premise(s) collapsed into this card: " + selectedNode.collapsedPremises.join(", ") + ". A premise supporting exactly one decision adds a node and an edge to say what the card already says."
+                ? `${selectedNode.collapsedPremises.length} premise(s) collapsed into this card: ${selectedNode.collapsedPremises.join(", ")}. A premise supporting exactly one decision adds a node and an edge to say what the card already says.`
                 : "Every premise this decision rests on is drawn above it."}
             </div>
           )}
@@ -389,7 +453,9 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
           {selectedPremise !== null ? (
             <div style={{ marginTop: 10 }}>
               {falsifyFor === selectedPremise ? (
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div
+                  style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}
+                >
                   <textarea
                     value={observation}
                     rows={2}
@@ -410,7 +476,11 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
                   </button>
                 </div>
               ) : (
-                <button type="button" className="badge" onClick={() => setFalsifyFor(selectedPremise)}>
+                <button
+                  type="button"
+                  className="badge"
+                  onClick={() => setFalsifyFor(selectedPremise)}
+                >
                   Falsify this premise
                 </button>
               )}
@@ -435,8 +505,12 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
 /** The y of the band separator, derived from the layout rather than hardcoded so it tracks the
  *  premise column depth. */
 function bandY(layout: LatticeLayout): number {
-  const decisionYs = [...layout.nodes.values()].filter((node) => node.kind === "decision").map((node) => node.y);
-  const premiseYs = [...layout.nodes.values()].filter((node) => node.kind === "premise").map((node) => node.y);
+  const decisionYs = [...layout.nodes.values()]
+    .filter((node) => node.kind === "decision")
+    .map((node) => node.y);
+  const premiseYs = [...layout.nodes.values()]
+    .filter((node) => node.kind === "premise")
+    .map((node) => node.y);
 
   const lowestPremise = premiseYs.length === 0 ? 56 : Math.max(...premiseYs);
   const highestDecision = decisionYs.length === 0 ? lowestPremise + 90 : Math.min(...decisionYs);

@@ -14,10 +14,10 @@
  * in a tooltip.
  */
 
-import type { ReactElement } from "react";
-import type { DecisionLabel, PremiseType } from "@/types/domain";
-import { LABEL_COLOUR } from "@/theme";
 import { isWorldObservable } from "@/ontology";
+import { LABEL_COLOUR } from "@/theme";
+import type { DecisionLabel, PremiseType } from "@/types/domain";
+import type { ReactElement } from "react";
 import type { LatticeNode } from "./LatticeLayout";
 import { radiusFor, ringFor } from "./LatticeLayout";
 
@@ -39,9 +39,13 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
 
   return (
     <g
-      transform={"translate(" + props.node.x + "," + props.node.y + ")"}
+      transform={`translate(${props.node.x},${props.node.y})`}
       onClick={() => props.onSelect(props.node.id)}
-      style={{ cursor: "pointer", opacity: props.dimmed ? 0.22 : 1, transition: "opacity 220ms ease" }}
+      style={{
+        cursor: "pointer",
+        opacity: props.dimmed ? 0.22 : 1,
+        transition: "opacity 220ms ease",
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
@@ -52,23 +56,33 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
       }}
     >
       <title>
-        {props.node.id + " · " + props.type + " · " + props.predicate + "\n" + props.node.text +
-          "\nlabel " + props.node.label + " · " + props.node.dependents + " decision(s) depend on it" +
-          "\n" + (observable ? "WORLD-OBSERVABLE — a guard or repo scan could falsify this" : "INTENT-BASED — only a human can retract this") +
-          "\nClick to see everything resting on it; falsify it to watch the cascade."}
+        {`${props.node.id} · ${props.type} · ${props.predicate}\n${props.node.text}\nlabel ${props.node.label} · ${props.node.dependents} decision(s) depend on it\n${
+          observable
+            ? "WORLD-OBSERVABLE — a guard or repo scan could falsify this"
+            : "INTENT-BASED — only a human can retract this"
+        }\nClick to see everything resting on it; falsify it to watch the cascade.`}
       </title>
 
       {/* The pulse ring, drawn only while this node is mid-flip. */}
       {props.flipping ? (
         <circle r={radius + 9} fill="none" stroke={colour} strokeWidth={1.5} opacity={0.55}>
-          <animate attributeName="r" values={String(radius + 4) + ";" + String(radius + 14)} dur="0.9s" repeatCount="indefinite" />
+          <animate
+            attributeName="r"
+            values={`${String(radius + 4)};${String(radius + 14)}`}
+            dur="0.9s"
+            repeatCount="indefinite"
+          />
           <animate attributeName="opacity" values="0.6;0" dur="0.9s" repeatCount="indefinite" />
         </circle>
       ) : null}
 
       <circle
         r={radius}
-        fill={props.node.label === "UNKNOWN" || props.node.label === "UNFOUNDED" ? "var(--surface-raised)" : colour}
+        fill={
+          props.node.label === "UNKNOWN" || props.node.label === "UNFOUNDED"
+            ? "var(--surface-raised)"
+            : colour
+        }
         fillOpacity={props.node.label === "IN" ? 0.22 : 0.1}
         stroke={colour}
         strokeWidth={props.selected || props.highlighted ? 2.6 : 1.4}
@@ -89,7 +103,12 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
       </text>
 
       {props.node.dependents > 1 ? (
-        <text textAnchor="middle" dy={radius + 11} className="mono" style={{ fontSize: 9, fill: colour }}>
+        <text
+          textAnchor="middle"
+          dy={radius + 11}
+          className="mono"
+          style={{ fontSize: 9, fill: colour }}
+        >
           {props.node.dependents} dependents
         </text>
       ) : null}
@@ -99,7 +118,7 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
 
 function truncate(text: string, limit: number): string {
   const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length <= limit ? flat : flat.slice(0, limit - 1) + "…";
+  return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`;
 }
 
 export type { DecisionLabel, PremiseType };

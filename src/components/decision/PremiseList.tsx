@@ -24,12 +24,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { ReactElement } from "react";
-import type { DecisionId, PremiseId } from "@/types/common";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
 import { isWorldObservable } from "@/ontology";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
+import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import type { DecisionId, PremiseId } from "@/types/common";
+import type { ReactElement } from "react";
 import { LabelBadge } from "../common/StatusBadge";
 
 export interface PremiseEntry {
@@ -103,7 +103,7 @@ export function PremiseList({
 }: {
   restsOn: readonly PremiseEntry[];
   excludes: readonly PremiseEntry[];
-  onSelectPremise?: (id: PremiseId) => void;
+  onSelectPremise?: ((id: PremiseId) => void) | undefined;
 }): ReactElement {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -117,7 +117,16 @@ export function PremiseList({
             needs no assumptions.
           </div>
         ) : (
-          <ul style={{ margin: "6px 0 0", paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+          <ul
+            style={{
+              margin: "6px 0 0",
+              paddingLeft: 0,
+              listStyle: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 5,
+            }}
+          >
             {restsOn.map((entry) => (
               <PremiseRow key={entry.id} entry={entry} kind="in" onSelect={onSelectPremise} />
             ))}
@@ -132,7 +141,16 @@ export function PremiseList({
             If any of these becomes true, the decision is invalidated. A non-empty exclusion list is
             what makes this justification non-monotonic, and it is what gate (c) watches.
           </div>
-          <ul style={{ margin: "6px 0 0", paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+          <ul
+            style={{
+              margin: "6px 0 0",
+              paddingLeft: 0,
+              listStyle: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 5,
+            }}
+          >
             {excludes.map((entry) => (
               <PremiseRow key={entry.id} entry={entry} kind="out" onSelect={onSelectPremise} />
             ))}
@@ -150,13 +168,19 @@ function PremiseRow({
 }: {
   entry: PremiseEntry;
   kind: "in" | "out";
-  onSelect?: (id: PremiseId) => void;
+  onSelect?: ((id: PremiseId) => void) | undefined;
 }): ReactElement {
   const stale = entry.label === "OUT" && kind === "in";
 
   return (
     <li style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-      <span className="mono" style={{ fontSize: 11, color: kind === "out" ? "var(--label-unknown)" : "var(--text-faint)" }}>
+      <span
+        className="mono"
+        style={{
+          fontSize: 11,
+          color: kind === "out" ? "var(--label-unknown)" : "var(--text-faint)",
+        }}
+      >
         {kind === "in" ? "✓" : "✗"} {entry.id}
       </span>
 
@@ -197,7 +221,10 @@ function PremiseRow({
 
 function SectionLabel({ children }: { children: string }): ReactElement {
   return (
-    <div className="faint mono" style={{ fontSize: 10, letterSpacing: 0.7, textTransform: "uppercase" }}>
+    <div
+      className="faint mono"
+      style={{ fontSize: 10, letterSpacing: 0.7, textTransform: "uppercase" }}
+    >
       {children}
     </div>
   );
