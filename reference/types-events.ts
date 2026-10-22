@@ -37,12 +37,6 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "./common";
-import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
-import type {
-  ContradictionVerdict,
-  GroundednessVerdict,
-  RetrievedHit,
-} from "./retrieval";
 import type {
   DecisionLabel,
   DecisionOrigin,
@@ -50,8 +44,10 @@ import type {
   Justification,
   PremiseType,
 } from "./domain";
-import type { EntrenchmentBreakdown } from "./reasoning";
 import type { ExportTarget, IntegrityStamp } from "./export";
+import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
+import type { EntrenchmentBreakdown } from "./reasoning";
+import type { ContradictionVerdict, GroundednessVerdict, RetrievedHit } from "./retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Event type union                                                           */
@@ -555,10 +551,7 @@ export type ValidationResult =
   | { readonly ok: false; readonly rule: number; readonly message: string };
 
 /** Narrowing helper for switch statements over `AnyEvent`. */
-export function isEventType<T extends EventType>(
-  event: AnyEvent,
-  type: T,
-): event is TypedEvent<T> {
+export function isEventType<T extends EventType>(event: AnyEvent, type: T): event is TypedEvent<T> {
   return event.type === type;
 }
 

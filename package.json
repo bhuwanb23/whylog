@@ -24,8 +24,8 @@
     "eval:ablation": "tsx src/eval/ablation/run.ts",
     "eval:report": "tsx src/eval/report.ts",
     "guards:ci": "tsx scripts/export_guards.ts",
+    "check:structure": "python scripts/check_structure.py",
     "verify": "npm run typecheck && npm run check && npm run test",
-    "scaffold:regen": "python3 scripts/gen_scaffold.py",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {

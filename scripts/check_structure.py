@@ -159,10 +159,16 @@ RESOLVABLE_SUFFIXES = (".ts", ".tsx", ".d.ts", ".css", ".json")
 
 
 def rel(path: pathlib.Path) -> str:
+    """Repo-relative path, always with forward slashes.
+
+    `as_posix()` matters: `str(relative_to(...))` yields backslashes on Windows,
+    so every allowlist comparison below silently stopped matching and the
+    checker reported allowed files as violations.
+    """
     try:
-        return str(path.relative_to(ROOT))
+        return path.relative_to(ROOT).as_posix()
     except ValueError:
-        return str(path)
+        return path.as_posix()
 
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:
