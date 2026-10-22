@@ -51,9 +51,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import { cosine } from "@/lib/cosine";
 import type { DecisionId } from "@/types/common";
 import type { IndexArtifacts, RankedHit } from "@/types/retrieval";
-import { cosine } from "@/lib/cosine";
 import { rank } from "../rrf";
 
 /**
@@ -113,5 +113,5 @@ export function describeL2(artifacts: IndexArtifacts): string {
   const count = l2Count(artifacts);
   return count === 0
     ? "L2 inverted questions — none built. Question-shaped queries fall back to L1 and L3."
-    : "L2 inverted questions (HyPE) — " + count + " decision(s). Query matching becomes question-to-question, which removes the interrogative/declarative asymmetry entirely. Cost: zero extra model calls.";
+    : `L2 inverted questions (HyPE) — ${count} decision(s). Query matching becomes question-to-question, which removes the interrogative/declarative asymmetry entirely. Cost: zero extra model calls.`;
 }

@@ -19,21 +19,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
 import type { WhyLogEngine } from "@/ai/types";
-import type { IndexArtifacts, RetrievedHit } from "@/types/retrieval";
 import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, PremiseId } from "@/types/common";
+import type { IndexArtifacts } from "@/types/retrieval";
+import { type ModelRerankInput, canRerankWithModel, rerankWithModel } from "./cross-encoder";
 import {
-  canRerankWithModel,
-  rerankWithModel,
-  type ModelRerankInput,
-} from "./cross-encoder";
-import {
-  rerankLocally,
-  explainScore,
   type LocalRerankInput,
   type RerankCandidate,
   type ScoredCandidate,
+  explainScore,
+  rerankLocally,
 } from "./local-weights";
 
 export type RerankMethod = "llm-listwise" | "local-weights";
@@ -88,7 +84,10 @@ export async function rerank(input: RerankInput): Promise<RerankResult> {
 
     const scored = rerankLocally(localInput);
     return {
-      order: orderWithPromotion(scored.map((entry) => entry.candidate), scored.map((entry) => entry.candidate.decisionId)),
+      order: orderWithPromotion(
+        scored.map((entry) => entry.candidate),
+        scored.map((entry) => entry.candidate.decisionId),
+      ),
       method: "local-weights",
       scored,
       durationMs: 0,
@@ -102,13 +101,7 @@ export async function rerank(input: RerankInput): Promise<RerankResult> {
     text: textFor(input.state, candidate.decisionId),
   }));
 
-  const result = await rerankWithModel(
-    input.engine,
-    input.query,
-    texts,
-    input.topK,
-    input.signal,
-  );
+  const result = await rerankWithModel(input.engine, input.query, texts, input.topK, input.signal);
 
   /* The model returns an order but no components, so `scored` is the LOCAL scoring of the
    * same candidates. It is labelled as such by `method`: the components explain what the
@@ -178,14 +171,15 @@ function textFor(state: GraphState, decisionId: DecisionId): string {
   if (decision === undefined) return decisionId;
 
   const parts = [decision.statement];
-  if (decision.rationale !== undefined && decision.rationale.length > 0) parts.push(decision.rationale);
+  if (decision.rationale !== undefined && decision.rationale.length > 0)
+    parts.push(decision.rationale);
   if (decision.yStatement !== undefined) parts.push(decision.yStatement);
 
   return parts.join("\n");
 }
 
 function describeEngineId(engineId: { kind: string; model: string }): string {
-  return engineId.model.length > 0 ? engineId.kind + ":" + engineId.model : engineId.kind;
+  return engineId.model.length > 0 ? `${engineId.kind}:${engineId.model}` : engineId.kind;
 }
 
 /** Which method WOULD be used, before running anything — for the UI to state its policy. */
@@ -200,7 +194,12 @@ export function describeMethod(method: RerankMethod): string {
 }
 
 export { explainScore, rerankLocally, canRerankWithModel, rerankWithModel };
-export { RERANK_WEIGHTS, RECENCY_HALF_LIFE_DAYS, describeWeights, dominantComponents } from "./local-weights";
+export {
+  RERANK_WEIGHTS,
+  RECENCY_HALF_LIFE_DAYS,
+  describeWeights,
+  dominantComponents,
+} from "./local-weights";
 export { describeUnavailablePath } from "./cross-encoder";
 export type { RerankCandidate, ScoredCandidate, LocalRerankInput } from "./local-weights";
 export type { ModelRerankInput, ModelRerankResult } from "./cross-encoder";

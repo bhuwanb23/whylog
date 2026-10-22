@@ -360,23 +360,24 @@ describe("Phase 2 · Definition of done", () => {
       gate: "premise" as const,
       verdict: "premise-invalidation" as const,
       premiseId: loadBearing.id,
-      decisionId: [...state.justifications.values()].find((j) => j.inList.includes(loadBearing.id))!
-        .consequent,
+      decisionId: [...state.justifications.values()].find((j) => j.inList.includes(loadBearing.id))
+        ?.consequent,
       otherDecisionId: null,
       explanation: "the assumption no longer holds",
       gate2: undefined,
     } as never;
 
+    const justification = [...state.justifications.values()].find((j) =>
+      j.inList.includes(loadBearing.id),
+    );
+    expect(justification).toBeDefined();
+    if (!justification) return;
+
     const proposal = buildProposal({
       state,
       finding,
       cascade: cascade(state, labels, [loadBearing.id]),
-      entrenchment: entrenchmentOf(
-        state,
-        [...state.justifications.values()].find((j) => j.inList.includes(loadBearing.id))!
-          .consequent,
-        Date.parse(LATER),
-      ),
+      entrenchment: entrenchmentOf(state, justification.consequent, Date.parse(LATER)),
       evidence: { quote: "…", source: "transcript", confidence: 0.9 as never },
       createdBy: "EV-000000-000000" as never,
       proposalNumber: 1,
@@ -416,8 +417,8 @@ describe("Phase 2 · Definition of done", () => {
       gate: "premise" as const,
       verdict: "premise-invalidation" as const,
       premiseId: loadBearing.id,
-      decisionId: [...state.justifications.values()].find((j) => j.inList.includes(loadBearing.id))!
-        .consequent,
+      decisionId: [...state.justifications.values()].find((j) => j.inList.includes(loadBearing.id))
+        ?.consequent,
       otherDecisionId: null,
       explanation: "the assumption no longer holds",
     } as never;

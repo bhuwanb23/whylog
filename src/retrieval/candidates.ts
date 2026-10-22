@@ -53,11 +53,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
-import type { IndexArtifacts } from "@/types/retrieval";
-import type { GraphState } from "@/substrate/graph-state";
 import { cosine } from "@/lib/cosine";
 import type { CandidatePair } from "@/reasoning/gates/semantic";
+import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, PremiseId } from "@/types/common";
+import type { IndexArtifacts } from "@/types/retrieval";
 import { isClassifiable } from "./contradiction";
 
 /** How many dense neighbours each decision is compared against. Small on purpose: gate (b)
@@ -171,16 +171,24 @@ export function candidatePairs(
    * likely to be interesting and the run is reproducible. */
   const ordered = [...pairs.values()].sort((x, y) =>
     y.similarity === x.similarity
-      ? x.a < y.a ? -1 : x.a > y.a ? 1 : x.b < y.b ? -1 : 1
+      ? x.a < y.a
+        ? -1
+        : x.a > y.a
+          ? 1
+          : x.b < y.b
+            ? -1
+            : 1
       : y.similarity - x.similarity,
   );
 
-  return ordered.slice(0, maxPairs).map((pair): CandidatePair => ({
-    a: pair.a,
-    b: pair.b,
-    similarity: pair.similarity,
-    sharedPremises: [...pair.sharedPremises],
-  }));
+  return ordered.slice(0, maxPairs).map(
+    (pair): CandidatePair => ({
+      a: pair.a,
+      b: pair.b,
+      similarity: pair.similarity,
+      sharedPremises: [...pair.sharedPremises],
+    }),
+  );
 }
 
 interface MutablePair {
@@ -201,7 +209,7 @@ function addPair(
 ): void {
   const a = rawA < rawB ? rawA : rawB;
   const b = rawA < rawB ? rawB : rawA;
-  const key = a + "\u0000" + b;
+  const key = `${a}\u0000${b}`;
 
   const existing = into.get(key);
   if (existing === undefined) {
@@ -243,20 +251,20 @@ export function describeSource(pair: CandidatePair, state: GraphState): string {
 
   if (a.variable === b.variable) {
     reasons.push(
-      "both settle " + a.variable +
-        (a.value === b.value ? ' on "' + a.value + '"' : ' — one on "' + a.value + '", one on "' + b.value + '"'),
+      `both settle ${a.variable}${
+        a.value === b.value ? ` on "${a.value}"` : ` — one on "${a.value}", one on "${b.value}"`
+      }`,
     );
   }
 
   if (pair.sharedPremises.length > 0) {
     reasons.push(
-      "they share " + pair.sharedPremises.length + " premise(s): " +
-        pair.sharedPremises.map((id) => id).join(", "),
+      `they share ${pair.sharedPremises.length} premise(s): ${pair.sharedPremises.map((id) => id).join(", ")}`,
     );
   }
 
   if (pair.similarity > 0) {
-    reasons.push("embedding similarity " + pair.similarity.toFixed(3));
+    reasons.push(`embedding similarity ${pair.similarity.toFixed(3)}`);
   }
 
   if (reasons.length === 0) return "candidate";
@@ -270,12 +278,12 @@ export function describeCandidatePolicy(): string {
   return [
     "Gate (b) candidates come from three sources, unioned and de-duplicated:",
     "",
-    "  dense neighbours    cosine >= " + NEIGHBOUR_FLOOR + ", top " + NEIGHBOURS_PER_DECISION + " per decision, read from the",
+    `  dense neighbours    cosine >= ${NEIGHBOUR_FLOOR}, top ${NEIGHBOURS_PER_DECISION} per decision, read from the`,
     "                      L1 vectors already in the index — ZERO embedding calls",
     "  shared premises     pairs resting on the same assumption, wherever similarity puts them",
     "  same variable       pairs settling the same slot, whatever their wording",
     "",
-    "Ceiling: " + MAX_CANDIDATE_PAIRS + " pairs. Only live decisions are candidates — a proposal never became a",
+    `Ceiling: ${MAX_CANDIDATE_PAIRS} pairs. Only live decisions are candidates — a proposal never became a`,
     "belief and a superseded decision has been withdrawn, so neither can contradict one.",
     "",
     "The similarity carried on each pair SELECTS it and is then discarded. It is never a",

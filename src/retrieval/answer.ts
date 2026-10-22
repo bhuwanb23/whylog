@@ -45,8 +45,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, EngineId } from "@/types/common";
 import type { CompositionFact, CompositionRequest, WhyLogEngine } from "@/ai/types";
+import type { DecisionId, EngineId, ISODateString } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import type {
   Answer,
@@ -55,14 +55,14 @@ import type {
   PreemptionNotice,
   RetrievedHit,
 } from "@/types/retrieval";
-import { groundednessOf, PARTIAL_FLOOR } from "./groundedness";
 import {
   MAX_SEARCHES,
+  type SearchTrace,
   groundClaims,
   resolveCitations,
   unresolvedCount,
-  type SearchTrace,
 } from "./evidence-contract";
+import { PARTIAL_FLOOR, groundednessOf } from "./groundedness";
 import { renderPreemption } from "./preemption";
 
 /**
@@ -100,7 +100,7 @@ export interface ComposeInput {
   /** Total decisions in the log. Zero changes the assessment entirely: an empty log is not
    *  a failed search, and saying "nothing matched" when nothing exists is misleading. */
   readonly logSize: number;
-  readonly answeredAt: string;
+  readonly answeredAt: ISODateString;
   readonly signal?: AbortSignal;
 }
 
@@ -231,29 +231,24 @@ function refuse(input: ComposeInput): Answer {
     input.logSize === 0
       ? "The log is empty, so nothing can answer this yet. Paste a transcript on the Foundation tab and the decisions in it become searchable."
       : nearest.length === 0
-        ? "The log holds " + input.logSize + " decisions and none of them came back for this question, at any score. Either the wording does not overlap the vocabulary the decisions were recorded in, or the decision was never recorded."
-        : "The log holds " + input.logSize + " decisions and none of them cleared the topicality floor of " + TOPICALITY_FLOOR + " for this question.";
+        ? `The log holds ${input.logSize} decisions and none of them came back for this question, at any score. Either the wording does not overlap the vocabulary the decisions were recorded in, or the decision was never recorded.`
+        : `The log holds ${input.logSize} decisions and none of them cleared the topicality floor of ${TOPICALITY_FLOOR} for this question.`;
 
   const offering =
     nearest.length === 0
       ? ""
-      : "\n\nNearest related decisions — offered as the closest thing the log has, NOT as an answer:\n" +
-        nearest
+      : `\n\nNearest related decisions — offered as the closest thing the log has, NOT as an answer:\n${nearest
           .map(
             (hit, index) =>
-              "  " + (index + 1) + ". " + hit.decision.id + " · " + hit.decision.statement +
-              "  (score " + hit.finalScore.toFixed(3) +
-              (hit.promoted ? ", promoted on an exact match" : "") + ")",
+              `  ${index + 1}. ${hit.decision.id} · ${hit.decision.statement}  (score ${hit.finalScore.toFixed(3)}${hit.promoted ? ", promoted on an exact match" : ""})`,
           )
-          .join("\n");
+          .join("\n")}`;
 
   const firstPreemption = input.preemptions[0];
-  const preemption = firstPreemption === undefined ? "" : "\n\n" + renderPreemption(firstPreemption);
+  const preemption =
+    firstPreemption === undefined ? "" : `\n\n${renderPreemption(firstPreemption)}`;
 
-  const text =
-    "INSUFFICIENT EVIDENCE. " + body + offering + preemption +
-    "\n\n" + input.trace.searchCount + " of a maximum of " + MAX_SEARCHES +
-    " searches were used; each is recorded in the trace below.";
+  const text = `INSUFFICIENT EVIDENCE. ${body}${offering}${preemption}\n\n${input.trace.searchCount} of a maximum of ${MAX_SEARCHES} searches were used; each is recorded in the trace below.`;
 
   return {
     question: input.question,
@@ -266,7 +261,7 @@ function refuse(input: ComposeInput): Answer {
     trace: input.trace.freeze(
       input.logSize === 0
         ? "No searches could answer this because the log is empty. This is not a retrieval failure — there is nothing to retrieve from."
-        : "Nothing cleared the topicality floor of " + TOPICALITY_FLOOR + ". Refusing and offering the nearest related decisions rather than composing an answer from material that does not bear on the question.",
+        : `Nothing cleared the topicality floor of ${TOPICALITY_FLOOR}. Refusing and offering the nearest related decisions rather than composing an answer from material that does not bear on the question.`,
     ),
     engine: input.engineId,
     answeredAt: input.answeredAt,
@@ -290,15 +285,17 @@ function assembleText(
   score: number,
   unresolved: number,
 ): string {
-  const banner =
-    verdict + " · " + (score * 100).toFixed(0) + "% grounded" +
-    (unresolved > 0 ? " · " + unresolved + " citation(s) could not be checked against this run" : "");
+  const banner = `${verdict} · ${(score * 100).toFixed(0)}% grounded${
+    unresolved > 0 ? ` · ${unresolved} citation(s) could not be checked against this run` : ""
+  }`;
 
   const firstPreemption = input.preemptions[0];
   const preemption =
-    firstPreemption === undefined ? "" : "\n\nBEFORE THE ANSWER — " + renderPreemption(firstPreemption);
+    firstPreemption === undefined
+      ? ""
+      : `\n\nBEFORE THE ANSWER — ${renderPreemption(firstPreemption)}`;
 
-  return banner + preemption + "\n\n" + body;
+  return `${banner + preemption}\n\n${body}`;
 }
 
 /** The thresholds and the floor, printed for the health panel. */
@@ -306,9 +303,9 @@ export function describeComposition(): string {
   return [
     "Answers are assembled from retrieved facts, never written from scratch.",
     "",
-    "  topicality floor   " + TOPICALITY_FLOOR + "  (promoted hits bypass it — an exact match is evidence)",
-    "  partial floor      " + PARTIAL_FLOOR + "  (below this the system refuses)",
-    "  nearest related    " + NEAREST_RELATED_LIMIT + "  (offered on refusal, explicitly NOT as an answer)",
+    `  topicality floor   ${TOPICALITY_FLOOR}  (promoted hits bypass it — an exact match is evidence)`,
+    `  partial floor      ${PARTIAL_FLOOR}  (below this the system refuses)`,
+    `  nearest related    ${NEAREST_RELATED_LIMIT}  (offered on refusal, explicitly NOT as an answer)`,
     "",
     "Both engines go through engine.compose(); there is no local-shaped branch here. A second",
     "template engine in the retrieval layer would be two implementations of one judgement.",

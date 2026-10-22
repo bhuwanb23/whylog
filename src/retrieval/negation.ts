@@ -36,10 +36,10 @@
 
 import {
   NEGATION_SCOPE_TOKENS,
+  type PolarityEvidence,
   isNegation,
   negationScope,
   polarityOf,
-  type PolarityEvidence,
 } from "@/ai/local/negation";
 import { foldKey } from "@/ontology/canonicalize";
 
@@ -58,7 +58,8 @@ export function negationReachesValue(text: string, value: string): NegationScope
   const foldedText = text.toLowerCase();
   const foldedValue = foldKey(value);
 
-  if (foldedValue.length === 0) return { negated: false, cue: null, window: [], reason: "no value to check" };
+  if (foldedValue.length === 0)
+    return { negated: false, cue: null, window: [], reason: "no value to check" };
 
   const valueAt = foldedText.indexOf(foldedValue);
   if (valueAt < 0) {
@@ -91,7 +92,8 @@ export function negationReachesValue(text: string, value: string): NegationScope
         negated: false,
         cue: token,
         window,
-        reason: "a negation cue appears before the value but a conjunction resets its scope before it reaches it",
+        reason:
+          "a negation cue appears before the value but a conjunction resets its scope before it reaches it",
       };
     }
 
@@ -99,7 +101,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
       negated: true,
       cue: token,
       window,
-      reason: "a negation cue falls within " + NEGATION_SCOPE_TOKENS + " tokens before the value, with nothing resetting its scope",
+      reason: `a negation cue falls within ${NEGATION_SCOPE_TOKENS} tokens before the value, with nothing resetting its scope`,
     };
   }
 
@@ -107,7 +109,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
     negated: false,
     cue: null,
     window,
-    reason: "no negation cue within " + NEGATION_SCOPE_TOKENS + " tokens of the value",
+    reason: `no negation cue within ${NEGATION_SCOPE_TOKENS} tokens of the value`,
   };
 }
 
@@ -148,7 +150,7 @@ export function negationBetween(
  *  tokens the decision was made over, not just the verdict. */
 export function describeScope(verdict: NegationScopeVerdict): string {
   const window = verdict.window.length === 0 ? "(empty)" : verdict.window.join(" ");
-  return (verdict.negated ? "NEGATED" : "not negated") + " — scope window: [" + window + "] — " + verdict.reason;
+  return `${verdict.negated ? "NEGATED" : "not negated"} — scope window: [${window}] — ${verdict.reason}`;
 }
 
 /** Re-exported for the classifier: `negationScope` needs a CueHit, which retrieval does not

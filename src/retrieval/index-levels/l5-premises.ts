@@ -73,8 +73,8 @@ export function searchL5(
         via,
         explanation:
           via === "query-named"
-            ? "rests on " + premiseId + ' "' + named + '", which the query named'
-            : "shares premise " + premiseId + ' "' + named + '" with a decision already retrieved',
+            ? `rests on ${premiseId} "${named}", which the query named`
+            : `shares premise ${premiseId} "${named}" with a decision already retrieved`,
       });
     }
   }
@@ -141,9 +141,5 @@ export function l5Count(artifacts: IndexArtifacts): number {
 export function describeL5(artifacts: IndexArtifacts): string {
   const premises = artifacts.premises.premiseToDecisions.size;
   const decisions = artifacts.premises.decisionToPremises.size;
-  return (
-    `L5 premise inverted — ${premises} premise(s) indexed across ${decisions} decision(s). ` +
-    `Serves "what assumes X?" (a shape no other level can answer) and gives Phase 2 gate (c) ` +
-    `and the cascade O(1) premise-to-dependents lookup. Promoted, not fused.`
-  );
+  return `L5 premise inverted — ${premises} premise(s) indexed across ${decisions} decision(s). Serves "what assumes X?" (a shape no other level can answer) and gives Phase 2 gate (c) and the cascade O(1) premise-to-dependents lookup. Promoted, not fused.`;
 }
