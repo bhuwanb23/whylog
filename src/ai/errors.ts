@@ -72,7 +72,11 @@ export function isEngineError(value: unknown): value is EngineError {
 }
 
 /** Is this failure worth retrying, and how many times? */
-export function retryPolicy(error: EngineError): { retry: boolean; attempts: number; delayMs: number } {
+export function retryPolicy(error: EngineError): {
+  retry: boolean;
+  attempts: number;
+  delayMs: number;
+} {
   switch (error.code) {
     case "rate-limited":
       return { retry: true, attempts: 2, delayMs: error.retryAfterMs ?? 2000 };
@@ -127,7 +131,10 @@ export function describeError(error: EngineError): string {
  *  disagree about whether a 429 is retryable. */
 export function fromResponse(status: number, body: string, engine: string): EngineError {
   if (status === 401 || status === 403) {
-    return new EngineError("no-key", `The provider rejected the key (${status}).`, { engine, status });
+    return new EngineError("no-key", `The provider rejected the key (${status}).`, {
+      engine,
+      status,
+    });
   }
   if (status === 429) {
     const retryAfter = parseRetryAfter(body);
@@ -141,12 +148,23 @@ export function fromResponse(status: number, body: string, engine: string): Engi
     return new EngineError("timeout", `The provider timed out (${status}).`, { engine, status });
   }
   if (status === 413) {
-    return new EngineError("context-too-long", `The request was too large (${status}).`, { engine, status });
+    return new EngineError("context-too-long", `The request was too large (${status}).`, {
+      engine,
+      status,
+    });
   }
   if (status >= 500) {
-    return new EngineError("provider-error", `The provider failed (${status}).`, { engine, status, raw: body.slice(0, 500) });
+    return new EngineError("provider-error", `The provider failed (${status}).`, {
+      engine,
+      status,
+      raw: body.slice(0, 500),
+    });
   }
-  return new EngineError("provider-error", `The provider returned ${status}.`, { engine, status, raw: body.slice(0, 500) });
+  return new EngineError("provider-error", `The provider returned ${status}.`, {
+    engine,
+    status,
+    raw: body.slice(0, 500),
+  });
 }
 
 function parseRetryAfter(body: string): number | null {

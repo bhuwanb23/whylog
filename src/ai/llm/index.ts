@@ -27,11 +27,32 @@
  * ---------------------------------------------------------------------------
  */
 
+import { performanceSafeNow } from "@/lib/format";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import { EngineError, unsupportedError } from "../errors";
+import type { ClassificationResult } from "@/types/retrieval";
 import {
-  llmCapabilities,
+  DEFAULT_MODELS,
+  type EngineConfig,
+  LOCAL_DIMENSIONS,
+  type ProviderId,
+  readConfig,
+} from "../config";
+import { EngineError, unsupportedError } from "../errors";
+import { embedBatch } from "../local/embed";
+import {
+  type LlmAlternative,
+  type LlmDecision,
+  type LlmDiscard,
+  type LlmExtraction,
+  type LlmPremise,
+  SYSTEM_PROMPT,
+  needsChunking,
+  userPrompt,
+} from "../prompts/extraction";
+import { type ChatMessage, chat } from "../providers/openai-compatible";
+import { registerEngine } from "../registry";
+import {
   type ClassificationRequest,
   type CompositionRequest,
   type CompositionResult,
@@ -44,29 +65,9 @@ import {
   type RerankRequest,
   type RerankResult,
   type WhyLogEngine,
+  llmCapabilities,
 } from "../types";
-import type { ClassificationResult } from "@/types/retrieval";
-import {
-  DEFAULT_MODELS,
-  LOCAL_DIMENSIONS,
-  readConfig,
-  type EngineConfig,
-  type ProviderId,
-} from "../config";
-import { registerEngine } from "../registry";
-import { embedBatch } from "../local/embed";
-import { chat, extractJson, type ChatMessage } from "../providers/openai-compatible";
-import {
-  EMPTY_LLM_EXTRACTION,
-  PROMPT_CHAR_BUDGET,
-  SYSTEM_PROMPT,
-  needsChunking,
-  userPrompt,
-  type LlmExtraction,
-} from "../prompts/extraction";
 import { readExtraction, splitForPrompt, toExtractionResult } from "./parse";
-import { chunkTurns } from "@/extraction/chunking";
-import { normaliseTranscript } from "@/extraction/normalizer";
 
 export interface LlmEngineOptions {
   readonly config: EngineConfig;
@@ -79,9 +80,13 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
   const requireKey = (): string => {
     if (config.apiKey === null || config.apiKey.length === 0) {
-      throw new EngineError("no-key", "No API key is saved. Add one in Settings, or switch to the local engine.", {
-        engine: id.model,
-      });
+      throw new EngineError(
+        "no-key",
+        "No API key is saved. Add one in Settings, or switch to the local engine.",
+        {
+          engine: id.model,
+        },
+      );
     }
     return config.apiKey;
   };
@@ -108,12 +113,12 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
       let promptTokens = 0;
       let completionTokens = 0;
-      const merged: LlmExtraction = {
-        decisions: [],
-        premises: [],
-        alternatives: [],
-        discarded: [],
-      };
+      // Mutable while merging: a transcript is split into chunks and each
+      // chunk's candidates are appended.
+      const decisions: LlmDecision[] = [];
+      const premises: LlmPremise[] = [];
+      const alternatives: LlmAlternative[] = [];
+      const discarded: LlmDiscard[] = [];
 
       for (const piece of pieces) {
         if (request.signal?.aborted) {
@@ -139,13 +144,22 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
         completionTokens += response.completionTokens;
 
         const parsed = readExtraction(response.text, id.model);
-        merged.decisions.push(...parsed.decisions);
-        merged.premises.push(...parsed.premises);
-        merged.alternatives.push(...parsed.alternatives);
-        merged.discarded.push(...parsed.discarded);
+        decisions.push(...parsed.decisions);
+        premises.push(...parsed.premises);
+        alternatives.push(...parsed.alternatives);
+        discarded.push(...parsed.discarded);
       }
 
-      return toExtractionResult(merged, request, id, performanceSafeNow() - started, promptTokens, completionTokens);
+      const merged: LlmExtraction = { decisions, premises, alternatives, discarded };
+
+      return toExtractionResult(
+        merged,
+        request,
+        id,
+        performanceSafeNow() - started,
+        promptTokens,
+        completionTokens,
+      );
     },
 
     /* ---------------- classification: Phase 2 ---------------- */
@@ -251,14 +265,19 @@ function compositionPrompt(request: CompositionRequest): string {
   const material = request.material
     .map((fact) => {
       const premises = fact.premises.length > 0 ? ` [given: ${fact.premises.join("; ")}]` : "";
-      const rationale = fact.rationale !== undefined && fact.rationale.length > 0 ? ` — because ${fact.rationale}` : "";
+      const rationale =
+        fact.rationale !== undefined && fact.rationale.length > 0
+          ? ` — because ${fact.rationale}`
+          : "";
       return `- ${fact.decisionId} (${fact.label}): ${fact.statement}${premises}${rationale}`;
     })
     .join("\n");
 
   return [
     `Write the "${request.kind}" section.`,
-    request.question !== undefined && request.question.length > 0 ? `Question: ${request.question}` : "",
+    request.question !== undefined && request.question.length > 0
+      ? `Question: ${request.question}`
+      : "",
     request.maxLengthChars !== undefined ? `At most ${request.maxLengthChars} characters.` : "",
     "",
     "MATERIAL:",

@@ -14,13 +14,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState, ReactElement } from "react";
-import { useWhyLog, persistenceAvailable } from "@/store/whylog";
-import { FoundationView } from "@/views/FoundationView";
-import { ReviewView } from "@/views/ReviewView";
-import { ReasoningView } from "@/views/ReasoningView";
-import { AskView } from "@/views/AskView";
+import { persistenceAvailable, useWhyLog } from "@/store/whylog";
 import { MODE_BADGE } from "@/theme";
+import { FoundationView } from "@/views/FoundationView";
+import { ReasoningView } from "@/views/ReasoningView";
+import { ReviewView } from "@/views/ReviewView";
+import { type ReactElement, useEffect, useState } from "react";
 
 type ViewId =
   | "review"
@@ -45,10 +44,7 @@ const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   { id: "foundation", label: "Foundation", phase: "0" },
   { id: "timeline", label: "Timeline", phase: "6.1" },
   { id: "conflict", label: "Conflict", phase: "6.5" },
-  // THIRD: gate G3 — "it answers". Retrieval, the evidence contract and the Ask surface all
-  // land in Phase 3, so the view belongs to it rather than to the presentation phase that
-  // originally held the slot.
-  { id: "ask", label: "Ask", phase: "3" },
+  { id: "ask", label: "Ask", phase: "6.10" },
   { id: "guards", label: "Guards", phase: "6.8" },
   { id: "export", label: "Export", phase: "6.11" },
   { id: "health", label: "Health", phase: "6.9" },
@@ -106,8 +102,6 @@ export function App(): ReactElement {
           <ReasoningView />
         ) : view === "foundation" ? (
           <FoundationView />
-        ) : view === "ask" ? (
-          <AskView />
         ) : (
           <NotYet view={VIEWS.find((v) => v.id === view)} />
         )}
@@ -153,7 +147,11 @@ function ChainBadge({ status }: { status: string }): ReactElement {
   }
   if (status === "degraded") {
     return (
-      <span className="badge" style={{ color: "var(--action)" }} title="The hash chain failed verification on load. The log is read-only.">
+      <span
+        className="badge"
+        style={{ color: "var(--action)" }}
+        title="The hash chain failed verification on load. The log is read-only."
+      >
         chain broken
       </span>
     );
@@ -175,8 +173,8 @@ function NotYet({ view }: { view: { label: string; phase: string } | undefined }
       <h2 className="card-title">{view?.label ?? "View"}</h2>
       <p className="dim">
         This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it — the
-        append-only log, the fold, the bi-temporal projections and the hash chain — is built and
-        is what the Foundation view reports on.
+        append-only log, the fold, the bi-temporal projections and the hash chain — is built and is
+        what the Foundation view reports on.
       </p>
     </section>
   );
