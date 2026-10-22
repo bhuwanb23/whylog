@@ -7,12 +7,7 @@
  *           docs/04-executable-decision-guards.md §5.3
  */
 
-import type {
-  DecisionId,
-  ExportId,
-  ISODateString,
-  PremiseId,
-} from "./common";
+import type { DecisionId, ExportId, ISODateString, PremiseId } from "./common";
 import type { DecisionLabel } from "./domain";
 
 /* -------------------------------------------------------------------------- */
@@ -25,12 +20,7 @@ import type { DecisionLabel } from "./domain";
  * The ADR set is the system of record; these are DELIVERY FORMATS. Implementing
  * that literally is what stops the five formats from drifting apart.
  */
-export type ExportTarget =
-  | "claude-md"
-  | "agents-md"
-  | "cursorrules"
-  | "decisions-md"
-  | "ci-guards";
+export type ExportTarget = "claude-md" | "agents-md" | "cursorrules" | "decisions-md" | "ci-guards";
 
 export const EXPORT_TARGETS: readonly ExportTarget[] = [
   "claude-md",
@@ -197,7 +187,11 @@ export interface ConflictPair {
 
 export type ExportWarning =
   | { readonly kind: "out-decision-excluded"; readonly decisionId: DecisionId }
-  | { readonly kind: "contested-premise"; readonly decisionId: DecisionId; readonly premiseId: PremiseId }
+  | {
+      readonly kind: "contested-premise";
+      readonly decisionId: DecisionId;
+      readonly premiseId: PremiseId;
+    }
   | { readonly kind: "failing-guard"; readonly decisionId: DecisionId }
   | { readonly kind: "over-budget"; readonly dropped: number };
 
@@ -214,8 +208,18 @@ export interface IntegrityStamp {
   readonly headHash: string;
   readonly generatedAt: ISODateString;
   readonly schemaVersion: number;
-  readonly decisions: { readonly total: number; readonly inLabel: number; readonly out: number; readonly superseded: number };
-  readonly premises: { readonly total: number; readonly inLabel: number; readonly out: number; readonly contested: number };
+  readonly decisions: {
+    readonly total: number;
+    readonly inLabel: number;
+    readonly out: number;
+    readonly superseded: number;
+  };
+  readonly premises: {
+    readonly total: number;
+    readonly inLabel: number;
+    readonly out: number;
+    readonly contested: number;
+  };
   readonly compliance: number;
   readonly verifiableCoverage: number;
   readonly guards: { readonly passing: number; readonly failing: number };

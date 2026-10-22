@@ -152,6 +152,18 @@ export interface DomainEvent<T extends EventType = EventType, P = unknown> {
   readonly reason: string;
   /** Hash chain link. h(n) = hash(h(n-1) || event(n)). See src/substrate/hash-chain.ts */
   readonly prevHash: string;
+  /**
+   * Hash of this event's own CONTENT (everything except `prevHash` and
+   * `selfHash`).
+   *
+   * Without it, an edited payload is only detectable at the NEXT event, because
+   * that is where the chain links stop matching. Carrying the content hash on
+   * the event itself means the edit is reported AT the event that was edited,
+   * which is what plan/phase-0-foundation.md §0.5 asks for — and it means the
+   * last event in the chain is protected too, instead of relying on the
+   * head-hash comparison to catch it.
+   */
+  readonly selfHash: string;
   /** Schema version at write time, so migrations can be replayed. */
   readonly schemaVersion: number;
 }
@@ -546,7 +558,16 @@ export type AnyEvent = {
 export interface NewEvent<T extends EventType> {
   readonly type: T;
   readonly payload: EventPayloadMap[T];
-  readonly actor: Actor;
+  /**
+   * Who caused it. OPTIONAL on input, MANDATORY on the sealed event.
+   *
+   * The substrate's `seal()` fills it from the append context when it is absent,
+   * and validation runs on the SEALED event — so a caller may omit it and still
+   * get a fully-attributed event. A batch producer (the extraction pipeline
+   * commits many events at once) legitimately does not know the actor for each
+   * one until the review that authorises the batch.
+   */
+  readonly actor?: Actor;
   readonly reason: string;
   readonly at?: ISODateString;
   readonly occurredAt?: ISODateString;
@@ -560,7 +581,8 @@ export interface NewEvent<T extends EventType> {
  *  3. `prevHash` equals the current head hash.
  *  4. `at` >= the previous event's `at` (learned time is monotonic).
  *  5. `occurredAt` may be in the past — that is the point of bi-temporality.
- * 6. The payload matches the shape declared in EventPayloadMap.
+ *  6. The payload matches the shape declared in EventPayloadMap.
+ *  7. `selfHash` equals the hash of the event's own content.
  *
  * A violation throws; the log is never partially appended.
  */
@@ -574,9 +596,9 @@ export type ValidationResult =
 
 /** Narrowing helper for switch statements over `AnyEvent`. */
 export function isEventType<T extends EventType>(
-  event: AnyEvent,
+  event: DomainEvent,
   type: T,
-): event is TypedEvent<T> {
+): event is DomainEvent<T, EventPayloadMap[T]> {
   return event.type === type;
 }
 

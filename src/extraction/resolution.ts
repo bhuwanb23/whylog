@@ -143,6 +143,7 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 
@@ -169,6 +170,7 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: entry.candidate.premiseRefs,
       outRefs: [],
+      action: null,
     });
   });
 
@@ -197,6 +199,7 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 

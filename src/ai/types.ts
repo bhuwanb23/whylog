@@ -35,22 +35,21 @@
  */
 
 import type {
+  AlternativeId,
   Confidence,
   DecisionId,
   EngineId,
+  EpisodeId,
   ISODateString,
   PremiseId,
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type {
-  DecisionOrigin,
-  DecisionVariable,
-  Modality,
-  PremiseType,
-} from "@/types/domain";
-import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { DecisionOrigin, DecisionVariable, Modality, PremiseType } from "@/types/domain";
+import type { GuardSpec } from "@/types/guards";
 import type { ProposedGuard } from "@/types/guards";
+import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { Answer } from "@/types/retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Capabilities                                                               */
@@ -378,3 +377,9 @@ export const NULL_CAPABILITIES: EngineCapabilities = {
   questionGeneration: false,
   notes: "No engine is available.",
 };
+
+/* -------------------------------------------------------------------------- */
+/* Types referenced only by implementers                                      */
+/* -------------------------------------------------------------------------- */
+
+export type _SeamTypesReferenced = AlternativeId | EpisodeId | GuardSpec | Answer;

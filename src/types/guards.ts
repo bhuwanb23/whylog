@@ -11,14 +11,7 @@
  * enters the same REVISE() cycle as a transcript does.
  */
 
-import type {
-  Confidence,
-  DecisionId,
-  EngineId,
-  EventId,
-  GuardId,
-  ISODateString,
-} from "./common";
+import type { Confidence, DecisionId, EngineId, EventId, GuardId, ISODateString } from "./common";
 
 /* -------------------------------------------------------------------------- */
 /* Kinds                                                                      */
@@ -60,8 +53,7 @@ export const DETERMINISTIC_GUARD_KINDS: readonly GuardKind[] = [
 ] as const;
 
 /** The six kinds that can run against an in-browser virtual project. */
-export const BROWSER_RUNNABLE_GUARD_KINDS: readonly GuardKind[] =
-  DETERMINISTIC_GUARD_KINDS;
+export const BROWSER_RUNNABLE_GUARD_KINDS: readonly GuardKind[] = DETERMINISTIC_GUARD_KINDS;
 
 export function isDeterministic(kind: GuardKind): boolean {
   return (DETERMINISTIC_GUARD_KINDS as readonly GuardKind[]).includes(kind);
@@ -130,12 +122,7 @@ export interface LlmJudgeSpec {
   readonly scopeGlobs: readonly string[];
 }
 
-export type GuardSpec =
-  | DependencySpec
-  | PathGlobSpec
-  | StringSpec
-  | CommandSpec
-  | LlmJudgeSpec;
+export type GuardSpec = DependencySpec | PathGlobSpec | StringSpec | CommandSpec | LlmJudgeSpec;
 
 /* -------------------------------------------------------------------------- */
 /* Results                                                                    */
@@ -165,10 +152,7 @@ export interface GuardRunResult {
 
 export type GuardLifecycle =
   /** Synthesised but not yet accepted. NEVER RUNS in this state. */
-  | "proposed"
-  | "accepted"
-  | "suppressed"
-  | "deleted";
+  "proposed" | "accepted" | "suppressed" | "deleted";
 
 export interface Guard {
   readonly id: GuardId;
