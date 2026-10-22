@@ -36,14 +36,10 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: true,
-    // d3-force is only needed by the premise lattice (Phase 6.6) — keep it
-    // out of the initial bundle so first paint stays fast.
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          graph: ["d3-force"],
-        },
-      },
-    },
+    // No manual chunks. There WAS a `graph: ["d3-force"]` split here, left over from the
+    // force-layout design that §6.6 abandoned: the premise lattice is laid out
+    // deterministically (columns by premise type, decisions at the barycentre of their
+    // premises), so d3-force was never imported and the split produced an empty chunk on
+    // every build. The dependency went with it.
   },
 });

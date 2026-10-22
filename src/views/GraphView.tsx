@@ -170,7 +170,7 @@ export function GraphView(): ReactElement {
         </section>
       ) : null}
 
-      {selected !== null && selected.startsWith("P-") ? (
+      {selected?.startsWith("P-") ? (
         <section className="card">
           <h2 className="card-title">Premise {selected}</h2>
           <PremiseDetail premiseId={selected} />

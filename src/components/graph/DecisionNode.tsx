@@ -43,6 +43,9 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
         opacity: props.dimmed ? 0.22 : 1,
         transition: "opacity 220ms ease",
       }}
+      /* biome-ignore lint/a11y/useSemanticElements: SVG has no <button>; a focusable <g> with an
+         explicit role and a key handler is the accessible equivalent, and a HTML button cannot be
+         placed inside a <svg> at all. */
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {

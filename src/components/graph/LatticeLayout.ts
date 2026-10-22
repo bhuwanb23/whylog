@@ -136,7 +136,6 @@ export function layoutLattice(
   /* ---- 2. premise → decisions, restricted to those decisions ---- */
   const supports = new Map<PremiseId, DecisionId[]>();
   const excludes = new Map<PremiseId, DecisionId[]>();
-  const wanted = new Set(decisions);
 
   for (const decisionId of decisions) {
     const decision = state.decisions.get(decisionId);

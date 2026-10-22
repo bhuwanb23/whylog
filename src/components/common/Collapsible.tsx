@@ -28,17 +28,25 @@ export function Collapsible(props: CollapsibleProps): ReactElement {
 
   return (
     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8 }}>
-      <div
-        style={{ display: "flex", gap: 8, alignItems: "baseline", cursor: "pointer" }}
-        onClick={() => setOpen((previous) => !previous)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setOpen((previous) => !previous);
-          }
+      <button
+        type="button"
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "baseline",
+          cursor: "pointer",
+          /* A real button, not a div with role="button": the native element brings the
+           * keyboard behaviour (Enter and Space activate it) and the focus ring for free,
+           * which is exactly what the hand-rolled onKeyDown was re-implementing badly. */
+          width: "100%",
+          background: "none",
+          border: "none",
+          padding: 0,
+          font: "inherit",
+          color: "inherit",
+          textAlign: "left",
         }}
-        role="button"
-        tabIndex={0}
+        onClick={() => setOpen((previous) => !previous)}
         aria-expanded={open}
       >
         <span className="mono faint" style={{ fontSize: 11, width: 12 }}>
@@ -55,7 +63,7 @@ export function Collapsible(props: CollapsibleProps): ReactElement {
             {props.summary}
           </span>
         ) : null}
-      </div>
+      </button>
 
       {open ? (
         <div style={{ marginTop: 8, paddingLeft: 20 }}>
