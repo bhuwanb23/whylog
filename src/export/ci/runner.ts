@@ -30,7 +30,18 @@ export function emitRunner(exported: CiExport, headHash: string): string {
     "",
   ].join("\n");
 
-  return header + exported.runner;
+  /* A shebang is only a shebang on the FIRST line. Putting this header above it
+   * pushed the shebang to line fifteen, where Node reads it as a syntax error -
+   * and this file is what every `Verify:` line in every agent file tells an
+   * agent to run. The command was broken by the comment above it. */
+  const body = exported.runner;
+  if (!body.startsWith("#!")) return header + body;
+
+  const newline = body.indexOf("\n");
+  const shebang = newline < 0 ? body : body.slice(0, newline + 1);
+  const rest = newline < 0 ? "" : body.slice(newline + 1);
+
+  return shebang + header + rest;
 }
 
 /** The workflow. Emitted by Phase 4's generator, unchanged — the export pass adds nothing to it,

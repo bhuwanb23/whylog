@@ -30,7 +30,7 @@
  *
  * A decision with path or string guards gets the exported runner instead:
  *
- *   node scripts/whylog-guards.mjs --decision WLD-0007
+ *   node scripts/whylog-guards.cjs --decision WLD-0007
  *
  * Reimplementing glob matching and word-boundary search inside a one-liner would mean a second
  * copy of `lib/glob.ts` semantics living in a string literal, which is precisely the drift this
@@ -53,7 +53,7 @@ import type { Guard } from "@/types/guards";
 
 /** The runner's path, matching `TARGET_FILENAMES["ci-guards"]`. One constant so the emitted
  *  command and the emitted file cannot disagree about where the file is. */
-export const RUNNER_PATH = "scripts/whylog-guards.mjs";
+export const RUNNER_PATH = "scripts/whylog-guards.cjs";
 
 export interface VerifyCommand {
   readonly command: string;

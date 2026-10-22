@@ -35,7 +35,7 @@ export const TARGET_FILENAMES: Readonly<Record<ExportTarget, string>> = {
   "agents-md": "AGENTS.md",
   cursorrules: ".cursorrules",
   "decisions-md": "DECISIONS.md",
-  "ci-guards": "scripts/whylog-guards.mjs",
+  "ci-guards": "scripts/whylog-guards.cjs",
 };
 
 /* -------------------------------------------------------------------------- */

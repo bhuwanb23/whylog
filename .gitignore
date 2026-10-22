@@ -47,3 +47,11 @@ whylog-export/
 .reconcile/
 __pycache__/
 
+
+# The exported guard set and its workflow are BUILD OUTPUTS of the guard
+# export. They are regenerated from the log on every export, so committing them
+# would mean committing a snapshot of a decision log that changes.
+scripts/whylog-guards.cjs
+.github/workflows/decision-guards.yml
+
+
