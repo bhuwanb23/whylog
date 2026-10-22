@@ -17,23 +17,23 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { EngineCapabilities } from "@/ai/types";
+import type { EngineConfig } from "@/ai/config";
 import {
   DEFAULT_CONFIG,
   DEFAULT_MODELS,
-  type EngineConfig,
-  type ProviderId,
   engineIdOf,
   forgetKey,
   hasKey,
   readConfig,
   redacted,
   writeConfig,
+  type ProviderId,
 } from "@/ai/config";
 import { invalidateEngine } from "@/ai/engine";
-import type { EngineCapabilities } from "@/ai/types";
-import type { Result } from "@/lib/result";
 import { TAU_HIGH, TAU_LOW } from "@/substrate/identity";
 import type { EngineId } from "@/types/common";
+import type { Result } from "@/lib/result";
 
 export interface SettingsState {
   readonly config: EngineConfig;
@@ -68,7 +68,18 @@ export interface SettingsState {
   readonly dismissFallbackNotice: () => void;
 }
 
-export const DEFAULT_CASCADE_DEPTH_CAP = 6;
+/**
+ * Phase 2 §2.7: "Depth is capped (default 4); beyond it, report 'N more potentially
+ * affected' rather than flipping them."
+ *
+ * This was 6 when the settings store was written in Phase 0, before §2.7 existed in
+ * code. Four is the plan's number and it is the right one: a chain longer than four
+ * links is no longer something a human can follow in one reading, and the truncated
+ * report is more useful than a longer chain nobody verifies. Backtracking keeps its own
+ * cap of 6 because it searches a different shape — it must reach bedrock, and bedrock
+ * can sit deeper than a cascade usefully propagates.
+ */
+export const DEFAULT_CASCADE_DEPTH_CAP = 4;
 export const DEFAULT_MAX_SEARCH_STEPS = 3;
 
 export function initialSettings(): SettingsState {
@@ -79,13 +90,9 @@ export function initialSettings(): SettingsState {
    *  then invalidates the resolved-engine cache. Forgetting the invalidation would
    *  keep stamping new nodes with the old engine id — the exact failure the
    *  "badged, never mixed" rule exists to prevent. */
-  const mutate = (patch: Partial<EngineConfig>): Result<void, string> =>
-    applyConfig(config, patch).result;
+  const mutate = (patch: Partial<EngineConfig>): Result<void, string> => applyConfig(config, patch).result;
 
-  const reloadFrom = (): Pick<
-    SettingsState,
-    "config" | "engineId" | "hasKey" | "keyHint" | "wantsLlm"
-  > => {
+  const reloadFrom = (): Pick<SettingsState, "config" | "engineId" | "hasKey" | "keyHint" | "wantsLlm"> => {
     const next = readConfig();
     const nextView = redacted(next);
     return {
@@ -111,7 +118,6 @@ export function initialSettings(): SettingsState {
     fallbackNotice: config.wantsLlmWithoutKey
       ? `${config.provider} is selected but no API key is stored. WhyLog is running the local engine — nothing has been sent anywhere.`
       : null,
-    wantsLlm: config.wantsLlmWithoutKey,
     tauHigh: TAU_HIGH,
     tauLow: TAU_LOW,
     cascadeDepthCap: DEFAULT_CASCADE_DEPTH_CAP,
@@ -123,10 +129,7 @@ export function initialSettings(): SettingsState {
     setProvider: (provider) => mutate({ provider, model: DEFAULT_MODELS[provider] }),
     setModel: (model) => mutate({ model }),
     setApiKey: (apiKey) =>
-      mutate({
-        apiKey: apiKey.trim().length === 0 ? null : apiKey.trim(),
-        wantsLlmWithoutKey: false,
-      }),
+      mutate({ apiKey: apiKey.trim().length === 0 ? null : apiKey.trim(), wantsLlmWithoutKey: false }),
     clearKey: () => {
       const result = forgetKey();
       if (result.ok) invalidateEngine();

@@ -31,22 +31,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { nowISO } from "@/lib/format";
-import { formatJustificationId, formatPremiseId, formatTranscriptId } from "@/lib/ids";
-import type { Result } from "@/lib/result";
-import { err, ok } from "@/lib/result";
-import { canonicalPredicate } from "@/ontology/canonicalize";
-import {
-  type Assertion,
-  type AssertionResult,
-  type DecisionAssertion,
-  type ReviseInput,
-  type ReviseResult,
-  type RevisionCase,
-  assertNewInformation,
-  revise,
-} from "@/reasoning";
-import type { Newcomer } from "@/reasoning/adjudication";
+import { create } from "zustand";
 import type {
   Actor,
   DecisionId,
@@ -60,8 +45,31 @@ import type {
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { Justification, PremiseType } from "@/types/domain";
-import type { EventType, NewEvent } from "@/types/events";
-import { create } from "zustand";
+import type { GraphState } from "@/substrate/graph-state";
+import { foldKey } from "@/ontology/canonicalize";
+import { canonicalPredicate } from "@/ontology/canonicalize";
+import {
+  formatJustificationId,
+  formatPremiseId,
+  formatProposalId,
+  formatTranscriptId,
+} from "@/lib/ids";
+import type { Result } from "@/lib/result";
+import { err, ok } from "@/lib/result";
+import { nowISO } from "@/lib/format";
+import {
+  assertNewInformation,
+  revise,
+  type AssertContext,
+  type Assertion,
+  type AssertionResult,
+  type UnresolvedPremise,
+  type DecisionAssertion,
+  type ReviseInput,
+  type ReviseResult,
+  type RevisionCase,
+} from "@/reasoning";
+import type { Newcomer } from "@/reasoning/adjudication";
 import { useWhyLog } from "./whylog";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
@@ -76,13 +84,23 @@ export interface ReasoningState {
   readonly cases: readonly RevisionCase[];
   /** Which case is expanded in the UI. */
   readonly selected: ProposalId | null;
+  /**
+   * Assertions that matched no premise and were therefore NOT acted on.
+   *
+   * §2.11: ambiguous cases are surfaced for human confirmation rather than guessed.
+   * Surfacing means keeping them visible after the run, not mentioning them once in a
+   * summary string that scrolls away.
+   */
+  readonly unresolved: readonly UnresolvedPremise[];
   /** True when the last run produced drafts that were committed. */
   readonly committed: number;
 
   readonly run: (options?: RunOptions) => Promise<Result<number, string>>;
   /** §2.1 — assert new information, then run the cycle over the result. Two batches,
    *  because the labeller must see the state AFTER the assertion is folded. */
-  readonly assertAndRevise: (assertion: Assertion) => Promise<Result<AssertionResult, string>>;
+  readonly assertAndRevise: (
+    assertion: Assertion,
+  ) => Promise<Result<AssertionResult, string>>;
   readonly select: (proposalId: ProposalId | null) => void;
   readonly clear: () => void;
 }
@@ -114,6 +132,7 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
   cases: [],
   selected: null,
   committed: 0,
+  unresolved: [],
 
   /* ---------------------------------------------------------------------- */
   /* The run                                                                */
@@ -123,8 +142,7 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message =
-        "The log is read-only: its hash chain is broken. Reasoning needs to append events.";
+      const message = "The log is read-only: its hash chain is broken. Reasoning needs to append events.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -257,6 +275,10 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
 
     if (!reviseOutcome.ok) return err(reviseOutcome.error);
 
+    /* Kept on the store rather than only in the returned value: the view needs it after
+     * the run completes, and a summary string is not a confirmation queue. */
+    set({ unresolved: asserted.unresolved });
+
     return ok(asserted);
   },
 
@@ -271,6 +293,7 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
       selected: null,
       committed: 0,
       durationMs: 0,
+      unresolved: [],
     }),
 }));
 
@@ -315,9 +338,7 @@ export async function assertPremiseFalsified(
 
   if (premise === undefined) return err(`No premise ${premiseId} in the log.`);
   if (observedText.trim().length === 0) {
-    return err(
-      "Say what you observed. A falsification with no observation is an opinion, and the log records observations.",
-    );
+    return err("Say what you observed. A falsification with no observation is an opinion, and the log records observations.");
   }
 
   const assertion: Assertion = {
@@ -348,10 +369,7 @@ export async function assertUserDecision(
   reason: string,
 ): Promise<Result<string, string>> {
   if (statement.trim().length === 0) return err("A decision needs a statement.");
-  if (reason.trim().length === 0)
-    return err(
-      "A hand-entered decision needs a reason: it is the only provenance it will ever have.",
-    );
+  if (reason.trim().length === 0) return err("A hand-entered decision needs a reason: it is the only provenance it will ever have.");
 
   const assertion: Assertion = {
     source: "user-decision",
@@ -380,6 +398,23 @@ export async function assertUserDecision(
 /* Applying a proposal                                                        */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Re-run the cycle after a human action.
+ *
+ * §2.9 requires "Keep & re-justify" to RESTORE THE DECISION TO IN, and the only thing
+ * that can do that is the labeller — a rejustification event changes the graph, and the
+ * label follows from the graph, never from the event. The same holds for a reversal and
+ * a contest: each one moves support, and support is what the label reports.
+ *
+ * Without this the UI would show a stale label until the next unrelated run, and the
+ * user would reasonably conclude the action did nothing.
+ */
+async function relabelAfterAction(): Promise<void> {
+  await get().run();
+}
+
+
+
 /** Resolved to the creating event by the materialiser on fold. */
 const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
 
@@ -389,11 +424,11 @@ const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
  * This is the human's act, not the system's. It takes a `reason` because
  * `DecisionReversed` is state-changing and the reason is what the audit shows later.
  */
-export function applyReversal(
+export async function applyReversal(
   decisionId: DecisionId,
   newValue: string,
   reason: string,
-): Result<string, string> {
+): Promise<Result<string, string>> {
   const whylog = useWhyLog.getState();
   const at = nowISO() as ISODateString;
 
@@ -401,7 +436,7 @@ export function applyReversal(
     return err("A reversal needs a reason. Without one the log cannot say why it changed.");
   }
 
-  const outcome = whylog.record(
+  const reversed = whylog.record(
     {
       type: "DecisionReversed",
       payload: {
@@ -419,7 +454,9 @@ export function applyReversal(
     { reason },
   );
 
-  return outcome.ok ? ok(outcome.value) : err(outcome.error);
+  if (!reversed.ok) return err(reversed.error);
+  await relabelAfterAction();
+  return ok(reversed.value);
 }
 
 /**
@@ -452,7 +489,7 @@ export function applyReversal(
  * One `recordBatch`, so all four land or none do.
  * ---------------------------------------------------------------------------
  */
-export function applyRejustification(
+export async function applyRejustification(
   decisionId: DecisionId,
   input: {
     /** What the user says the decision actually rests on. */
@@ -462,7 +499,7 @@ export function applyRejustification(
     readonly predicate: string;
     readonly reason: string;
   },
-): Result<string, string> {
+): Promise<Result<string, string>> {
   const whylog = useWhyLog.getState();
   const at = nowISO() as ISODateString;
   const state = whylog.state;
@@ -471,9 +508,7 @@ export function applyRejustification(
     return err("A rejustification needs a reason: it changes what a decision rests on.");
   }
   if (input.premiseText.trim().length === 0) {
-    return err(
-      "A rejustification needs the new premise. Without it the decision still rests on the old one.",
-    );
+    return err("A rejustification needs the new premise. Without it the decision still rests on the old one.");
   }
   if (state.decisions.get(decisionId) === undefined) {
     return err(`No decision ${decisionId} in the log.`);
@@ -544,6 +579,9 @@ export function applyRejustification(
   const outcome = whylog.recordBatch(drafts, { reason: input.reason, actor: { kind: "human" } });
   if (!outcome.ok) return err(outcome.error);
 
+  /* §2.9: "re-run the labeller". The decision is only restored to IN by relabelling. */
+  await relabelAfterAction();
+
   return ok(`${decisionId} rejustified on ${premiseId} (${outcome.value.length} events)`);
 }
 
@@ -555,12 +593,12 @@ export function applyRejustification(
  * trusting an id that does not exist produces a justification pointing at nothing,
  * which the labeller will report as unfounded rather than as an error.
  */
-export function linkRejustification(
+export async function linkRejustification(
   decisionId: DecisionId,
   newPremiseId: PremiseId,
   newJustificationId: JustificationId,
   reason: string,
-): Result<string, string> {
+): Promise<Result<string, string>> {
   const whylog = useWhyLog.getState();
   const at = nowISO() as ISODateString;
 
@@ -568,9 +606,7 @@ export function linkRejustification(
     return err("A rejustification needs a reason: it changes what a decision rests on.");
   }
   if (whylog.state.premises.get(newPremiseId) === undefined) {
-    return err(
-      `${newPremiseId} does not exist. Create the premise first — an id that points at nothing makes the decision unfounded, not rejustified.`,
-    );
+    return err(`${newPremiseId} does not exist. Create the premise first — an id that points at nothing makes the decision unfounded, not rejustified.`);
   }
 
   const outcome = whylog.record(
@@ -584,7 +620,9 @@ export function linkRejustification(
     { reason },
   );
 
-  return outcome.ok ? ok(outcome.value) : err(outcome.error);
+  if (!outcome.ok) return err(outcome.error);
+  await relabelAfterAction();
+  return ok(outcome.value);
 }
 
 /**
@@ -594,7 +632,10 @@ export function linkRejustification(
  * but does not want to resolve it yet. The premise stays in the log, marked contested,
  * and every decision resting on it is flagged rather than retracted.
  */
-export function applyContest(premiseId: PremiseId, reason: string): Result<string, string> {
+export async function applyContest(
+  premiseId: PremiseId,
+  reason: string,
+): Promise<Result<string, string>> {
   const whylog = useWhyLog.getState();
   const at = nowISO() as ISODateString;
 
@@ -613,46 +654,176 @@ export function applyContest(premiseId: PremiseId, reason: string): Result<strin
     { reason },
   );
 
-  return outcome.ok ? ok(outcome.value) : err(outcome.error);
+  if (!outcome.ok) return err(outcome.error);
+  await relabelAfterAction();
+  return ok(outcome.value);
 }
 
 /**
- * Dismiss: the user considered it and disagreed.
+ * OVERRIDE ANYWAY — §2.8's explicit escape from non-prioritized screening.
  *
- * Recorded, never deleted. A dismissed proposal is evidence about the system's
- * precision — Phase 7 counts dismissals per gate to report false-positive rates, and
- * that count is only possible because dismissal is an event rather than a removal.
+ * The adjudicator refused this newcomer. A human says refuse the refusal. Two events,
+ * in this order:
+ *
+ *   1. the newcomer is asserted as a decision with origin `human_override`
+ *   2. `HumanOverride` names it, which the materialiser already implements as: raise
+ *      its source_authority to 0.9, move it out of `contested`, and resolve the proposal
+ *
+ * Step 2 is not a Phase 2 invention — `materialize.ts` has done exactly this since
+ * Phase 0, and the comment there says why: "which is how a screened-out newcomer
+ * eventually wins the next adjudication instead of sitting in the contested queue
+ * forever." Until now nothing ever called it.
+ *
+ * Raising the authority to 0.9 rather than to 1.0 is deliberate and it is the plan's
+ * number: an override outranks every extracted origin, but it does not outrank a
+ * directly human-stated decision, so a second override can still be needed if genuinely
+ * better evidence arrives. An override that could never be overridden is not a queue,
+ * it is a dead end.
  */
-export function applyDismissal(proposalId: ProposalId, reason: string): Result<string, string> {
+export async function applyOverride(
+  newcomer: Newcomer,
+  proposalId: ProposalId | null,
+  reason: string,
+): Promise<Result<string, string>> {
+  const whylog = useWhyLog.getState();
+
+  if (reason.trim().length === 0) {
+    return err(
+      "An override needs a reason. It is the one action that overrules the system's own arithmetic, so the log has to carry the human's.",
+    );
+  }
+
+  /* Step 1: assert the newcomer. It has to exist as a decision before it can be
+   * overridden into force, and asserting it through the normal entry point means it
+   * carries the same provenance as any other decision. */
+  const asserted = await assertUserDecision(
+    newcomer.variable,
+    newcomer.value,
+    newcomer.text,
+    `Override of non-prioritized screening: ${reason.trim()}`,
+  );
+  if (!asserted.ok) return err(asserted.error);
+
+  /* Step 2: find the decision that assertion produced, and override it. */
+  const state = useWhyLog.getState().state;
+  const created = findNewestDecision(state, newcomer.variable, newcomer.value);
+  if (created === null) {
+    return err(
+      "The newcomer was asserted but could not be located in the folded graph, so the override was not recorded. The decision is in the log; run the cycle again and override from the proposal.",
+    );
+  }
+
+  const at = nowISO() as ISODateString;
+  const outcome = whylog.record(
+    {
+      type: "HumanOverride",
+      payload: {
+        /* `proposalId` is required by the payload. When there is none — an override
+         * driven straight from the Contested queue rather than from a proposal — the
+         * most recent open proposal for this decision is the honest referent, and if
+         * there is not one either, the override still stands on its own event. */
+        proposalId: proposalId ?? findProposalFor(state, created),
+        overriddenDecisionId: created,
+      },
+      actor: { kind: "human" },
+      reason: `Override anyway: ${reason.trim()}`,
+      at,
+    },
+    { reason },
+  );
+
+  if (!outcome.ok) return err(outcome.error);
+  await relabelAfterAction();
+
+  return ok(
+    `${created} forced through over screening. Its source authority is now 0.9, so it wins subsequent adjudications.`,
+  );
+}
+
+/**
+ * KEEP IT — the human vouches for the incumbent and the proposal goes away.
+ *
+ * This was previously called "dismiss" and wired to `HumanOverride` on the incumbent,
+ * which is the same event but was described as though it meant "ignore this". It does
+ * not mean that, and calling it dismissal hid what it actually does.
+ *
+ * What it does: a human personally vouches for a decision the system called unsound.
+ * `HumanOverride` raises that decision's origin to `human_override` (0.9) and resolves
+ * the proposal — so the decision is now harder to retract, which is exactly right,
+ * because a human has staked their own judgement on it. It is the incumbent-side use of
+ * the same mechanism `applyOverride` uses on the newcomer side.
+ *
+ * Recorded, never deleted (§2.10: nothing disappears silently). Phase 7 counts these
+ * per gate to report false-positive rates, and that count is only possible because
+ * vouching is an event rather than a removal.
+ */
+export async function applyVouch(
+  proposalId: ProposalId,
+  reason: string,
+): Promise<Result<string, string>> {
   const whylog = useWhyLog.getState();
   const at = nowISO() as ISODateString;
 
   if (reason.trim().length === 0) {
-    return err("A dismissal needs a reason: it is the only record that this was considered.");
+    return err(
+      "Vouching needs a reason. It raises this decision's authority to 0.9, and the log has to say why a human overruled the system's own diagnosis.",
+    );
   }
 
-  /* There is no `ProposalDismissed` event in the closed vocabulary. A dismissal is a
-   * human override of the system's judgement about a proposal, and `HumanOverride` is
-   * the event that carries exactly that: a proposal id, the decision it concerned, and
-   * a reason. */
   const proposal = whylog.state.proposals.get(proposalId);
   if (proposal === undefined) return err(`No proposal ${proposalId} in the log.`);
 
   const outcome = whylog.record(
     {
       type: "HumanOverride",
-      payload: {
-        proposalId,
-        overriddenDecisionId: proposal.unsoundDecisionId,
-      },
+      payload: { proposalId, overriddenDecisionId: proposal.unsoundDecisionId },
       actor: { kind: "human" },
-      reason: `Dismissed: ${reason}`,
+      reason: `Kept, vouched for by a human: ${reason.trim()}`,
       at,
     },
     { reason },
   );
 
-  return outcome.ok ? ok(outcome.value) : err(outcome.error);
+  if (!outcome.ok) return err(outcome.error);
+  await relabelAfterAction();
+
+  return ok(
+    `${proposal.unsoundDecisionId} kept. Its source authority is now 0.9 and the proposal is resolved.`,
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** The most recently numbered decision matching a variable and value. */
+function findNewestDecision(
+  state: GraphState,
+  variable: Newcomer["variable"],
+  value: string,
+): DecisionId | null {
+  const canonical = foldKey(value);
+  let best: DecisionId | null = null;
+
+  for (const decision of state.decisions.values()) {
+    if (decision.variable !== variable) continue;
+    if (foldKey(decision.value) !== canonical) continue;
+    if (best === null || decision.id > best) best = decision.id;
+  }
+
+  return best;
+}
+
+function findProposalFor(state: GraphState, decisionId: DecisionId): ProposalId {
+  for (const proposal of state.proposals.values()) {
+    if (proposal.unsoundDecisionId === decisionId && proposal.status === "open") return proposal.id;
+  }
+  /* No open proposal for it. The payload requires an id, so the newest one in the log
+   * is used rather than inventing one; a `HumanOverride` whose proposal reference is
+   * stale is still a true record of the override itself. */
+  let newest: ProposalId | null = null;
+  for (const proposal of state.proposals.values()) {
+    if (newest === null || proposal.id > newest) newest = proposal.id;
+  }
+  return newest ?? (formatProposalId(1) as ProposalId);
 }
 
 /* -------------------------------------------------------------------------- */
