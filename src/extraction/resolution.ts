@@ -117,6 +117,12 @@ export function resolveExtraction(
   let created = 0;
   let conflicts = 0;
 
+  // The resolution of each DECISION, in the run's order. An alternative's
+  // `decisionRef` is an index into the run's decisions, so resolving an
+  // alternative needs to know what its parent decision became. Resolved
+  // decisions first, which the loop order already guarantees.
+  const decisionOutcomes: ResolutionOutcome[] = [];
+
   const bump = (rung: number): void => {
     byRung[rung] = (byRung[rung] ?? 0) + 1;
   };
@@ -149,6 +155,7 @@ export function resolveExtraction(
 
   decisions.forEach((entry, index) => {
     const outcome = resolveOneDecision(entry.candidate, context);
+    decisionOutcomes[index] = outcome;
     bump(outcome.rung);
     merged += outcome.action === "merge" ? 1 : 0;
     candidates += outcome.action === "candidate" ? 1 : 0;
@@ -179,7 +186,7 @@ export function resolveExtraction(
     // rejected it, and two decisions can reject the same thing for different
     // reasons. Resolution here only decides whether the SAME decision already
     // rejected the SAME value, which is a duplicate rather than a merge.
-    const outcome = resolveOneAlternative(candidate, context);
+    const outcome = resolveOneAlternative(candidate, context, decisionOutcomes);
     bump(outcome.rung);
     created += outcome.action === "create" ? 1 : 0;
     merged += outcome.action === "merge" ? 1 : 0;
@@ -346,6 +353,7 @@ function resolveOnePremise(
 function resolveOneAlternative(
   candidate: AlternativeCandidate,
   context: ResolutionContext,
+  decisionOutcomes: readonly ResolutionOutcome[],
 ): ResolutionOutcome {
   const canonical =
     candidate.variable === "OTHER"
@@ -353,7 +361,7 @@ function resolveOneAlternative(
       : canonicalValueOf(candidate.variable, candidate.value);
 
   for (const existing of context.state.alternatives.values()) {
-    if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, context)) continue;
+    if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, decisionOutcomes)) continue;
     if (canonicalValueOf(existing.variable, existing.value) !== canonical) continue;
 
     return {
@@ -384,8 +392,26 @@ function resolveOneAlternative(
  * null makes the duplicate check conservative: an alternative whose decision is
  * not yet in the graph is never a duplicate of one that is.
  */
-function decisionIdForRef(_decisionRef: number, _context: ResolutionContext): DecisionId | null {
-  return null;
+/**
+ * The DecisionId an alternative's parent decision already has, if any.
+ *
+ * `decisionRef` is an index into the run's decisions, so the answer comes from
+ * that decision's resolution: a decision that MERGED has the id of the node it
+ * merged into, and a decision that will be CREATED has no id yet.
+ *
+ * A created parent means the alternative has nothing to match against in the
+ * graph — which is correct, not a failure. Its decision is new, so its
+ * rejected alternatives are new too.
+ */
+function decisionIdForRef(
+  ref: number,
+  decisionOutcomes: readonly ResolutionOutcome[],
+): DecisionId | null {
+  const outcome = decisionOutcomes[ref];
+  if (outcome === undefined) return null;
+  if (outcome.action !== "merge") return null;
+  if (outcome.matchedId === null) return null;
+  return outcome.matchedId as DecisionId;
 }
 
 /* -------------------------------------------------------------------------- */
