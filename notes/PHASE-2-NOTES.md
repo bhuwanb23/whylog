@@ -289,7 +289,7 @@ justification, and the backtracker asks "which justification is IN".
 
 ## 9. What G2 actually does, measured
 
-`tests/integration/g2.test.ts` — keyless, deterministic, no network. The graph is
+`tests/integration/gate-g2.test.ts` — keyless, deterministic, no network. The graph is
 built the way a user builds it: paste the Oct-3 transcript, review, commit. Then the
 world moves.
 
