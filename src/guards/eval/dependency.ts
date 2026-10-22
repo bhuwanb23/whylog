@@ -46,13 +46,16 @@ export function evalDependency(spec: DependencySpec, project: VirtualProject): E
     if (found === null) {
       return {
         outcome: "fail",
-        evidence: `"${spec.package}" is not in package.json${includeDev ? " (checked dependencies and devDependencies)" : " (checked dependencies only; devDependencies were not in scope for this guard)"}. Present packages: ${summarise(project, includeDev)}`,
+        evidence:
+          '"' + spec.package + '" is not in package.json' +
+          (includeDev ? " (checked dependencies and devDependencies)" : " (checked dependencies only; devDependencies were not in scope for this guard)") +
+          ". Present packages: " + summarise(project, includeDev),
       };
     }
 
     return {
       outcome: "pass",
-      evidence: `"${spec.package}": "${found.version}" is present in ${found.dev ? "devDependencies" : "dependencies"}`,
+      evidence: '"' + spec.package + '": "' + found.version + '" is present in ' + (found.dev ? "devDependencies" : "dependencies"),
     };
   }
 
@@ -60,13 +63,17 @@ export function evalDependency(spec: DependencySpec, project: VirtualProject): E
   if (found !== null) {
     return {
       outcome: "fail",
-      evidence: `"${spec.package}": "${found.version}" found in package.json ${found.dev ? "devDependencies" : "dependencies"}.`,
+      evidence:
+        '"' + spec.package + '": "' + found.version + '" found in package.json ' +
+        (found.dev ? "devDependencies" : "dependencies") + ".",
     };
   }
 
   return {
     outcome: "pass",
-    evidence: `"${spec.package}" does not appear in package.json${includeDev ? " dependencies or devDependencies." : " dependencies (devDependencies were not in scope)."}`,
+    evidence:
+      '"' + spec.package + '" does not appear in package.json' +
+      (includeDev ? " dependencies or devDependencies." : " dependencies (devDependencies were not in scope)."),
   };
 }
 
@@ -80,5 +87,5 @@ function summarise(project: VirtualProject, includeDev: boolean): string {
 
   if (names.length === 0) return "(none)";
   const shown = names.slice(0, 12).join(", ");
-  return names.length > 12 ? `${shown}, … (${names.length} total)` : shown;
+  return names.length > 12 ? shown + ", … (" + names.length + " total)" : shown;
 }

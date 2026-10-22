@@ -44,10 +44,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import { nowISO } from "@/lib/format";
-import { isGlob } from "@/lib/glob";
 import type { ISODateString } from "@/types/common";
 import type { VirtualProject, VirtualProjectSource } from "@/types/guards";
+import { nowISO } from "@/lib/format";
+import { isGlob } from "@/lib/glob";
 import type { ProjectParseReport } from "./types";
 
 /* -------------------------------------------------------------------------- */
@@ -117,7 +117,7 @@ export function buildProject(input: ProjectInput): ProjectParseReport {
   if (implied.length > 0 && filePaths.length === 0) {
     filePaths = implied;
     notices.push(
-      `No listing was pasted, so the ${implied.length} file(s) named in the contents are used as the listing. Path guards can run; a file you did not paste is still absent from them.`,
+      "No listing was pasted, so the " + implied.length + " file(s) named in the contents are used as the listing. Path guards can run; a file you did not paste is still absent from them.",
     );
   } else if (implied.length > 0) {
     filePaths = [...filePaths, ...implied];
@@ -144,10 +144,8 @@ export function buildProject(input: ProjectInput): ProjectParseReport {
 }
 
 function defaultSource(input: ProjectInput): VirtualProjectSource {
-  if (input.manifest !== undefined && input.manifest.trim().length > 0)
-    return { kind: "pasted-manifest" };
-  if (input.listing !== undefined && input.listing.trim().length > 0)
-    return { kind: "pasted-file-listing" };
+  if (input.manifest !== undefined && input.manifest.trim().length > 0) return { kind: "pasted-manifest" };
+  if (input.listing !== undefined && input.listing.trim().length > 0) return { kind: "pasted-file-listing" };
   return { kind: "pasted-manifest" };
 }
 
@@ -184,30 +182,26 @@ export function parseManifest(raw: string): ManifestParse {
       const record = parsed as Record<string, unknown>;
 
       /* A bare dependencies object rather than a whole manifest: every value is a string. */
-      if (record["dependencies"] === undefined && record["devDependencies"] === undefined) {
+      if (record.dependencies === undefined && record.devDependencies === undefined) {
         const loose = asVersionMap(record);
         if (loose !== null) {
           return {
             dependencies: loose,
             devDependencies: {},
-            notices: [
-              "Parsed as a bare dependency map (no `dependencies` wrapper), so all of it is treated as runtime dependencies.",
-            ],
+            notices: ["Parsed as a bare dependency map (no `dependencies` wrapper), so all of it is treated as runtime dependencies."],
             unparsed,
           };
         }
       }
 
       return {
-        dependencies: asVersionMap(record["dependencies"]) ?? {},
-        devDependencies: asVersionMap(record["devDependencies"]) ?? {},
+        dependencies: asVersionMap(record.dependencies) ?? {},
+        devDependencies: asVersionMap(record.devDependencies) ?? {},
         notices,
         unparsed,
       };
     }
-    notices.push(
-      "The pasted manifest parsed as JSON but not as an object, so no dependencies were read.",
-    );
+    notices.push("The pasted manifest parsed as JSON but not as an object, so no dependencies were read.");
   } catch {
     /* Not JSON — fall through to the line-based parse. This is the common case and not an
      * error: the notices below say what was recovered. */
@@ -249,12 +243,11 @@ export function parseManifest(raw: string): ManifestParse {
   }
 
   if (count === 0) {
-    notices.push(
-      'The pasted manifest was not JSON and contained no recognisable `"name": "version"` lines, so no dependencies were read.',
-    );
+    notices.push("The pasted manifest was not JSON and contained no recognisable `\"name\": \"version\"` lines, so no dependencies were read.");
   } else {
     notices.push(
-      `The pasted manifest was not valid JSON. Recovered ${count} dependency line(s) by pattern${section === "devDependencies" ? "; the last section seen was devDependencies, but without valid JSON the split cannot be trusted, so all of them are treated as runtime dependencies." : "."}`,
+      "The pasted manifest was not valid JSON. Recovered " + count + " dependency line(s) by pattern" +
+        (section === "devDependencies" ? "; the last section seen was devDependencies, but without valid JSON the split cannot be trusted, so all of them are treated as runtime dependencies." : "."),
     );
   }
 
@@ -312,7 +305,8 @@ export function parseFileListing(raw: string): ListingParse {
     );
   } else {
     notices.push(
-      `Read ${parsed.paths.length} path(s) from ${looksLikeTree ? "`tree`-style" : "plain"} listing.${parsed.directoryCount > 0 ? ` ${parsed.directoryCount} directory node(s) were reconstructed and are not listed as files.` : ""}`,
+      "Read " + parsed.paths.length + " path(s) from " + (looksLikeTree ? "`tree`-style" : "plain") + " listing." +
+        (parsed.directoryCount > 0 ? " " + parsed.directoryCount + " directory node(s) were reconstructed and are not listed as files." : ""),
     );
   }
 
@@ -352,10 +346,7 @@ function parseTree(lines: readonly string[]): TreeParse {
       continue;
     }
 
-    const name = raw
-      .replace(/[│├└─]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    const name = raw.replace(/[│├└─]/g, " ").replace(/\s+/g, " ").trim();
     if (name.length === 0) continue;
 
     /* Depth = how many 4-character indent units precede the connector. */
@@ -369,9 +360,7 @@ function parseTree(lines: readonly string[]): TreeParse {
       continue;
     }
 
-    const parents = dirs
-      .slice(0, depth)
-      .filter((segment) => segment !== undefined && segment !== ".");
+    const parents = dirs.slice(0, depth).filter((segment) => segment !== undefined && segment !== ".");
     out.push([...parents, name].join("/"));
   }
 
@@ -386,12 +375,7 @@ function parseTree(lines: readonly string[]): TreeParse {
  * extension heuristic is a fallback for the last node in a subtree, which has no deeper line
  * after it.
  */
-function looksLikeDirectory(
-  name: string,
-  depth: number,
-  lines: readonly string[],
-  current: string,
-): boolean {
+function looksLikeDirectory(name: string, depth: number, lines: readonly string[], current: string): boolean {
   const index = lines.indexOf(current);
   if (index >= 0) {
     for (let i = index + 1; i < lines.length; i += 1) {
@@ -540,7 +524,7 @@ export function parseFileContents(raw: string): ContentsParse {
       "The pasted contents had no recognisable file headers, so nothing was attributed to a path. Separate files with a line like `--- src/db/schema.ts ---`.",
     );
   } else {
-    notices.push(`Read contents for ${headers} file(s). String guards can now run against them.`);
+    notices.push("Read contents for " + headers + " file(s). String guards can now run against them.");
   }
 
   return { contents, notices, unparsed };
@@ -603,12 +587,12 @@ export function findDependency(
 /** The exact manifest line for a dependency, quoted verbatim. The evidence string in a
  *  failure comes from here, because evidence without a quote is not evidence. */
 export function dependencyEvidenceLine(
-  _project: VirtualProject,
+  project: VirtualProject,
   name: string,
   found: { version: string; dev: boolean },
 ): string {
   const section = found.dev ? "devDependencies" : "dependencies";
-  return `"${name}": "${found.version}" found in package.json ${section}`;
+  return '"' + name + '": "' + found.version + '" found in package.json ' + section;
 }
 
 /** Can path guards run at all? False when no listing was pasted. */
@@ -623,9 +607,7 @@ export function hasFileContents(project: VirtualProject): boolean {
 
 /** Can dependency guards run at all? */
 export function hasManifest(project: VirtualProject): boolean {
-  return (
-    Object.keys(project.dependencies).length > 0 || Object.keys(project.devDependencies).length > 0
-  );
+  return Object.keys(project.dependencies).length > 0 || Object.keys(project.devDependencies).length > 0;
 }
 
 export function describeProject(project: VirtualProject): string {
@@ -635,10 +617,10 @@ export function describeProject(project: VirtualProject): string {
   const contents = Object.keys(project.fileContents).length;
 
   return [
-    `Virtual project · loaded ${project.loadedAt} · source ${project.sourcedFrom.kind}`,
-    `  dependencies     ${deps} runtime, ${dev} dev${deps + dev === 0 ? "  — dependency guards will SKIP" : ""}`,
-    `  file listing     ${files} path(s)${files === 0 ? "  — path guards will SKIP" : ""}`,
-    `  file contents    ${contents} file(s)${contents === 0 ? "  — string guards will SKIP" : ""}`,
+    "Virtual project · loaded " + project.loadedAt + " · source " + project.sourcedFrom.kind,
+    "  dependencies     " + deps + " runtime, " + dev + " dev" + (deps + dev === 0 ? "  — dependency guards will SKIP" : ""),
+    "  file listing     " + files + " path(s)" + (files === 0 ? "  — path guards will SKIP" : ""),
+    "  file contents    " + contents + " file(s)" + (contents === 0 ? "  — string guards will SKIP" : ""),
     "",
     "A skip is never a pass. Guards whose data was not pasted report SKIP with a reason, so a",
     "run that could check nothing cannot be mistaken for a clean run.",

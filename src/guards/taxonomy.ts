@@ -101,7 +101,7 @@ export const TAXONOMY: readonly KindMeta[] = [
     defaultSeverity: "warning",
     rank: 4,
     target: "virtual-project",
-    why: 'Word-boundary matching by default, because a bare substring match on "pg" hits "pgp", "pgsql-tools" and any passing comment. Needs file CONTENTS, not just paths, so it skips more often than the path guards.',
+    why: "Word-boundary matching by default, because a bare substring match on \"pg\" hits \"pgp\", \"pgsql-tools\" and any passing comment. Needs file CONTENTS, not just paths, so it skips more often than the path guards.",
   },
   {
     kind: "string_in_files",
@@ -178,7 +178,11 @@ export function describeTaxonomy(): string {
 
   for (const meta of TAXONOMY) {
     lines.push(
-      `  ${String(meta.rank + 1)}. ${meta.kind.padEnd(24)}${meta.deterministic ? "deterministic  " : "NON-deterministic"}${meta.browserRunnable ? " runs here   " : " export only  "}${meta.defaultSeverity.padEnd(9)}${meta.asserts}`,
+      "  " + String(meta.rank + 1) + ". " + meta.kind.padEnd(24) +
+        (meta.deterministic ? "deterministic  " : "NON-deterministic") +
+        (meta.browserRunnable ? " runs here   " : " export only  ") +
+        meta.defaultSeverity.padEnd(9) +
+        meta.asserts,
     );
   }
 
@@ -201,11 +205,11 @@ export function describeKind(kind: GuardKind): string {
 
   return [
     meta.kind,
-    `  asserts:      ${meta.asserts}`,
-    `  deterministic:${meta.deterministic ? " yes" : " no"}`,
-    `  runs here:    ${meta.browserRunnable ? " yes" : ` no — ${meta.target}`}`,
-    `  severity:     ${meta.defaultSeverity} by default`,
+    "  asserts:      " + meta.asserts,
+    "  deterministic:" + (meta.deterministic ? " yes" : " no"),
+    "  runs here:    " + (meta.browserRunnable ? " yes" : " no — " + meta.target),
+    "  severity:     " + meta.defaultSeverity + " by default",
     "",
-    `  ${meta.why}`,
+    "  " + meta.why,
   ].join("\n");
 }
