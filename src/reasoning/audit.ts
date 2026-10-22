@@ -49,11 +49,18 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, EventId, ISODateString, PremiseId } from "@/types/common";
 import type { Decision, Justification, Premise } from "@/types/domain";
-import { premisesOf } from "./entrenchment";
+import type { GraphState } from "@/substrate/graph-state";
+import {
+  indexGraph,
+  isDerivedPremiseText,
+  justificationsFor,
+  premisesNamedBy,
+  type ReasoningIndex,
+} from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
+import { nogoodsInvolving } from "./nogoods";
 
 /** Deeper than this the chain stops being readable and starts being a graph dump. */
 export const MAX_AUDIT_DEPTH = 8;
@@ -62,7 +69,11 @@ export const MAX_AUDIT_DEPTH = 8;
 /* The chain                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type WeaknessKind = "unsupported-assumption" | "circular-support" | "sole-support" | "stale";
+export type WeaknessKind =
+  | "unsupported-assumption"
+  | "circular-support"
+  | "sole-support"
+  | "stale";
 
 export interface AuditStep {
   readonly depth: number;
@@ -115,6 +126,7 @@ export function auditDecision(
   labels: ReadonlyMap<NodeId, Labelled>,
   decisionId: DecisionId,
 ): AuditTrail {
+  const index = indexGraph(state);
   const visited = new Set<NodeId>();
   const weakLinks: WeakLink[] = [];
   let deepest = 0;
@@ -152,15 +164,18 @@ export function auditDecision(
     visited.add(nodeId);
 
     const decision: Decision | undefined = state.decisions.get(nodeId as DecisionId);
-    if (decision !== undefined) return decisionStep(state, labels, decision, depth, build);
+    if (decision !== undefined) return decisionStep(index, labels, decision, depth, build);
 
     const premise: Premise | undefined = state.premises.get(nodeId as PremiseId);
     if (premise !== undefined) {
       premiseCount += 1;
-      const isDerived = premise.justifications.length > 0;
+      /* A premise is never a consequent in this graph, so "derived" is not a graph
+       * property — it is the Phase 1 OUT-list exclusion, recognised by its text marker.
+       * Testing `premise.justifications` would be testing a field that does not exist. */
+      const isDerived = isDerivedPremiseText(premise.text);
       if (isDerived) derivedCount += 1;
       else assumptionCount += 1;
-      return premiseStep(state, labels, premise, isDerived, depth, build, weakLinks);
+      return premiseStep(labels, premise, isDerived, depth, weakLinks);
     }
 
     return null;
@@ -218,7 +233,7 @@ export function auditDecision(
     truncated,
     weakLinks: sorted,
     weakest: sorted[0] ?? null,
-    nogoods: nogoodsForDecision(state, decisionId).length,
+    nogoods: nogoodsForDecision(state, index, decisionId).length,
     clock: "learned",
   };
 }
@@ -228,29 +243,28 @@ export function auditDecision(
 /* -------------------------------------------------------------------------- */
 
 function decisionStep(
-  state: GraphState,
+  index: ReasoningIndex,
   labels: ReadonlyMap<NodeId, Labelled>,
   decision: Decision,
   depth: number,
   build: (nodeId: DecisionId | PremiseId, depth: number) => AuditStep | null,
 ): AuditStep {
-  const justifications = justificationsFor(state, decision.id);
+  const justifications = justificationsFor(index, decision.id);
   const children: AuditStep[] = [];
 
   /* A justification is a step of its own kind; its premises hang below it. `build` is
    * passed down so premises recurse through the same visited-set and depth cap. */
   for (const justification of justifications) {
-    children.push(justificationStep(state, justification, depth + 1, build));
+    children.push(justificationStep(justification, depth + 1, build));
   }
 
   /* `Decision` carries no creating-event id. The justification informant does, and
    * materialize rewrites it to the event that created the decision — so the earliest
    * one is the honest answer to "which event taught the system this?". */
-  const learnedFrom =
-    justifications
-      .map((justification) => informantEventId(justification))
-      .filter((eventId): eventId is EventId => eventId !== null)
-      .sort()[0] ?? null;
+  const learnedFrom = justifications
+    .map((justification) => informantEventId(justification))
+    .filter((eventId): eventId is EventId => eventId !== null)
+    .sort()[0] ?? null;
 
   return {
     depth,
@@ -272,7 +286,6 @@ function informantEventId(justification: Justification): EventId | null {
 }
 
 function justificationStep(
-  _state: GraphState,
   justification: Justification,
   depth: number,
   build: (nodeId: DecisionId | PremiseId, depth: number) => AuditStep | null,
@@ -307,26 +320,24 @@ function justificationStep(
 }
 
 function premiseStep(
-  state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,
   premise: Premise,
   isDerived: boolean,
   depth: number,
-  build: (nodeId: DecisionId | PremiseId, depth: number) => AuditStep | null,
   weakLinks: WeakLink[],
 ): AuditStep {
   const supporting = premise.evidence.filter((entry) => entry.supports);
 
-  if (!isDerived && supporting.length === 0) {
+  if (supporting.length === 0) {
     weakLinks.push({
       nodeId: premise.id,
       kind: "unsupported-assumption",
       severity: 0.9,
-      explanation: `"${premise.text}" is an assumption with no evidence behind it — nothing observed it, no guard checked it, nobody asserted it directly. It entered the log because a decision needed it. That is normal for a premise, but it means this is the link that will break first.`,
+      explanation: isDerived
+        ? `"${premise.text}" is a DERIVED exclusion — Phase 1 composed it from an ontology rule rather than observing it, so it has no evidence of its own by construction. It inherits whatever support the premise it was derived from has, and it falls when that one does.`
+        : `"${premise.text}" is an assumption with no evidence behind it — nothing observed it, no guard checked it, nobody asserted it directly. It entered the log because a decision needed it. That is normal for a premise, but it means this is the link that will break first.`,
     });
-  }
-
-  if (isDerived === false && supporting.length === 1) {
+  } else if (supporting.length === 1) {
     weakLinks.push({
       nodeId: premise.id,
       kind: "stale",
@@ -335,24 +346,18 @@ function premiseStep(
     });
   }
 
-  const children: AuditStep[] = [];
-  if (isDerived) {
-    for (const justificationId of premise.justifications) {
-      const justification = state.justifications.get(justificationId);
-      if (justification === undefined) continue;
-      children.push(justificationStep(state, justification, depth + 1, build));
-    }
-  }
-
+  /* A premise has no children in this graph — it is never a consequent, so there is
+   * nothing underneath it to audit. That is the honest shape of the chain and the reason
+   * the trail terminates here rather than continuing. */
   return {
     depth,
     nodeId: premise.id,
     kind: "premise",
-    text: `${premise.text}${isDerived ? " (derived)" : " (assumption)"}`,
+    text: `${premise.text}${isDerived ? " (derived exclusion)" : " (assumption)"}`,
     label: labels.get(premise.id)?.label ?? premise.label,
     learnedAt: premise.temporal.learned,
     learnedFrom: supporting[0]?.eventId ?? null,
-    children,
+    children: [],
   };
 }
 
@@ -371,13 +376,21 @@ export function soleSupportDecisions(
   state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,
 ): readonly { decisionId: DecisionId; premiseId: PremiseId }[] {
+  const index = indexGraph(state);
   const out: { decisionId: DecisionId; premiseId: PremiseId }[] = [];
 
   for (const decisionId of state.decisions.keys()) {
     if (labels.get(decisionId)?.label !== "IN") continue;
-    const premiseIds = premisesOf(state, decisionId);
-    if (premiseIds.length !== 1) continue;
-    const only = premiseIds[0];
+    /* IN-list only: an OUT-list premise is a condition EXCLUDED, not support, and
+     * counting it would call a decision singly-supported when it is supported by three
+     * premises and merely excludes a fourth. */
+    const premiseIds = new Set<PremiseId>();
+    for (const justification of justificationsFor(index, decisionId)) {
+      if (labels.get(justification.id)?.label !== "IN") continue;
+      for (const premiseId of justification.inList) premiseIds.add(premiseId);
+    }
+    if (premiseIds.size !== 1) continue;
+    const only = [...premiseIds][0];
     if (only === undefined) continue;
     out.push({ decisionId, premiseId: only });
   }
@@ -419,16 +432,12 @@ function flatten(steps: readonly AuditStep[]): readonly AuditStep[] {
   return out;
 }
 
-function justificationsFor(state: GraphState, decisionId: DecisionId): readonly Justification[] {
-  const out: Justification[] = [];
-  for (const justification of state.justifications.values()) {
-    if (justification.consequent === decisionId) out.push(justification);
-  }
-  return out;
-}
-
-function nogoodsForDecision(state: GraphState, decisionId: DecisionId) {
-  const premiseIds = new Set<PremiseId>(premisesOf(state, decisionId));
+function nogoodsForDecision(
+  state: GraphState,
+  index: ReasoningIndex,
+  decisionId: DecisionId,
+) {
+  const premiseIds = new Set<PremiseId>(premisesNamedBy(index, decisionId));
   const out = [];
   for (const nogood of state.nogoods.values()) {
     if (nogood.premiseIds.some((premiseId) => premiseIds.has(premiseId))) out.push(nogood);

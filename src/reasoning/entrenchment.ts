@@ -54,17 +54,20 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision, Premise } from "@/types/domain";
 import { ORIGIN_AUTHORITY } from "@/types/domain";
-import type { EntrenchmentBreakdown } from "@/types/reasoning";
+import type {
+  EntrenchmentBreakdown,
+} from "@/types/reasoning";
 import {
   ENTRENCHMENT_WEIGHTS,
   RECENCY_HALF_LIFE_DAYS,
   UNKNOWN_IMPLEMENTATION_COST,
   entrenchmentBand,
 } from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import { indexGraph, justificationsFor } from "./graph-index";
 
 /* -------------------------------------------------------------------------- */
 /* Decision entrenchment                                                      */
@@ -239,7 +242,7 @@ export function recencyScore(validFromMs: number, now: number): number {
   if (!Number.isFinite(validFromMs)) return 0.5;
 
   const ageDays = Math.max(0, (now - validFromMs) / 86_400_000);
-  return 0.5 ** (ageDays / RECENCY_HALF_LIFE_DAYS);
+  return Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
 }
 
 function validFromMs(decision: Decision): number {
@@ -251,12 +254,19 @@ function validFromMsOfWindow(valid: string): number {
   return Number.isFinite(ms) ? ms : Number.NaN;
 }
 
-/** The premises a decision rests on: every IN-list premise of every justification
- *  whose consequent is this decision. */
+/**
+ * The premises a decision rests on: every IN-list premise of every justification whose
+ * consequent is this decision.
+ *
+ * IN-list only. An OUT-list premise is a condition the decision EXCLUDES, not one it
+ * rests on, and including it would let the EE3 cap bind on a premise the decision is
+ * arguing against — capping a decision's entrenchment by the strength of its own
+ * negation.
+ */
 export function premisesOf(state: GraphState, decisionId: DecisionId): readonly PremiseId[] {
+  const index = indexGraph(state);
   const found = new Set<PremiseId>();
-  for (const justification of state.justifications.values()) {
-    if (justification.consequent !== decisionId) continue;
+  for (const justification of justificationsFor(index, decisionId)) {
     for (const premiseId of justification.inList) found.add(premiseId);
   }
   return [...found];

@@ -28,16 +28,27 @@
  * not a proposal.
  *
  * ---------------------------------------------------------------------------
- * DOYLE'S LABEL PROPAGATION, RUN BACKWARDS
+ * THIS GRAPH IS BIPARTITE, WHICH CHANGES WHAT "BACKWARDS" MEANS
  *
- * `labeller.ts` propagates IN/OUT forward from premises to conclusions. Here we
- * propagate the failure backwards: from an unsound decision, to the justification
- * that held it up, to the IN-list premises of that justification, and down through
- * premises that are themselves conclusions.
+ * `Justification.consequent` is a `DecisionId` and its lists are `PremiseId`s, so a
+ * premise is never a consequent: **every premise is an assumption.** Doyle's
+ * "antecedents of antecedents, stopping at nodes with no incoming arcs" reaches bedrock
+ * in ONE hop here, because there is no derived-premise layer to walk through.
  *
- * A premise that is a CONCLUSION has its own justifications, and those get the same
- * treatment — which is how a failure reaches an assumption several levels down rather
- * than stopping at the first layer of derived beliefs.
+ * So the culprit set is not found by depth. It is found by asking which premises
+ * actually broke the justification:
+ *
+ *   · an IN-list premise that is no longer IN   — the support was withdrawn
+ *   · an OUT-list premise that is now IN        — an excluded condition arrived
+ *
+ * That set is minimal BY CONSTRUCTION, which is what §2.6's ATMS borrowing asks for.
+ * Premises that still hold are examined and cleared, and the explanation says so —
+ * "the other three still hold" is the half of the diagnosis that makes it actionable.
+ *
+ * Depth does exist in this graph, but it comes from `Decision.edges.dependsOn`, not from
+ * the justification arcs. That is what the walk follows when it needs to go deeper than
+ * one hop, and it is the only way a failure reaches an assumption belonging to a
+ * DIFFERENT decision.
  *
  * ---------------------------------------------------------------------------
  * THE TRUNCATION FLAG IS NOT COSMETIC
@@ -50,10 +61,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Justification } from "@/types/domain";
 import type { BacktrackResult } from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import { indexGraph, justificationsFor } from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
 
 /** Deeper than this and the graph is almost certainly cyclic or the diagnosis has
@@ -76,18 +88,16 @@ export function backtrack(
   labels: ReadonlyMap<NodeId, Labelled>,
   decisionId: DecisionId,
 ): BacktrackResult {
+  const index = indexGraph(state);
   const path: (DecisionId | PremiseId)[] = [];
   const culprits = new Set<PremiseId>();
-  const visitedNodes = new Set<NodeId>();
+  const visited = new Set<DecisionId>();
   let deepest = 0;
   let truncated = false;
 
-  // The walk visits DECISIONS and PREMISES. Justifications are what it FOLLOWS,
-  // not what it lands on: the path is the chain of beliefs, and a justification
-  // is the argument between two of them.
-  const walk = (nodeId: DecisionId | PremiseId, depth: number): void => {
-    if (visitedNodes.has(nodeId)) return;
-    visitedNodes.add(nodeId);
+  const walk = (nodeId: DecisionId, depth: number): void => {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
 
     if (depth > deepest) deepest = depth;
     if (depth > MAX_BACKTRACK_DEPTH) {
@@ -97,35 +107,39 @@ export function backtrack(
 
     path.push(nodeId);
 
-    const supporting = supportingJustificationsFor(state, labels, nodeId);
-
-    for (const justification of supporting) {
+    /* ---- the culprit test: which premises actually broke the justification ---- */
+    for (const justification of justificationsFor(index, nodeId)) {
       for (const premiseId of justification.inList) {
-        if (culprits.has(premiseId)) continue;
-
-        const premiseLabel = labels.get(premiseId);
-
-        /* An OUT-labelled premise inside an IN justification is exactly the
-         * unsoundness we are chasing. It is the culprit. */
-        if (premiseLabel !== undefined && premiseLabel.label === "OUT") {
+        const label = labels.get(premiseId)?.label;
+        /* An unlabelled premise is an assumption presumed true. Only a premise that
+         * has been actively labelled something other than IN withdrew its support. */
+        if (label !== undefined && label !== "IN") {
           culprits.add(premiseId);
-          continue;
-        }
-
-        /* A premise that is itself a conclusion gets walked: its own assumptions are
-         * the real culprits, and stopping here would blame a derived belief for
-         * something an assumption underneath it caused. */
-        const premise = state.premises.get(premiseId);
-        const isConclusion = premise !== undefined && premise.justifications.length > 0;
-
-        if (isConclusion) {
-          culprits.add(premiseId);
-          walk(premiseId, depth + 1);
-        } else {
-          /* An assumption. This is bedrock — there is nothing underneath to blame. */
-          culprits.add(premiseId);
+          path.push(premiseId);
         }
       }
+
+      /* The non-monotonic half, and the one gate (c) exists for: an EXCLUDED condition
+       * that arrived. This premise being IN is what invalidates the justification. */
+      for (const premiseId of justification.outList) {
+        if (labels.get(premiseId)?.label === "IN") {
+          culprits.add(premiseId);
+          path.push(premiseId);
+        }
+      }
+    }
+
+    /* ---- depth: `dependsOn`, the only arc that goes deeper in a bipartite graph ---- */
+    const decision = state.decisions.get(nodeId);
+    if (decision === undefined) return;
+
+    for (const dependency of decision.edges.dependsOn) {
+      if (visited.has(dependency)) continue;
+      /* Only follow a dependency that is itself in trouble. Walking a sound dependency
+       * would import its premises into the culprit set and inflate it, which is the one
+       * thing minimality forbids. */
+      if (labels.get(dependency)?.label === "IN") continue;
+      walk(dependency, depth + 1);
     }
   };
 
@@ -137,60 +151,6 @@ export function backtrack(
     depthReached: deepest,
     truncated,
   };
-}
-
-/**
- * The justifications currently holding a node up.
- *
- * A node can have several; one OUT-labelled justification does not make the node
- * unsound if another is IN (multiple independent support), so only the IN ones — or,
- * when none are IN, all of them — are followed.
- */
-function supportingJustificationsFor(
-  state: GraphState,
-  labels: ReadonlyMap<NodeId, Labelled>,
-  nodeId: NodeId,
-): readonly Justification[] {
-  /* Decisions and premises live in separate id spaces; ask the graph which one this
-   * is rather than pattern-matching the id string. */
-  const justifications = state.decisions.has(nodeId as DecisionId)
-    ? justificationsOfDecision(state, nodeId as DecisionId)
-    : justificationsOfPremise(state, nodeId as PremiseId);
-
-  const inLabelled = justifications.filter(
-    (justification) => labels.get(justification.id)?.label === "IN",
-  );
-
-  return inLabelled.length > 0 ? inLabelled : justifications;
-}
-
-function justificationsOfDecision(
-  state: GraphState,
-  decisionId: DecisionId,
-): readonly Justification[] {
-  const decision = state.decisions.get(decisionId);
-  if (decision === undefined) return [];
-
-  const out: Justification[] = [];
-  for (const justification of state.justifications.values()) {
-    if (justification.consequent === decisionId) out.push(justification);
-  }
-  return out;
-}
-
-function justificationsOfPremise(
-  state: GraphState,
-  premiseId: PremiseId,
-): readonly Justification[] {
-  const premise = state.premises.get(premiseId);
-  if (premise === undefined) return [];
-
-  const out: Justification[] = [];
-  for (const justificationId of premise.justifications) {
-    const justification = state.justifications.get(justificationId);
-    if (justification !== undefined) out.push(justification);
-  }
-  return out;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -210,16 +170,54 @@ export function assumptionSetOf(
   labels: ReadonlyMap<NodeId, Labelled>,
   decisionId: DecisionId,
 ): { readonly inList: readonly PremiseId[]; readonly outList: readonly PremiseId[] } {
+  const index = indexGraph(state);
   const inList = new Set<PremiseId>();
   const outList = new Set<PremiseId>();
 
-  for (const justification of justificationsOfDecision(state, decisionId)) {
+  for (const justification of justificationsFor(index, decisionId)) {
+    /* Only the justifications that were HOLDING the decision up. Including an already
+     * invalid one would put premises into the nogood that the decision never actually
+     * relied on, and a nogood that overstates the conjunction blocks re-assertions it
+     * has no business blocking. */
     if (labels.get(justification.id)?.label !== "IN") continue;
     for (const premiseId of justification.inList) inList.add(premiseId);
     for (const premiseId of justification.outList) outList.add(premiseId);
   }
 
+  /* A decision whose every justification has already failed has no IN-labelled one to
+   * read, and its nogood would come back empty. Fall back to all of them: the
+   * conjunction that WAS believed is still the conjunction that cannot hold. */
+  if (inList.size === 0 && outList.size === 0) {
+    for (const justification of justificationsFor(index, decisionId)) {
+      for (const premiseId of justification.inList) inList.add(premiseId);
+      for (const premiseId of justification.outList) outList.add(premiseId);
+    }
+  }
+
   return { inList: [...inList], outList: [...outList] };
+}
+
+/**
+ * The derived premises the walk could not get underneath.
+ *
+ * In a bipartite graph this is only ever non-empty when the DEPTH CAP bound a
+ * `dependsOn` chain — there is no derived-premise layer to fail to reach. Kept because
+ * §2.6 requires a partial result to be labelled partial rather than presented as
+ * complete, and the cap is the one way this walk can come up short.
+ */
+export function partialCulprits(
+  state: GraphState,
+  labels: ReadonlyMap<NodeId, Labelled>,
+  decisionId: DecisionId,
+): readonly PremiseId[] {
+  const result = backtrack(state, labels, decisionId);
+  if (!result.truncated) return [];
+
+  const culprits = new Set(result.culpritPremises);
+  return result.path.filter((nodeId) => {
+    const asPremise = nodeId as PremiseId;
+    return state.premises.has(asPremise) && !culprits.has(asPremise);
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -235,13 +233,17 @@ export function describeBacktrack(state: GraphState, result: BacktrackResult): s
     .map((premiseId) => `"${state.premises.get(premiseId)?.text ?? premiseId}"`)
     .join(", ");
 
+  /* Minimality is stated explicitly: it is the difference between a diagnosis and a
+   * list, and the user has to be told that the other premises were examined and cleared
+   * rather than never looked at. */
+
   const singular = result.culpritPremises.length === 1;
 
   return [
     `${singular ? "One assumption is" : `${result.culpritPremises.length} assumptions are`} responsible: ${named}.`,
     singular
-      ? "Retracting it alone is enough; nothing else needs to be given up."
-      : "Give up as little of this set as the new evidence requires.",
+      ? "Retracting it alone is enough. Every other premise this decision rests on was examined and still holds."
+      : "This is the smallest set that resolves it — give up as little of it as the new evidence requires. The other premises were examined and still hold.",
     `Searched to depth ${result.depthReached}.`,
     result.truncated
       ? `TRUNCATED at depth ${MAX_BACKTRACK_DEPTH} — there may be culprits deeper than this result shows.`

@@ -49,14 +49,15 @@
  * ---------------------------------------------------------------------------
  */
 
-import { formatNogoodId } from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, NogoodId, PremiseId } from "@/types/common";
+import type { GraphState } from "@/substrate/graph-state";
+import { formatNogoodId } from "@/lib/ids";
+import type { Nogood } from "@/types/domain";
 import type { NogoodRecord } from "@/types/reasoning";
 import type { ContradictionGate } from "@/types/retrieval";
 import { assumptionSetOf } from "./backtracking";
-import type { GateFinding } from "./gates";
 import type { Labelled, NodeId } from "./labeller";
+import type { GateFinding } from "./gates";
 
 /* -------------------------------------------------------------------------- */
 /* Construction                                                               */
@@ -123,15 +124,20 @@ function nogoodForPremiseFinding(
   if (finding.premiseId === null) return null;
 
   const assumptionSet = assumptionSetOf(state, labels, finding.decisionId);
-  const premiseIds = sortPremises([
-    ...new Set<PremiseId>([finding.premiseId, ...assumptionSet.inList, ...assumptionSet.outList]),
-  ]);
+  const premiseIds = sortPremises(
+    [...new Set<PremiseId>([finding.premiseId, ...assumptionSet.inList, ...assumptionSet.outList])],
+  );
 
   if (premiseIds.length === 0) return null;
 
   return {
     premiseIds,
-    explanation: explainConjunction(state, premiseIds, [finding.decisionId], finding.explanation),
+    explanation: explainConjunction(
+      state,
+      premiseIds,
+      [finding.decisionId],
+      finding.explanation,
+    ),
     gate: finding.gate,
     decisionIds: [finding.decisionId],
     engineDerived: false,
@@ -167,7 +173,11 @@ export function explainConjunction(
       ? ""
       : `\n${decisionIds.join(", ")} ${decisionIds.length === 1 ? "was" : "were"} accepted assuming this conjunction.`;
 
-  return [`These assumptions cannot all hold:\n${quoted}`, findingExplanation, decisions]
+  return [
+    `These assumptions cannot all hold:\n${quoted}`,
+    findingExplanation,
+    decisions,
+  ]
     .filter((part) => part.length > 0)
     .join("\n");
 }
@@ -175,6 +185,28 @@ export function explainConjunction(
 /* -------------------------------------------------------------------------- */
 /* Blocking                                                                   */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * TWO NOGOOD SHAPES, AND WHICH ONE TO USE.
+ *
+ * `Nogood`      (types/domain)   — what the LOG holds. Has `recordedAt`, so it can say
+ *                                   WHEN the conjunction was found impossible, which is
+ *                                   the whole force of the reuse warning.
+ * `NogoodRecord`(types/reasoning)— what a PROPOSAL carries. No timestamp, because a
+ *                                   proposal is built in a single run and the timestamp
+ *                                   belongs to the event, not the proposal.
+ *
+ * Reads from `state.nogoods` are typed `Nogood`. Converting one to the other is
+ * `toRecord`; the ids are the same string, differently branded.
+ */
+export function toRecord(nogood: Nogood): NogoodRecord {
+  return {
+    id: nogood.id as NogoodRecord["id"],
+    premiseIds: nogood.premiseIds,
+    explanation: nogood.explanation,
+    derivedFrom: nogood.derivedFrom,
+  };
+}
 
 /**
  * Does the log already contain a nogood covering this conjunction?
@@ -187,7 +219,7 @@ export function explainConjunction(
 export function blocksConjunction(
   state: GraphState,
   candidate: readonly PremiseId[],
-): NogoodRecord | null {
+): Nogood | null {
   const candidateSet = new Set(candidate);
 
   for (const nogood of state.nogoods.values()) {
@@ -206,8 +238,8 @@ export function blocksConjunction(
  * incompatible with two others" is context a user needs before deciding whether to
  * retract it.
  */
-export function nogoodsInvolving(state: GraphState, premiseId: PremiseId): readonly NogoodRecord[] {
-  const out: NogoodRecord[] = [];
+export function nogoodsInvolving(state: GraphState, premiseId: PremiseId): readonly Nogood[] {
+  const out: Nogood[] = [];
   for (const nogood of state.nogoods.values()) {
     if (nogood.premiseIds.includes(premiseId)) out.push(nogood);
   }

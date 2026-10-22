@@ -167,6 +167,8 @@ export type { WeaknessKind, AuditStep, WeakLink, AuditTrail } from "./audit";
 /* ---- 2.1 the assertion entry point: one function, four input kinds ---- */
 export {
   assertNewInformation,
+  resolvePremise,
+  nearMatches,
   findExistingDecision,
   falsifyPremise,
   userDecision,
@@ -179,8 +181,25 @@ export type {
   AssertionResult,
   AssertContext,
   PremiseAssertion,
+  PremiseResolution,
+  UnresolvedPremise,
   DecisionAssertion,
 } from "./assert";
+
+/* ---- the graph index: one pass, so traversals are O(1) per lookup ---- */
+export {
+  indexGraph,
+  justificationsFor,
+  decisionsRestingOn,
+  premisesNamedBy,
+  isDerivedPremiseText,
+  DERIVED_PREMISE_MARKER,
+} from "./graph-index";
+export type { ReasoningIndex } from "./graph-index";
+export { partialCulprits } from "./backtracking";
+export { describeCap } from "./cascade";
+export { newcomerBreakdownOf, describeNewcomerCost } from "./adjudication";
+export { toRecord } from "./nogoods";
 
 /* ---- 2.1 the cycle. The only entry point anything outside reasoning/ needs. ---- */
 export {

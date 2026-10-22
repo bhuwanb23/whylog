@@ -51,15 +51,6 @@
  * ---------------------------------------------------------------------------
  */
 
-import {
-  formatDecisionId,
-  formatEpisodeId,
-  formatJustificationId,
-  formatPremiseId,
-  formatTranscriptId,
-} from "@/lib/ids";
-import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
-import type { GraphState } from "@/substrate/graph-state";
 import type {
   Actor,
   Confidence,
@@ -67,6 +58,7 @@ import type {
   EngineId,
   EpisodeId,
   EventId,
+  GuardId,
   ISODateString,
   JustificationId,
   PremiseId,
@@ -76,7 +68,19 @@ import type {
 import { asConfidence } from "@/types/common";
 import type { DecisionOrigin, DecisionVariable, Justification, PremiseType } from "@/types/domain";
 import type { EventType, NewEvent } from "@/types/events";
+import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
+import {
+  formatDecisionId,
+  formatEpisodeId,
+  formatJustificationId,
+  formatPremiseId,
+  formatTranscriptId,
+  premiseFingerprint,
+} from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Nogood } from "@/types/domain";
 import type { Newcomer } from "./adjudication";
+import { blocksConjunction } from "./nogoods";
 
 /* -------------------------------------------------------------------------- */
 /* The four kinds                                                             */
@@ -161,12 +165,38 @@ export interface AssertContext {
   readonly occurredAt?: ISODateString;
 }
 
+/**
+ * An assertion that could not be resolved to a premise node.
+ *
+ * §2.11: "Exact predicate match only; ambiguous cases are surfaced for human
+ * confirmation rather than guessed." §2.5: a false premise resolution produces "a
+ * confident, spectacular, entirely wrong cascade" — so an unresolved or ambiguous match
+ * is REPORTED, never acted on.
+ */
+export interface UnresolvedPremise {
+  readonly assertion: PremiseAssertion;
+  readonly kind: "no-match" | "ambiguous";
+  /** The candidates a human should choose between. Empty for `no-match`. */
+  readonly candidates: readonly PremiseId[];
+  readonly explanation: string;
+}
+
 export interface AssertionResult {
   readonly drafts: readonly NewEvent<EventType>[];
+  readonly unresolved: readonly UnresolvedPremise[];
   /** Set when the assertion is decision-level, so the adjudicator can screen it.
    *  Premise-only assertions produce no newcomer: there is nothing to screen against
    *  an incumbent, and inventing one would run adjudication on a premise. */
   readonly newcomer: Newcomer | null;
+  /**
+   * §2.6 nogood REUSE, checked at the ASSERTION rather than at the proposal.
+   *
+   * Catching it here is strictly better: the warning arrives while the user is still
+   * deciding whether to assert, instead of after the events are in the log and the
+   * proposal has been generated. Non-null means these premises are a conjunction the log
+   * has already recorded as impossible.
+   */
+  readonly reassertsNogood: Nogood | null;
   readonly summary: string;
 }
 
@@ -224,6 +254,7 @@ export function assertNewInformation(
   /* ---- the shared tail: identical for all four kinds ---- */
 
   const drafts: NewEvent<EventType>[] = [];
+  const unresolved: UnresolvedPremise[] = [];
   const mintedPremiseIds: PremiseId[] = [];
   let premiseNumber = context.state.counters.premises;
   let justificationNumber = context.state.counters.justifications;
@@ -232,68 +263,86 @@ export function assertNewInformation(
   let episodeNumber = context.state.counters.episodes;
 
   const transcriptId: TranscriptId =
-    transcriptIdFor(assertion, context) ?? nextTranscriptId(context, drafts, ++transcriptNumber);
+    transcriptIdFor(assertion, context) ??
+    nextTranscriptId(context, drafts, ++transcriptNumber);
 
-  /* The premises of ONE assertion belong to ONE episode: they were observed
-   * together, and a premise asserted in isolation has no context to show. The
-   * episode id is minted here rather than per-premise so the group is a group. */
-  let premiseEpisodeId: EpisodeId | null = null;
+  /* A human, a guard or a repo scan is its own authority: what it says is confirmed on
+   * arrival. A transcript is not — extracted prose enters as UNKNOWN and waits for
+   * review, because nothing enters the log unreviewed. */
+  const authoritative = assertion.source !== "transcript";
 
   for (const premise of premises) {
-    if (premiseEpisodeId === null) premiseEpisodeId = formatEpisodeId(++episodeNumber);
+    const resolution = resolvePremise(context.state, premise);
 
-    premiseNumber += 1;
-    const premiseId = formatPremiseId(premiseNumber);
-    mintedPremiseIds.push(premiseId);
-
-    drafts.push(premiseDraft(premise, premiseId, transcriptId, premiseEpisodeId, context));
-
-    /* A REFUTING observation invalidates the premise it names.
-     *
-     * "There are two of us editing it now" is not a new premise — it is the
-     * falsification of `scale.single_user`. Without this step the observation
-     * is recorded and NOTHING reads it: the old premise stays IN, every
-     * justification that cites it stays valid, and the decision resting on it
-     * never becomes unsound. The world moved and the log did not notice, which
-     * is the exact failure gate (c) exists to catch.
-     *
-     * The event is `PremiseInvalidated` rather than a mutation, because the log
-     * is append-only: the premise is closed out, never rewritten (invariant I1).
-     */
-    if (!premise.supports) {
-      const target = findOpenPremiseByPredicate(context.state, premise.type, premise.predicate);
-      if (target !== null) {
-        drafts.push({
-          type: "PremiseInvalidated",
-          payload: {
-            premiseId: target,
-            invalidatedBy:
-              context.actor.kind === "human"
-                ? { kind: "human" }
-                : { kind: "assertion", eventId: PLACEHOLDER_EVENT_ID },
-          },
-          actor: context.actor,
-          reason: `${target} falsified: ${premise.text}`,
-          at: context.at,
+    /* ---- unresolved: report, never guess ---- */
+    if (resolution.kind !== "resolved") {
+      if (!premise.supports) {
+        /* Nothing to refute. Creating a premise just to invalidate it would put a node
+         * in the graph whose entire history is "asserted and immediately killed", and
+         * gate (c) would fire on a decision that never rested on it. */
+        unresolved.push({
+          assertion: premise,
+          kind: resolution.kind,
+          candidates: resolution.candidates,
+          explanation:
+            resolution.kind === "ambiguous"
+              ? `Several premises match ${premise.type}.${premise.predicate}. A refutation aimed at the wrong one produces a spectacular, entirely wrong cascade, so pick the target rather than letting this guess.`
+              : `No premise in the log matches ${premise.type}.${premise.predicate}, so there is nothing to refute. If this was meant to falsify something, the predicate does not match — check the type as well, since premises of different types are never the same node however similar their text.`,
         });
+        continue;
       }
+
+      /* A new supporting premise with no match. Mint it. */
+      premiseNumber += 1;
+      const premiseId = formatPremiseId(premiseNumber);
+      mintedPremiseIds.push(premiseId);
+      drafts.push(premiseDraft(premise, premiseId, transcriptId, context));
+
+      /* Confirming it makes it IN, which is what lets an OUT-list exclusion fire:
+       * "an excluded condition arrived" only invalidates a justification once the
+       * condition is actually believed. Left UNKNOWN for a transcript. */
+      if (authoritative) drafts.push(confirmDraft(premiseId, premise, context));
+      continue;
+    }
+
+    const existingId = resolution.premiseId;
+
+    /* ---- resolved and REFUTING: this is what invalidates an IN-list premise ---- */
+    if (!premise.supports) {
+      drafts.push(invalidateDraft(existingId, premise, assertion.source, context));
+      continue;
+    }
+
+    /* ---- resolved and SUPPORTING: re-assert on the EXISTING id ----
+     * Invariant I2 — premises are shared nodes. `PremiseAsserted` on an existing id
+     * appends evidence and takes the max confidence; minting a second node would halve
+     * the corroboration count on both and leave gate (c) looking at a premise that
+     * nothing rests on. */
+    drafts.push(premiseDraft(premise, existingId, transcriptId, context));
+    mintedPremiseIds.push(existingId);
+
+    /* If it was UNKNOWN and this source is authoritative, it becomes IN — which is the
+     * OUT-list half of gate (c). */
+    const existing = context.state.premises.get(existingId);
+    if (authoritative && existing !== undefined && existing.label !== "IN") {
+      drafts.push(confirmDraft(existingId, premise, context));
     }
   }
 
   for (const decision of decisions) {
-    /* Local refs resolve against the premises minted in THIS assertion, in order. */
+    /* Local refs resolve against the premises this assertion touched, in order. */
     const inList: PremiseId[] = (decision.premiseRefs ?? [])
       .map((index) => mintedPremiseIds[index])
       .filter((id): id is PremiseId => id !== undefined);
 
-    const existing = findExistingDecision(context.state, decision);
-    if (existing !== null) {
+    const existingDecision = findExistingDecision(context.state, decision);
+    if (existingDecision !== null) {
       /* Not a new decision — the same one, asserted again. Attaching a justification
-       * is the honest response: it corroborates rather than duplicating, and identity
-       * resolution has already decided these are the same node. */
+       * corroborates rather than duplicating; identity resolution already decided these
+       * are the same node. */
       justificationNumber += 1;
       drafts.push(
-        justificationDraft(formatJustificationId(justificationNumber), existing, inList, context),
+        justificationDraft(formatJustificationId(justificationNumber), existingDecision, inList, context),
       );
       continue;
     }
@@ -320,24 +369,56 @@ export function assertNewInformation(
   /* A decision-level assertion becomes a newcomer for the adjudicator. */
   const firstDecision = decisions[0];
   if (firstDecision !== undefined) {
-    const source = sourceOf(assertion.source);
     newcomer = {
       variable: firstDecision.variable,
       value: canonicalValueOf(firstDecision.variable, firstDecision.value),
       text: firstDecision.statement,
       origin: firstDecision.origin,
       confidence: firstDecision.confidence,
-      // `source` is optional on the newcomer, and `exactOptionalPropertyTypes`
-      // means the key must be ABSENT rather than present-and-undefined.
-      ...(source === undefined ? {} : { source }),
+      source: sourceOf(assertion.source),
     };
   }
 
+  /* Existing premises named by a decision assertion, plus any premise this assertion
+   * refutes, form the conjunction being asserted. Checked against the recorded nogoods
+   * so the user is warned BEFORE the batch is committed rather than after. */
+  const conjunction = conjunctionOf(context.state, decisions, mintedPremiseIds);
+  const reassertsNogood = blocksConjunction(context.state, conjunction);
+
   return {
     drafts,
+    unresolved,
     newcomer,
-    summary: summarise(assertion, drafts, mintedPremiseIds.length, decisions.length),
+    reassertsNogood,
+    summary: summarise(
+      assertion,
+      drafts,
+      mintedPremiseIds.length,
+      decisions.length,
+      reassertsNogood,
+      unresolved,
+    ),
   };
+}
+
+/** The premises this assertion would place in the log together. */
+function conjunctionOf(
+  state: GraphState,
+  decisions: readonly DecisionAssertion[],
+  minted: readonly PremiseId[],
+): readonly PremiseId[] {
+  const found = new Set<PremiseId>(minted);
+
+  for (const decision of decisions) {
+    const existing = findExistingDecision(state, decision);
+    if (existing === null) continue;
+    for (const justification of state.justifications.values()) {
+      if (justification.consequent !== existing) continue;
+      for (const premiseId of justification.inList) found.add(premiseId);
+    }
+  }
+
+  return [...found];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -348,7 +429,6 @@ function premiseDraft(
   premise: PremiseAssertion,
   premiseId: PremiseId,
   transcriptId: TranscriptId,
-  episodeId: EpisodeId,
   context: AssertContext,
 ): NewEvent<"PremiseAsserted"> {
   const text = premise.text.trim();
@@ -358,8 +438,6 @@ function premiseDraft(
     payload: {
       premiseId,
       transcriptId,
-      episodeId,
-      origin: originFor(context),
       type: premise.type,
       predicate: canonicalPredicate(premise.type, premise.predicate),
       ...(premise.value === undefined ? {} : { value: premise.value }),
@@ -369,12 +447,13 @@ function premiseDraft(
       text: premise.supports ? text : `refuted: ${text}`,
       confidence: premise.confidence,
       engine: context.engine,
-      snippet: premise.span ?? {
-        transcriptId,
-        start: 0,
-        end: text.length,
-        text,
-      },
+      snippet:
+        premise.span ?? {
+          transcriptId,
+          start: 0,
+          end: text.length,
+          text,
+        },
     },
     actor: context.actor,
     reason: reasonFor(premise, context),
@@ -442,12 +521,8 @@ function decisionDraft(
         modality: "asserted",
         confidence: decision.confidence,
         engine: context.engine,
-        snippet: decision.span ?? {
-          transcriptId,
-          start: 0,
-          end: statement.length,
-          text: statement,
-        },
+        snippet:
+          decision.span ?? { transcriptId, start: 0, end: statement.length, text: statement },
         premiseIds: inList,
         alternativeIds: [],
         ...(decision.appliesTo === undefined ? {} : { appliesTo: decision.appliesTo }),
@@ -455,9 +530,7 @@ function decisionDraft(
       actor: context.actor,
       reason: `Asserted from ${sourceLabel(context.source)}: ${statement}`,
       at: context.at,
-      ...(assertionOccurredAt(context) === null
-        ? {}
-        : { occurredAt: assertionOccurredAt(context) as ISODateString }),
+      ...(assertionOccurredAt(context) === null ? {} : { occurredAt: assertionOccurredAt(context) as ISODateString }),
     },
     {
       type: "JustificationAttached",
@@ -481,6 +554,173 @@ function assertionOccurredAt(context: AssertContext): ISODateString | null {
 /* -------------------------------------------------------------------------- */
 /* Resolution                                                                 */
 /* -------------------------------------------------------------------------- */
+
+export type PremiseResolution =
+  | { readonly kind: "resolved"; readonly premiseId: PremiseId }
+  | { readonly kind: "ambiguous"; readonly candidates: readonly PremiseId[] }
+  | { readonly kind: "no-match"; readonly candidates: readonly PremiseId[] };
+
+/**
+ * Exact (type, predicate) match, or nothing.
+ *
+ * §2.5's precision discipline, implemented as a refusal to be clever. Gate (c) fires
+ * only on RESOLVED premise identity, and the failure mode of getting this wrong is not
+ * a missed detection — it is a confident, spectacular, entirely wrong cascade.
+ *
+ * Two rules that are not negotiable:
+ *
+ *   · Predicates are canonicalised before comparison, so "max users" and "max_users"
+ *     match and "max user" does not silently become something else.
+ *   · Premises of DIFFERENT TYPES never match, however similar their text. "single user"
+ *     (scale) and "single sign-on user flow" (requirement) are different nodes, and a
+ *     false merge between them is the exact scenario the identity ladder forbids.
+ *
+ * A near-match is NOT promoted to a match. It is reported as `no-match` and the
+ * candidates are handed to a human, which is what §2.11 means by "surfaced for human
+ * confirmation rather than guessed".
+ */
+export function resolvePremise(
+  state: GraphState,
+  assertion: PremiseAssertion,
+): PremiseResolution {
+  const canonical = canonicalPredicate(assertion.type, assertion.predicate);
+
+  /* The fold's OWN identity index, keyed by `premiseFingerprint(type, predicate)`.
+   *
+   * Using it rather than scanning `state.premises` is not an optimisation, though it is
+   * one. It is the guarantee that the reasoner and the fold agree about what the same
+   * premise IS. A resolver with its own notion of identity would eventually resolve a
+   * premise the fold considers distinct, and gate (c) would fire on a node nothing
+   * actually rests on — the "confident, spectacular, entirely wrong cascade" §2.5 warns
+   * about, arriving through the front door instead of through fuzzy matching. */
+  const byFingerprint = state.premiseByFingerprint.get(
+    premiseFingerprint(assertion.type, canonical),
+  );
+
+  if (byFingerprint !== undefined && state.premises.has(byFingerprint)) {
+    return { kind: "resolved", premiseId: byFingerprint };
+  }
+
+  /* Not in the index. Enumerate anyway, because the index can lag a node that was
+   * created before canonicalisation settled, and reporting those as candidates is what
+   * turns a silent no-match into a human decision. */
+  const matches: PremiseId[] = [];
+  for (const premise of state.premises.values()) {
+    if (premise.type !== assertion.type) continue;
+    if (premise.predicate !== canonical) continue;
+    matches.push(premise.id);
+  }
+
+  if (matches.length === 1) return { kind: "resolved", premiseId: matches[0] as PremiseId };
+  if (matches.length > 1) return { kind: "ambiguous", candidates: matches };
+  return { kind: "no-match", candidates: [] };
+}
+
+/**
+ * Predicates that ALMOST match, for the human-confirmation UI.
+ *
+ * Deliberately separate from `resolvePremise` and never consulted by it: a resolver
+ * that can see near-matches will eventually be tempted to use them, and the whole
+ * precision discipline rests on it not being able to.
+ */
+export function nearMatches(
+  state: GraphState,
+  assertion: PremiseAssertion,
+  limit = 5,
+): readonly PremiseId[] {
+  const canonical = canonicalPredicate(assertion.type, assertion.predicate);
+  const wanted = foldKey(canonical.split(".").pop() ?? canonical);
+  const out: { id: PremiseId; score: number }[] = [];
+
+  for (const premise of state.premises.values()) {
+    const have = foldKey(premise.predicate.split(".").pop() ?? premise.predicate);
+    if (have === wanted) continue;
+    if (!have.includes(wanted) && !wanted.includes(have)) continue;
+    /* Same type scores higher. Cross-type near-matches are shown LAST and labelled,
+     * because they are the ones a human is most likely to accept wrongly. */
+    const score = premise.type === assertion.type ? 1 : 0;
+    out.push({ id: premise.id, score });
+  }
+
+  return out
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((entry) => entry.id);
+}
+
+/* -------------------------------------------------------------------------- */
+/* The three premise events                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Refute an existing premise.
+ *
+ * This is the event that makes gate (c) fire on the IN-list side: the materialiser sets
+ * `label: OUT` and closes the validity window, the labeller propagates, and every
+ * decision whose IN-list named it loses support.
+ *
+ * `invalidatedBy.kind` has three members and a repo scan is not one of them — it maps to
+ * `"assertion"`, which is what it is: an assertion about the world that happens to have
+ * come from a scan rather than a conversation.
+ */
+function invalidateDraft(
+  premiseId: PremiseId,
+  premise: PremiseAssertion,
+  source: AssertionSource,
+  context: AssertContext,
+): NewEvent<"PremiseInvalidated"> {
+  const invalidatedBy: PremiseInvalidatedBy =
+    source === "guard-result"
+      ? { kind: "guard", guardId: PLACEHOLDER_GUARD_ID }
+      : source === "user-decision"
+        ? { kind: "human" }
+        : { kind: "assertion", eventId: PLACEHOLDER_EVENT_ID };
+
+  return {
+    type: "PremiseInvalidated",
+    payload: {
+      premiseId,
+      invalidatedBy,
+      ...(premise.span === undefined ? {} : { evidenceSpan: premise.span }),
+    },
+    actor: context.actor,
+    reason: `${premiseId} is no longer true: "${premise.text}" — observed by ${sourceLabel(source)}. Every decision resting on it is re-examined, and this event is the record of what falsified it.`,
+    at: context.at,
+    ...(context.occurredAt === undefined ? {} : { occurredAt: context.occurredAt }),
+  };
+}
+
+/**
+ * Make a premise IN.
+ *
+ * Only for sources that are their own authority. Without this, an OUT-list exclusion
+ * stays UNKNOWN and gate (c) never fires on it — "an excluded condition arrived" is only
+ * an invalidation once the condition is actually believed.
+ */
+function confirmDraft(
+  premiseId: PremiseId,
+  premise: PremiseAssertion,
+  context: AssertContext,
+): NewEvent<"PremiseConfirmed"> {
+  return {
+    type: "PremiseConfirmed",
+    payload: { premiseId },
+    actor: context.actor,
+    reason: `Confirmed by ${context.actor.kind}: "${premise.text}". This makes it IN, which is what lets an excluded condition invalidate a justification that ruled it out.`,
+    at: context.at,
+    ...(context.occurredAt === undefined ? {} : { occurredAt: context.occurredAt }),
+  };
+}
+
+/** `PremiseInvalidatedPayload["invalidatedBy"]`, named so the union is readable. */
+type PremiseInvalidatedBy = NewEvent<"PremiseInvalidated">["payload"]["invalidatedBy"];
+
+/** Phase 4 mints real guard ids. Until then a guard-sourced invalidation records the
+ *  placeholder and the materialiser resolves it to the creating event, exactly as it
+ *  does for every other forward reference in this codebase. */
+const PLACEHOLDER_GUARD_ID = "WLD-0000.g0" as GuardId;
+
+
 
 /**
  * Is this decision already in the log?
@@ -508,7 +748,10 @@ export function findExistingDecision(
 /* Transcripts, informants, reasons                                           */
 /* -------------------------------------------------------------------------- */
 
-function transcriptIdFor(assertion: Assertion, context: AssertContext): TranscriptId | null {
+function transcriptIdFor(
+  assertion: Assertion,
+  context: AssertContext,
+): TranscriptId | null {
   if (assertion.source === "transcript") return assertion.transcriptId;
   return context.humanTranscriptId ?? null;
 }
@@ -548,55 +791,11 @@ function nextTranscriptId(
 function informantFor(context: AssertContext): Justification["informant"] {
   /* A human informant has no event to point at, and pointing at an unrelated one would
    * be worse than saying so. */
-  return context.actor.kind === "human"
-    ? { kind: "human" }
-    : { kind: "rejustification", eventId: PLACEHOLDER_EVENT_ID };
+  return context.actor.kind === "human" ? { kind: "human" } : { kind: "rejustification", eventId: PLACEHOLDER_EVENT_ID };
 }
 
 /** Resolved to the creating event by the materialiser on fold. */
 const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
-
-/**
- * Who the assertion is attributed to.
- *
- * A human typed it or a human said it: `human_stated`. A guard observed it or
- * a scan found it: `agent_inferred`, which is the honest answer — a machine
- * reading the world, not a person making a claim.
- */
-function originFor(context: AssertContext): DecisionOrigin {
-  switch (context.source) {
-    case "transcript":
-    case "user-decision":
-      return "human_stated";
-    case "guard-result":
-    case "repo-scan":
-      return "agent_inferred";
-  }
-}
-
-/**
- * The OPEN premise a refutation names, if there is one.
- *
- * Predicate-first, and never across types: `scale.single_user` and
- * `requirement.single_user` are different premises, and a falsification of one
- * says nothing about the other.
- */
-function findOpenPremiseByPredicate(
-  state: GraphState,
-  type: PremiseType,
-  predicate: string,
-): PremiseId | null {
-  const canonical = canonicalPredicate(type, predicate);
-  for (const premise of state.premises.values()) {
-    if (premise.type !== type) continue;
-    if (premise.predicate !== canonical) continue;
-    // An already-invalidated premise cannot be invalidated again; the
-    // falsification of a dead premise is a no-op, not a second death.
-    if (premise.temporal.invalidFrom !== undefined) continue;
-    return premise.id;
-  }
-  return null;
-}
 
 function reasonFor(premise: PremiseAssertion, context: AssertContext): string {
   const verb = premise.supports ? "supports" : "REFUTES";
@@ -638,6 +837,8 @@ function summarise(
   drafts: readonly NewEvent<EventType>[],
   premiseCount: number,
   decisionCount: number,
+  reassertsNogood: Nogood | null,
+  unresolved: readonly UnresolvedPremise[],
 ): string {
   const refuting =
     assertion.source === "guard-result" && !assertion.passed
@@ -653,11 +854,21 @@ function summarise(
 
   const parts = Object.entries(tally).map(([type, count]) => `${count} × ${type}`);
 
+  const unresolvedNote =
+    unresolved.length === 0
+      ? ""
+      : `${unresolved.length} assertion(s) matched no premise and were NOT acted on — see the unresolved list.`;
+
+  const nogoodWarning =
+    reassertsNogood === null
+      ? ""
+      : `WARNING: this re-asserts ${reassertsNogood.id}, recorded impossible on ${reassertsNogood.recordedAt.slice(0, 10)}.`;
+
   return [
+    nogoodWarning,
+    unresolvedNote,
     `Asserted from ${sourceLabel(assertion.source)}: ${premiseCount} premise(s), ${decisionCount} decision(s).`,
-    parts.length === 0
-      ? "No events — everything was already in the log."
-      : `Events: ${parts.join(", ")}.`,
+    parts.length === 0 ? "No events — everything was already in the log." : `Events: ${parts.join(", ")}.`,
     refuting.trim(),
   ]
     .filter((part) => part.length > 0)
@@ -681,7 +892,7 @@ export function falsifyPremise(
   type: PremiseType,
   predicate: string,
   observedText: string,
-  _context: AssertContext,
+  context: AssertContext,
 ): Assertion {
   return {
     source: "repo-scan",
@@ -713,3 +924,4 @@ export function guardResult(
 ): Assertion {
   return { source: "guard-result", decisionId, passed, observation };
 }
+

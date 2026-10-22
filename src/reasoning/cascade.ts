@@ -43,13 +43,21 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { DecisionLabel, Justification } from "@/types/domain";
 import type { CascadeResult, CascadeStep } from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import {
+  decisionsRestingOn,
+  indexGraph,
+  justificationsFor,
+  premisesNamedBy,
+  type ReasoningIndex,
+} from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
 
-export const MAX_CASCADE_DEPTH = 6;
+/** Fallback when no cap is supplied. The store passes `settings.cascadeDepthCap`. */
+export const MAX_CASCADE_DEPTH = 4;
 
 /**
  * Propagate one retraction.
@@ -61,7 +69,12 @@ export function cascade(
   state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,
   retractedPremises: readonly PremiseId[],
+  depthCap: number = MAX_CASCADE_DEPTH,
 ): CascadeResult {
+  /* A cap of 0 would mean "do not propagate at all", which is a legitimate setting —
+   * but a NEGATIVE cap would make every step truncated and report the whole graph as
+   * unexamined. Clamped, not trusted. */
+  const cap = Math.max(0, Math.floor(Number.isFinite(depthCap) ? depthCap : MAX_CASCADE_DEPTH));
   const steps: CascadeStep[] = [];
   const flipped: DecisionId[] = [];
   const survivors: DecisionId[] = [];
@@ -70,18 +83,23 @@ export function cascade(
   let beyondCap = 0;
 
   const retractedSet = new Set<PremiseId>(retractedPremises);
+  const index = indexGraph(state);
 
-  /* Seed: every decision whose IN justification names a retracted premise. */
+  /* Seed: every decision resting on a retracted premise, via the shared-premise index.
+   * This is the ONLY edge the cascade follows — never `related`, never topical
+   * similarity. §2.7: "Cascade follows shared-premise edges only." */
   const seeds: DecisionId[] = [];
-  for (const decisionId of decisionIdsOf(state)) {
-    if (justificationsNaming(state, decisionId, retractedSet).length > 0) seeds.push(decisionId);
+  for (const premiseId of retractedSet) {
+    for (const decisionId of decisionsRestingOn(index, premiseId)) {
+      if (!seeds.includes(decisionId)) seeds.push(decisionId);
+    }
   }
 
   const propagate = (decisionId: DecisionId, from: DecisionId | PremiseId, depth: number): void => {
     if (visited.has(decisionId)) return;
     visited.add(decisionId);
 
-    if (depth > MAX_CASCADE_DEPTH) {
+    if (depth > cap) {
       truncated = true;
       beyondCap += 1;
       return;
@@ -93,7 +111,7 @@ export function cascade(
     const current: DecisionLabel = labels.get(decisionId)?.label ?? decision.label;
 
     /* ---- THE STOP CONDITION ---- */
-    if (hasIndependentSupport(state, labels, decisionId, retractedSet)) {
+    if (hasIndependentSupport(index, labels, decisionId, retractedSet)) {
       steps.push({
         from,
         to: decisionId,
@@ -122,23 +140,24 @@ export function cascade(
 
     if (became !== current) flipped.push(decisionId);
 
-    /* Premises that are conclusions of this decision now lose their support too, and
-     * anything resting on them is next in line. */
-    for (const premiseId of conclusionsOf(state, decisionId)) {
-      retractedSet.add(premiseId);
-      for (const dependent of decisionIdsOf(state)) {
+    /* ---- the second hop ----
+     * This decision was contributing support to the premises it names. Anything ELSE
+     * resting on those premises is next in line — but only if this decision was their
+     * last support, which `hasIndependentSupport` decides at the next level. Following
+     * the shared premise is following a shared-premise edge; following `dependsOn` or
+     * `related` here would be exactly the over-retraction §2.7 forbids. */
+    for (const premiseId of premisesNamedBy(index, decisionId)) {
+      for (const dependent of decisionsRestingOn(index, premiseId)) {
         if (visited.has(dependent)) continue;
-        if (justificationsNaming(state, dependent, new Set([premiseId])).length > 0) {
-          propagate(dependent, premiseId, depth + 1);
-        }
+        propagate(dependent, premiseId, depth + 1);
       }
     }
   };
 
   for (const seed of seeds) {
     /* `from` names the NODE the propagation came through. The first retracted premise
-     * this seed depends on is the honest answer; the justification id is not a node. */
-    const via = firstRetractedPremiseOf(state, seed, retractedSet);
+     * this seed rests on is the honest answer; a justification id is not a node. */
+    const via = firstRetractedPremiseOf(index, seed, retractedSet);
     propagate(seed, via ?? seed, 0);
   }
 
@@ -158,12 +177,12 @@ export function cascade(
  * world rather than the current one.
  */
 function hasIndependentSupport(
-  state: GraphState,
+  index: ReasoningIndex,
   labels: ReadonlyMap<NodeId, Labelled>,
   decisionId: DecisionId,
   retracted: ReadonlySet<PremiseId>,
 ): boolean {
-  for (const justification of justificationsOf(state, decisionId)) {
+  for (const justification of justificationsFor(index, decisionId)) {
     const namedRetracted = justification.inList.some((premiseId) => retracted.has(premiseId));
     if (namedRetracted) continue;
 
@@ -191,38 +210,12 @@ function hasIndependentSupport(
 /* Graph access                                                               */
 /* -------------------------------------------------------------------------- */
 
-function decisionIdsOf(state: GraphState): readonly DecisionId[] {
-  return [...state.decisions.keys()];
-}
-
-function justificationsOf(state: GraphState, decisionId: DecisionId): readonly Justification[] {
-  const out: Justification[] = [];
-  for (const justification of state.justifications.values()) {
-    if (justification.consequent === decisionId) out.push(justification);
-  }
-  return out;
-}
-
-/** Justifications of a decision that name at least one of `premises`. */
-function justificationsNaming(
-  state: GraphState,
-  decisionId: DecisionId,
-  premises: ReadonlySet<PremiseId>,
-): readonly Justification[] {
-  return justificationsOf(state, decisionId).filter(
-    (justification) =>
-      justification.inList.some((premiseId) => premises.has(premiseId)) ||
-      justification.outList.some((premiseId) => premises.has(premiseId)),
-  );
-}
-
-/** The first retracted premise a decision depends on, in justification order. */
 function firstRetractedPremiseOf(
-  state: GraphState,
+  index: ReasoningIndex,
   decisionId: DecisionId,
   retracted: ReadonlySet<PremiseId>,
 ): PremiseId | null {
-  for (const justification of justificationsOf(state, decisionId)) {
+  for (const justification of justificationsFor(index, decisionId)) {
     for (const premiseId of justification.inList) {
       if (retracted.has(premiseId)) return premiseId;
     }
@@ -231,29 +224,6 @@ function firstRetractedPremiseOf(
     }
   }
   return null;
-}
-
-/**
- * The premises a decision's own justification rests on — they lose their support
- * when the decision goes.
- *
- * A justification's `consequent` is the decision it supports and its
- * `inList` / `outList` are the premises it rests on. So when the decision is
- * retracted, the premises IT rests on lose their support too, and anything
- * resting on THEM is next in line.
- */
-function conclusionsOf(state: GraphState, decisionId: DecisionId): readonly PremiseId[] {
-  const out: PremiseId[] = [];
-  const seen = new Set<PremiseId>();
-  for (const justification of state.justifications.values()) {
-    if (justification.consequent !== decisionId) continue;
-    for (const premiseId of [...justification.inList, ...justification.outList]) {
-      if (seen.has(premiseId)) continue;
-      seen.add(premiseId);
-      out.push(premiseId);
-    }
-  }
-  return out;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -267,7 +237,7 @@ function conclusionsOf(state: GraphState, decisionId: DecisionId): readonly Prem
  * truncation explicitly, because "we checked four and three were fine" is a different
  * message from "we checked one".
  */
-export function describeCascade(_state: GraphState, result: CascadeResult): string {
+export function describeCascade(state: GraphState, result: CascadeResult): string {
   if (result.steps.length === 0) {
     return "Nothing else depended on it. No other decision changed.";
   }
@@ -288,7 +258,7 @@ export function describeCascade(_state: GraphState, result: CascadeResult): stri
 
   if (result.truncated) {
     parts.push(
-      `Propagation stopped at depth ${MAX_CASCADE_DEPTH} with ${result.potentiallyAffectedBeyondCap} decision(s) not examined. There may be more downstream than this shows.`,
+      `Propagation stopped at the depth cap with ${result.potentiallyAffectedBeyondCap} decision(s) not examined. There may be more downstream than this shows.`,
     );
   }
 
@@ -318,4 +288,10 @@ function nameOf(state: GraphState, nodeId: DecisionId | PremiseId): string {
 /** Depth actually reached — used by Phase 7 to report whether the cap ever binds. */
 export function deepestStep(result: CascadeResult): number {
   return result.steps.reduce((max, step) => (step.depth > max ? step.depth : max), 0);
+}
+
+/** The cap in force, for the health panel — a truncated cascade is only interpretable
+ *  next to the number that truncated it. */
+export function describeCap(depthCap: number = MAX_CASCADE_DEPTH): string {
+  return `cascade depth cap ${depthCap} (shared-premise edges only, never topical similarity)`;
 }

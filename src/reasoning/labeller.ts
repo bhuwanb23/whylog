@@ -41,12 +41,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, JustificationId, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 import type { Justification } from "@/types/domain";
 
-export type NodeId = DecisionId | PremiseId | JustificationId;
+export type NodeId = DecisionId | PremiseId;
 
 /** A label plus the reason for it. The reason is not decoration: the review UI
  *  shows WHY a node is OUT, naming the specific premise that failed, because
@@ -71,12 +71,7 @@ export interface LabellingResult {
   /** Decisions whose label CHANGED against the state that was passed in. This is
    *  what `revise.ts` turns into `LabelChanged` events, and what makes the audit
    *  trail per-flip rather than per-run. */
-  readonly changed: readonly {
-    readonly id: DecisionId;
-    readonly from: DecisionLabel;
-    readonly to: DecisionLabel;
-    readonly reason: LabelReason;
-  }[];
+  readonly changed: readonly { readonly id: DecisionId; readonly from: DecisionLabel; readonly to: DecisionLabel; readonly reason: LabelReason }[];
   readonly iterations: number;
   readonly unfounded: readonly DecisionId[];
   readonly fixpointReached: boolean;
@@ -105,31 +100,9 @@ export function label(state: GraphState): LabellingResult {
     }
     labels.set(premise.id, {
       label: premise.label === "UNKNOWN" ? "UNKNOWN" : premise.label,
-      reason:
-        premise.label === "UNKNOWN"
-          ? { kind: "unconfirmed-premise" }
-          : { kind: "asserted-premise" },
-    });
-  }
-
-  /* ---- justifications are labelled too ----
-   *
-   * Doyle's rule is about the JUSTIFICATION: it is IN iff every IN-list member
-   * is IN and no OUT-list member is. A decision's label is then derived from its
-   * justifications. Publishing the per-justification label is what lets the
-   * backtracker say WHICH justification survived — "this decision is IN because
-   * of this one" — instead of only that it is IN.
-   *
-   * Premise labels are final by this point (a premise is IN or OUT by assertion
-   * or invalidation, never by argument), so one pass is enough.
-   */
-  for (const justification of state.justifications.values()) {
-    const verdict = validityOf(justification, labels);
-    labels.set(justification.id, {
-      label: verdict.valid ? "IN" : "OUT",
-      reason: verdict.valid
-        ? { kind: "valid-justification", justificationId: justification.id }
-        : { kind: "all-justifications-invalid", failedPremiseId: verdict.failedNode },
+      reason: premise.label === "UNKNOWN"
+        ? { kind: "unconfirmed-premise" }
+        : { kind: "asserted-premise" },
     });
   }
 
@@ -144,10 +117,9 @@ export function label(state: GraphState): LabellingResult {
   for (const [id, problem] of founded.problems) {
     labels.set(id, {
       label: "UNFOUNDED",
-      reason:
-        problem.kind === "circular"
-          ? { kind: "circular", cycle: problem.cycle }
-          : { kind: "unfounded", reachedOnly: problem.reachedOnly },
+      reason: problem.kind === "circular"
+        ? { kind: "circular", cycle: problem.cycle }
+        : { kind: "unfounded", reachedOnly: problem.reachedOnly },
     });
   }
 
@@ -168,17 +140,10 @@ export function label(state: GraphState): LabellingResult {
 
       const next = labelDecision(decision.id, decision.justificationIds, state, labels);
       const previous = labels.get(decision.id);
-      // The reason is ALWAYS refreshed, even when the label is unchanged: a
-      // decision that is IN because a valid justification supports it must not
-      // keep the "no justification" reason it was seeded with above. The reason
-      // is what the review UI shows for "why is this IN?", so a stale one is a
-      // wrong answer, not a missing one.
-      //
-      // Only a LABEL change extends the fixpoint. The reason changing cannot
-      // change any other node's label, so it must not dirty the iteration.
-      const labelChanged = previous === undefined || previous.label !== next.label;
-      labels.set(decision.id, next);
-      if (labelChanged) dirty = true;
+      if (previous === undefined || previous.label !== next.label) {
+        labels.set(decision.id, next);
+        dirty = true;
+      }
     }
   }
 
@@ -202,7 +167,7 @@ export function label(state: GraphState): LabellingResult {
 /* -------------------------------------------------------------------------- */
 
 function labelDecision(
-  _id: DecisionId,
+  id: DecisionId,
   justificationIds: readonly JustificationId[],
   state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,
@@ -221,15 +186,11 @@ function labelDecision(
     if (justification === undefined) continue;
 
     const verdict = validityOf(justification, labels);
-    if (verdict.valid)
-      return { label: "IN", reason: { kind: "valid-justification", justificationId } };
+    if (verdict.valid) return { label: "IN", reason: { kind: "valid-justification", justificationId } };
     if (firstFailure === null) firstFailure = verdict.failedNode;
   }
 
-  return {
-    label: "OUT",
-    reason: { kind: "all-justifications-invalid", failedPremiseId: firstFailure },
-  };
+  return { label: "OUT", reason: { kind: "all-justifications-invalid", failedPremiseId: firstFailure } };
 }
 
 export interface ValidityVerdict {
@@ -277,12 +238,7 @@ export function validityOf(
     }
   }
 
-  return {
-    valid: true,
-    failedNode: null,
-    failedClause: null,
-    explanation: `${justification.id} is valid.`,
-  };
+  return { valid: true, failedNode: null, failedClause: null, explanation: `${justification.id} is valid.` };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -355,8 +311,7 @@ function walk(
   if (grounded.has(node as DecisionId)) return { kind: "grounded" };
 
   const decision = state.decisions.get(node as DecisionId);
-  if (decision === undefined)
-    return { kind: "problem", problem: { kind: "unfounded", reachedOnly: [...path] } };
+  if (decision === undefined) return { kind: "problem", problem: { kind: "unfounded", reachedOnly: [...path] } };
   if (decision.justificationIds.length === 0) {
     // No justification and not a premise: nothing grounds it.
     return { kind: "problem", problem: { kind: "unfounded", reachedOnly: [...path, node] } };
@@ -403,8 +358,7 @@ export const LABEL_MEANING: Readonly<Record<DecisionLabel, string>> = {
   IN: "Sound — at least one justification is valid and well-founded",
   OUT: "Unsound — every justification is invalid",
   UNKNOWN: "Unverified — nothing has confirmed or refuted the premises",
-  UNFOUNDED:
-    "Unfounded — the support chain is circular or never reaches a premise. A data-quality warning, not a truth claim",
+  UNFOUNDED: "Unfounded — the support chain is circular or never reaches a premise. A data-quality warning, not a truth claim",
 };
 
 export function describeReason(reason: LabelReason, state: GraphState): string {
@@ -435,9 +389,7 @@ export function describeLabelling(result: LabellingResult): string {
     `${result.labels.size} nodes labelled in ${result.iterations} iteration${result.iterations === 1 ? "" : "s"}`,
   ];
   if (!result.fixpointReached) {
-    parts.push(
-      `DID NOT REACH A FIXPOINT within ${MAX_ITERATIONS} iterations — this is a bug, not a graph property`,
-    );
+    parts.push(`DID NOT REACH A FIXPOINT within ${MAX_ITERATIONS} iterations — this is a bug, not a graph property`);
   }
   if (result.changed.length > 0) {
     parts.push(`${result.changed.length} label${result.changed.length === 1 ? "" : "s"} changed`);
