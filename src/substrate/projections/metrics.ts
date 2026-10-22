@@ -17,9 +17,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import { driftAgeDays } from "../bi-temporal";
 import type { DecisionId, ISODateString, JustificationId, PremiseId } from "@/types/common";
 import { isWorldObservable } from "@/types/domain";
+import { driftAgeDays } from "../bi-temporal";
 import type { GraphState } from "../graph-state";
 import { OTHER_VARIABLE_THRESHOLD } from "../graph-state";
 
@@ -380,7 +380,8 @@ export function agency(state: GraphState): AgencyReport {
 
   const eventsByActor: Record<string, number> = {};
   for (const event of state.events) {
-    const key = event.actor.kind === "engine" ? `engine:${event.actor.engine.kind}` : event.actor.kind;
+    const key =
+      event.actor.kind === "engine" ? `engine:${event.actor.engine.kind}` : event.actor.kind;
     eventsByActor[key] = (eventsByActor[key] ?? 0) + 1;
   }
 
@@ -428,7 +429,10 @@ export function reportAll(state: GraphState, now: ISODateString): MetricsReport 
 
 /** The three numbers that go in the export stamp, in one place so the compiler
  *  and the health panel cannot disagree about them. */
-export function headlineNumbers(state: GraphState, now: ISODateString): {
+export function headlineNumbers(
+  state: GraphState,
+  now: ISODateString,
+): {
   compliance: number;
   verifiableCoverage: number;
   soundness: number;

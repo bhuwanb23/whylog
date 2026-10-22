@@ -40,17 +40,17 @@
  */
 
 import { nowISO } from "@/lib/format";
-import { err, ok, type Result } from "@/lib/result";
+import { type Result, err, ok } from "@/lib/result";
 import type { EngineId, EventId, ISODateString } from "@/types/common";
 import type { AnyEvent } from "@/types/events";
 import {
+  type ChainVerification,
   GENESIS_HASH,
   coerceEvent,
   linkHash,
   verifyChain,
-  type ChainVerification,
 } from "./hash-chain";
-import { canLoad, migrateEvents, SCHEMA_VERSION } from "./schema";
+import { SCHEMA_VERSION, canLoad, migrateEvents } from "./schema";
 
 /* -------------------------------------------------------------------------- */
 /* The wire format                                                            */
@@ -196,7 +196,7 @@ export function importLog(
       ok: false,
       rejection: {
         reason: "not-a-whylog-file",
-        detail: 'no `events` array — a WhyLog file carries events, not a materialised graph',
+        detail: "no `events` array — a WhyLog file carries events, not a materialised graph",
       },
     };
   }
@@ -293,10 +293,7 @@ export function importLog(
  * round-trip guarantee (export -> import -> identical head) is about a file
  * travelling into an EMPTY log, or back into the log it came from.
  */
-export function reseal(
-  events: readonly AnyEvent[],
-  localHeadHash: string,
-): readonly AnyEvent[] {
+export function reseal(events: readonly AnyEvent[], localHeadHash: string): readonly AnyEvent[] {
   const out: AnyEvent[] = [];
   let prev = localHeadHash === "" ? GENESIS_HASH : localHeadHash;
 

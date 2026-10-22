@@ -22,7 +22,7 @@ import type { EventId, ISODateString } from "@/types/common";
 import type { AnyEvent } from "@/types/events";
 import type { GraphState } from "./graph-state";
 import { emptyState } from "./graph-state";
-import { applyBatch, fold, type FoldOptions } from "./materialize";
+import { type FoldOptions, applyBatch, fold } from "./materialize";
 
 export interface Snapshot {
   readonly state: GraphState;
@@ -65,9 +65,7 @@ export type SnapshotRelation =
 
 export function relate(snapshot: Snapshot, log: readonly AnyEvent[]): SnapshotRelation {
   if (snapshot.lastEventId === null) {
-    return log.length === 0
-      ? { kind: "current" }
-      : { kind: "prefix", remaining: log };
+    return log.length === 0 ? { kind: "current" } : { kind: "prefix", remaining: log };
   }
 
   const index = log.findIndex((e) => e.id === snapshot.lastEventId);

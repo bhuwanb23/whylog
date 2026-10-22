@@ -45,49 +45,129 @@ export interface AntonymPair {
 
 export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>> = {
   DATABASE: [
-    { a: "sqlite", b: "postgres", why: "An embedded file database and a client-server database are different deployment shapes; one process cannot be both." },
+    {
+      a: "sqlite",
+      b: "postgres",
+      why: "An embedded file database and a client-server database are different deployment shapes; one process cannot be both.",
+    },
     { a: "sqlite", b: "mysql", why: "Two different primary stores for the same data." },
-    { a: "sqlite", b: "mongodb", why: "A relational embedded store and a document store cannot both be the primary store." },
+    {
+      a: "sqlite",
+      b: "mongodb",
+      why: "A relational embedded store and a document store cannot both be the primary store.",
+    },
     { a: "postgres", b: "mongodb", why: "Two different primary stores for the same data." },
     { a: "postgres", b: "mysql", why: "Two different primary stores for the same data." },
-    { a: "none", b: "sqlite", why: "No persistent store and an embedded store are mutually exclusive." },
-    { a: "none", b: "postgres", why: "No persistent store and a server database are mutually exclusive." },
-    { a: "none", b: "mongodb", why: "No persistent store and a document database are mutually exclusive." },
-    { a: "memory", b: "postgres", why: "In-memory only and a durable server database disagree about whether data survives a restart." },
-    { a: "memory", b: "sqlite", why: "In-memory only and a file-backed store disagree about durability." },
-    { a: "redis", b: "postgres", why: "A cache is not a primary store; if both are claimed as primary, one is wrong." },
+    {
+      a: "none",
+      b: "sqlite",
+      why: "No persistent store and an embedded store are mutually exclusive.",
+    },
+    {
+      a: "none",
+      b: "postgres",
+      why: "No persistent store and a server database are mutually exclusive.",
+    },
+    {
+      a: "none",
+      b: "mongodb",
+      why: "No persistent store and a document database are mutually exclusive.",
+    },
+    {
+      a: "memory",
+      b: "postgres",
+      why: "In-memory only and a durable server database disagree about whether data survives a restart.",
+    },
+    {
+      a: "memory",
+      b: "sqlite",
+      why: "In-memory only and a file-backed store disagree about durability.",
+    },
+    {
+      a: "redis",
+      b: "postgres",
+      why: "A cache is not a primary store; if both are claimed as primary, one is wrong.",
+    },
   ],
 
   AUTH: [
-    { a: "none", b: "clerk", why: "No authentication and a managed auth provider cannot both describe the same surface." },
-    { a: "none", b: "auth0", why: "No authentication and a managed auth provider cannot both describe the same surface." },
-    { a: "none", b: "nextauth", why: "No authentication and a self-hosted auth layer cannot both describe the same surface." },
-    { a: "none", b: "supabase-auth", why: "No authentication and a managed auth provider cannot both describe the same surface." },
-    { a: "none", b: "password", why: "No authentication and a credential flow are mutually exclusive." },
+    {
+      a: "none",
+      b: "clerk",
+      why: "No authentication and a managed auth provider cannot both describe the same surface.",
+    },
+    {
+      a: "none",
+      b: "auth0",
+      why: "No authentication and a managed auth provider cannot both describe the same surface.",
+    },
+    {
+      a: "none",
+      b: "nextauth",
+      why: "No authentication and a self-hosted auth layer cannot both describe the same surface.",
+    },
+    {
+      a: "none",
+      b: "supabase-auth",
+      why: "No authentication and a managed auth provider cannot both describe the same surface.",
+    },
+    {
+      a: "none",
+      b: "password",
+      why: "No authentication and a credential flow are mutually exclusive.",
+    },
     { a: "none", b: "oauth", why: "No authentication and an OAuth flow are mutually exclusive." },
-    { a: "none", b: "magic-link", why: "No authentication and a magic-link flow are mutually exclusive." },
+    {
+      a: "none",
+      b: "magic-link",
+      why: "No authentication and a magic-link flow are mutually exclusive.",
+    },
     { a: "clerk", b: "auth0", why: "Two managed auth providers for the same identity." },
-    { a: "clerk", b: "nextauth", why: "A managed provider and a self-hosted layer for the same identity." },
+    {
+      a: "clerk",
+      b: "nextauth",
+      why: "A managed provider and a self-hosted layer for the same identity.",
+    },
     { a: "auth0", b: "nextauth", why: "Two auth implementations for the same identity." },
-    { a: "password", b: "magic-link", why: "Two primary sign-in mechanisms; one may exist as a fallback, but both cannot be primary." },
+    {
+      a: "password",
+      b: "magic-link",
+      why: "Two primary sign-in mechanisms; one may exist as a fallback, but both cannot be primary.",
+    },
   ],
 
   HOSTING: [
     { a: "local-only", b: "vercel", why: "Never deployed and deployed to a platform contradict." },
     { a: "local-only", b: "netlify", why: "Never deployed and deployed to a platform contradict." },
     { a: "local-only", b: "aws", why: "Never deployed and deployed to a cloud contradict." },
-    { a: "local-only", b: "cloudflare-workers", why: "Never deployed and deployed to an edge platform contradict." },
-    { a: "local-only", b: "self-hosted", why: "Runs only on this machine and runs on a provisioned server contradict." },
+    {
+      a: "local-only",
+      b: "cloudflare-workers",
+      why: "Never deployed and deployed to an edge platform contradict.",
+    },
+    {
+      a: "local-only",
+      b: "self-hosted",
+      why: "Runs only on this machine and runs on a provisioned server contradict.",
+    },
     { a: "vercel", b: "aws", why: "Two primary hosting targets." },
     { a: "vercel", b: "netlify", why: "Two primary hosting targets." },
     { a: "cloudflare-pages", b: "vercel", why: "Two primary hosting targets." },
-    { a: "self-hosted", b: "vercel", why: "Self-managed infrastructure and a managed platform are different operational models." },
+    {
+      a: "self-hosted",
+      b: "vercel",
+      why: "Self-managed infrastructure and a managed platform are different operational models.",
+    },
   ],
 
   FRAMEWORK: [
     { a: "react", b: "svelte", why: "Two component models for the same UI." },
     { a: "react", b: "vue", why: "Two component models for the same UI." },
-    { a: "next", b: "vite", why: "A full-stack framework and a bare bundler describe different application shells." },
+    {
+      a: "next",
+      b: "vite",
+      why: "A full-stack framework and a bare bundler describe different application shells.",
+    },
     { a: "next", b: "remix", why: "Two full-stack frameworks for the same app." },
     { a: "svelte", b: "vue", why: "Two component models for the same UI." },
     { a: "none", b: "react", why: "No framework and a framework contradict." },
@@ -95,18 +175,38 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
   ],
 
   LANGUAGE: [
-    { a: "typescript", b: "javascript", why: "Typed and untyped source for the same codebase — one is a migration of the other, not a coexisting choice." },
+    {
+      a: "typescript",
+      b: "javascript",
+      why: "Typed and untyped source for the same codebase — one is a migration of the other, not a coexisting choice.",
+    },
     { a: "python", b: "typescript", why: "Two implementation languages for the same component." },
     { a: "go", b: "rust", why: "Two implementation languages for the same component." },
-    { a: "java", b: "kotlin", why: "Two JVM languages for the same component; usually a migration, which should be recorded as a supersession." },
+    {
+      a: "java",
+      b: "kotlin",
+      why: "Two JVM languages for the same component; usually a migration, which should be recorded as a supersession.",
+    },
   ],
 
   STORAGE: [
     { a: "none", b: "s3", why: "No blob storage and an object store contradict." },
     { a: "none", b: "local-fs", why: "No blob storage and a filesystem target contradict." },
-    { a: "local-fs", b: "s3", why: "Two blob targets; a serverless deployment cannot read the local filesystem." },
-    { a: "localstorage", b: "s3", why: "Browser-local and remote object storage are different tiers." },
-    { a: "indexeddb", b: "local-fs", why: "Browser-only storage and a server filesystem cannot both hold the same objects." },
+    {
+      a: "local-fs",
+      b: "s3",
+      why: "Two blob targets; a serverless deployment cannot read the local filesystem.",
+    },
+    {
+      a: "localstorage",
+      b: "s3",
+      why: "Browser-local and remote object storage are different tiers.",
+    },
+    {
+      a: "indexeddb",
+      b: "local-fs",
+      why: "Browser-only storage and a server filesystem cannot both hold the same objects.",
+    },
   ],
 
   API_STYLE: [
@@ -120,8 +220,16 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
 
   STATE: [
     { a: "zustand", b: "redux", why: "Two global stores for the same client state." },
-    { a: "zustand", b: "jotai", why: "Two global state models (store vs atoms) for the same state." },
-    { a: "context", b: "redux", why: "Context-only and a dedicated store are different models; both cannot be the primary one." },
+    {
+      a: "zustand",
+      b: "jotai",
+      why: "Two global state models (store vs atoms) for the same state.",
+    },
+    {
+      a: "context",
+      b: "redux",
+      why: "Context-only and a dedicated store are different models; both cannot be the primary one.",
+    },
     { a: "local-component", b: "redux", why: "No global state and a global store contradict." },
     { a: "signals", b: "redux", why: "Two reactivity models for the same state." },
   ],
@@ -130,15 +238,31 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
     { a: "none", b: "vitest", why: "No tests and a configured unit-test runner contradict." },
     { a: "none", b: "jest", why: "No tests and a configured unit-test runner contradict." },
     { a: "none", b: "playwright", why: "No tests and a configured end-to-end runner contradict." },
-    { a: "vitest", b: "jest", why: "Two unit-test runners; running both doubles the cost and halves the coverage." },
+    {
+      a: "vitest",
+      b: "jest",
+      why: "Two unit-test runners; running both doubles the cost and halves the coverage.",
+    },
     { a: "playwright", b: "cypress", why: "Two end-to-end runners for the same flows." },
   ],
 
   UI_KIT: [
-    { a: "tailwind", b: "mui", why: "Utility-first CSS and an opinionated component library impose conflicting styling models." },
+    {
+      a: "tailwind",
+      b: "mui",
+      why: "Utility-first CSS and an opinionated component library impose conflicting styling models.",
+    },
     { a: "tailwind", b: "bootstrap", why: "Two styling systems for the same components." },
-    { a: "vanilla-css", b: "tailwind", why: "Hand-written CSS and a utility framework are different styling systems." },
-    { a: "css-modules", b: "styled-components", why: "Two styling systems for the same components." },
+    {
+      a: "vanilla-css",
+      b: "tailwind",
+      why: "Hand-written CSS and a utility framework are different styling systems.",
+    },
+    {
+      a: "css-modules",
+      b: "styled-components",
+      why: "Two styling systems for the same components.",
+    },
     { a: "none", b: "tailwind", why: "No styling library and a styling framework contradict." },
     { a: "shadcn", b: "mui", why: "Two component libraries with incompatible primitives." },
   ],
@@ -154,7 +278,11 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
   RETRIEVAL: [
     { a: "none", b: "embeddings", why: "No retrieval and a semantic index contradict." },
     { a: "none", b: "bm25", why: "No retrieval and a lexical index contradict." },
-    { a: "embeddings", b: "bm25", why: "Dense-only and sparse-only are different retrieval designs; if both exist the decision is `hybrid` and should say so." },
+    {
+      a: "embeddings",
+      b: "bm25",
+      why: "Dense-only and sparse-only are different retrieval designs; if both exist the decision is `hybrid` and should say so.",
+    },
     { a: "pgvector", b: "pinecone", why: "Two vector backends for the same index." },
     { a: "qdrant", b: "pinecone", why: "Two vector backends for the same index." },
     { a: "sqlite-fts", b: "algolia", why: "Two search backends for the same corpus." },
@@ -164,16 +292,36 @@ export const ANTONYMS: Readonly<Record<DecisionVariable, readonly AntonymPair[]>
     { a: "monolith", b: "microservices", why: "One deployable and many deployables contradict." },
     { a: "client-only", b: "microservices", why: "No backend and a service topology contradict." },
     { a: "client-only", b: "serverless", why: "No backend and server-side functions contradict." },
-    { a: "ssg", b: "ssr", why: "Build-time and request-time rendering are different rendering models." },
-    { a: "spa", b: "ssg", why: "A client-rendered app and a statically generated site disagree about where HTML is produced." },
+    {
+      a: "ssg",
+      b: "ssr",
+      why: "Build-time and request-time rendering are different rendering models.",
+    },
+    {
+      a: "spa",
+      b: "ssg",
+      why: "A client-rendered app and a statically generated site disagree about where HTML is produced.",
+    },
   ],
 
   SCOPE: [
-    { a: "single-user", b: "multi-user", why: "One user and many users contradict — and this pair is the one that invalidates the most downstream decisions." },
+    {
+      a: "single-user",
+      b: "multi-user",
+      why: "One user and many users contradict — and this pair is the one that invalidates the most downstream decisions.",
+    },
     { a: "single-user", b: "multi-tenant", why: "One user and a tenanted product contradict." },
     { a: "browser-only", b: "desktop", why: "Two target platforms." },
-    { a: "cli", b: "browser-only", why: "A command-line tool and a browser-only app are different surfaces." },
-    { a: "prototype", b: "oss", why: "Throwaway and maintained-in-public are different commitments." },
+    {
+      a: "cli",
+      b: "browser-only",
+      why: "A command-line tool and a browser-only app are different surfaces.",
+    },
+    {
+      a: "prototype",
+      b: "oss",
+      why: "Throwaway and maintained-in-public are different commitments.",
+    },
   ],
 
   OTHER: [],
@@ -212,9 +360,9 @@ export function areAntonyms(
 /** All values that contradict `value` under `variable`. Used to pre-empt a
  * decision at authoring time rather than detecting it afterwards. */
 export function antonymsOf(variable: DecisionVariable, value: string): readonly string[] {
-  return ANTONYMS[variable].filter((p) => p.a === value || p.b === value).map((p) =>
-    p.a === value ? p.b : p.a,
-  );
+  return ANTONYMS[variable]
+    .filter((p) => p.a === value || p.b === value)
+    .map((p) => (p.a === value ? p.b : p.a));
 }
 
 export function pairsFor(variable: DecisionVariable): readonly AntonymPair[] {

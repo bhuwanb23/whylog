@@ -36,11 +36,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import { err, ok, type Result } from "@/lib/result";
 import { nowISO } from "@/lib/format";
+import { type Result, err, ok } from "@/lib/result";
 import type { ISODateString } from "@/types/common";
 import type { AnyEvent } from "@/types/events";
-import { CONFIG_STORAGE_KEY, INDEX_STORAGE_KEY, STORAGE_KEY, SCHEMA_VERSION } from "./schema";
+import { CONFIG_STORAGE_KEY, INDEX_STORAGE_KEY, SCHEMA_VERSION, STORAGE_KEY } from "./schema";
 
 /* -------------------------------------------------------------------------- */
 /* The storage backend                                                        */
@@ -242,7 +242,10 @@ export function loadConfig(): LoadResult<StoredConfig> {
   return readJson<StoredConfig>(CONFIG_STORAGE_KEY);
 }
 
-export function saveConfig(config: Omit<StoredConfig, "savedAt">, at: ISODateString = nowISO()): Result<void, string> {
+export function saveConfig(
+  config: Omit<StoredConfig, "savedAt">,
+  at: ISODateString = nowISO(),
+): Result<void, string> {
   return writeJson(CONFIG_STORAGE_KEY, { ...config, schemaVersion: SCHEMA_VERSION, savedAt: at });
 }
 

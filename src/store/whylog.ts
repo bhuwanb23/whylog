@@ -28,47 +28,47 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
+import { DEFAULT_CONFIG, engineIdOf, readConfig } from "@/ai/config";
+import { type ActiveEngine, getEngine, invalidateEngine } from "@/ai/engine";
 import { nowISO } from "@/lib/format";
-import { ok, err, type Result } from "@/lib/result";
-import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
-import type { AnyEvent, EventType, EventPayloadMap, NewEvent } from "@/types/events";
+import { type Result, err, ok } from "@/lib/result";
 import {
-  append as appendToLog,
+  type EventLog,
   appendBatch as appendBatchToLog,
   appendSealed,
+  append as appendToLog,
   emptyLog,
   loadLog as sealLog,
   verify as verifyLog,
-  type EventLog,
 } from "@/substrate/event-log";
 import type { GraphState } from "@/substrate/graph-state";
 import { emptyState } from "@/substrate/graph-state";
-import { fold, rebuild, type FoldOptions } from "@/substrate/materialize";
+import type { ChainVerification } from "@/substrate/hash-chain";
+import { type FoldOptions, fold, rebuild } from "@/substrate/materialize";
 import {
+  type StorageReport,
+  isPersistent,
   loadLog as loadStoredLog,
+  reclaimSpace,
   saveEvents,
   report as storageReport,
-  isPersistent,
-  reclaimSpace,
   wipeAll,
-  type StorageReport,
 } from "@/substrate/persistence";
 import {
+  type ImportOutcome,
+  type PortableLog,
+  describeImportOutcome,
+  describeRejection,
   exportLog,
   importLog,
   reseal,
   serializeLog,
-  describeImportOutcome,
-  describeRejection,
-  type ImportOutcome,
-  type PortableLog,
 } from "@/substrate/portability";
-import type { ChainVerification } from "@/substrate/hash-chain";
 import { SCHEMA_VERSION } from "@/substrate/schema";
-import { getEngine, invalidateEngine, type ActiveEngine } from "@/ai/engine";
-import { DEFAULT_CONFIG, engineIdOf, readConfig } from "@/ai/config";
-import { initialSettings, type SettingsState } from "./settings";
+import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
+import type { AnyEvent, EventPayloadMap, EventType, NewEvent } from "@/types/events";
+import { create } from "zustand";
+import { type SettingsState, initialSettings } from "./settings";
 
 /* -------------------------------------------------------------------------- */
 /* Shape                                                                      */
@@ -190,10 +190,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         engine: resolved,
         engineId: resolved.id,
         storage: storageReport(),
-        notices: [
-          ...notices,
-          notice("error", "Stored log could not be read", stored.error, at),
-        ],
+        notices: [...notices, notice("error", "Stored log could not be read", stored.error, at)],
       });
       return;
     }
@@ -275,7 +272,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
   /* ---------------- record ---------------- */
 
   record: (draft, context) => {
-    const { log, state, status } = get();
+    const { log, status } = get();
     const at = nowISO() as ISODateString;
 
     if (status === "degraded") {
@@ -302,7 +299,10 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
       { now: at, actor: defaultActor(active), reason: context.reason },
     );
 
-    if (!outcome.ok) return err(outcome.validation.message);
+    if (!outcome.ok) {
+      const validation = outcome.validation;
+      return err(validation.ok ? "The event was rejected by validation." : validation.message);
+    }
 
     const nextState = fold(outcome.log.events, foldOptions(get().engineId, at));
     const saved = saveEvents(outcome.log.events, outcome.log.headHash, at);
@@ -349,7 +349,10 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
       })),
     );
 
-    if (!outcome.ok) return err(outcome.validation.message);
+    if (!outcome.ok) {
+      const validation = outcome.validation;
+      return err(validation.ok ? "The event was rejected by validation." : validation.message);
+    }
 
     const nextState = fold(outcome.log.events, foldOptions(get().engineId, at));
     const saved = saveEvents(outcome.log.events, outcome.log.headHash, at);
@@ -375,10 +378,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
     const { log } = get();
     // Throw the cache away and re-fold from the log. Safe by construction: the
     // projections are derived and the log is untouched.
-    const state = rebuild(
-      get().state,
-      foldOptions(get().engineId, at),
-    );
+    const state = rebuild(get().state, foldOptions(get().engineId, at));
     set((current) => ({
       state,
       notices: [
