@@ -29,6 +29,7 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { PremiseSnapshot, WhyLogEngine } from "@/ai/types";
 import { asConfidence } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type {
@@ -42,7 +43,6 @@ import type {
   StringSpec,
 } from "@/types/guards";
 import { DEFAULT_SEVERITY } from "@/types/guards";
-import type { PremiseSnapshot, WhyLogEngine } from "@/ai/types";
 import type { TemplateInput } from "../types";
 
 export interface LlmSynthInput {
@@ -72,7 +72,10 @@ export async function llmGuards(input: LlmSynthInput): Promise<LlmSynthResult> {
     return { guards: [], reason: "not consulted — the templates already filled the cap." };
   }
 
-  if (!input.engine.capabilities.guardSynthesis || input.engine.capabilities.guardSynthesis === "none") {
+  if (
+    !input.engine.capabilities().guardSynthesis ||
+    input.engine.capabilities().guardSynthesis === "none"
+  ) {
     return {
       guards: [],
       reason:
@@ -232,17 +235,17 @@ export function describeSpec(spec: GuardSpec): string {
   switch (spec.kind) {
     case "dependency_present":
     case "dependency_absent":
-      return spec.kind + " " + spec.package;
+      return `${spec.kind} ${spec.package}`;
     case "path_glob_exists":
     case "path_glob_absent":
-      return spec.kind + " " + spec.glob;
+      return `${spec.kind} ${spec.glob}`;
     case "string_in_files":
     case "string_absent_in_files":
-      return spec.kind + " " + JSON.stringify(spec.pattern) + " in " + spec.glob;
+      return `${spec.kind} ${JSON.stringify(spec.pattern)} in ${spec.glob}`;
     case "command_exit_zero":
-      return spec.kind + " " + spec.command;
+      return `${spec.kind} ${spec.command}`;
     case "llm_judge":
-      return spec.kind + " over " + spec.scopeGlobs.join(", ");
+      return `${spec.kind} over ${spec.scopeGlobs.join(", ")}`;
   }
 }
 

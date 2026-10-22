@@ -44,13 +44,18 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { PremiseSnapshot, WhyLogEngine } from "@/ai/types";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { ProposedGuard, UnverifiableDecision } from "@/types/guards";
-import type { PremiseSnapshot, WhyLogEngine } from "@/ai/types";
-import type { GraphState } from "@/substrate/graph-state";
-import { GUARDS_PER_DECISION_CAP, kindRank, type SynthesisReport, type TemplateInput } from "../types";
-import { templateGuards, type AttributedGuard } from "../templates";
+import { type AttributedGuard, templateGuards } from "../templates";
+import {
+  GUARDS_PER_DECISION_CAP,
+  type SynthesisReport,
+  type TemplateInput,
+  kindRank,
+} from "../types";
 import { llmGuards } from "./llm";
 
 export interface SynthesizeInput {
@@ -217,7 +222,10 @@ export function templateInputFor(state: GraphState, decision: Decision): Templat
  * engine wants ids, types and predicates. Building both from the same justification walk keeps
  * them consistent without either carrying fields the other does not use.
  */
-export function premiseSnapshotsFor(state: GraphState, decision: Decision): readonly PremiseSnapshot[] {
+export function premiseSnapshotsFor(
+  state: GraphState,
+  decision: Decision,
+): readonly PremiseSnapshot[] {
   const out: PremiseSnapshot[] = [];
   const seen = new Set<PremiseId>();
 
@@ -271,7 +279,7 @@ function unverifiableReason(
   const parts: string[] = [];
 
   parts.push(
-    "No guard could be synthesised for " + decision.id + " (" + decision.variable + " = " + decision.value + ").",
+    `No guard could be synthesised for ${decision.id} (${decision.variable} = ${decision.value}).`,
   );
 
   if (templateInput.rejected.length === 0) {
@@ -292,7 +300,7 @@ function unverifiableReason(
     "The literature's test is whether you can describe what a VIOLATION looks like. For this decision you cannot yet — which makes it unverifiable, not fine. Unverifiable decisions are the ones most likely to drift, because nothing would tell you if they did.",
   );
 
-  if (llmReason !== null) parts.push("Model synthesis: " + llmReason);
+  if (llmReason !== null) parts.push(`Model synthesis: ${llmReason}`);
 
   return parts.join(" ");
 }
@@ -338,13 +346,13 @@ export function describeSynthesis(reports: readonly SynthesisReport[]): string {
   const capped = reports.filter((report) => report.cappedAt !== null);
 
   return [
-    reports.length + " decision(s) put through synthesis.",
-    "  proposed guards   " + reports.reduce((total, report) => total + report.proposed.length, 0),
-    "  from templates    " + share.templates,
-    "  from the model    " + share.llm + (share.llm > 0 ? "  (every one flagged requiresReview)" : ""),
-    "  template share    " + (share.share * 100).toFixed(0) + "%" + (share.meetsTarget ? "  — meets the ≥80% target" : "  — BELOW the ≥80% target"),
-    "  unverifiable      " + unverifiable.length + (unverifiable.length > 0 ? "  — " + unverifiable.map((report) => report.decisionId).join(", ") : ""),
-    "  capped at " + GUARDS_PER_DECISION_CAP + "        " + capped.length + " decision(s) had more proposed than the cap allows; the least deterministic were dropped",
+    `${reports.length} decision(s) put through synthesis.`,
+    `  proposed guards   ${reports.reduce((total, report) => total + report.proposed.length, 0)}`,
+    `  from templates    ${share.templates}`,
+    `  from the model    ${share.llm}${share.llm > 0 ? "  (every one flagged requiresReview)" : ""}`,
+    `  template share    ${(share.share * 100).toFixed(0)}%${share.meetsTarget ? "  — meets the ≥80% target" : "  — BELOW the ≥80% target"}`,
+    `  unverifiable      ${unverifiable.length}${unverifiable.length > 0 ? `  — ${unverifiable.map((report) => report.decisionId).join(", ")}` : ""}`,
+    `  capped at ${GUARDS_PER_DECISION_CAP}        ${capped.length} decision(s) had more proposed than the cap allows; the least deterministic were dropped`,
     "",
     "Nothing here is installed. Every guard is `proposed` until accepted on the review list, and",
     "a proposed guard does not run — a synthesised guard that fails on day one teaches you to",

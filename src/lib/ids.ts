@@ -12,15 +12,15 @@
 import type {
   AlternativeId,
   DecisionId,
+  EpisodeId,
   EventId,
+  ExportId,
   GuardId,
   JustificationId,
   NogoodId,
   PremiseId,
   ProposalId,
   TranscriptId,
-  EpisodeId,
-  ExportId,
 } from "@/types/common";
 import { hash128 } from "./hash";
 
@@ -50,8 +50,7 @@ export function takeId(counter: IdCounter): { id: number; counter: IdCounter } {
 const pad = (n: number, width = 4): string => String(n).padStart(width, "0");
 
 /** WLD-0007 */
-export const formatDecisionId = (n: number): DecisionId =>
-  `WLD-${pad(n)}` as DecisionId;
+export const formatDecisionId = (n: number): DecisionId => `WLD-${pad(n)}` as DecisionId;
 
 /** P-0002 */
 export const formatPremiseId = (n: number): PremiseId => `P-${pad(n)}` as PremiseId;
@@ -65,8 +64,7 @@ export const formatGuardId = (decisionId: DecisionId, suffix: string): GuardId =
   `G-${decisionId.slice(4)}${suffix}` as GuardId;
 
 /** T-0001 */
-export const formatTranscriptId = (n: number): TranscriptId =>
-  `T-${pad(n)}` as TranscriptId;
+export const formatTranscriptId = (n: number): TranscriptId => `T-${pad(n)}` as TranscriptId;
 
 /** E-0003 */
 export const formatEpisodeId = (n: number): EpisodeId => `E-${pad(n)}` as EpisodeId;
@@ -79,8 +77,7 @@ export const formatAlternativeId = (decisionId: DecisionId, n: number): Alternat
 export const formatNogoodId = (n: number): NogoodId => `NG-${pad(n)}` as NogoodId;
 
 /** RP-0001 */
-export const formatProposalId = (n: number): ProposalId =>
-  `RP-${pad(n)}` as ProposalId;
+export const formatProposalId = (n: number): ProposalId => `RP-${pad(n)}` as ProposalId;
 
 /** X-0001 */
 export const formatExportId = (n: number): ExportId => `X-${pad(n)}` as ExportId;
