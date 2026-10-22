@@ -39,7 +39,15 @@ def repair(text: str) -> str:
                     out.append(bytes([buf[0]]).decode("cp437", errors="replace"))
                     del buf[0]
                     continue
-                out.append(buf[: err.start].decode("utf-8"))
+                # A valid prefix, then something that cannot continue it. The
+                # prefix is UTF-8; if it decodes on its own, emit it as UTF-8,
+                # otherwise it was never a UTF-8 sequence and the bytes go back
+                # to the characters they came from.
+                prefix = bytes(buf[: err.start])
+                try:
+                    out.append(prefix.decode("utf-8"))
+                except UnicodeDecodeError:
+                    out.append(prefix.decode("cp437", errors="replace"))
                 del buf[: err.start]
                 return
 

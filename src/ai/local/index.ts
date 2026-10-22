@@ -40,15 +40,18 @@
  * ---------------------------------------------------------------------------
  */
 
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { segmentEpisodes } from "@/extraction/segmentation";
 import type { EngineId } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
+import { LOCAL_DIMENSIONS } from "../config";
+import { EngineError, unsupportedError } from "../errors";
+import { registerEngine } from "../registry";
 import type {
   CompositionRequest,
   CompositionResult,
   EmbeddingResult,
   EngineCapabilities,
-  ExtractionRequest,
   ExtractionResult,
   GuardSynthesisRequest,
   GuardSynthesisResult,
@@ -57,22 +60,15 @@ import type {
   WhyLogEngine,
 } from "../types";
 import { LOCAL_CAPABILITIES } from "../types";
-import { EngineError, unsupportedError } from "../errors";
-import { registerEngine } from "../registry";
-import { LOCAL_DIMENSIONS } from "../config";
+import { localClassify } from "./classify";
+import { templateCompose } from "./compose";
 import {
-  LOCAL_ENGINE_ID,
   LOCAL_EMBEDDING_MODEL,
+  LOCAL_ENGINE_ID,
   embedBatch,
   dimensions as embeddingDimensions,
 } from "./embed";
 import { extractLocal } from "./extract";
-import { localClassify } from "./classify";
-import { templateCompose } from "./compose";
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { segmentEpisodes } from "@/extraction/segmentation";
-import type { ISODateString } from "@/types/common";
-import { nowISO } from "@/lib/format";
 
 const ENGINE: EngineId = { kind: "local", model: "cue-extractor-v1" };
 
@@ -102,7 +98,10 @@ export function createLocalEngine(): WhyLogEngine {
       const started = performanceSafeNow();
       if (signal?.aborted) throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
 
-      const vectors = embedBatch(texts, { dimensions: embeddingDimensions(), namespace: "decision" });
+      const vectors = embedBatch(texts, {
+        dimensions: embeddingDimensions(),
+        namespace: "decision",
+      });
 
       return {
         vectors,
@@ -126,7 +125,7 @@ export function createLocalEngine(): WhyLogEngine {
      * engine will skip.
      */
     extract: async (request): Promise<ExtractionResult> => {
-      const started = performanceSafeNow();
+      const _started = performanceSafeNow();
       if (request.signal?.aborted) {
         throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
       }
@@ -195,9 +194,7 @@ export function createLocalEngine(): WhyLogEngine {
 
     /* ---------------- guard synthesis: Phase 4 ---------------- */
 
-    synthesizeGuards: async (
-      request: GuardSynthesisRequest,
-    ): Promise<GuardSynthesisResult> => {
+    synthesizeGuards: async (request: GuardSynthesisRequest): Promise<GuardSynthesisResult> => {
       // Phase 4 fills this from src/guards/templates. The honest Phase 0 answer is
       // "no guard, and here is why", which marks the decision `unverifiable`
       // rather than silently skipping it.
@@ -209,7 +206,6 @@ export function createLocalEngine(): WhyLogEngine {
     },
   };
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* Registration                                                               */

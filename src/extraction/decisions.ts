@@ -66,21 +66,26 @@
  * ---------------------------------------------------------------------------
  */
 
+import { type ModalityEvidence, classifyModality } from "@/ai/local/modality";
+import { type PolarityEvidence, polarityOf, rejectedAfterCue } from "@/ai/local/negation";
+import { type ValueCandidate, rankValues, valueAfter, valueBefore } from "@/ai/local/value-phrase";
+import type { DecisionCandidate, DiscardedCandidate } from "@/ai/types";
+import { normalise } from "@/lib/text";
+import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
 import type { Confidence, SourceSpan, TranscriptId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionVariable, Modality } from "@/types/domain";
-import type { DiscardedCandidate, DecisionCandidate } from "@/ai/types";
+import { type CueHit, cueContext, scanCues, variableAtCue } from "./cue-scan";
+import { type Located, locateInEpisode, toNormalised } from "./episode-position";
+import { type OffsetMap, spanFrom } from "./offset-map";
+import { type ClauseFields, extractClauseFields } from "./rationale";
 import type { EpisodeWindow, NormalizedTurn } from "./types";
-import { scanCues, variableAtCue, cueContext, type CueHit } from "./cue-scan";
-import { spanFrom, type OffsetMap } from "./offset-map";
-import { locateInEpisode, toNormalised, type Located } from "./episode-position";
-import { extractClauseFields, type ClauseFields } from "./rationale";
-import { imperativeStatement, renderYStatement, slotsFrom, type YStatementResult } from "./y-statement";
-import { polarityOf, rejectedAfterCue, type PolarityEvidence } from "@/ai/local/negation";
-import { classifyModality, type ModalityEvidence } from "@/ai/local/modality";
-import { rankValues, valueAfter, valueBefore, type ValueCandidate } from "@/ai/local/value-phrase";
-import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
-import { normalise } from "@/lib/text";
+import {
+  type YStatementResult,
+  imperativeStatement,
+  renderYStatement,
+  slotsFrom,
+} from "./y-statement";
 
 export interface DecisionContext {
   readonly transcriptId: TranscriptId;
@@ -124,7 +129,10 @@ const MIN_CUE_WEIGHT = 0.35;
 /* -------------------------------------------------------------------------- */
 
 /** Recover the decisions in one episode. */
-export function recoverDecisions(episode: EpisodeWindow, context: DecisionContext): DecisionRecovery {
+export function recoverDecisions(
+  episode: EpisodeWindow,
+  context: DecisionContext,
+): DecisionRecovery {
   const hits = scanCues(episode.text);
   if (hits.length === 0) return { decisions: [], discarded: [] };
 
@@ -154,7 +162,11 @@ type Recovered =
   | { readonly kind: "decision"; readonly decision: RecoveredDecision }
   | { readonly kind: "discard"; readonly discard: DiscardedCandidate };
 
-function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContext): Recovered | null {
+function recoverOne(
+  episode: EpisodeWindow,
+  hit: CueHit,
+  context: DecisionContext,
+): Recovered | null {
   /* ---- 1. is the cue strong enough to be a decision at all? ---- */
   if (hit.weight < MIN_CUE_WEIGHT) {
     return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight);
@@ -177,7 +189,8 @@ function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContex
   const variable: DecisionVariable = guess?.variable ?? "OTHER";
 
   const value = pickValue(episode.text, hit, variable);
-  if (value === null) return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight * 0.4);
+  if (value === null)
+    return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight * 0.4);
 
   /* ---- 3. polarity ---- */
   const polarity = polarityOf(episode.text, hit, value.surface);
@@ -194,7 +207,8 @@ function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContex
 
   /* ---- 6. statement ---- */
   const rejected = rejectedValues(episode.text, hit, value);
-  const canonical = variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
+  const canonical =
+    variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
   const statement = imperativeStatement(canonical, rejected);
 
   const slots = slotsFrom(variable, canonical, statement, fields, rationalePremises(fields));
@@ -303,7 +317,9 @@ function rejectedValues(text: string, hit: CueHit, chosen: ValueCandidate): read
   // the ontology knows, so that an ordinary noun never becomes a rejected
   // alternative — the precision problem ARGUS measured at 15.4%.
   const window = text.slice(hit.start, Math.min(text.length, hit.end + 140));
-  const pivot = /\b(?:instead of|rather than|over|in preference to)\s+([A-Za-z0-9@/._+-]+)/i.exec(window);
+  const pivot = /\b(?:instead of|rather than|over|in preference to)\s+([A-Za-z0-9@/._+-]+)/i.exec(
+    window,
+  );
   const pivotValue = pivot?.[1];
   if (pivotValue !== undefined && normalise(pivotValue) !== normalise(chosen.surface)) {
     const folded = canonicalFold(pivotValue);

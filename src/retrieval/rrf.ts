@@ -77,12 +77,14 @@ export function rank(
     b.score === a.score ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : b.score - a.score,
   );
 
-  return sorted.map((entry, index): RankedHit => ({
-    decisionId: entry.id,
-    rank: index + 1,
-    score: entry.score,
-    source: level,
-  }));
+  return sorted.map(
+    (entry, index): RankedHit => ({
+      decisionId: entry.id,
+      rank: index + 1,
+      score: entry.score,
+      source: level,
+    }),
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -97,10 +99,7 @@ export function rank(
  * @param k the damping constant. Defaults to `RRF_K`; overridable so Phase 7 can ablate
  *   it without editing this file.
  */
-export function fuse(
-  lists: readonly RankedList[],
-  k: number = RRF_K,
-): readonly FusedHit[] {
+export function fuse(lists: readonly RankedList[], k: number = RRF_K): readonly FusedHit[] {
   const accumulator = new Map<
     DecisionId,
     { rrf: number; contributedBy: Set<IndexLevel>; bestRank: number }
@@ -141,7 +140,13 @@ export function fuse(
 
   /* Deterministic: score descending, then id ascending. */
   fused.sort((a, b) =>
-    b.rrf === a.rrf ? (a.decisionId < b.decisionId ? -1 : a.decisionId > b.decisionId ? 1 : 0) : b.rrf - a.rrf,
+    b.rrf === a.rrf
+      ? a.decisionId < b.decisionId
+        ? -1
+        : a.decisionId > b.decisionId
+          ? 1
+          : 0
+      : b.rrf - a.rrf,
   );
 
   return fused;
@@ -173,10 +178,13 @@ export function explainFusion(
   for (const list of lists) {
     const hit = list.hits.find((entry) => entry.decisionId === fused.decisionId);
     if (hit === undefined) continue;
-    terms.push(`${list.level} rank ${hit.rank} → 1/(${k}+${hit.rank}) = ${rrfContribution(hit.rank, k).toFixed(5)}`);
+    terms.push(
+      `${list.level} rank ${hit.rank} → 1/(${k}+${hit.rank}) = ${rrfContribution(hit.rank, k).toFixed(5)}`,
+    );
   }
 
-  if (terms.length === 0) return `${fused.decisionId}: no level contributed (score ${fused.rrf.toFixed(5)}).`;
+  if (terms.length === 0)
+    return `${fused.decisionId}: no level contributed (score ${fused.rrf.toFixed(5)}).`;
 
   return [
     `${fused.decisionId} — RRF ${fused.rrf.toFixed(5)} from ${terms.length} level(s):`,
