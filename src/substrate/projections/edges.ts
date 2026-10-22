@@ -85,14 +85,10 @@ function attachPremises(state: GraphState, edges: readonly Edge[]): readonly Edg
     const b = premisesOfDecision(state, edge.to);
     for (const premiseId of a) {
       if (b.includes(premiseId)) {
-        // The text is optional: a premise node may have been closed out and
-        // pruned from the map. Absent text means the key is omitted, not
-        // present-and-undefined.
-        const viaPremiseText = state.premises.get(premiseId)?.text;
         return {
           ...edge,
           viaPremiseId: premiseId,
-          ...(viaPremiseText === undefined ? {} : { viaPremiseText }),
+          viaPremiseText: state.premises.get(premiseId)?.text,
         };
       }
     }
