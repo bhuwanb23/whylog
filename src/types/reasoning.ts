@@ -126,7 +126,12 @@ export interface BacktrackResult {
  * in the log and a nogood reported to the user have to be the same thing, and
  * two interfaces for one concept drift.
  */
-export type NogoodRecord = Nogood;
+export interface NogoodRecord {
+  readonly id: NogoodId;
+  readonly premiseIds: readonly PremiseId[];
+  readonly explanation: string;
+  readonly derivedFrom: EventId;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Adjudication                                                               */
@@ -151,6 +156,12 @@ export type AdjudicationOutcome =
       readonly blockingDecisionId: DecisionId;
       readonly newcomerEntrenchment: number;
       readonly incumbentEntrenchment: number;
+      /** §2.8: the FULL breakdown of BOTH sides. Two totals cannot show that the
+       *  newcomer lost on corroboration and implementation cost rather than on
+       *  authority, and "override anyway" is only an informed choice if the
+       *  arithmetic is visible. */
+      readonly newcomerBreakdown: EntrenchmentBreakdown;
+      readonly incumbentBreakdown: EntrenchmentBreakdown;
     }
   /** Nothing to adjudicate. */
   | { readonly kind: "none" };

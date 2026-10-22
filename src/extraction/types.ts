@@ -21,6 +21,7 @@
  */
 
 import type {
+  AlternativeId,
   Confidence,
   DecisionId,
   EngineId,
@@ -325,7 +326,7 @@ export interface ResolutionOutcome {
   readonly action: ResolutionAction;
   readonly rung: ResolutionRung;
   /** The existing node this candidate merges into, when `action === "merge"`. */
-  readonly matchedId: DecisionId | PremiseId | null;
+  readonly matchedId: DecisionId | PremiseId | AlternativeId | null;
   readonly score: number;
   readonly explanation: string;
   readonly needsReview: boolean;

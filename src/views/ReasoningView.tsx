@@ -33,7 +33,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useMemo, useState, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement, type ReactNode } from "react";
 import type { DecisionId, PremiseId, ProposalId } from "@/types/common";
 import type { EntrenchmentBreakdown } from "@/types/reasoning";
 import type { DecisionLabel } from "@/types/domain";
@@ -781,7 +781,9 @@ function Part({
 }: {
   n: number;
   title: string;
-  children: ReactElement | ReactElement[];
+  /** `ReactNode`, not `ReactElement`: a section's body is often a conditional, and a
+   *  conditional that renders nothing is `null`, not a missing element. */
+  children: ReactNode;
 }): ReactElement {
   return (
     <div style={{ marginTop: 14 }}>

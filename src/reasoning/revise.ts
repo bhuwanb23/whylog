@@ -103,7 +103,7 @@ export interface ReviseInput {
   readonly state: GraphState;
   readonly engine: WhyLogEngine;
   readonly actor: Actor;
-  readonly now: string;
+  readonly now: ISODateString;
   /** Step 1. Absent means "re-examine what is already in the log", which is what a
    *  boot-time run does: gates (a) and (c) can fire on a log nobody has touched. */
   readonly newcomer?: Newcomer;

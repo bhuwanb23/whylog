@@ -69,6 +69,7 @@ import type {
   TranscriptId,
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
+import type { Actor } from "@/types/common";
 import type { EventType, NewEvent } from "@/types/events";
 import type { Justification } from "@/types/domain";
 import type { GraphState } from "@/substrate/graph-state";
@@ -106,7 +107,7 @@ export interface CommitInput {
    *  approval is not a considered one, and promoting ten decisions to IN in a
    *  single click is how a machine inference ends up driving a cascade. */
   readonly viaBulkApprove?: boolean;
-  readonly actor?: { readonly kind: "human" | "engine"; readonly id: string };
+  readonly actor?: Actor;
 }
 
 export interface CommitOk {

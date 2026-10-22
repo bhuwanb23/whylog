@@ -87,7 +87,12 @@ export function toExtractionResult(
   if (parsed.decisions.length === 0 && parsed.premises.length === 0) {
     return {
       ...EMPTY_LLM_EXTRACTION,
-      discarded: parsed.discarded,
+      discarded: parsed.discarded.map((discard) => ({
+        kind: discard.kind,
+        discardedBy: discard.discardedBy,
+        rawText: String(discard.rawText ?? "").slice(0, 400),
+        confidence: asConfidence(clamp(Number(discard.confidence ?? 0.3))),
+      })),
       engine,
       durationMs: Math.round(durationMs),
       usage: { promptTokens, completionTokens },

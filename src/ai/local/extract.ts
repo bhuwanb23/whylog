@@ -258,7 +258,16 @@ function synthesisedSource(excluded: { type: PremiseCandidate["type"]; candidate
     },
     kind: "explicit",
     polarity: "negative",
-    turn: { index: -1, speaker: "unknown", text: excluded.candidate.text, start: 0, end: 0, attribution: "none" },
+    turn: {
+      index: -1,
+      speaker: "unknown",
+      text: excluded.candidate.text,
+      start: 0,
+      end: 0,
+      rawStart: 0,
+      rawEnd: 0,
+      attribution: "none",
+    },
     episodeIndex: -1,
     predicateVia: "cue",
   };

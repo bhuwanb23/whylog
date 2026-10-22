@@ -72,7 +72,6 @@ import {
 import type { Newcomer } from "@/reasoning/adjudication";
 import { useWhyLog } from "./whylog";
 import type { EventType, NewEvent } from "@/types/events";
-import { get } from "zustand";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
 
@@ -412,7 +411,7 @@ export async function assertUserDecision(
  * user would reasonably conclude the action did nothing.
  */
 async function relabelAfterAction(): Promise<void> {
-  await get().run();
+  await useReasoning.getState().run();
 }
 
 

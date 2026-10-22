@@ -196,6 +196,8 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
     }
   }
 
+  const usage = sumUsage(runs);
+
   return {
     result: {
       ...first,

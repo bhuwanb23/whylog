@@ -145,7 +145,11 @@ function groupRanges(
     if (hits.length > 0) {
       const variable = variableForTurn(turns[i] as NormalizedTurn, hits);
 
-      if (open === null) {
+      // `open` is read through a local because a `let` that a closure could
+      // touch loses its narrowing after every function call — and `close` is one.
+      const current: OpenEpisode | null = open;
+
+      if (current === null) {
         open = { firstCue: i, lastCue: i, variable };
         quiet = 0;
         continue;
@@ -155,9 +159,9 @@ function groupRanges(
       // and opens a new one at this turn. Splitting here is what keeps a database
       // decision and an auth decision out of the same justification.
       if (
-        open.variable !== null &&
+        current.variable !== null &&
         variable !== null &&
-        variable.variable !== open.variable &&
+        variable.variable !== current.variable.variable &&
         variable.score >= TOPIC_SHIFT_SCORE
       ) {
         close(i, "topic-shift");
@@ -166,14 +170,20 @@ function groupRanges(
         continue;
       }
 
-      open = { ...open, lastCue: i, variable: open.variable ?? variable };
+      const grown: OpenEpisode = {
+        ...current,
+        lastCue: i,
+        variable: current.variable ?? variable,
+      };
+      open = grown;
       quiet = 0;
 
-      if (i - open.firstCue + 1 >= MAX_EPISODE_TURNS) close(i + 1, "length-cap");
+      if (i - grown.firstCue + 1 >= MAX_EPISODE_TURNS) close(i + 1, "length-cap");
       continue;
     }
 
-    if (open === null) continue;
+    const current: OpenEpisode | null = open;
+    if (current === null) continue;
 
     quiet += 1;
     if (quiet >= CUE_GAP_TURNS) {

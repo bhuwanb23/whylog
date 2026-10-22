@@ -46,7 +46,7 @@ import type { DecisionLabel } from "@/types/domain";
 import type { GraphState } from "@/substrate/graph-state";
 import type { Justification } from "@/types/domain";
 
-export type NodeId = DecisionId | PremiseId;
+export type NodeId = DecisionId | PremiseId | JustificationId;
 
 /** A label plus the reason for it. The reason is not decoration: the review UI
  *  shows WHY a node is OUT, naming the specific premise that failed, because

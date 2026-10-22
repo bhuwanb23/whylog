@@ -27,7 +27,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
+import type { AlternativeId, DecisionId, PremiseId } from "@/types/common";
 import type { DiscardedCandidate } from "@/ai/types";
 import { isAccepted } from "@/extraction/types";
 import type { ResolvedCandidate, ReviewAction } from "@/extraction/types";
@@ -45,7 +45,7 @@ export interface CommitPreview {
   readonly edited: number;
   readonly conflicts: readonly DecisionId[];
   /** Nodes the commit will merge onto, so the preview can name them. */
-  readonly mergeTargets: readonly { readonly id: DecisionId | PremiseId; readonly label: string }[];
+  readonly mergeTargets: readonly { readonly id: DecisionId | PremiseId | AlternativeId; readonly label: string }[];
   /** Events the commit will append. Shown as a count because the list is long and
    *  the number is what tells the user how big the act is. */
   readonly events: number;
@@ -75,7 +75,7 @@ export function previewCommit(
   discards: readonly DiscardedCandidate[] = [],
 ): CommitPreview {
   const actions: Record<ReviewAction["type"], number> = { ...NO_ACTIONS };
-  const mergeTargets: { id: DecisionId | PremiseId; label: string }[] = [];
+  const mergeTargets: { id: DecisionId | PremiseId | AlternativeId; label: string }[] = [];
   const conflicts = new Set<DecisionId>();
 
   let newDecisions = 0;
