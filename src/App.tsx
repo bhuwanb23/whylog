@@ -14,13 +14,21 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState, ReactElement } from "react";
-import { useWhyLog, persistenceAvailable } from "@/store/whylog";
+import { persistenceAvailable, useWhyLog } from "@/store/whylog";
+import { MODE_BADGE } from "@/theme";
 import { FoundationView } from "@/views/FoundationView";
 import { ReviewView } from "@/views/ReviewView";
-import { MODE_BADGE } from "@/theme";
+import { type ReactElement, useEffect, useState } from "react";
 
-type ViewId = "review" | "foundation" | "timeline" | "conflict" | "ask" | "guards" | "export" | "health";
+type ViewId =
+  | "review"
+  | "foundation"
+  | "timeline"
+  | "conflict"
+  | "ask"
+  | "guards"
+  | "export"
+  | "health";
 
 const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   // FIRST, and the default view: gate G1 is "a messy transcript becomes reviewed,
@@ -131,7 +139,11 @@ function ChainBadge({ status }: { status: string }): ReactElement {
   }
   if (status === "degraded") {
     return (
-      <span className="badge" style={{ color: "var(--action)" }} title="The hash chain failed verification on load. The log is read-only.">
+      <span
+        className="badge"
+        style={{ color: "var(--action)" }}
+        title="The hash chain failed verification on load. The log is read-only."
+      >
         chain broken
       </span>
     );
@@ -153,8 +165,8 @@ function NotYet({ view }: { view: { label: string; phase: string } | undefined }
       <h2 className="card-title">{view?.label ?? "View"}</h2>
       <p className="dim">
         This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it — the
-        append-only log, the fold, the bi-temporal projections and the hash chain — is built and
-        is what the Foundation view reports on.
+        append-only log, the fold, the bi-temporal projections and the hash chain — is built and is
+        what the Foundation view reports on.
       </p>
     </section>
   );
