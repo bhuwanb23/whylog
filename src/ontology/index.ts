@@ -11,6 +11,7 @@ export * from "./ontology";
 export * from "./canonicalize";
 
 export type { AntonymPair } from "./data/antonyms";
+export type { ExclusionRule } from "./data/exclusions";
 export type { CueDirection, DecisionCue } from "./data/decision-cues";
 export type { PremiseCue, PremiseCueKind } from "./data/premise-cues";
 export type { PremisePredicate, PremiseTypeMeta } from "./data/premise-types";

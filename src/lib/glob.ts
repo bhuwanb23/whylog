@@ -136,3 +136,49 @@ export function findMatchInText(
 export function clearGlobCache(): void {
   cache.clear();
 }
+
+/* -------------------------------------------------------------------------- */
+/* Finding globs in prose                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A path-shaped string that contains at least one wildcard.
+ *
+ * Deliberately requires a wildcard: `src/db/schema.ts` is a FILE, and `applies_to`
+ * is a scope. Recording a file as a scope would make a decision look narrower than
+ * it is, and a guard scoped to one file would pass forever while the decision it
+ * protects rotted.
+ */
+const GLOB_IN_TEXT =
+  /(?:^|[\s`"'(,])([\w.@/-]*(?:\*\*|\*|\?|\{[\w,.-]+\})[\w.@/*?{},-]*)/g;
+
+/**
+ * Every glob mentioned in a stretch of text, de-duplicated, in order of first
+ * appearance.
+ *
+ * Used by Phase 1.3 to fill `appliesTo`, which drives `applies_to` in export
+ * (plan/phase-5 §5.3) and guard scoping (plan/phase-4 §4.2).
+ */
+export function findGlobs(text: string, limit = 12): readonly string[] {
+  const found: string[] = [];
+  const seen = new Set<string>();
+
+  for (const match of text.matchAll(GLOB_IN_TEXT)) {
+    const raw = (match[1] ?? "").replace(/[,.;:)]+$/g, "");
+    if (raw.length === 0) continue;
+
+    const normalised = raw.replace(/^\/+/, "");
+    if (seen.has(normalised)) continue;
+    seen.add(normalised);
+    found.push(normalised);
+
+    if (found.length >= limit) break;
+  }
+
+  return found;
+}
+
+/** Is this string a glob rather than a plain path? */
+export function isGlob(candidate: string): boolean {
+  return /[*?]|\{[\w,.-]+\}/.test(candidate);
+}

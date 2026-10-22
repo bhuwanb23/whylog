@@ -142,7 +142,9 @@ export function heading(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): string {
 /** Join non-empty lines, dropping blanks — keeps exported files inside the
  *  ~200-line budget without accidental gaps. */
 export function joinLines(lines: readonly (string | null | undefined)[]): string {
-  return lines.filter((l): l is string => typeof l === "string" && l.trim().length > 0).join("\n");
+  return lines
+    .filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+    .join("\n");
 }
 
 /* -------------------------------------------------------------------------- */

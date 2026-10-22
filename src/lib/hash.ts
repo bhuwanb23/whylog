@@ -46,7 +46,10 @@ export function hash128(input: string): string {
   h4 ^= Math.imul(h3 ^ (h3 >>> 13), 3266489909);
 
   const combined =
-    4294967296 * (2097151 & h4) + (h3 >>> 0) * 1 + 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    4294967296 * (2097151 & h4) +
+    (h3 >>> 0) * 1 +
+    4294967296 * (2097151 & h2) +
+    (h1 >>> 0);
 
   return combined.toString(16).padStart(13, "0");
 }
@@ -81,7 +84,9 @@ export function canonicalJson(value: unknown): string {
 
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record).sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(record[k])}`).join(",")}}`;
+  return `{${keys
+    .map((k) => `${JSON.stringify(k)}:${canonicalJson(record[k])}`)
+    .join(",")}}`;
 }
 
 /** Short form for display: `a3f91c7e2b…` */
