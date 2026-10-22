@@ -76,8 +76,21 @@ export function ProvenanceBlock({
 
       <div className="mono faint" style={{ fontSize: 10, marginTop: 6 }}>
         {span.transcriptId}
-        {transcript !== undefined ? ` · episode ${decision.provenance.episodeId}` : ""} · chars{" "}
+        {/* The episode is a fact about the DECISION, so it is shown whether or not the
+         * transcript itself made it into the log. It used to be gated on the transcript
+         * being present, which meant the episode id appeared on the extraction path and
+         * not on the commit path - and "who said it" is the one thing a provenance block
+         * exists to say. */}
+        {" · episode "}
+        {decision.provenance.episodeId}
+        {" · chars "}
         {span.start}–{span.end}
+        {transcript === undefined ? (
+          <span title="The decision was extracted from this transcript, but the transcript itself is not in this log - so its text cannot be shown alongside the quote.">
+            {" "}
+            · the transcript is not in this log
+          </span>
+        ) : null}
         {transcriptText !== undefined ? (
           <span title="The offsets let this be verified as a literal substring of the source. A model will happily quote a sentence nobody said, and a fabricated quote inside a provenance block destroys the one feature meant to make everything else trustworthy.">
             {" "}
