@@ -57,16 +57,16 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { PremiseCandidate } from "@/ai/types";
+import { canonicalPredicate } from "@/ontology/canonicalize";
+import { type ExclusionRule, exclusionsFor, primaryExclusion } from "@/ontology/data/exclusions";
+import { lookupPredicate } from "@/ontology/data/premise-types";
+import { VARIABLE_META } from "@/ontology/data/variables";
 import type { PremiseId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionVariable, PremiseType } from "@/types/domain";
-import type { PremiseCandidate } from "@/ai/types";
-import type { RecoveredPremise } from "./premises";
 import type { RecoveredDecision } from "./decisions";
-import { primaryExclusion, exclusionsFor, type ExclusionRule } from "@/ontology/data/exclusions";
-import { lookupPredicate } from "@/ontology/data/premise-types";
-import { VARIABLE_META } from "@/ontology/data/variables";
-import { canonicalPredicate } from "@/ontology/canonicalize";
+import type { RecoveredPremise } from "./premises";
 
 export interface LinkedPremise {
   readonly premise: RecoveredPremise;
@@ -225,10 +225,12 @@ function relevantTo(decision: RecoveredDecision, premise: RecoveredPremise): boo
   // A world-observable premise in the same episode is relevant by default: it is
   // the kind of thing a guard could later falsify, and attaching it is what makes
   // gate (c) possible at all.
-  return premise.candidate.type === "scale"
-    || premise.candidate.type === "deployment"
-    || premise.candidate.type === "capability"
-    || premise.candidate.type === "external";
+  return (
+    premise.candidate.type === "scale" ||
+    premise.candidate.type === "deployment" ||
+    premise.candidate.type === "capability" ||
+    premise.candidate.type === "external"
+  );
 }
 
 function sharesContentWords(a: string, b: string): boolean {
@@ -303,14 +305,20 @@ function negateValue(value: string | number | boolean | undefined): boolean | un
 /* Reporting                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export function describeLinking(linking: PremiseLinking, decisionCount: number, premiseCount: number): string {
+export function describeLinking(
+  linking: PremiseLinking,
+  decisionCount: number,
+  premiseCount: number,
+): string {
   const withOut = linking.links.filter((link) => link.outRefs.length > 0).length;
   const parts = [
     `${linking.links.length} justification${linking.links.length === 1 ? "" : "s"} over ${decisionCount} decision${decisionCount === 1 ? "" : "s"}`,
     `${linking.excluded.length} excluded condition${linking.excluded.length === 1 ? "" : "s"}`,
   ];
   if (withOut > 0) {
-    parts.push(`${withOut} decision${withOut === 1 ? "" : "s"} non-monotonic — gate (c) can fire on ${withOut === 1 ? "it" : "them"}`);
+    parts.push(
+      `${withOut} decision${withOut === 1 ? "" : "s"} non-monotonic — gate (c) can fire on ${withOut === 1 ? "it" : "them"}`,
+    );
   } else {
     parts.push("no OUT-lists — gate (c) cannot fire on anything from this transcript");
   }

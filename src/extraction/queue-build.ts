@@ -18,19 +18,18 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionOrigin, Modality } from "@/types/domain";
 import type { ExtractionResult } from "@/ai/types";
-import type { EpisodeWindow } from "./types";
-import type { ResolvedCandidate } from "./types";
-import { tierOf } from "./types";
+import type { Modality } from "@/types/domain";
 import {
+  type TieredDecision,
   histogram,
   tierAlternative,
   tierDecision,
   tierPremise,
-  type TieredDecision,
 } from "./confidence";
-import { classifyOrigin, type OriginClassification } from "./provenance";
+import { type OriginClassification, classifyOrigin } from "./provenance";
+import type { EpisodeWindow } from "./types";
+import type { ResolvedCandidate } from "./types";
 
 /* -------------------------------------------------------------------------- */
 /* Tiering                                                                    */
@@ -41,7 +40,10 @@ export interface Tiered {
   readonly histogram: ReturnType<typeof histogram>;
 }
 
-export function buildQueue(result: ExtractionResult, origins: readonly OriginClassification[]): Tiered {
+export function buildQueue(
+  result: ExtractionResult,
+  origins: readonly OriginClassification[],
+): Tiered {
   const queue: ResolvedCandidate[] = [];
 
   const decisions = result.decisions.map((candidate, i) =>
@@ -51,7 +53,11 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
     tierPremise(candidate, candidate.confidence, decisionTierForPremise(decisions, i)),
   );
   const alternatives = result.alternatives.map((candidate) =>
-    tierAlternative(candidate, candidate.confidence, decisions[candidate.decisionRef]?.tier ?? null),
+    tierAlternative(
+      candidate,
+      candidate.confidence,
+      decisions[candidate.decisionRef]?.tier ?? null,
+    ),
   );
 
   decisions.forEach((tiered, i) => {
@@ -71,6 +77,7 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
       episodeId: null,
       inRefs: candidate.premiseRefs,
       outRefs: [],
+      action: null,
     });
   });
 
@@ -91,6 +98,7 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 
@@ -111,6 +119,7 @@ export function buildQueue(result: ExtractionResult, origins: readonly OriginCla
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 

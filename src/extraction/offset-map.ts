@@ -212,7 +212,10 @@ export function spanFrom(
   const text = raw.slice(start, end);
   if (text.length === 0) return null;
 
-  if (expectedText !== undefined && normaliseWhitespace(text) !== normaliseWhitespace(expectedText)) {
+  if (
+    expectedText !== undefined &&
+    normaliseWhitespace(text) !== normaliseWhitespace(expectedText)
+  ) {
     return null;
   }
 
@@ -242,7 +245,12 @@ export function locateSnippet(
     const window = raw.slice(hint.start, hint.end);
     const at = window.indexOf(needle);
     if (at >= 0) {
-      return { transcriptId, start: hint.start + at, end: hint.start + at + needle.length, text: needle };
+      return {
+        transcriptId,
+        start: hint.start + at,
+        end: hint.start + at + needle.length,
+        text: needle,
+      };
     }
   }
 
