@@ -38,8 +38,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { CueHit } from "@/extraction/cue-scan";
 import type { Modality } from "@/types/domain";
+import type { CueHit } from "@/extraction/cue-scan";
 
 export interface ModalityEvidence {
   readonly modality: Modality;
@@ -265,10 +265,8 @@ function firstCommittedMarker(scope: string): string | null {
 export const MODALITY_EXPLANATIONS: Readonly<Record<Modality, string>> = {
   asserted: "Committed. Creates an IN-labelled node on approval.",
   proposed: "A proposal, not a commitment. Starts UNKNOWN and needs a human approval to become IN.",
-  hypothetical:
-    "Exploration or a question. Starts UNKNOWN; it must never contradict a real decision.",
-  reported:
-    "Somebody else's decision, quoted. Recorded as context, not as this project's commitment.",
+  hypothetical: "Exploration or a question. Starts UNKNOWN; it must never contradict a real decision.",
+  reported: "Somebody else's decision, quoted. Recorded as context, not as this project's commitment.",
 };
 
 export function describeModality(evidence: ModalityEvidence): string {
