@@ -36,6 +36,7 @@ assumptions still hold.
 | **Phase 0 — substrate** | ✅ Log · fold · bi-temporal · identity · hash chain · persistence · portability · ontology · engine seam · store · boot |
 | **Phase 1 — extraction** | ✅ Normalise · segment · cue scan · decisions · **premises and the OUT-list** · alternatives · provenance · snippet validation · identity resolution · confidence tiers · review queue · commit · both engines |
 | **Phase 2 — truth maintenance ★** | ✅ **133 source files, ~39.8k lines.** Assertion entry point (four input kinds, one function) · JTMS labeller with fixpoint and `UNFOUNDED` · **gate (a) structural** · **gate (b) semantic** · **gate (c) premise invalidation ★** · dependency-directed backtracking · nogoods · cascade with the independent-support stop · entrenchment with the EE3 cap · Hansson non-prioritized screening · seven-part proposals · audit trail on learned time · the nine-step REVISE cycle · the Reasoning view |
+| **Phase 3 — retrieval & the evidence contract ★** | ✅ **155 source files, ~45.8k lines.** Five index levels (L1 statements · **L2 HyPE inverted questions, built at extraction time with zero extra LLM calls** · L3 BM25 over the ontology alias table · L4 structural · L5 premises) · **RRF fusion at k = 60, deterministic and score-agnostic** · two-stage reranking with **all three engines present** (LLM listwise · local five-weight · the downloaded cross-encoder documented as unavailable rather than faked) · **the five-verdict contradiction classifier with invariant I3 enforced — similarity selects candidates and is then discarded** · **the evidence contract: ≤3 bounded searches, citations valid only if they resolve in-run, "insufficient evidence" as a first-class answer** · groundedness computed as \|claims with ≥1 resolving citation\| / \|total claims\| · **citation expansion showing premises with live labels, excluded conditions, rejected alternatives, guards and provenance** · **rejected-alternative pre-emption** · gate (b) wired to a real retriever · the Ask view, keyless |
 | Phases 3–7 | ⬜ Not started |
 | Tests | ⬜ Deliberately deferred — see [`notes/PHASE-0-NOTES.md`](notes/PHASE-0-NOTES.md) and [`notes/PHASE-1-NOTES.md`](notes/PHASE-1-NOTES.md) |
 
@@ -63,7 +64,7 @@ Nothing has been installed, built, typechecked or run in the authoring environme
 `npm install && npm run verify` locally and expect a first pass of type errors —
 [`notes/PHASE-1-NOTES.md` §6](notes/PHASE-1-NOTES.md) lists the seven known gaps.
 
-`npm run check:structure` passes: **109 source files, 31,424 lines**, imports resolve, every named
+`npm run check:structure` passes: **155 source files, 45,818 lines**, imports resolve, every named
 import and re-export exists, zero import cycles across 503 internal edges, brackets balance, and the
 event vocabulary agrees with the fold.
 

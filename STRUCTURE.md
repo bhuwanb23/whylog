@@ -195,7 +195,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 8. `src/retrieval/` — Phase 3 · L3
+## 8. `src/retrieval/` — Phase 3 · L3 ✅ built
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -217,6 +217,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `groundedness.ts` | Claim decomposition and citation-resolution scoring | 3.8 |
 | `citations.ts` | Citation expansion: premises with labels, alternatives, guards, provenance | 3.9 |
 | `answer.ts` | Answer synthesis from retrieved, cited decisions | 3.9 |
+| `candidates.ts` | **Candidate pairs for gate (b)** — dense neighbours + shared premises + same variable, read from existing L1 vectors (zero embedding calls) | 3.6 |
 
 ---
 
@@ -548,3 +549,28 @@ Follow [`plan/OVERVIEW.md §5`](plan/OVERVIEW.md). Concretely:
 5. `src/ai/local/` — the default engine.
 6. `src/extraction/` — then `src/reasoning/` gates (a) and (c).
 7. Stop and run **gate G2** before building anything else.
+
+### 18.3 Phase 3 deviations
+
+Recorded here rather than silently reconciled, because a plan and an implementation that
+disagree without a note is how the next person reintroduces the bug.
+
+| # | Plan says | Built | Why |
+|---|---|---|---|
+| 🔴 1 | §3.6 lists five classifier rules "in order": reversal, negation, refinement, **antonym pair**, neutral | Antonym pair moved to **first** | As written, rule 4 is **unreachable**: an antonym pair IS a differing value on a shared variable, so rule 1 always fires first. §3.6's own acceptance criterion requires all five verdicts to be individually testable, and an unreachable rule is not testable. The reordered semantics are also the correct ones — two declared-mutually-exclusive choices both live is a genuine conflict, while a non-antonym value change is a deliberate reversal that should not land in the conflict queue. |
+| 🟠 2 | §2.11 (Phase 2) and §3.6 (Phase 3) each specify the classifier rules | **One rule engine**, in `retrieval/contradiction.ts`; `ai/local/classify.ts` collapsed from 253 → 90 lines and now delegates | Two implementations of one judgement is exactly the failure the Phase 2 audit found in the adjudicator (gap 3): a detector and an adjudicator whose rules disagreed, so a newcomer could be ACCEPTED while gate (a) reported a contradiction. The import points up a layer (`ai` → `retrieval`) deliberately; the dependency is on pure functions with no state or I/O, and there is no cycle. |
+| 🟠 3 | §3.6 places the hypothetical guard in the classifier | Guard lives in `contradiction.isClassifiable`, applied by the **pipeline** | `DecisionSnapshot` carries no lifecycle status — that is the only field saying whether a decision is settled. An engine told "don't classify this" must invent a verdict to return; never being asked does not. |
+| 🟡 4 | §8 lists 18 files in `src/retrieval/` | **19** — `candidates.ts` added | Gate (b) needed a candidate generator and `gates/semantic.ts` takes one as an injected function. It belongs in the retrieval layer (retrieval proposes, the gate disposes) and reads the L1 vectors already in the index, so gate (b) runs keyless with zero embedding calls. |
+| 🟡 5 | Phase 0 left `templateCompose` inline in `ai/local/index.ts` with a note that Phase 3 would replace it | Extracted to **`ai/local/compose.ts`**, all five `CompositionKind`s | The Phase 0 comment named the file. Templates emit every sentence with its decision id inline, which is what lets `answer.ts` attribute claims to citations by the **same rule** it applies to an LLM's prose — so groundedness is measured identically on both paths instead of the local path being granted 1.0 for having a composer that cannot lie. |
+| 🟡 6 | §3.7 specifies ≤3 bounded searches but not what they search for | Three searches with **distinct purposes**: the question as asked → expansion by shared premise → re-query in the premises' vocabulary | A budget of three identical searches is just a retry loop. Search 2 exists because decisions sharing a `given` often answer a question whose wording does not match; search 3 because the question's vocabulary may not be the log's. |
+| 🟡 7 | §3.10 requires pre-emption on alternatives with a `whyRejected` AND human confirmation | Both conditions enforced (`preemption.ts`), plus `countPreemptions` reporting the gap | The second condition was nearly missed. At Phase 1's measured 15.4% alternative precision, an unconfirmed inferred rejection is more likely wrong than right, and a false pre-emption costs more trust than every correct one earns back. |
+| 🟡 8 | §3.5's weights are fixed constants | `RERANK_WEIGHTS` is `Object.freeze`d but the reranker also accepts `forceLocal` | Phase 7's ablation has to measure what the reranker actually contributes, and an ablation that requires editing source is an ablation that does not get run. |
+
+**Fixed during the build (not plan deviations, but bugs found and corrected):**
+
+- `rerank/index.ts` `orderWithPromotion` had a dead condition — `.filter((id) => !promoted.includes(id) || true)` is always true, so the "promoted candidate the reranker never returned" group was never actually appended. Rewritten as three explicit groups with a `seen` set.
+- `store/reasoning.ts` used `CandidatePair` as a return type without importing it. **The structural checker cannot see this** — it verifies that imports resolve and named exports exist, not that every identifier used is declared. A heuristic scan over all 24 Phase 3 files (comments and strings stripped) found it and nothing else.
+- `store/ask.ts` initially called `recordBatch(drafts, actor, now)` with three positional arguments; the real signature is `recordBatch(drafts, { reason, actor, occurredAt })`, and `IndexRebuilt` is one of the 19 state-changing events that requires a non-empty `reason`.
+- `understandQuery` initially iterated `VARIABLES` expecting `VariableMeta[]`; it is `readonly DecisionVariable[]`. Switched to `variableKeywords()` + `variableMeta()` + `VARIABLE_ORDER` from `ontology/data/variables`.
+- `expandBySharedPremise` takes and returns `DecisionId[]`, not premise matches.
+
