@@ -37,9 +37,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import { formatProposalId } from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Confidence, DecisionId, EventId, PremiseId, SourceSpan } from "@/types/common";
+import type {
+  Confidence,
+  DecisionId,
+  EventId,
+  PremiseId,
+  SourceSpan,
+} from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { Decision, Premise } from "@/types/domain";
 import type {
@@ -51,6 +55,8 @@ import type {
   RevisionProposal,
 } from "@/types/reasoning";
 import { entrenchmentBand } from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import { formatProposalId } from "@/lib/ids";
 import type { GateFinding } from "./gates";
 
 /* -------------------------------------------------------------------------- */
@@ -114,7 +120,7 @@ export interface ProposalEvidence {
 export function buildProposal(input: ProposalInput): RevisionProposal {
   const { state, finding } = input;
 
-  const _decision: Decision | undefined = state.decisions.get(finding.decisionId);
+  const decision: Decision | undefined = state.decisions.get(finding.decisionId);
   const failedPremise: Premise | undefined =
     finding.premiseId === null ? undefined : state.premises.get(finding.premiseId);
 
@@ -123,7 +129,7 @@ export function buildProposal(input: ProposalInput): RevisionProposal {
     failedPremise?.text ??
     (failedPremiseId === null
       ? "No single premise failed — the conflict is between two decisions."
-      : (state.premises.get(failedPremiseId)?.text ?? failedPremiseId));
+      : state.premises.get(failedPremiseId)?.text ?? failedPremiseId);
 
   return {
     id: formatProposalId(input.proposalNumber),
@@ -221,23 +227,6 @@ function firstInListPremise(state: GraphState, decisionId: DecisionId): PremiseI
 export function evidenceForFinding(state: GraphState, finding: GateFinding): ProposalEvidence {
   if (finding.premiseId !== null) {
     const premise = state.premises.get(finding.premiseId);
-
-    /* A finding is "this premise was REFUTED", so the evidence for it is the
-     * REFUTING observation. A guard failure records the line of the manifest
-     * that falsified the premise, and that line is the evidence - the
-     * transcript span that originally supported the premise is the thing that
-     * turned out to be wrong, not the proof that it was. */
-    const refuting = premise?.evidence.find(
-      (entry) => !entry.supports && entry.quote !== undefined,
-    );
-    if (refuting?.quote !== undefined) {
-      return {
-        quote: refuting.quote,
-        source: refuting.kind,
-        confidence: asConfidence(premise?.confidence ?? 0.5),
-      };
-    }
-
     const best = premise?.evidence.find((entry) => entry.supports && entry.span !== undefined);
 
     if (best?.span !== undefined) {
@@ -257,36 +246,11 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   }
 
   const a = state.decisions.get(finding.decisionId);
-  const b =
-    finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
-
-  /* A guard failure is evidence ABOUT THE DECISION IT PROTECTS, and the guard
-   * record carries the verbatim line that failed. `GuardRunResult.evidence`
-   * exists to be quoted - "evidence without a quote is not evidence" - and for
-   * a drift finding there is no premise to quote, so the decision's own
-   * transcript snippet would be quoted instead: the thing that turned out to
-   * be wrong, rather than the proof that it was.
-   *
-   * An ABSENCE check that fails is the contradiction: the decision excluded
-   * this, and the project contains it. A PRESENCE check that fails is drift:
-   * the decision was not implemented yet. The contradiction is the evidence
-   * worth quoting, so it is preferred. */
-  const failingGuards = [...state.guards.values()].filter(
-    (guard) => guard.decisionId === finding.decisionId && guard.lastRun?.outcome === "fail",
-  );
-  const contradicting =
-    failingGuards.find((guard) => guard.spec.kind.endsWith("_absent")) ?? failingGuards[0];
-  if (contradicting?.lastRun?.evidence !== undefined) {
-    return {
-      quote: contradicting.lastRun.evidence,
-      source: "guard",
-      confidence: asConfidence(finding.deterministic ? 0.9 : 0.6),
-    };
-  }
+  const b = finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
 
   const quote =
     b === undefined
-      ? (a?.provenance.snippet.text ?? finding.explanation)
+      ? a?.provenance.snippet.text ?? finding.explanation
       : [a?.provenance.snippet.text ?? "", b.provenance.snippet.text ?? ""]
           .filter((part) => part.length > 0)
           .join("\n—\n");
@@ -312,10 +276,9 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
  */
 export function renderProposal(state: GraphState, proposal: RevisionProposal): string {
   const decision = state.decisions.get(proposal.unsoundDecisionId);
-  const heading =
-    decision === undefined
-      ? proposal.unsoundDecisionId
-      : `${proposal.unsoundDecisionId} — ${decision.statement}`;
+  const heading = decision === undefined
+    ? proposal.unsoundDecisionId
+    : `${proposal.unsoundDecisionId} — ${decision.statement}`;
 
   const lines: string[] = [`## ${heading}`, ""];
 
@@ -374,7 +337,9 @@ function describeCascadeOf(cascade: CascadeResult): string {
     parts.push(`Kept independent support: ${cascade.survivors.join(", ")}.`);
   }
   if (cascade.truncated) {
-    parts.push(`Stopped at the depth cap with ${cascade.potentiallyAffectedBeyondCap} unexamined.`);
+    parts.push(
+      `Stopped at the depth cap with ${cascade.potentiallyAffectedBeyondCap} unexamined.`,
+    );
   }
   return parts.join(" ");
 }

@@ -49,15 +49,15 @@
  * ---------------------------------------------------------------------------
  */
 
-import { formatNogoodId } from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, NogoodId, PremiseId } from "@/types/common";
+import type { GraphState } from "@/substrate/graph-state";
+import { formatNogoodId } from "@/lib/ids";
 import type { Nogood } from "@/types/domain";
 import type { NogoodRecord } from "@/types/reasoning";
 import type { ContradictionGate } from "@/types/retrieval";
 import { assumptionSetOf } from "./backtracking";
-import type { GateFinding } from "./gates";
 import type { Labelled, NodeId } from "./labeller";
+import type { GateFinding } from "./gates";
 
 /* -------------------------------------------------------------------------- */
 /* Construction                                                               */
@@ -124,15 +124,20 @@ function nogoodForPremiseFinding(
   if (finding.premiseId === null) return null;
 
   const assumptionSet = assumptionSetOf(state, labels, finding.decisionId);
-  const premiseIds = sortPremises([
-    ...new Set<PremiseId>([finding.premiseId, ...assumptionSet.inList, ...assumptionSet.outList]),
-  ]);
+  const premiseIds = sortPremises(
+    [...new Set<PremiseId>([finding.premiseId, ...assumptionSet.inList, ...assumptionSet.outList])],
+  );
 
   if (premiseIds.length === 0) return null;
 
   return {
     premiseIds,
-    explanation: explainConjunction(state, premiseIds, [finding.decisionId], finding.explanation),
+    explanation: explainConjunction(
+      state,
+      premiseIds,
+      [finding.decisionId],
+      finding.explanation,
+    ),
     gate: finding.gate,
     decisionIds: [finding.decisionId],
     engineDerived: false,
@@ -168,7 +173,11 @@ export function explainConjunction(
       ? ""
       : `\n${decisionIds.join(", ")} ${decisionIds.length === 1 ? "was" : "were"} accepted assuming this conjunction.`;
 
-  return [`These assumptions cannot all hold:\n${quoted}`, findingExplanation, decisions]
+  return [
+    `These assumptions cannot all hold:\n${quoted}`,
+    findingExplanation,
+    decisions,
+  ]
     .filter((part) => part.length > 0)
     .join("\n");
 }
