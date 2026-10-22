@@ -66,13 +66,13 @@ import type { CascadeResult, NogoodRecord, RevisionProposal } from "@/types/reas
 import { entrenchmentBand } from "@/types/reasoning";
 import { closeWindow, openWindow, reopenWindow } from "./bi-temporal";
 import {
+  INDEX_UNBUILT,
+  ZERO_COUNTERS,
   type ContradictionRecord,
   type ExportRecordState,
   type GraphState,
-  INDEX_UNBUILT,
-  ZERO_COUNTERS,
 } from "./graph-state";
-import { GENESIS_HASH, linkHash } from "./hash-chain";
+import { GENESIS_HASH } from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
 
 /* -------------------------------------------------------------------------- */
@@ -105,14 +105,10 @@ export interface Draft {
   contradictions: ContradictionRecord[];
   exports: Map<ExportId, ExportRecordState>;
 
-  // The two reverse indexes are rebuilt wholesale by finalise() on every fold,
-  // so their buckets are never mutated in place — they are ReadonlyMaps with
-  // readonly value arrays, matching GraphState. (See dev note 2.4: derived
-  // fields are rebuilt, never maintained incrementally.)
-  byVariable: ReadonlyMap<DecisionVariable, readonly DecisionId[]>;
+  byVariable: Map<DecisionVariable, DecisionId[]>;
   byFingerprint: Map<string, DecisionId>;
   premiseByFingerprint: Map<string, PremiseId>;
-  premiseToDecisions: ReadonlyMap<PremiseId, readonly DecisionId[]>;
+  premiseToDecisions: Map<PremiseId, DecisionId[]>;
   guardIndex: Map<GuardId, DecisionId>;
 
   pendingReview: DecisionId[];
@@ -344,12 +340,22 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       // provenance always resolves. A citation that cannot resolve is not a
       // citation (docs/03 §5).
       if (!draft.episodes.has(p.episodeId)) {
+        // Prefer the real bounds from Phase 1.2 segmentation. Falling back to the
+        // decision's own snippet keeps hand-recorded decisions working, but a
+        // synthesised episode cannot show the negotiation that produced the
+        // decision, which is what the review UI needs for context.
+        const bounds = p.episode;
         const episode: Episode = {
           id: p.episodeId,
           transcriptId: p.transcriptId,
-          variable: p.variable,
-          turnRange: [0, 0],
-          charRange: [p.snippet.start, p.snippet.end],
+          ...(bounds?.variable === undefined
+            ? { variable: p.variable }
+            : { variable: bounds.variable }),
+          turnRange: bounds === undefined ? ([0, 0] as const) : bounds.turnRange,
+          charRange:
+            bounds === undefined
+              ? ([p.snippet.start, p.snippet.end] as const)
+              : bounds.charRange,
         };
         draft.episodes.set(p.episodeId, episode);
         draft.counters = { ...draft.counters, episodes: draft.counters.episodes + 1 };
@@ -374,6 +380,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         value: p.value,
         statement: p.statement,
         ...(p.rationale === undefined ? {} : { rationale: p.rationale }),
+        ...(p.yStatement === undefined ? {} : { yStatement: p.yStatement }),
         ...(p.acceptedDownside === undefined ? {} : { acceptedDownside: p.acceptedDownside }),
         label,
         status: "proposed",
@@ -402,7 +409,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         // 0 here is honest: the fold does not compute policy.
         entrenchment: 0,
         corroboration: 0,
-        appliesTo: [],
+        appliesTo: p.appliesTo === undefined ? [] : [...p.appliesTo],
         verifiability: "pending",
       };
 
@@ -562,7 +569,19 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
 
     case "JustificationAttached": {
       const p = event.payload;
-      draft.justifications.set(p.justificationId, p.justification);
+      // The informant's eventId is REWRITTEN to the event that created the
+      // justification. A batch producer cannot know its own event ids — they are
+      // minted inside `appendBatch` — so it supplies a placeholder, and the fold is
+      // the only place that knows the truth. Deriving it here rather than trusting
+      // the payload is what makes the provenance correct instead of merely present.
+      const justification: Justification = {
+        ...p.justification,
+        informant:
+          p.justification.informant.kind === "extraction"
+            ? { ...p.justification.informant, eventId: event.id }
+            : p.justification.informant,
+      };
+      draft.justifications.set(p.justificationId, justification);
       draft.counters = {
         ...draft.counters,
         justifications: draft.counters.justifications + 1,
@@ -574,7 +593,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       );
       // A premise becomes load-bearing when it acquires a consequent, so it
       // leaves the pending queue here rather than at approval.
-      for (const id of [...p.justification.inList, ...p.justification.outList]) {
+      for (const id of [...justification.inList, ...justification.outList]) {
         removePendingPremise(draft, id);
       }
       return draft;
@@ -882,8 +901,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       const accepted = patchGuard(draft, p.guardId, (g) => ({ ...g, lifecycle: "accepted" }));
       if (!accepted) skip(draft, event, `unknown guard ${p.guardId}`);
       const guard = draft.guards.get(p.guardId);
-      if (guard)
-        patchDecision(draft, guard.decisionId, (d) => ({ ...d, verifiability: "verified" }));
+      if (guard) patchDecision(draft, guard.decisionId, (d) => ({ ...d, verifiability: "verified" }));
       return draft;
     }
 
@@ -895,14 +913,8 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       }));
       if (!ran) skip(draft, event, `unknown guard ${p.guardId}`);
       // A passing re-run clears Drift Age: the decision is being honoured again.
-      // The key is REMOVED, not set to undefined — `exactOptionalPropertyTypes`
-      // distinguishes "absent" from "present and undefined", and a guard that
-      // has never failed has no first-failure timestamp at all.
       if (p.result === "pass") {
-        patchGuard(draft, p.guardId, (g) => {
-          const { firstFailedAt: _cleared, ...rest } = g;
-          return rest;
-        });
+        patchGuard(draft, p.guardId, (g) => ({ ...g, firstFailedAt: undefined }));
       }
       return draft;
     }
@@ -1009,12 +1021,10 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       // engine DISABLES semantic retrieval until an explicit re-index, rather
       // than quietly mixing two vector spaces and returning confident nonsense.
       const wasBuilt = draft.index.builtBy !== undefined;
-      const staleSince =
-        wasBuilt && draft.index.staleSince === undefined ? event.at : draft.index.staleSince;
       draft.index = {
         ...draft.index,
         stale: wasBuilt || draft.index.stale,
-        ...(staleSince === undefined ? {} : { staleSince }),
+        staleSince: wasBuilt && draft.index.staleSince === undefined ? event.at : draft.index.staleSince,
         lastEventId: event.id,
       };
       return draft;
@@ -1066,6 +1076,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
   }
 }
 
+
 /* -------------------------------------------------------------------------- */
 /* Editing                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -1087,27 +1098,15 @@ function applyEdit(decision: Decision, fields: EditableFields): Decision {
 
   const rationale = fields["rationale"];
   if (typeof rationale === "string") next = { ...next, rationale };
-  else if (rationale === null) {
-    // The key is removed, not set to undefined. "No rationale" is the absence of
-    // the field; leaving `rationale: undefined` behind would make the node
-    // carry a field whose value is explicitly nothing.
-    const { rationale: _cleared, ...rest } = next;
-    next = rest;
-  }
+  else if (rationale === null) next = { ...next, rationale: undefined };
 
   const downside = fields["acceptedDownside"];
   if (typeof downside === "string") next = { ...next, acceptedDownside: downside };
-  else if (downside === null) {
-    const { acceptedDownside: _cleared, ...rest } = next;
-    next = rest;
-  }
+  else if (downside === null) next = { ...next, acceptedDownside: undefined };
 
   const yStatement = fields["yStatement"];
   if (typeof yStatement === "string") next = { ...next, yStatement };
-  else if (yStatement === null) {
-    const { yStatement: _cleared, ...rest } = next;
-    next = rest;
-  }
+  else if (yStatement === null) next = { ...next, yStatement: undefined };
 
   const value = fields["value"];
   if (typeof value === "string") next = { ...next, value };
@@ -1145,8 +1144,7 @@ function applyPremiseEdit(premise: Premise, fields: EditableFields): Premise {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     next = { ...next, value };
   } else if (value === null) {
-    const { value: _cleared, ...rest } = next;
-    next = rest;
+    next = { ...next, value: undefined };
   }
 
   return next;
@@ -1316,15 +1314,13 @@ function rebuildCorroboration(draft: Draft): void {
     const refs = premiseRefs.get(id) ?? 0;
     // log2 scaling: the fourth independent justification is worth much less than
     // the second. Matches docs/02 §3.4's corroboration term.
-    const corroboration =
-      refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
+    const corroboration = refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
     draft.premises.set(id, { ...premise, corroboration });
   }
 
   for (const [id, decision] of draft.decisions) {
     const refs = decision.justificationIds.length;
-    const corroboration =
-      refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
+    const corroboration = refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
     draft.decisions.set(id, { ...decision, corroboration });
   }
 }
@@ -1398,23 +1394,14 @@ function rebuildMetrics(draft: Draft): void {
     ["decisionsUnknown", decisions.filter((d) => d.label === "UNKNOWN").length],
     ["decisionsUnfounded", decisions.filter((d) => d.label === "UNFOUNDED").length],
     ["premises", draft.premises.size],
-    [
-      "premisesOpen",
-      [...draft.premises.values()].filter((p) => p.temporal.invalidFrom === undefined).length,
-    ],
+    ["premisesOpen", [...draft.premises.values()].filter((p) => p.temporal.invalidFrom === undefined).length],
     ["justifications", draft.justifications.size],
-    [
-      "nonMonotonicJustifications",
-      [...draft.justifications.values()].filter((j) => j.outList.length > 0).length,
-    ],
+    ["nonMonotonicJustifications", [...draft.justifications.values()].filter((j) => j.outList.length > 0).length],
     ["nogoods", draft.nogoods.size],
     ["transcripts", draft.transcripts.size],
     ["episodes", draft.episodes.size],
     ["alternatives", draft.alternatives.size],
-    [
-      "alternativesConfirmed",
-      [...draft.alternatives.values()].filter((a) => a.confirmedByHuman).length,
-    ],
+    ["alternativesConfirmed", [...draft.alternatives.values()].filter((a) => a.confirmedByHuman).length],
     ["guards", guards.length],
     ["guardsAccepted", accepted.length],
     ["guardsPassing", passing.length],
@@ -1428,10 +1415,7 @@ function rebuildMetrics(draft: Draft): void {
     // are not covering the corpus and Phase 1's numbers cannot be trusted.
     ["otherVariableRate", decisions.length === 0 ? 0 : otherCount / decisions.length],
     ["compliance", accepted.length === 0 ? 1 : passing.length / accepted.length],
-    [
-      "verifiableCoverage",
-      live.length === 0 ? 0 : live.filter((d) => d.guardIds.length > 0).length / live.length,
-    ],
+    ["verifiableCoverage", live.length === 0 ? 0 : live.filter((d) => d.guardIds.length > 0).length / live.length],
     ["skippedEvents", draft.skipped.length],
   ];
 
