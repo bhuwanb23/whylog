@@ -26,16 +26,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import { PREMISE_TYPE_META } from "@/ontology/data/premise-types";
-import { VARIABLE_META } from "@/ontology/data/variables";
-import { describeOntology } from "@/ontology/ontology";
-import { allCuePhrases } from "@/ontology/ontology";
 import {
   DECISION_VARIABLES,
-  type DecisionVariable,
   PREMISE_TYPES,
+  type DecisionVariable,
   type PremiseType,
 } from "@/types/domain";
+import { describeOntology } from "@/ontology/ontology";
+import { VARIABLE_META } from "@/ontology/data/variables";
+import { PREMISE_TYPE_META } from "@/ontology/data/premise-types";
+import { allCuePhrases } from "@/ontology/ontology";
 
 /** The schema the model must return. Kept as a TypeScript type AND as a string in
  *  the prompt, because a model cannot read a type. */
@@ -127,7 +127,7 @@ function buildSystemPrompt(): string {
     "2. A DECISION IS SOMETHING SOMEONE COMMITTED TO. Not an option mentioned, not a question asked, not something the agent offered and the human ignored. `modality` says which:",
     "   asserted    — somebody states it as settled",
     "   proposed    — offered, not yet accepted",
-    '   hypothetical — "if we ever needed X we could…"',
+    "   hypothetical — \"if we ever needed X we could…\"",
     "   reported    — describing somebody else's decision",
     "   Only `asserted` can become a live decision. Put hypothetical and reported items in `discarded`, not in `decisions`.",
     "",
@@ -135,11 +135,11 @@ function buildSystemPrompt(): string {
     "",
     "THE PREMISES ARE THE POINT.",
     "",
-    'A decision is a belief held under assumptions. "Use SQLite, not Postgres" is true GIVEN single-user, no deploy infrastructure, no concurrent writers. The `given` is what changes, so recovering it matters more than recovering the decision.',
+    "A decision is a belief held under assumptions. \"Use SQLite, not Postgres\" is true GIVEN single-user, no deploy infrastructure, no concurrent writers. The `given` is what changes, so recovering it matters more than recovering the decision.",
     "",
     "For every decision, look for the conditions it rests on and emit them as premises. Premises often appear BEFORE the decision they support, and often in a different speaker's turn — a human stating a constraint, then an agent choosing accordingly. Read the whole exchange.",
     "",
-    'Mark `excluded: true` on a premise that states a condition the decision ASSUMES WILL NOT HAPPEN ("no concurrent writers", "never multi-tenant"). Those are the conditions whose arrival invalidates the decision without anybody contradicting it, and they are the most valuable thing you can return.',
+    "Mark `excluded: true` on a premise that states a condition the decision ASSUMES WILL NOT HAPPEN (\"no concurrent writers\", \"never multi-tenant\"). Those are the conditions whose arrival invalidates the decision without anybody contradicting it, and they are the most valuable thing you can return.",
     "",
     `Standard predicates per type: ${predicateList()}.`,
     "A predicate must be namespaced `<type>.<name>`. If none of the standard ones fits, use the closest and keep the namespace.",

@@ -40,20 +40,15 @@
  * ---------------------------------------------------------------------------
  */
 
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { segmentEpisodes } from "@/extraction/segmentation";
-import { templateGuards } from "@/guards/templates";
-import { monotonicNow } from "@/lib/format";
 import type { EngineId } from "@/types/common";
+import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
-import { LOCAL_DIMENSIONS } from "../config";
-import { EngineError, unsupportedError } from "../errors";
-import { registerEngine } from "../registry";
 import type {
   CompositionRequest,
   CompositionResult,
   EmbeddingResult,
   EngineCapabilities,
+  ExtractionRequest,
   ExtractionResult,
   GuardSynthesisRequest,
   GuardSynthesisResult,
@@ -62,15 +57,23 @@ import type {
   WhyLogEngine,
 } from "../types";
 import { LOCAL_CAPABILITIES } from "../types";
-import { localClassify } from "./classify";
-import { templateCompose } from "./compose";
+import { EngineError, unsupportedError } from "../errors";
+import { registerEngine } from "../registry";
+import { LOCAL_DIMENSIONS } from "../config";
 import {
-  LOCAL_EMBEDDING_MODEL,
   LOCAL_ENGINE_ID,
+  LOCAL_EMBEDDING_MODEL,
   embedBatch,
   dimensions as embeddingDimensions,
 } from "./embed";
 import { extractLocal } from "./extract";
+import { localClassify } from "./classify";
+import { templateCompose } from "./compose";
+import { templateGuards } from "@/guards/templates";
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { segmentEpisodes } from "@/extraction/segmentation";
+import type { ISODateString } from "@/types/common";
+import { nowISO, monotonicNow } from "@/lib/format";
 
 const ENGINE: EngineId = { kind: "local", model: "cue-extractor-v1" };
 
@@ -100,10 +103,7 @@ export function createLocalEngine(): WhyLogEngine {
       const started = performanceSafeNow();
       if (signal?.aborted) throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
 
-      const vectors = embedBatch(texts, {
-        dimensions: embeddingDimensions(),
-        namespace: "decision",
-      });
+      const vectors = embedBatch(texts, { dimensions: embeddingDimensions(), namespace: "decision" });
 
       return {
         vectors,
@@ -127,7 +127,7 @@ export function createLocalEngine(): WhyLogEngine {
      * engine will skip.
      */
     extract: async (request): Promise<ExtractionResult> => {
-      const _started = performanceSafeNow();
+      const started = performanceSafeNow();
       if (request.signal?.aborted) {
         throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
       }
@@ -182,13 +182,12 @@ export function createLocalEngine(): WhyLogEngine {
        * every sentence with its decision id inline, which is what lets
        * retrieval/answer.ts attribute claims to citations by the same rule it applies to
        * an LLM's prose. */
-      const composed = templateCompose(request);
+      const text = templateCompose(request);
       const cited = request.material.map((fact) => fact.decisionId);
 
       return {
-        text: composed.text,
+        text,
         citedDecisionIds: cited,
-        ...(composed.disclosure === undefined ? {} : { disclosure: composed.disclosure }),
         engine: id,
         durationMs: performanceSafeNow() - started,
       };
@@ -208,7 +207,9 @@ export function createLocalEngine(): WhyLogEngine {
      * nobody can justify is worse than an admitted gap: it fails on day one, and a panel that
      * fails on day one gets ignored.
      */
-    synthesizeGuards: async (request: GuardSynthesisRequest): Promise<GuardSynthesisResult> => {
+    synthesizeGuards: async (
+      request: GuardSynthesisRequest,
+    ): Promise<GuardSynthesisResult> => {
       const attributed = templateGuards({
         decisionId: request.decisionId,
         variable: request.variable,
@@ -222,7 +223,10 @@ export function createLocalEngine(): WhyLogEngine {
       if (attributed.length === 0) {
         return {
           guards: [],
-          unverifiableReason: `No template covers ${request.variable} = ${request.value}, and the generic strategies found nothing checkable: no rejected alternative, no recognisable package or path in the value, and no \`applies_to\` globs. This decision is unverifiable with the local engine — an LLM engine may be able to propose a check, but nothing is invented here.`,
+          unverifiableReason:
+            "No template covers " + request.variable + " = " + request.value +
+            ", and the generic strategies found nothing checkable: no rejected alternative, no recognisable package or path in the value, and no `applies_to` globs. " +
+            "This decision is unverifiable with the local engine — an LLM engine may be able to propose a check, but nothing is invented here.",
           engine: id,
         };
       }
@@ -234,6 +238,7 @@ export function createLocalEngine(): WhyLogEngine {
     },
   };
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* Registration                                                               */

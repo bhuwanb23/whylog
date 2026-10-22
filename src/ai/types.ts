@@ -43,9 +43,14 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type { DecisionOrigin, DecisionVariable, Modality, PremiseType } from "@/types/domain";
-import type { ProposedGuard } from "@/types/guards";
+import type {
+  DecisionOrigin,
+  DecisionVariable,
+  Modality,
+  PremiseType,
+} from "@/types/domain";
 import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { ProposedGuard } from "@/types/guards";
 
 /* -------------------------------------------------------------------------- */
 /* Capabilities                                                               */
@@ -300,12 +305,6 @@ export interface CompositionResult {
   /** The decision ids the text actually cites. Compared against `material` to
    *  detect a citation that does not resolve. */
   readonly citedDecisionIds: readonly DecisionId[];
-  /** A note about HOW this was composed — a provenance disclosure, not a claim about
-   *  the log. It is returned separately so the claim attribution never has to guess
-   *  whether a sentence is a claim: a disclosure carries no decision id, so if it
-   *  were part of `text` it would be scored as an ungrounded claim and would drag a
-   *  perfectly well-sourced answer below the GROUNDED threshold. */
-  readonly disclosure?: string;
   readonly engine: EngineId;
   readonly durationMs: number;
 }

@@ -23,17 +23,18 @@
  */
 
 import type { EngineId } from "@/types/common";
+import type { WhyLogEngine } from "./types";
+import { LOCAL_CAPABILITIES } from "./types";
+import { EngineError, describeError } from "./errors";
+import { createEngine, listEngines, nullEngine } from "./registry";
 import {
   DEFAULT_CONFIG,
-  type EngineConfig,
+  engineIdOf,
   embeddingEngineIdOf,
   readConfig,
   resolveEngine,
+  type EngineConfig,
 } from "./config";
-import { EngineError, describeError } from "./errors";
-import { createEngine, listEngines, nullEngine } from "./registry";
-import type { WhyLogEngine } from "./types";
-import type { LOCAL_CAPABILITIES } from "./types";
 
 export interface ActiveEngine {
   readonly engine: WhyLogEngine;
