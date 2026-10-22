@@ -780,7 +780,6 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
               premiseIds: stored?.premiseIds ?? [],
               explanation: stored?.explanation ?? "",
               derivedFrom: stored?.derivedFrom ?? event.id,
-              recordedAt: stored?.recordedAt ?? event.at,
             };
 
       const proposal: RevisionProposal = {

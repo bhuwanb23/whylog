@@ -85,8 +85,13 @@ export function toExtractionResult(
   completionTokens: number,
 ): ExtractionResult {
   if (parsed.decisions.length === 0 && parsed.premises.length === 0) {
+    // The LLM's own empty-extraction constant holds Llm* candidates, which are
+    // a different shape from the seam's. The empty result is built directly.
     return {
-      ...EMPTY_LLM_EXTRACTION,
+      decisions: [],
+      premises: [],
+      alternatives: [],
+      episodes: [],
       discarded: parsed.discarded.map((discard) => ({
         kind: discard.kind,
         discardedBy: discard.discardedBy,

@@ -56,7 +56,14 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Actor, DecisionId, EventId, NogoodId, PremiseId } from "@/types/common";
+import type {
+  Actor,
+  DecisionId,
+  EventId,
+  ISODateString,
+  NogoodId,
+  PremiseId,
+} from "@/types/common";
 import type { NewEvent } from "@/types/events";
 import type {
   AdjudicationOutcome,

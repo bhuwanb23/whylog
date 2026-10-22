@@ -70,7 +70,11 @@ import type {
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { Actor } from "@/types/common";
-import type { EventType, NewEvent } from "@/types/events";
+import type {
+  EventType,
+  JustificationAttachedPayload,
+  NewEvent,
+} from "@/types/events";
 import type { Justification } from "@/types/domain";
 import type { GraphState } from "@/substrate/graph-state";
 import {
@@ -233,6 +237,25 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         premiseId: id,
         fields: item.action.fields,
       }, `Premise ${id} corrected by hand: ${item.premise.predicate}`, reasons));
+    } else if (isDerivedPremise(item.premise.predicate, item.premise.text)) {
+      /* A DERIVED EXCLUSION is NOT confirmed.
+       *
+       * An exclusion premise describes a condition the decision EXCLUDES —
+       * "more than one process needs to write at once". It is a hypothesis about
+       * what would break the decision, not an observation that it holds.
+       *
+       * Confirming it would label it IN, and an OUT-list premise that is IN
+       * invalidates its justification: the decision is unsound because the thing
+       * it excluded turns out to be true. So confirming every derived exclusion
+       * makes EVERY decision in the log unsound the moment it is written, and
+       * one falsification takes the whole graph with it. That is risk R2 — the
+       * cascade crying wolf — and over-retraction is worse than under-retraction.
+       *
+       * It stays UNKNOWN until somebody OBSERVES it, and an observation is
+       * exactly what makes it IN: the world moved, the excluded condition turned
+       * out to hold, and the decision has to be revisited. That is Doyle's
+       * non-monotonic justification running in the right direction.
+       */
     } else {
       drafts.push(reviewEvent("PremiseConfirmed", { premiseId: id },
         `Premise ${id} confirmed: ${item.premise.text}`, reasons));
@@ -396,7 +419,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   const nonMonotonic = drafts.filter(
     (draft) =>
       draft.type === "JustificationAttached" &&
-      draft.payload.justification.outList.length > 0,
+      (draft.payload as JustificationAttachedPayload).justification.outList.length > 0,
   ).length;
 
   return {

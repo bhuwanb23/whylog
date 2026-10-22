@@ -115,6 +115,17 @@ interface Range {
 }
 
 /**
+ * An episode being grown. The variable is a GUESS, not a label: the score is
+ * what decides whether a shift to a different variable is a topic change or
+ * just noise.
+ */
+interface OpenEpisode {
+  readonly firstCue: number;
+  readonly lastCue: number;
+  readonly variable: VariableGuess | null;
+}
+
+/**
  * Walk the turns and collect [start, end) ranges that contain at least one cue.
  *
  * The window is grown around the cues rather than built from them: the first cue
@@ -127,7 +138,7 @@ function groupRanges(
 ): readonly Range[] {
   const ranges: Range[] = [];
 
-  let open: { firstCue: number; lastCue: number; variable: DecisionVariable | null } | null = null;
+  let open: OpenEpisode | null = null;
   let quiet = 0;
 
   const close = (end: number, reason: EpisodeBoundaryReason): void => {
@@ -191,7 +202,7 @@ function groupRanges(
       continue;
     }
 
-    const soFar = charSpan(turns, Math.max(0, open.firstCue - LEAD_TURNS), i + 1);
+    const soFar = charSpan(turns, Math.max(0, current.firstCue - LEAD_TURNS), i + 1);
     if (soFar > MAX_EPISODE_CHARS) close(i, "length-cap");
   }
 
@@ -268,6 +279,7 @@ function buildEpisode(
     charRange: [first?.start ?? 0, last?.end ?? 0],
     rawRange: rawRangeOf(normalized, first, last),
     text,
+    turnOffsets,
     variable: episodeVariable(text, hits),
     cuePositions: hits.map((hit) => hit.start),
     boundaryReason: reason,

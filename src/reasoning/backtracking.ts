@@ -214,7 +214,7 @@ export function partialCulprits(
   if (!result.truncated) return [];
 
   const culprits = new Set(result.culpritPremises);
-  return result.path.filter((nodeId) => {
+  return result.path.filter((nodeId): nodeId is PremiseId => {
     const asPremise = nodeId as PremiseId;
     return state.premises.has(asPremise) && !culprits.has(asPremise);
   });

@@ -266,6 +266,16 @@ export function assertNewInformation(
     transcriptIdFor(assertion, context) ??
     nextTranscriptId(context, drafts, ++transcriptNumber);
 
+  /* The premises of ONE assertion belong to ONE episode: they were observed
+   * together, and a premise asserted in isolation has no context to show. The
+   * episode id is minted lazily so an assertion with no premises does not burn
+   * one. */
+  let premiseEpisodeId: EpisodeId | null = null;
+  const episodeIdOf = (): EpisodeId => {
+    if (premiseEpisodeId === null) premiseEpisodeId = formatEpisodeId(++episodeNumber);
+    return premiseEpisodeId;
+  };
+
   /* A human, a guard or a repo scan is its own authority: what it says is confirmed on
    * arrival. A transcript is not — extracted prose enters as UNKNOWN and waits for
    * review, because nothing enters the log unreviewed. */
@@ -296,7 +306,7 @@ export function assertNewInformation(
       premiseNumber += 1;
       const premiseId = formatPremiseId(premiseNumber);
       mintedPremiseIds.push(premiseId);
-      drafts.push(premiseDraft(premise, premiseId, transcriptId, context));
+      drafts.push(premiseDraft(premise, premiseId, transcriptId, episodeIdOf(), originOf(assertion.source), context));
 
       /* Confirming it makes it IN, which is what lets an OUT-list exclusion fire:
        * "an excluded condition arrived" only invalidates a justification once the
@@ -318,7 +328,7 @@ export function assertNewInformation(
      * appends evidence and takes the max confidence; minting a second node would halve
      * the corroboration count on both and leave gate (c) looking at a premise that
      * nothing rests on. */
-    drafts.push(premiseDraft(premise, existingId, transcriptId, context));
+    drafts.push(premiseDraft(premise, existingId, transcriptId, episodeIdOf(), originOf(assertion.source), context));
     mintedPremiseIds.push(existingId);
 
     /* If it was UNKNOWN and this source is authoritative, it becomes IN — which is the
@@ -367,6 +377,7 @@ export function assertNewInformation(
   }
 
   /* A decision-level assertion becomes a newcomer for the adjudicator. */
+  const source = sourceOf(assertion.source);
   const firstDecision = decisions[0];
   if (firstDecision !== undefined) {
     newcomer = {
@@ -375,7 +386,9 @@ export function assertNewInformation(
       text: firstDecision.statement,
       origin: firstDecision.origin,
       confidence: firstDecision.confidence,
-      source: sourceOf(assertion.source),
+      // `source` is optional on the newcomer, and `exactOptionalPropertyTypes`
+      // means the key must be ABSENT rather than present-and-undefined.
+      ...(source === undefined ? {} : { source }),
     };
   }
 
@@ -429,6 +442,8 @@ function premiseDraft(
   premise: PremiseAssertion,
   premiseId: PremiseId,
   transcriptId: TranscriptId,
+  episodeId: EpisodeId,
+  origin: DecisionOrigin,
   context: AssertContext,
 ): NewEvent<"PremiseAsserted"> {
   const text = premise.text.trim();
@@ -438,6 +453,8 @@ function premiseDraft(
     payload: {
       premiseId,
       transcriptId,
+      episodeId,
+      origin,
       type: premise.type,
       predicate: canonicalPredicate(premise.type, premise.predicate),
       ...(premise.value === undefined ? {} : { value: premise.value }),
@@ -812,6 +829,24 @@ function sourceOf(source: AssertionSource): Newcomer["source"] {
       return "guard";
     case "repo-scan":
       return "repo-scan";
+  }
+}
+
+/**
+ * Who an asserted premise is attributed to.
+ *
+ * A human typed it or a human said it: `human_stated`. A guard observed it or
+ * a scan found it: `agent_inferred`, which is the honest answer — a machine
+ * reading the world, not a person making a claim.
+ */
+function originOf(source: AssertionSource): DecisionOrigin {
+  switch (source) {
+    case "transcript":
+    case "user-decision":
+      return "human_stated";
+    case "guard-result":
+    case "repo-scan":
+      return "agent_inferred";
   }
 }
 

@@ -6,7 +6,15 @@
  * Research: docs/02-truth-maintenance-theory.md §3, §5
  */
 
-import type { Confidence, DecisionId, EventId, PremiseId, ProposalId, SourceSpan } from "./common";
+import type {
+  Confidence,
+  DecisionId,
+  EventId,
+  NogoodId,
+  PremiseId,
+  ProposalId,
+  SourceSpan,
+} from "./common";
 import type { DecisionLabel, Nogood } from "./domain";
 
 /* -------------------------------------------------------------------------- */

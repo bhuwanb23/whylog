@@ -99,6 +99,8 @@ export function normaliseTranscript(raw: string, options: NormalizerOptions): No
     return {
       index: i,
       speaker: turn.speaker,
+      rawStart: turn.rawStart,
+      rawEnd: turn.rawEnd,
       text: assembled.text.slice(start, end),
       start,
       end,
