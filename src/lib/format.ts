@@ -28,6 +28,17 @@ export function parseISO(value: ISODateString | string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * A monotonic-ish millisecond clock, safe where `performance` is not.
+ *
+ * The engines time their own operations to report `durationMs`, and `performance`
+ * does not exist in every environment a test may run in. Falling back to
+ * `Date.now()` keeps the number meaningful rather than crashing the engine.
+ */
+export function performanceSafeNow(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
 /** 2026-10-03 */
 export function formatDate(value: ISODateString | string): string {
   const d = parseISO(value);
@@ -142,9 +153,7 @@ export function heading(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): string {
 /** Join non-empty lines, dropping blanks — keeps exported files inside the
  *  ~200-line budget without accidental gaps. */
 export function joinLines(lines: readonly (string | null | undefined)[]): string {
-  return lines
-    .filter((l): l is string => typeof l === "string" && l.trim().length > 0)
-    .join("\n");
+  return lines.filter((l): l is string => typeof l === "string" && l.trim().length > 0).join("\n");
 }
 
 /* -------------------------------------------------------------------------- */

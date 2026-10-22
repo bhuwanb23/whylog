@@ -149,8 +149,7 @@ export function clearGlobCache(): void {
  * it is, and a guard scoped to one file would pass forever while the decision it
  * protects rotted.
  */
-const GLOB_IN_TEXT =
-  /(?:^|[\s`"'(,])([\w.@/-]*(?:\*\*|\*|\?|\{[\w,.-]+\})[\w.@/*?{},-]*)/g;
+const GLOB_IN_TEXT = /(?:^|[\s`"'(,])([\w.@/-]*(?:\*\*|\*|\?|\{[\w,.-]+\})[\w.@/*?{},-]*)/g;
 
 /**
  * Every glob mentioned in a stretch of text, de-duplicated, in order of first
