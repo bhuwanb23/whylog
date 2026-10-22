@@ -32,12 +32,14 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 import type { ExtractionRun } from "@/extraction/types";
 import type { ResolvedCandidate } from "@/extraction/types";
+import type { ConfidenceTier, ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
 import { tierOf } from "@/extraction/types";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
-import type { ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
+
+
 
 /* -------------------------------------------------------------------------- */
 /* From an uncommitted run                                                    */
@@ -156,6 +158,7 @@ export function queueFromState(state: GraphState): readonly ReviewItem[] {
   }
 
   for (const alternative of state.alternatives.values()) {
+    if (alternative.provenance === undefined) continue;
     items.push(itemFromAlternative(alternative));
   }
 
@@ -192,11 +195,11 @@ function itemFromPremise(premise: Premise): ReviewItem {
     id: premise.id,
     title: `${premise.type}.${premise.predicate}`,
     detail: premise.text,
-    quote: premise.provenance.snippet.text,
+    quote: premise.evidence[0]?.snippet.text ?? "",
     confidence,
     tier: tierOf(confidence),
-    origin: premise.provenance.origin.replace(/_/g, " "),
-    engine: premise.provenance.extractedBy.model,
+    origin: premise.origin.replace(/_/g, " "),
+    engine: premise.extractedBy.model,
     expanded: tierOf(confidence) !== "low" && !derived,
     resolution: `corroborated ${premise.corroboration}×`,
     conflictsWith: [],
@@ -213,11 +216,11 @@ function itemFromAlternative(alternative: RejectedAlternative): ReviewItem {
     id: alternative.id,
     title: `rejected: ${alternative.value}`,
     detail: alternative.whyRejected ?? "no reason recovered — stored, but it will never pre-empt",
-    quote: alternative.provenance.snippet.text,
+    quote: alternative.provenance?.snippet.text ?? "",
     confidence,
     tier: tierOf(confidence),
-    origin: alternative.provenance.origin.replace(/_/g, " "),
-    engine: alternative.provenance.extractedBy.model,
+    origin: alternative.provenance?.origin.replace(/_/g, " ") ?? "unknown",
+    engine: alternative.provenance?.extractedBy.model ?? "unknown",
     expanded: false,
     resolution: `against ${alternative.decisionId}`,
     conflictsWith: [],
@@ -321,8 +324,7 @@ export interface QueueSummary {
 }
 
 export function summariseQueue(items: readonly ReviewItem[]): QueueSummary {
-  const count = (predicate: (item: ReviewItem) => boolean): number =>
-    items.filter(predicate).length;
+  const count = (predicate: (item: ReviewItem) => boolean): number => items.filter(predicate).length;
 
   return {
     total: items.length,
@@ -358,9 +360,7 @@ export function describeQueue(summary: QueueSummary): string {
   if (summary.derived > 0) parts.push(`${summary.derived} derived rather than quoted — read those`);
   if (summary.conflicts > 0) parts.push(`${summary.conflicts} conflict with a live decision`);
   if (summary.reviewed > 0) {
-    parts.push(
-      `${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`,
-    );
+    parts.push(`${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`);
   }
   return parts.join(" · ");
 }
