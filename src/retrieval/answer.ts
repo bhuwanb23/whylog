@@ -52,6 +52,7 @@ import type {
   Answer,
   Claim,
   GroundednessVerdict,
+  IndexLevel,
   PreemptionNotice,
   RetrievedHit,
 } from "@/types/retrieval";
@@ -104,10 +105,52 @@ export interface ComposeInput {
   readonly signal?: AbortSignal;
 }
 
+/** The dense levels. Their evidence is statistical, and statistical evidence
+ *  needs a domain to be statistical WITHIN. */
+const DENSE_LEVELS: readonly IndexLevel[] = ["L1", "L2"];
+
+/**
+ * Is this hit actually about the question?
+ *
+ * A promoted hit carries EXACT evidence — a variable match, a value match, a
+ * shared premise — and exact evidence is evidence whatever the score says.
+ *
+ * A hit carried ONLY by the dense levels is a different matter. The local
+ * vectoriser is a hashed n-gram bag, and two short unrelated strings score
+ * around 0.19 of cosine similarity against each other. That clears a 0.15
+ * floor, so a dense-only hit is admitted even when the question shares not one
+ * word, not one variable and not one premise with the log.
+ *
+ * The consequence was concrete: "What did we decide about the payment
+ * provider?" came back GROUNDED at 100%, listing the six decisions least
+ * unlike it. The evidence contract is not decorative — the whole point of
+ * refusing is that a system which always answers has implemented a guess.
+ *
+ * So a dense-only hit is admissible only when some OTHER level also matched
+ * something for this question. The dense level ranks WITHIN a domain; it does
+ * not establish the domain. If the question has no lexical, structural or
+ * premise overlap with the log at all, then a dense match is a coincidence
+ * between two bags of characters, and the honest answer is that the log does
+ * not say.
+ */
+function isOnTopic(hit: RetrievedHit, all: readonly RetrievedHit[]): boolean {
+  if (hit.promoted) return true;
+
+  const onlyDense =
+    hit.matchedOn.length > 0 && hit.matchedOn.every((level) => DENSE_LEVELS.includes(level));
+
+  if (onlyDense) {
+    const someNonDenseEvidence = all.some((other) =>
+      other.matchedOn.some((level) => !DENSE_LEVELS.includes(level)),
+    );
+    if (!someNonDenseEvidence) return false;
+  }
+
+  return hit.finalScore >= TOPICALITY_FLOOR;
+}
+
 export async function composeAnswer(input: ComposeInput): Promise<Answer> {
-  const onTopic = input.retrieved.filter(
-    (hit) => hit.promoted || hit.finalScore >= TOPICALITY_FLOOR,
-  );
+  const onTopic = input.retrieved.filter((hit) => isOnTopic(hit, input.retrieved));
 
   const facts = onTopic.map((hit) => factFor(hit, input));
 

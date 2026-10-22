@@ -11,19 +11,19 @@
  * guess.
  */
 
-import { beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { createLocalEngine } from "@/ai/local";
+import { commitReview } from "@/extraction/commit";
 import { runExtraction } from "@/extraction/pipeline";
 import { applyAction, approve } from "@/extraction/review/actions";
-import { commitReview } from "@/extraction/commit";
-import { useWhyLog } from "@/store/whylog";
-import { buildIndex } from "@/retrieval/build-index";
-import { ask } from "@/retrieval";
 import { label } from "@/reasoning/labeller";
-import { asISO, type TranscriptId } from "@/types/common";
+import { ask } from "@/retrieval";
+import { buildIndex } from "@/retrieval/build-index";
+import { useWhyLog } from "@/store/whylog";
+import { type TranscriptId, asISO } from "@/types/common";
 
 const FIXTURE = resolve(process.cwd(), "fixtures", "demo-transcript.txt");
 const ENGINE_ID = { kind: "local", model: "cue-extractor-v1" } as const;
@@ -48,7 +48,9 @@ async function buildIndexedLog() {
       occurredAt: NOW,
       items: reviewed,
       machineDiscards: run.outcome.result.discarded.filter(
-        (d): d is typeof d & {
+        (
+          d,
+        ): d is typeof d & {
           readonly discardedBy: "confidence-threshold" | "modality" | "duplicate";
         } => d.discardedBy !== "human",
       ),
@@ -65,11 +67,27 @@ async function buildIndexedLog() {
   if (!recorded.ok) throw new Error(`record failed: ${recorded.error}`);
 
   const state = useWhyLog.getState().state;
-  const labels = label(state).labels;
-  const built = await buildIndex(state, { engine, engineId: ENGINE_ID });
-  if (!built.ok) throw new Error(`index build failed: ${built.failure.kind}`);
+  const built = await buildIndex({ state, engine, actor: { kind: "system" } });
 
-  return { state, labels, artifacts: built.value.artifacts, engine };
+  /* The index is part of the log's history: `IndexRebuilt` is a state-changing
+   * event, and the retrieval gates L1/L2 on the STATE's view of the index. A
+   * test that builds the artifacts and throws away the events is not the flow a
+   * user gets — it is a flow with the dense levels silently switched off. */
+  if (built.drafts.length > 0) {
+    const committed = useWhyLog.getState().recordBatch(built.drafts, {
+      reason: `Index rebuilt: ${built.embedded} decision(s) embedded, levels ${built.levels.join("/")}.`,
+      actor: { kind: "system" },
+    });
+    if (!committed.ok) throw new Error(`index commit failed: ${committed.error}`);
+  }
+
+  const after = useWhyLog.getState().state;
+  return {
+    state: after,
+    labels: label(after).labels,
+    artifacts: built.artifacts,
+    engine,
+  };
 }
 
 describe("Gate G3 — it answers", () => {
@@ -95,7 +113,14 @@ describe("Gate G3 — it answers", () => {
 
     // Every claim resolves to a citation that was resolved IN THIS RUN.
     for (const claim of answer.claims) {
-      expect(claim.citation).toBeDefined();
+      expect(claim.citations.length).toBeGreaterThan(0);
+      expect(claim.grounded).toBe(true);
+    }
+
+    // A citation is valid ONLY if it points at a decision this run retrieved.
+    for (const citation of answer.citations) {
+      expect(citation.resolvedInRun).toBe(true);
+      expect(answer.retrieved.some((hit) => hit.decisionId === citation.decisionId)).toBe(true);
     }
 
     // The groundedness score is a real fraction, not a constant.
@@ -105,6 +130,7 @@ describe("Gate G3 — it answers", () => {
     // The trace says what was searched and why it stopped.
     expect(answer.trace.searches.length).toBeGreaterThan(0);
     expect(answer.trace.maxSearches).toBeGreaterThan(0);
+    expect(answer.trace.sufficiencyAssessment.length).toBeGreaterThan(0);
 
     // The answer names the decision it is about.
     const cited = answer.citations.map((c) => c.decisionId);
@@ -136,7 +162,6 @@ describe("Gate G3 — it answers", () => {
     expect(answer.nearestRelated).toBeDefined();
     expect(answer.nearestRelated?.length ?? 0).toBeGreaterThan(0);
   });
-
   it("the search budget is bounded — that is what makes refusal reachable", async () => {
     const { state, labels, artifacts, engine } = await buildIndexedLog();
 
@@ -166,9 +191,8 @@ describe("Gate G3 — it answers", () => {
     });
 
     for (const search of answer.trace.searches) {
-      expect(search.purpose.length).toBeGreaterThan(0);
+      expect(search.query.length).toBeGreaterThan(0);
       expect(search.why.length).toBeGreaterThan(0);
-      expect(search.stopReason.length).toBeGreaterThan(0);
     }
   });
 });

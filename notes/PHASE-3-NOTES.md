@@ -216,3 +216,125 @@ waiting for it. `synthesizeGuards` on the local engine is still the honest Phase
 Before starting it, run G2 and G3 locally. G2 has never been executed either, and Phase 3
 changed the reasoning store's gate (b) wiring — a run that was code-complete in Phase 2 is not
 necessarily still code-complete now.
+
+---
+
+## 10. Verification pass (independent, executed)
+
+Phase 3 was code-complete and **nothing had been executed**. This section records what was
+actually run, what broke, and what was fixed.
+
+### 10.1 The substrate was reverted again (fourth time)
+
+The working tree arrived as a **pre-verification snapshot of Phases 0/1/2** again. `selfHash`,
+`byTemporalValidDesc`, `decisionOutcomes` and `seenDecisionKeys` were all gone; 126 files
+were restored from the verified Phase 2 baseline `a7898e7`, and the Phase 3 additions
+(`src/retrieval/**`, `src/store/ask.ts`, `src/ai/local/compose.ts`, `src/views/AskView.tsx`)
+were kept.
+
+**Four phases, four reverts, one cause:** the tool that writes phase N reads a snapshot taken
+before phase N-1 was verified. It must read the committed tree.
+
+### 10.2 Gates
+
+| Gate | Before | After |
+|---|---|---|
+| `npm run typecheck` | **116 errors** | 0 |
+| `npm run check` | 157 errors | 0 errors, 56 warnings |
+| `npm test` | 41 | **45 passing** (6 files) |
+| `npm run build` | fails | builds |
+| `npm run check:structure` | **exit 9009** (python3 not found) | exit 0 |
+| `npm run verify` | exit 1 | **exit 0** |
+
+### 10.3 Defects found and fixed in Phase 3's own code
+
+1. **`src/retrieval/index-levels/l5-premises.ts:144` — syntax error.** A string literal
+   contained unescaped `"what assumes X?"`, so the file did not parse. `tsc` reported three
+   errors here, which masked the other 113.
+
+2. **`src/retrieval/index.ts` — `queryTerms(state, question)` in two places.** The Phase 1
+   signature is `queryTerms(query, variable?)`; the Phase 3 call passed the graph state as
+   the query. Under the old signature this type-checked; under the current one it is a
+   type error, and the intent is unambiguous — the variable is not yet known at that point,
+   so no value folding is wanted. Fixed to `queryTerms(question)`.
+
+3. **`src/retrieval/index.ts` — `options.topK` / `options.recallK` possibly undefined.**
+   `QueryOptions` fields are optional, and `{ ...DEFAULT_QUERY_OPTIONS, ...input.options }`
+   types the result as `number | undefined` even though a default always exists. Replaced
+   with `resolveQueryOptions()`, which resolves each field explicitly.
+
+4. **`src/retrieval/answer.ts` — `AnswerInput.answeredAt` typed `string`, `Answer.answeredAt`
+   typed `ISODateString`.** Narrowed the input to `ISODateString`.
+
+5. **`src/views/AskView.tsx:297` — `{answer.engine}` rendered an `EngineId` object as a
+   ReactNode.** React cannot render an object. Now renders `answer.engine.model`.
+
+6. **`scripts/check_structure.py` — `rel()` used `str(relative_to(...))`, which yields
+   backslashes on Windows.** Every allowlist entry in the checker names files with forward
+   slashes, so on Windows **no allowlist entry ever matched** and every exempted file was
+   reported as a violation. Three false positives. Fixed with `.as_posix()`.
+
+7. **`package.json` — `check:structure` called `python3` directly.** There is no `python3` on
+   this machine; the script exited 9009 and the checker had therefore **never actually run**.
+   The `node scripts/check-structure.mjs` wrapper (which picks `python3` or `python`) is now
+   wired back in. The "checker exit 0" claim was never verified on this machine.
+
+### 10.4 The evidence contract did not hold — G3's second half failed
+
+G3 was runnable and unrun. Running it produced a real failure.
+
+**"What did we decide about the payment provider?" returned `GROUNDED`, 100% grounded, one
+claim, listing six decisions** — about Postgres, SQLite, auth and a hackathon. Nothing in
+the log concerns payments. The system answered a question it cannot answer, confidently, and
+did not refuse.
+
+**Mechanism.** With the dense levels available, L1/L2 returned the six nearest decisions at
+a final score of ~0.19, which clears `TOPICALITY_FLOOR` (0.15). The local vectoriser is a
+hashed n-gram bag, and two short unrelated strings score ~0.19 cosine against each other —
+so the floor sat **below the vectoriser's noise floor** and admitted noise. The citation
+then resolved (the decision *was* retrieved this run), so groundedness was 1.0.
+
+Note this only fails **with L1/L2 available**. A test that builds the index artifacts without
+committing the `IndexRebuilt` event leaves `state.index.builtBy` undefined, `usableLevels`
+returns L3/L4/L5 only, and the payment question correctly retrieves nothing. The G3 test
+must commit the index events, exactly as `store/ask.ts` does.
+
+**Fix** (`src/retrieval/answer.ts`, `isOnTopic`): a hit carried **only** by the dense levels
+is admissible only when some *other* level also matched something for the question. The
+dense level ranks *within* a domain; it does not establish the domain. If the question has
+no lexical, structural or premise overlap with the log at all, a dense match is a
+coincidence between two bags of characters, and the honest answer is that the log does not
+say.
+
+### 10.5 G3, executed
+
+`tests/integration/gate-g3.test.ts` — 4 tests, all passing.
+
+| Half | Question | Verdict | Claims | Groundedness |
+|---|---|---|---|---|
+| 1 — answerable | "Why did we choose SQLite over Postgres?" | `GROUNDED` | 1 | 1.00 |
+| 2 — unanswerable | "What did we decide about the payment provider?" | `INSUFFICIENT_EVIDENCE` | **0** | < 1.00 |
+
+Also asserted: every citation is `resolvedInRun` and points at a decision this run
+retrieved; the search budget is 3; every search records a query and a reason.
+
+**G2 re-executed** after Phase 3 rewired gate (b): 4/4 pass. The Phase 2 DoD: 16/16 pass.
+**Phase 2 was not broken by Phase 3.**
+
+### 10.6 Measured
+
+- Index: 19 decisions, 38 vectors, 19 HyPE questions, all five levels built and available.
+- "Why did we choose SQLite over Postgres?": 6 hits, top final score 0.745, matched on
+  L1+L2+L3+L4, 4 promoted by exact structural evidence.
+- "What did we decide about the payment provider?": 6 hits, all L1+L2 only, top score
+  0.192 — above the floor, and rejected by `isOnTopic` because no other level matched.
+
+### 10.7 Known divergence: the compaction pass was undone
+
+The Phase 3 commits included a compaction pass over ~90 files (mostly trailing commas and
+line splitting). The restore from `a7898e7` brought back the pre-compaction versions of 126
+files, so `src/` is now **44,410 lines rather than 40,888** (49,032 rather than 45,818 for
+the whole tree). Verified cosmetic: whitespace-normalised, the largest affected file
+(`src/ontology/data/premise-cues.ts`, 1,199 lines of difference) differs only in trailing
+commas. The functional content is the verified Phase 2 content. Re-applying the compaction is
+mechanical but must be done as a merge over the functional fixes, not a wholesale restore.
