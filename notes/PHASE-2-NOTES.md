@@ -3,7 +3,89 @@
 Written alongside the code. Plan: [`plan/phase-2-truth-maintenance.md`](../plan/phase-2-truth-maintenance.md).
 Theory: [`docs/02-truth-maintenance-theory.md`](../docs/02-truth-maintenance-theory.md).
 
-**132 source files, ~38.8k lines. `python3 scripts/check_structure.py` exits 0.**
+**133 source files, ~39.8k lines. `python3 scripts/check_structure.py` exits 0.**
+
+---
+
+## 0. Audit against the plan text — what was actually wrong
+
+The phase was declared complete, then checked line by line against
+`plan/phase-2-truth-maintenance.md`. **It was not complete.** Nine gaps, one of which
+would have made the headline demo silently do nothing.
+
+The structural checker cannot see any of these: it validates imports, named exports,
+cycles, brackets and the event vocabulary. Every gap below is a property-access or
+semantics error inside a file that passes it cleanly.
+
+### 🔴 The one that breaks G2
+
+**`assert.ts` minted a new premise id for every assertion.** `PremiseAsserted` resolves
+by `payload.premiseId` *only* — the fold does no predicate matching — and it hardcodes
+`supports: true` on the evidence it appends. So falsifying `single-user` would have:
+
+1. created a **duplicate** premise node, violating invariant I2 (premises are shared);
+2. left the real `single-user` premise IN, so **gate (c) never fired**;
+3. recorded the refutation as *supporting* evidence.
+
+The whole G2 demonstration would have produced a clean run with no findings.
+
+**Fixed** by adding the RESOLVE step §2.1 actually specifies:
+
+- resolution goes through **`state.premiseByFingerprint`** — the fold's own identity
+  index — so the reasoner and the fold cannot disagree about what the same premise is;
+- resolved + refuting → **`PremiseInvalidated`**, which is what sets `label: OUT` and
+  closes the window, which is what the labeller reads;
+- resolved + supporting → `PremiseAsserted` on the **existing** id (appends evidence,
+  takes max confidence);
+- unresolved → **reported, never guessed**, per §2.11;
+- the OUT-list half of gate (c) additionally needs **`PremiseConfirmed`** to make the
+  excluded condition IN — "an excluded condition arrived" only invalidates a
+  justification once the condition is actually believed. That event was never emitted.
+
+### 🟠 Three files referenced fields that do not exist
+
+`Justification.consequent` is a `DecisionId` and its lists are `PremiseId`s, so **a
+premise is never a consequent — the justification graph is bipartite.** Three modules
+were written as though premises could be conclusions:
+
+| File | Referenced | Reality |
+|---|---|---|
+| `backtracking.ts` | `premise.justifications` | No such field. Every premise is an assumption. |
+| `cascade.ts` | `premise.informant.decisionId` | No such field. The link is `state.premiseToDecisions`. |
+| `audit.ts` | `premise.justifications` | No such field. Phase 1's "derived" premises are marked in **text** (`"— excluded by"`). |
+
+This also means Doyle's "antecedents of antecedents" reaches bedrock in **one hop** here.
+Depth comes from `Decision.edges.dependsOn`, not from justification arcs. Backtracking
+was rewritten accordingly, and its culprit set is now minimal **by construction**: the
+IN-list premises that are no longer IN, plus the OUT-list premises that are now IN.
+The previous version blamed derived premises too, which inflated the set and made the
+nogood non-minimal — the opposite of §2.6's ATMS borrowing.
+
+New `reasoning/graph-index.ts` builds both indexes in one pass, because the naive
+traversals were `O(D² × J)` — invisible at demo scale, tens of millions of comparisons
+at the 500 nodes §2.2 names as a target.
+
+### 🟠 The adjudicator and the detector disagreed
+
+`adjudication.findContradictors` used **antonym pairs only**. Gate (a) fires on two
+conditions: a declared antonym pair, *or* simply two different live values for one
+variable. So a newcomer could be **accepted** while gate (a) simultaneously reported a
+structural contradiction against an incumbent — nothing retracted, conflict warned about
+but never resolved.
+
+Worse, the file's own header comment claimed the two could not disagree. **It now
+delegates to `wouldContradict`**, inheriting gate (a)'s two conditions plus its
+supersession and validity-window exclusions.
+
+### 🟡 Five more
+
+| Gap | Fix |
+|---|---|
+| **Nogood reuse was never wired.** `blocksConjunction` was exported and called by nothing — §2.6's "warn: you are re-asserting a combination you found impossible on Oct 3" did not exist. | Checked in `assert.ts` *before* the batch commits, and in `revise.ts` before the proposal is built, so the warning is part of the diagnosis rather than a footnote. |
+| **"Override anyway" did not exist**, and dismissal was wired to `HumanOverride` — the same event, described as though it meant "ignore this". `materialize.ts` has implemented the override path since Phase 0 (raises origin to 0.9, `contested`→`active`, resolves the proposal); nothing ever called it. | Added `applyOverride` (assert the newcomer, then override it into force). Renamed dismissal to **`applyVouch`** and documented what it really does: a human vouching for the incumbent raises *its* authority to 0.9. |
+| **Rejustification did not re-run the labeller.** §2.9 requires "Keep & re-justify" to *restore the decision to IN*, and only the labeller can do that — the label follows from the graph, never from the event. | Every human action now calls `relabelAfterAction()`. |
+| **The Contested queue showed two totals, not two breakdowns.** §2.8 requires "the full entrenchment breakdown of both sides", because override is only informed if the user can see the newcomer lost on corroboration and implementation cost rather than on authority. | `newcomerBreakdownOf` produces a real `EntrenchmentBreakdown`; both are rendered term by term. |
+| **The cascade ignored `settings.cascadeDepthCap`** and hardcoded 6; §2.7 says default **4**. | Cap threaded as a parameter; the Phase 0 setting corrected to 4. Backtracking keeps 6 — it must reach bedrock, which can sit deeper than a cascade usefully propagates. |
 
 ---
 
@@ -168,6 +250,8 @@ would be wrong. The materialiser rewrites these on fold. This is the same mechan
 
 ## 6. Known gaps, stated plainly
 
+*§0 above records the gaps that were found and fixed. These are the ones that remain.*
+
 | Gap | Why | What closes it |
 |---|---|---|
 | Gate (b) never runs in the app | `skipSemantic: true` is hardcoded in the store: there is no retriever, so there are no candidate pairs. `detectSemantic` reports itself **unavailable** with a reason rather than guessing. | Phase 3 supplies `retrieve`; the store stops forcing the flag. The gate itself is written and takes the retriever as a parameter. |
@@ -176,6 +260,8 @@ would be wrong. The materialiser rewrites these on fold. This is the same mechan
 | `Decision` carries no creating-event id | The audit derives `learnedFrom` from the earliest justification informant's `eventId`, which `materialize` rewrites to the creating event. Correct in practice, indirect by construction. | A `createdBy` field on `DecisionProposedPayload` would make it direct. |
 | `contest` has no dedicated event | `PremiseContested` contests a *premise*; the vocabulary has no `ProposalDismissed`. Dismissal is recorded as `HumanOverride` with a `"Dismissed: "` reason prefix — it is the event that carries "a human overruled the system's judgement about a proposal". | Acceptable. Phase 7 counts dismissals per gate from these. |
 | The `rejustify` button reuses the failed premise id | It calls `applyRejustification`, which mints a genuinely new premise from the text the user types. The `linkRejustification` variant is for a Phase 6 form that walks the user through creating both nodes. | Phase 6. |
+| Proposal prose is always templated | §2.11's table asks for *generated* prose on the LLM path and *templated* on the local one. Only the template exists, so both paths render identically. §2.11 also says the LLM "is not load-bearing for correctness" — this is the one row where that is literally true, and the reason it was left. | Call `engine.compose` in `proposals.ts` with the seven structured fields as input, falling back to `renderProposal`. |
+| `source_authority` has no `low_confidence` 0.2 rung | §2.8's table lists five rungs; `DecisionOrigin` is a closed four-member type from Phase 0, and `ORIGIN_AUTHORITY` matches it. Adding a fifth origin would change the event vocabulary. | Leave it. A low-confidence extraction already scores low on the `confidence` term, which is where that information actually lives. |
 
 ---
 
@@ -194,137 +280,7 @@ would be wrong. The materialiser rewrites these on fold. This is the same mechan
 - [x] Non-prioritized screening with a Contested queue and an override path — `adjudication.ts`, `store/reasoning.ts:applyContest`, `HumanOverride`.
 - [x] Seven-part proposals, three actions, including **Keep & re-justify** — `proposals.ts`, `store/reasoning.ts:applyRejustification`.
 - [x] Audit trail: every label traceable to an event and a reason — `audit.ts`, `chronologicalOrder`.
-- [x] **Gate G2 demonstration** — **EXECUTED.** `tests/integration/gate-g2.test.ts` (4 tests,
-      keyless, deterministic). The path runs end to end: import
-      `fixtures/demo-transcript.txt` → review → Reasoning → falsify `scale.single_user` →
-      the premise goes OUT, the 8 decisions that rest on it go OUT, the other 11 SURVIVE, and a
-      revision proposal appears with the entrenchment breakdown. See §9 for the numbers and
-      for the three defects the run found.
-
----
-
-## 8. The verification pass — what was broken and what was fixed
-
-Phase 2 was written without ever being compiled, linted or run. A verification pass ran
-the real gates and found **113 type errors, 7 lint errors, and two defects that silently
-disabled the mechanism gate (c) exists to exercise.** All fixed.
-
-### 8.1 The substrate had been reverted again
-
-The Phase 2 work was written against a **pre-verification snapshot of Phases 0 and 1**.
-`materialize.ts` called `linkHash` without importing it, `hash-chain.ts` had no
-`selfHash`, `bi-temporal.ts` had no `byTemporalValidDesc`, and `ai/config.ts` reported
-`"openai"` for a locally-running log. Every one of those had been fixed and every one
-of them was gone again.
-
-Restored from the verified Phase 1 baseline, with the two genuinely mixed files hand-
-merged so the Phase 2 additions survived: `src/types/events.ts` (the
-`DecisionProposed.{yStatement, appliesTo, episode}` payload fields, the
-`PremiseAsserted.{episodeId, origin}` fields, `Premise.provenance`) and
-`src/substrate/materialize.ts` (the episode bounds in the fold, the informant's `eventId`
-rewrite). `src/App.tsx` was hand-merged to keep the Reasoning tab.
-
-### 8.2 Two defects that silently disabled gate (c)
-
-**A refuting observation invalidated nothing.** `falsifyPremise` produces a
-repo-scan observation with `supports: false` — "there are two of us editing it now"
-against `scale.single_user`. The assertion path recorded it as a premise and stopped
-there. Nothing invalidated the premise it named, so the premise stayed IN, every
-justification citing it stayed valid, and the decision resting on it never became
-unsound. **The world moved and the log did not notice** — the exact failure gate (c)
-exists to catch.
-
-Fixed in `assert.ts`: a refuting observation now emits `PremiseInvalidated` for the
-open premise it names, and the fold rewrites the `invalidatedBy.eventId` placeholder
-to the creating event (a batch producer cannot know the ids `appendBatch` will mint —
-the same problem the justification's informant had).
-
-**Derived exclusion premises were confirmed, so every justification was invalid from
-birth.** `premise-linker.ts` derives an OUT-list premise for each supporting premise
-("`scale.single_user` ⇒ OUT `scale.concurrent_writers`"). The Phase 1 commit path
-confirmed it, which labels it IN — and an OUT-list premise that is IN invalidates its
-justification. So every decision in the log was unsound the moment it was written, and
-one falsification took the whole graph with it. That is risk **R2, the cascade crying
-wolf**, and it is worse than under-retracting.
-
-Fixed in `extraction/commit.ts`: a derived exclusion premise is **not** confirmed. It
-stays UNKNOWN, because it is a *hypothesis* about what would break the decision, not an
-observation that it holds. It becomes IN when somebody observes it — which is exactly
-what "the world moved" looks like. That is Doyle's non-monotonic justification running
-in the right direction.
-
-### 8.3 The domain gap: `Premise.justifications`
-
-The reasoning layer needs the reverse index — "which justifications cite this premise" —
-to walk the cascade and to tell a DERIVED premise (something concluded, so it can be
-retracted) from an ASSUMPTION (something taken as given, so it has to be argued). The
-Phase 0 `Premise` had no such field.
-
-Added `Premise.justifications: readonly JustificationId[]`, populated by the fold when
-a `JustificationAttached` names a premise. The labeller also now publishes a label for
-each JUSTIFICATION, not just decisions and premises: Doyle's rule is about the
-justification, and the backtracker asks "which justification is IN".
-
-### 8.4 Smaller ones
-
-- `cascade.ts` read `premise.informant.decisionId` — a field that exists on neither
-  `Premise` nor `Justification.informant`. The intent is "the premises this decision's
-  own justification rests on", and that is what it now does: the justification whose
-  `consequent` is the decision, and its IN/OUT lists.
-- `NogoodRecord` and the persisted `Nogood` were two shapes of one concept. `NogoodRecord`
-  is now an alias of `Nogood`, so they cannot drift.
-- The labeller only refreshed a decision's REASON when its LABEL changed, so a valid
-  decision kept the "no justification" reason it was seeded with. The reason is now always
-  refreshed; only a label change extends the fixpoint.
-- `ReviseInput.now` was a plain `string` and every event it wrote stamped it as its
-  learned time. It is an `ISODateString` now.
-- `npm run check:structure` ran `python3`, which does not exist on Windows. It goes
-  through `scripts/check-structure.mjs`, which picks `python3` or `python`.
-- `scripts/check_structure.py` had the Windows path bug again: `str(relative_to(...))`
-  yields backslashes, so every allowlist comparison silently failed and the checker
-  reported the two files allowed to name `apiKey` and the one file allowed to use
-  `Math.random` as violations. `as_posix()` fixes it.
-
----
-
-## 9. What G2 actually does, measured
-
-`tests/integration/gate-g2.test.ts` — keyless, deterministic, no network. The graph is
-built the way a user builds it: paste the Oct-3 transcript, review, commit. Then the
-world moves.
-
-| Measure | Value |
-|---|---|
-| Decisions in the graph | 19 |
-| Premises | 32 (24 IN, 8 derived exclusions UNKNOWN) |
-| Justifications | 19 |
-| Premise falsified | `scale.single_user` (P-0006) |
-| Premises → OUT | 1 (P-0006) |
-| Decisions → OUT | **8** — exactly the ones whose justification cites P-0006 in its IN-list |
-| Decisions that SURVIVE | **11** |
-| Justifications → OUT | 8 |
-| Revision proposals | 8, each with an entrenchment breakdown |
-| Events produced | 332, in referent order |
-| Structural hits | 18 — all Phase 1 precision noise, not a Phase 2 fault |
-| Time | 0 ms |
-
-**The cascade is exact.** One premise falsified, eight decisions unsound, eleven
-untouched. The plan's narrative — WLD-0007 goes UNSOUND, WLD-0011 cascades, WLD-0019
-survives — holds on the fixture: WLD-0002…WLD-0009 go OUT (they share the premise),
-WLD-0001 and WLD-0010…WLD-0019 survive with `valid-justification`.
-
-**The decision ids do NOT match the plan's narrative.** The plan names WLD-0007,
-WLD-0011 and WLD-0019; the fixture produces WLD-0001…WLD-0019 with a different
-mapping, because the Phase 1 extractor's ordering and the Phase 0 plan's assumed
-ordering disagree. The plan's ids are illustrative, not contractual — but any demo
-script that names them has to be rewritten against the real ones.
-
-**What G2 does not exercise.** Gate (b) never runs in-app (no retriever until Phase 3),
-`implementation_cost` is always UNKNOWN, and `NogoodRecord` has no provenance field.
-Those are the gaps in §6, unchanged.
-
-**The remaining noise is Phase 1's.** 18 structural hits means the extractor produced
-several decisions on the same variable with different values — `DATABASE=postgres` and
-`DATABASE=sqlite` and `DATABASE=multi-user` — which is the Phase 1 precision problem
-the verification pass in `notes/PHASE-1-NOTES.md` §8.4 measures. The reasoning layer is
-behaving correctly on the data it is given.
+- [ ] **Gate G2 demonstration** — code-complete; **never executed**. The path is: import
+      `fixtures/demo-transcript.txt` → review → Reasoning → falsify a `scale` premise → expect
+      UNSOUND + cascade + survivor + proposal with breakdown. Only running it can confirm the
+      fixture's decision ids line up with the plan's `WLD-0007 / 0011 / 0019` narrative.

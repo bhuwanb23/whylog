@@ -488,10 +488,24 @@ deviations, all deliberate:
 | §5 dropped `ai/local/classify.ts` (recorded in §18.1) | **Added back**, at `src/ai/local/classify.ts`. | §2.11 specifies NLI-style rules for the local engine's gate (b), and `ai/local/index.ts` carried an explicit `Phase 2 adds the classifier here` stub. Four rules, no model. A fifth rule — negation across *different* variables — was written and **removed**: it fires on "no auth needed" beside "use SQLite", which is risk R3. The rejection is recorded in the file. |
 | §11 / §13 did not list them | **`store/reasoning.ts`** (681 L) and **`views/ReasoningView.tsx`** (1004 L). | The store is the only place in Phase 2 that can write to the log, which is invariant I4 mechanically enforced rather than by convention. The view is the G2 demonstration surface; without it the phase is not demoable. `App.tsx` now routes `reasoning` second, after `review`. |
 
+**One file added that §7 does not list:** `reasoning/graph-index.ts` (124 L). The graph is
+**bipartite** — `Justification.consequent` is a `DecisionId` and its lists are `PremiseId`s,
+so a premise is never a consequent and every premise is an assumption. Three modules were
+first written as though premises could be conclusions and referenced fields that do not exist
+(`premise.justifications`, `premise.informant`). This file records the real shape, builds the
+two indexes a traversal needs in one pass instead of `O(D² × J)` scans, and holds the
+`isDerivedPremiseText` marker that recognises Phase 1's OUT-list exclusions by TEXT, which is
+the only way they are marked. See `notes/PHASE-2-NOTES.md` §0.
+
 **Ordering deviation inside the cycle:** ADJUDICATE runs **before** BACKTRACK and CASCADE, not
 after as §2.1's diagram draws it. A *refused* newcomer produces no backtracking and no cascade,
 because nothing is retracted — screening first is what stops a passing remark from triggering a
 retraction run. The diagram shows the data flow for an *accepted* newcomer.
+
+**Resolution goes through the fold's own index.** `assert.ts:resolvePremise` reads
+`state.premiseByFingerprint` rather than scanning `state.premises`, so the reasoner and the
+fold cannot disagree about premise identity. That disagreement is §2.5's "confident,
+spectacular, entirely wrong cascade", and it would otherwise arrive through the front door.
 
 **Contracts reused, not re-derived:** `types/reasoning.ts` already fixed `BacktrackResult`,
 `CascadeResult`, `CascadeStep`, `NogoodRecord`, `AdjudicationOutcome`, `RevisionProposal`,

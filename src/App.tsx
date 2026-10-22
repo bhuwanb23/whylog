@@ -14,12 +14,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import { persistenceAvailable, useWhyLog } from "@/store/whylog";
-import { MODE_BADGE } from "@/theme";
+import { useEffect, useState, ReactElement } from "react";
+import { useWhyLog, persistenceAvailable } from "@/store/whylog";
 import { FoundationView } from "@/views/FoundationView";
-import { ReasoningView } from "@/views/ReasoningView";
 import { ReviewView } from "@/views/ReviewView";
-import { type ReactElement, useEffect, useState } from "react";
+import { ReasoningView } from "@/views/ReasoningView";
+import { MODE_BADGE } from "@/theme";
 
 type ViewId =
   | "review"
@@ -147,11 +147,7 @@ function ChainBadge({ status }: { status: string }): ReactElement {
   }
   if (status === "degraded") {
     return (
-      <span
-        className="badge"
-        style={{ color: "var(--action)" }}
-        title="The hash chain failed verification on load. The log is read-only."
-      >
+      <span className="badge" style={{ color: "var(--action)" }} title="The hash chain failed verification on load. The log is read-only.">
         chain broken
       </span>
     );
@@ -173,8 +169,8 @@ function NotYet({ view }: { view: { label: string; phase: string } | undefined }
       <h2 className="card-title">{view?.label ?? "View"}</h2>
       <p className="dim">
         This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it — the
-        append-only log, the fold, the bi-temporal projections and the hash chain — is built and is
-        what the Foundation view reports on.
+        append-only log, the fold, the bi-temporal projections and the hash chain — is built and
+        is what the Foundation view reports on.
       </p>
     </section>
   );

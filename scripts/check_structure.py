@@ -204,16 +204,10 @@ def value_expected(src: str, i: int, prev: str) -> bool:
 
 
 def rel(path: pathlib.Path) -> str:
-    """Repo-relative path, always with forward slashes.
-
-    `as_posix()` matters: `str(relative_to(...))` yields backslashes on Windows,
-    so every allowlist comparison below silently stopped matching and the
-    checker reported allowed files as violations.
-    """
     try:
-        return path.relative_to(ROOT).as_posix()
+        return str(path.relative_to(ROOT))
     except ValueError:
-        return path.as_posix()
+        return str(path)
 
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:
