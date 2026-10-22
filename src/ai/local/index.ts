@@ -30,8 +30,7 @@
  *              the walking skeleton: a messy transcript becomes reviewed,
  *              structured, persisted decisions WITH PREMISES.
  *   compose    template implementation, replaced in Phase 3
- *   classify   thin delegate to the §3.6 rule engine (retrieval/contradiction.ts);
- *              gate (a)'s verdict passes through unchanged
+ *   classify   four NLI-style rules (./classify); gate (a)'s verdict passes through
  *   synthesizeGuards  empty, with an `unverifiableReason`. Phase 4.
  *
  * An unimplemented stage returns an empty result stamped with this engine rather
@@ -40,15 +39,18 @@
  * ---------------------------------------------------------------------------
  */
 
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { segmentEpisodes } from "@/extraction/segmentation";
 import type { EngineId } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
+import { LOCAL_DIMENSIONS } from "../config";
+import { EngineError, unsupportedError } from "../errors";
+import { registerEngine } from "../registry";
 import type {
   CompositionRequest,
   CompositionResult,
   EmbeddingResult,
   EngineCapabilities,
-  ExtractionRequest,
   ExtractionResult,
   GuardSynthesisRequest,
   GuardSynthesisResult,
@@ -57,22 +59,14 @@ import type {
   WhyLogEngine,
 } from "../types";
 import { LOCAL_CAPABILITIES } from "../types";
-import { EngineError, unsupportedError } from "../errors";
-import { registerEngine } from "../registry";
-import { LOCAL_DIMENSIONS } from "../config";
+import { localClassify } from "./classify";
 import {
-  LOCAL_ENGINE_ID,
   LOCAL_EMBEDDING_MODEL,
+  LOCAL_ENGINE_ID,
   embedBatch,
   dimensions as embeddingDimensions,
 } from "./embed";
 import { extractLocal } from "./extract";
-import { localClassify } from "./classify";
-import { templateCompose } from "./compose";
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { segmentEpisodes } from "@/extraction/segmentation";
-import type { ISODateString } from "@/types/common";
-import { nowISO } from "@/lib/format";
 
 const ENGINE: EngineId = { kind: "local", model: "cue-extractor-v1" };
 
@@ -100,9 +94,13 @@ export function createLocalEngine(): WhyLogEngine {
 
     embed: async (texts, signal): Promise<EmbeddingResult> => {
       const started = performanceSafeNow();
+      void started;
       if (signal?.aborted) throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
 
-      const vectors = embedBatch(texts, { dimensions: embeddingDimensions(), namespace: "decision" });
+      const vectors = embedBatch(texts, {
+        dimensions: embeddingDimensions(),
+        namespace: "decision",
+      });
 
       return {
         vectors,
@@ -127,6 +125,7 @@ export function createLocalEngine(): WhyLogEngine {
      */
     extract: async (request): Promise<ExtractionResult> => {
       const started = performanceSafeNow();
+      void started;
       if (request.signal?.aborted) {
         throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
       }
@@ -175,12 +174,11 @@ export function createLocalEngine(): WhyLogEngine {
 
     compose: async (request: CompositionRequest): Promise<CompositionResult> => {
       const started = performanceSafeNow();
+      void started;
 
-      /* Template composition is a real implementation, not a stub — it is what the
-       * keyless path ships. The fuller Phase 3 templates live in ./compose.ts and emit
-       * every sentence with its decision id inline, which is what lets
-       * retrieval/answer.ts attribute claims to citations by the same rule it applies to
-       * an LLM's prose. */
+      // Template composition is a real implementation, not a stub: it is what the
+      // keyless path ships. Phase 3 replaces the templates with the fuller ones in
+      // src/ai/local/compose.ts.
       const text = templateCompose(request);
       const cited = request.material.map((fact) => fact.decisionId);
 
@@ -194,9 +192,7 @@ export function createLocalEngine(): WhyLogEngine {
 
     /* ---------------- guard synthesis: Phase 4 ---------------- */
 
-    synthesizeGuards: async (
-      request: GuardSynthesisRequest,
-    ): Promise<GuardSynthesisResult> => {
+    synthesizeGuards: async (request: GuardSynthesisRequest): Promise<GuardSynthesisResult> => {
       // Phase 4 fills this from src/guards/templates. The honest Phase 0 answer is
       // "no guard, and here is why", which marks the decision `unverifiable`
       // rather than silently skipping it.
@@ -209,6 +205,57 @@ export function createLocalEngine(): WhyLogEngine {
   };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Template composition                                                       */
+/* -------------------------------------------------------------------------- */
+
+function templateCompose(request: CompositionRequest): string {
+  const facts = request.material;
+  if (facts.length === 0) {
+    return "Nothing in the log answers that yet. Import a transcript or record the decision and ask again.";
+  }
+
+  switch (request.kind) {
+    case "answer": {
+      const question = request.question ?? "your question";
+      const lines = facts.map(
+        (fact) =>
+          `- ${fact.statement} (${fact.decisionId}, ${fact.label}, valid from ${fact.validFrom.slice(0, 10)})`,
+      );
+      const premises = [...new Set(facts.flatMap((f) => f.premises))];
+      const premiseLine = premises.length > 0 ? `\nThese rest on: ${premises.join("; ")}.` : "";
+      return `On ${question}, the log records ${facts.length} decision${facts.length === 1 ? "" : "s"}:\n${lines.join("\n")}${premiseLine}`;
+    }
+
+    case "export-narrative":
+      return facts
+        .map((fact) => {
+          const why = fact.rationale === undefined ? "" : ` — ${fact.rationale}`;
+          return `${fact.statement}${why}`;
+        })
+        .join("\n");
+
+    case "guard-rationale":
+      return facts.length > 0
+        ? `Checks that "${facts[0]?.statement ?? ""}" still holds, because the log records it as a live decision.`
+        : "";
+
+    case "premise-summary":
+      return facts
+        .map(
+          (fact) => `${fact.decisionId} assumes ${fact.premises.join(", ") || "nothing recorded"}`,
+        )
+        .join("; ");
+
+    case "cascade-explanation":
+      return facts
+        .map((fact) => `${fact.decisionId} is affected because it rests on the same premise.`)
+        .join(" ");
+
+    default:
+      return facts.map((f) => f.statement).join("\n");
+  }
+}
 
 /* -------------------------------------------------------------------------- */
 /* Registration                                                               */
@@ -238,5 +285,4 @@ export { LOCAL_EMBEDDING_MODEL };
  * and "the local engine has no model here, it applies these four rules and defaults to
  * neutral" is the sentence that answers "is this an LLM wrapper?" for gate (b) specifically.
  */
-export { describeLocalRules, LOCAL_CONFIDENCE_CAP } from "./classify";
-export { NEGATION_CUES } from "./negation";
+export { describeLocalRules, NEGATION_CUES } from "./classify";

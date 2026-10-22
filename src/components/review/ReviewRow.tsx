@@ -21,17 +21,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState, type ReactElement } from "react";
-import { useExtraction } from "@/store/extraction";
 import {
+  type ReviewItem,
   TIER_HINTS,
   approve,
   contest,
   describeAction,
   discard,
   edit,
-  type ReviewItem,
 } from "@/extraction";
+import { useExtraction } from "@/store/extraction";
+import { type ReactElement, useEffect, useState } from "react";
 import { TIER_COLOUR } from "./tier-colour";
 
 /* -------------------------------------------------------------------------- */
@@ -73,10 +73,11 @@ export function ReviewRow({
       }}
       onClick={onSelect}
       onKeyDown={(event) => {
-        if (event.key === "Enter") onSelect();
+        // Only when the CARD itself is the target. The title button has its own
+        // handler, and without this guard an Enter on it would select twice.
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") onSelect();
       }}
-      role="button"
-      tabIndex={0}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "10px 14px" }}>
         <button
@@ -93,32 +94,69 @@ export function ReviewRow({
           {open ? "−" : "+"}
         </button>
 
-        <span className="badge" title={TIER_HINTS[item.tier]}>{item.kind}</span>
-        <strong style={{ fontSize: 13 }}>{item.title}</strong>
+        <span className="badge" title={TIER_HINTS[item.tier]}>
+          {item.kind}
+        </span>
+
+        {/* The title is the KEYBOARD path to selecting a row. The card is the
+            mouse path; a card cannot be a button because it contains a real
+            <button> (the expand toggle), and a button inside a button is
+            invalid HTML. */}
+        <button
+          type="button"
+          className="faint"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect();
+          }}
+          style={{ fontWeight: 600, textAlign: "left", padding: 0 }}
+        >
+          <strong style={{ fontSize: 13 }}>{item.title}</strong>
+        </button>
 
         {item.derived && (
-          <span className="badge" title="Inferred from another premise, not quoted from the transcript">
+          <span
+            className="badge"
+            title="Inferred from another premise, not quoted from the transcript"
+          >
             derived
           </span>
         )}
         {item.conflictsWith.length > 0 && (
-          <span className="badge" style={{ borderColor: TIER_COLOUR.high }} title="Same variable, different value">
+          <span
+            className="badge"
+            style={{ borderColor: TIER_COLOUR.high }}
+            title="Same variable, different value"
+          >
             conflicts with {item.conflictsWith.join(", ")}
           </span>
         )}
 
         <span style={{ flex: 1 }} />
 
-        <span className="mono faint" style={{ fontSize: 11 }}>{item.confidence.toFixed(2)}</span>
-        <span className="faint" style={{ fontSize: 11 }}>{item.origin}</span>
+        <span className="mono faint" style={{ fontSize: 11 }}>
+          {item.confidence.toFixed(2)}
+        </span>
+        <span className="faint" style={{ fontSize: 11 }}>
+          {item.origin}
+        </span>
 
         {decided ? (
           <span className="badge">{describeAction(item.action)}</span>
         ) : (
           <span style={{ display: "flex", gap: 4 }}>
             <RowButton label="approve" onClick={() => act(item.key, approve(false))} />
-            <RowButton label="edit" onClick={() => { setDraft(item.detail); setOpen(true); }} />
-            <RowButton label="discard" onClick={() => act(item.key, discard("discarded in review"))} />
+            <RowButton
+              label="edit"
+              onClick={() => {
+                setDraft(item.detail);
+                setOpen(true);
+              }}
+            />
+            <RowButton
+              label="discard"
+              onClick={() => act(item.key, discard("discarded in review"))}
+            />
           </span>
         )}
       </div>
@@ -136,7 +174,10 @@ export function ReviewRow({
                 onCloseEdit();
               }}
               onContest={() => {
-                act(item.key, contest(reason.trim().length > 0 ? reason.trim() : "parked for later"));
+                act(
+                  item.key,
+                  contest(reason.trim().length > 0 ? reason.trim() : "parked for later"),
+                );
                 onCloseEdit();
               }}
               onCancel={onCloseEdit}
@@ -168,7 +209,9 @@ export function ReviewRow({
                 </p>
               )}
 
-              <p className="faint" style={{ fontSize: 12, margin: 0 }}>{item.resolution}</p>
+              <p className="faint" style={{ fontSize: 12, margin: 0 }}>
+                {item.resolution}
+              </p>
             </>
           )}
         </div>
@@ -177,7 +220,10 @@ export function ReviewRow({
   );
 }
 
-function RowButton({ label, onClick }: { readonly label: string; readonly onClick: () => void }): ReactElement {
+function RowButton({
+  label,
+  onClick,
+}: { readonly label: string; readonly onClick: () => void }): ReactElement {
   return (
     <button
       type="button"
@@ -234,10 +280,16 @@ function EditForm({
         not thrown away.
       </p>
       <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={onSave}>Save and approve</button>
-        <button type="button" onClick={onContest}>Contest</button>
+        <button type="button" onClick={onSave}>
+          Save and approve
+        </button>
+        <button type="button" onClick={onContest}>
+          Contest
+        </button>
         <span style={{ flex: 1 }} />
-        <button type="button" className="faint" onClick={onCancel}>Cancel</button>
+        <button type="button" className="faint" onClick={onCancel}>
+          Cancel
+        </button>
       </div>
     </div>
   );
