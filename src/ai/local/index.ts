@@ -39,15 +39,18 @@
  * ---------------------------------------------------------------------------
  */
 
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { segmentEpisodes } from "@/extraction/segmentation";
 import type { EngineId } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
+import { LOCAL_DIMENSIONS } from "../config";
+import { EngineError, unsupportedError } from "../errors";
+import { registerEngine } from "../registry";
 import type {
   CompositionRequest,
   CompositionResult,
   EmbeddingResult,
   EngineCapabilities,
-  ExtractionRequest,
   ExtractionResult,
   GuardSynthesisRequest,
   GuardSynthesisResult,
@@ -56,21 +59,14 @@ import type {
   WhyLogEngine,
 } from "../types";
 import { LOCAL_CAPABILITIES } from "../types";
-import { EngineError, unsupportedError } from "../errors";
-import { registerEngine } from "../registry";
-import { LOCAL_DIMENSIONS } from "../config";
+import { localClassify } from "./classify";
 import {
-  LOCAL_ENGINE_ID,
   LOCAL_EMBEDDING_MODEL,
+  LOCAL_ENGINE_ID,
   embedBatch,
   dimensions as embeddingDimensions,
 } from "./embed";
 import { extractLocal } from "./extract";
-import { localClassify } from "./classify";
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { segmentEpisodes } from "@/extraction/segmentation";
-import type { ISODateString } from "@/types/common";
-import { nowISO } from "@/lib/format";
 
 const ENGINE: EngineId = { kind: "local", model: "cue-extractor-v1" };
 
@@ -98,9 +94,13 @@ export function createLocalEngine(): WhyLogEngine {
 
     embed: async (texts, signal): Promise<EmbeddingResult> => {
       const started = performanceSafeNow();
+      void started;
       if (signal?.aborted) throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
 
-      const vectors = embedBatch(texts, { dimensions: embeddingDimensions(), namespace: "decision" });
+      const vectors = embedBatch(texts, {
+        dimensions: embeddingDimensions(),
+        namespace: "decision",
+      });
 
       return {
         vectors,
@@ -125,6 +125,7 @@ export function createLocalEngine(): WhyLogEngine {
      */
     extract: async (request): Promise<ExtractionResult> => {
       const started = performanceSafeNow();
+      void started;
       if (request.signal?.aborted) {
         throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
       }
@@ -173,6 +174,7 @@ export function createLocalEngine(): WhyLogEngine {
 
     compose: async (request: CompositionRequest): Promise<CompositionResult> => {
       const started = performanceSafeNow();
+      void started;
 
       // Template composition is a real implementation, not a stub: it is what the
       // keyless path ships. Phase 3 replaces the templates with the fuller ones in
@@ -190,9 +192,7 @@ export function createLocalEngine(): WhyLogEngine {
 
     /* ---------------- guard synthesis: Phase 4 ---------------- */
 
-    synthesizeGuards: async (
-      request: GuardSynthesisRequest,
-    ): Promise<GuardSynthesisResult> => {
+    synthesizeGuards: async (request: GuardSynthesisRequest): Promise<GuardSynthesisResult> => {
       // Phase 4 fills this from src/guards/templates. The honest Phase 0 answer is
       // "no guard, and here is why", which marks the decision `unverifiable`
       // rather than silently skipping it.
@@ -223,8 +223,7 @@ function templateCompose(request: CompositionRequest): string {
           `- ${fact.statement} (${fact.decisionId}, ${fact.label}, valid from ${fact.validFrom.slice(0, 10)})`,
       );
       const premises = [...new Set(facts.flatMap((f) => f.premises))];
-      const premiseLine =
-        premises.length > 0 ? `\nThese rest on: ${premises.join("; ")}.` : "";
+      const premiseLine = premises.length > 0 ? `\nThese rest on: ${premises.join("; ")}.` : "";
       return `On ${question}, the log records ${facts.length} decision${facts.length === 1 ? "" : "s"}:\n${lines.join("\n")}${premiseLine}`;
     }
 
@@ -243,7 +242,9 @@ function templateCompose(request: CompositionRequest): string {
 
     case "premise-summary":
       return facts
-        .map((fact) => `${fact.decisionId} assumes ${fact.premises.join(", ") || "nothing recorded"}`)
+        .map(
+          (fact) => `${fact.decisionId} assumes ${fact.premises.join(", ") || "nothing recorded"}`,
+        )
         .join("; ");
 
     case "cascade-explanation":

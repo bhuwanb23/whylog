@@ -21,6 +21,13 @@
  */
 
 import type {
+  AlternativeCandidate,
+  DecisionCandidate,
+  DiscardedCandidate,
+  PremiseCandidate,
+} from "@/ai/types";
+import type { ResolutionAction, ResolutionRung } from "@/substrate/identity";
+import type {
   AlternativeId,
   Confidence,
   DecisionId,
@@ -31,19 +38,7 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type {
-  DecisionOrigin,
-  DecisionVariable,
-  Modality,
-  PremiseType,
-} from "@/types/domain";
-import type { ResolutionAction, ResolutionRung } from "@/substrate/identity";
-import type {
-  AlternativeCandidate,
-  DecisionCandidate,
-  DiscardedCandidate,
-  PremiseCandidate,
-} from "@/ai/types";
+import type { DecisionOrigin, DecisionVariable, Modality } from "@/types/domain";
 
 /* -------------------------------------------------------------------------- */
 /* 1.1 — input shapes                                                         */
@@ -193,11 +188,7 @@ export interface NormalizedTranscript {
 
 /** Why an episode ended. Recorded so a bad boundary is diagnosable rather than
  *  merely observed. */
-export type EpisodeBoundaryReason =
-  | "topic-shift"
-  | "cue-gap"
-  | "length-cap"
-  | "end-of-transcript";
+export type EpisodeBoundaryReason = "topic-shift" | "cue-gap" | "length-cap" | "end-of-transcript";
 
 /**
  * A decision episode: a window of consecutive turns bounded by topic shift and
@@ -278,12 +269,7 @@ export interface ExtractionOptions {
   readonly signal?: AbortSignal;
 }
 
-export type StageName =
-  | "normalise"
-  | "segment"
-  | "recognise"
-  | "resolve"
-  | "score";
+export type StageName = "normalise" | "segment" | "recognise" | "resolve" | "score";
 
 /** Per-stage telemetry. Extraction is the layer users trust least, so it reports
  *  what it did rather than only what it found. */
@@ -448,7 +434,10 @@ export function isAccepted(action: ReviewAction | null): boolean {
 export interface ReviewOutcome {
   readonly approved: readonly ResolvedCandidate[];
   readonly discarded: readonly ResolvedCandidate[];
-  readonly merged: readonly { readonly candidate: ResolvedCandidate; readonly intoId: DecisionId | PremiseId }[];
+  readonly merged: readonly {
+    readonly candidate: ResolvedCandidate;
+    readonly intoId: DecisionId | PremiseId;
+  }[];
   readonly contested: readonly { readonly candidate: ResolvedCandidate; readonly reason: string }[];
   readonly secondsTaken: number;
 }

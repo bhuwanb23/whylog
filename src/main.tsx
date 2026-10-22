@@ -21,8 +21,8 @@ import "@/ai/local";
 import "@/ai/llm";
 import "./index.css";
 
-import { App } from "./App";
 import { bootOnce } from "@/store/whylog";
+import { App } from "./App";
 
 const container = document.getElementById("root");
 

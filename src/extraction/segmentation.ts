@@ -1,47 +1,12 @@
-/**
- * Episode segmentation — 1.2, the deliberate deviation.
- *
- * Phase 1 · sub-phase 1.2
- * Plan: plan/phase-1-extraction-pipeline.md §1.2
- *
- * ---------------------------------------------------------------------------
- * WHY NOT SENTENCES
- *
- * arXiv:2506.11005 (Kantara) assumes "rationale appears in a single sentence
- * containing both a decision and its rationale". That holds for Linux commit
- * messages, which are written AFTER the decision by someone summarising it.
- *
- * It does not hold for dialogue, where the decision is NEGOTIATED:
- *
- *     agent:  "Postgres via Supabase would work, but it means a hosted
- *              dependency… What's the actual concurrency requirement?"
- *     human:  "none really. it's one person, one machine, one log."   ← PREMISE
- *     agent:  "Then I'd use SQLite with better-sqlite3 instead…"       ← PROPOSAL
- *     human:  "yeah ok. going with SQLite, not Postgres. single-user   ← DECISION
- *              and no deploy hassle is the whole argument."            ← RATIONALE
- *
- * Four turns, one decision, and the premise appears BEFORE the decision it
- * supports. Sentence segmentation discards turns 1 and 2 for having no cue, which
- * is precisely the premise the whole product is built on. So: segment on EPISODES
- * — a window of consecutive turns bounded by topic shift and containing at least
- * one decision cue — extract at episode granularity, then attribute individual
- * snippets within it.
- *
- * ---------------------------------------------------------------------------
- * THE LEAD TURN
- *
- * Every episode includes one turn BEFORE its first cue. That single rule is what
- * recovers the premise above, and it costs one extra turn of context per episode.
- * It is not a heuristic dressed up as a principle: it is the observation that in
- * dialogue the constraint is stated, then the decision follows from it.
- * ---------------------------------------------------------------------------
- */
-
-import type { DecisionVariable } from "@/types/domain";
 import type { VariableGuess } from "@/ontology/canonicalize";
-import type { EpisodeBoundaryReason, EpisodeWindow, NormalizedTurn, NormalizedTranscript } from "./types";
-import { episodeVariable, scanCues, variableAtCue, type CueHit } from "./cue-scan";
+import { type CueHit, episodeVariable, scanCues, variableAtCue } from "./cue-scan";
 import { toRawBounds } from "./normalizer";
+import type {
+  EpisodeBoundaryReason,
+  EpisodeWindow,
+  NormalizedTranscript,
+  NormalizedTurn,
+} from "./types";
 
 /** Consecutive cue-less turns that close an episode. Three rather than one
  *  because a negotiation routinely has a digression in the middle of it, and
@@ -225,7 +190,8 @@ function variableForTurn(turn: NormalizedTurn, hits: readonly CueHit[]): Variabl
 
 function charSpan(turns: readonly NormalizedTurn[], start: number, end: number): number {
   let total = 0;
-  for (let i = start; i < Math.min(end, turns.length); i += 1) total += (turns[i]?.text.length ?? 0) + 2;
+  for (let i = start; i < Math.min(end, turns.length); i += 1)
+    total += (turns[i]?.text.length ?? 0) + 2;
   return total;
 }
 
@@ -319,7 +285,10 @@ export function describeSegmentation(result: SegmentationResult, turnCount: numb
 
 /** The episode a normalised character position falls in. Used to attribute a
  *  snippet to its episode when the recogniser only has an offset. */
-export function episodeAt(episodes: readonly EpisodeWindow[], position: number): EpisodeWindow | null {
+export function episodeAt(
+  episodes: readonly EpisodeWindow[],
+  position: number,
+): EpisodeWindow | null {
   for (const episode of episodes) {
     if (position >= episode.charRange[0] && position < episode.charRange[1]) return episode;
   }

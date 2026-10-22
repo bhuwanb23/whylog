@@ -48,23 +48,23 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, EngineId, PremiseId } from "@/types/common";
-import type { Decision } from "@/types/domain";
 import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
+import { ONTOLOGY_CANONICALIZER, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import type { GraphState } from "@/substrate/graph-state";
 import {
+  type DecisionResolution,
+  type PremiseResolution,
   decisionPool,
   premiseFingerprint,
   premisePool,
   resolveDecision,
   resolvePremise,
-  type DecisionResolution,
-  type PremiseResolution,
 } from "@/substrate/identity";
-import { ONTOLOGY_CANONICALIZER, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
-import type { ResolvedCandidate, ResolutionOutcome } from "./types";
-import { tierOf } from "./types";
+import type { DecisionId, EngineId, PremiseId } from "@/types/common";
+import type { Decision } from "@/types/domain";
 import type { OriginClassification } from "./provenance";
+import type { ResolutionOutcome, ResolvedCandidate } from "./types";
+import { tierOf } from "./types";
 
 export interface ResolutionContext {
   readonly state: GraphState;
@@ -228,7 +228,10 @@ export function resolveExtraction(
 /* Decisions                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function resolveOneDecision(candidate: DecisionCandidate, context: ResolutionContext): ResolutionOutcome {
+function resolveOneDecision(
+  candidate: DecisionCandidate,
+  context: ResolutionContext,
+): ResolutionOutcome {
   const pool = decisionPool(context.state.decisions, candidate.variable);
   const resolution: DecisionResolution = resolveDecision({
     variable: candidate.variable,
@@ -266,9 +269,14 @@ function resolveOneDecision(candidate: DecisionCandidate, context: ResolutionCon
  * and flagging every reversal as a conflict would put the whole supersession
  * mechanism in the conflict queue.
  */
-export function conflictingDecisions(candidate: DecisionCandidate, state: GraphState): readonly DecisionId[] {
+export function conflictingDecisions(
+  candidate: DecisionCandidate,
+  state: GraphState,
+): readonly DecisionId[] {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
 
   const ids = state.byVariable.get(candidate.variable) ?? [];
   const out: DecisionId[] = [];
@@ -289,7 +297,10 @@ export function conflictingDecisions(candidate: DecisionCandidate, state: GraphS
 /* Premises                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function resolveOnePremise(candidate: PremiseCandidate, context: ResolutionContext): ResolutionOutcome {
+function resolveOnePremise(
+  candidate: PremiseCandidate,
+  context: ResolutionContext,
+): ResolutionOutcome {
   // The fast path: the fingerprint index is exact, so a premise whose type and
   // canonical predicate are already in the graph is a merge without running the
   // ladder at all. Double-importing a transcript takes this path for every premise,
@@ -344,7 +355,9 @@ function resolveOneAlternative(
   decisionOutcomes: readonly ResolutionOutcome[],
 ): ResolutionOutcome {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
 
   for (const existing of context.state.alternatives.values()) {
     if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, decisionOutcomes)) continue;
@@ -405,7 +418,9 @@ export function describeResolution(report: ResolutionReport): string {
     `${report.created} new`,
   ];
   if (report.conflicts > 0) {
-    outcomes.push(`${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`);
+    outcomes.push(
+      `${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`,
+    );
   }
   return `${parts.join(", ")} → ${outcomes.join(", ")}`;
 }

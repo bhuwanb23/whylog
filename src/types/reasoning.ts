@@ -15,7 +15,7 @@ import type {
   ProposalId,
   SourceSpan,
 } from "./common";
-import type { DecisionLabel, Nogood } from "./domain";
+import type { DecisionLabel } from "./domain";
 
 /* -------------------------------------------------------------------------- */
 /* Entrenchment                                                               */

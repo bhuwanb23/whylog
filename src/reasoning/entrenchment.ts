@@ -54,19 +54,17 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision, Premise } from "@/types/domain";
 import { ORIGIN_AUTHORITY } from "@/types/domain";
-import type {
-  EntrenchmentBreakdown,
-} from "@/types/reasoning";
+import type { EntrenchmentBreakdown } from "@/types/reasoning";
 import {
   ENTRENCHMENT_WEIGHTS,
   RECENCY_HALF_LIFE_DAYS,
   UNKNOWN_IMPLEMENTATION_COST,
   entrenchmentBand,
 } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
 import { indexGraph, justificationsFor } from "./graph-index";
 
 /* -------------------------------------------------------------------------- */
@@ -242,7 +240,7 @@ export function recencyScore(validFromMs: number, now: number): number {
   if (!Number.isFinite(validFromMs)) return 0.5;
 
   const ageDays = Math.max(0, (now - validFromMs) / 86_400_000);
-  return Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
+  return 0.5 ** (ageDays / RECENCY_HALF_LIFE_DAYS);
 }
 
 function validFromMs(decision: Decision): number {

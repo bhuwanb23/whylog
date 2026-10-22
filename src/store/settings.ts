@@ -17,23 +17,23 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { EngineCapabilities } from "@/ai/types";
 import type { EngineConfig } from "@/ai/config";
 import {
   DEFAULT_CONFIG,
   DEFAULT_MODELS,
+  type ProviderId,
   engineIdOf,
   forgetKey,
   hasKey,
   readConfig,
   redacted,
   writeConfig,
-  type ProviderId,
 } from "@/ai/config";
 import { invalidateEngine } from "@/ai/engine";
+import type { EngineCapabilities } from "@/ai/types";
+import type { Result } from "@/lib/result";
 import { TAU_HIGH, TAU_LOW } from "@/substrate/identity";
 import type { EngineId } from "@/types/common";
-import type { Result } from "@/lib/result";
 
 export interface SettingsState {
   readonly config: EngineConfig;
@@ -90,9 +90,13 @@ export function initialSettings(): SettingsState {
    *  then invalidates the resolved-engine cache. Forgetting the invalidation would
    *  keep stamping new nodes with the old engine id — the exact failure the
    *  "badged, never mixed" rule exists to prevent. */
-  const mutate = (patch: Partial<EngineConfig>): Result<void, string> => applyConfig(config, patch).result;
+  const mutate = (patch: Partial<EngineConfig>): Result<void, string> =>
+    applyConfig(config, patch).result;
 
-  const reloadFrom = (): Pick<SettingsState, "config" | "engineId" | "hasKey" | "keyHint" | "wantsLlm"> => {
+  const reloadFrom = (): Pick<
+    SettingsState,
+    "config" | "engineId" | "hasKey" | "keyHint" | "wantsLlm"
+  > => {
     const next = readConfig();
     const nextView = redacted(next);
     return {
@@ -130,7 +134,10 @@ export function initialSettings(): SettingsState {
     setProvider: (provider) => mutate({ provider, model: DEFAULT_MODELS[provider] }),
     setModel: (model) => mutate({ model }),
     setApiKey: (apiKey) =>
-      mutate({ apiKey: apiKey.trim().length === 0 ? null : apiKey.trim(), wantsLlmWithoutKey: false }),
+      mutate({
+        apiKey: apiKey.trim().length === 0 ? null : apiKey.trim(),
+        wantsLlmWithoutKey: false,
+      }),
     clearKey: () => {
       const result = forgetKey();
       if (result.ok) invalidateEngine();

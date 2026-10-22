@@ -32,14 +32,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
 import type { ExtractionRun } from "@/extraction/types";
 import type { ResolvedCandidate } from "@/extraction/types";
-import type { ConfidenceTier, ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
 import { tierOf } from "@/extraction/types";
-
-
+import type { GraphState } from "@/substrate/graph-state";
+import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
+import type { ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
 
 /* -------------------------------------------------------------------------- */
 /* From an uncommitted run                                                    */
@@ -324,7 +322,8 @@ export interface QueueSummary {
 }
 
 export function summariseQueue(items: readonly ReviewItem[]): QueueSummary {
-  const count = (predicate: (item: ReviewItem) => boolean): number => items.filter(predicate).length;
+  const count = (predicate: (item: ReviewItem) => boolean): number =>
+    items.filter(predicate).length;
 
   return {
     total: items.length,
@@ -360,7 +359,9 @@ export function describeQueue(summary: QueueSummary): string {
   if (summary.derived > 0) parts.push(`${summary.derived} derived rather than quoted — read those`);
   if (summary.conflicts > 0) parts.push(`${summary.conflicts} conflict with a live decision`);
   if (summary.reviewed > 0) {
-    parts.push(`${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`);
+    parts.push(
+      `${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`,
+    );
   }
   return parts.join(" · ");
 }

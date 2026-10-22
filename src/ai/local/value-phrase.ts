@@ -27,11 +27,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import { DECISION_VARIABLES, type DecisionVariable } from "@/types/domain";
-import { VARIABLE_META } from "@/ontology/data/variables";
-import { ALIASES, GLOBAL_ALIASES, canonicalToVariables } from "@/ontology/data/aliases";
-import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
 import { STOPWORDS, tokenise } from "@/lib/text";
+import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
+import { ALIASES, GLOBAL_ALIASES, canonicalToVariables } from "@/ontology/data/aliases";
+import { VARIABLE_META } from "@/ontology/data/variables";
+import { DECISION_VARIABLES, type DecisionVariable } from "@/types/domain";
 
 export type ValueStrength = "known" | "scoped-known" | "tech-shaped" | "bare";
 
@@ -116,15 +116,81 @@ export function lexiconSize(): number {
 const VALUE_CHAR = /[A-Za-z0-9@/._+\-#]/;
 /** Words that may appear INSIDE a value ("Tailwind CSS", "GitHub Actions") but
  *  never START one. */
-const INNER_WORDS = new Set(["css", "actions", "cloud", "code", "studio", "server", "db", "js", "ui", "kit", "engine", "api"]);
+const INNER_WORDS = new Set([
+  "css",
+  "actions",
+  "cloud",
+  "code",
+  "studio",
+  "server",
+  "db",
+  "js",
+  "ui",
+  "kit",
+  "engine",
+  "api",
+]);
 /** Words that END a value: a conjunction or a preposition is the start of the
  *  next thought. */
 const TRAILING_STOP = new Set([
-  "and", "or", "but", "so", "because", "since", "for", "with", "without",
-  "instead", "rather", "over", "not", "no", "the", "a", "an", "to", "in", "on",
-  "as", "by", "from", "then", "also", "just", "really", "actually",
+  "and",
+  "or",
+  "but",
+  "so",
+  "because",
+  "since",
+  "for",
+  "with",
+  "without",
+  "instead",
+  "rather",
+  "over",
+  "not",
+  "no",
+  "the",
+  "a",
+  "an",
+  "to",
+  "in",
+  "on",
+  "as",
+  "by",
+  "from",
+  "then",
+  "also",
+  "just",
+  "really",
+  "actually",
 ]);
-const LEADING_STOP = new Set(["the", "a", "an", "some", "any", "this", "that", "using", "use", "go", "going", "with", "to", "switch", "switching", "move", "moving", "migrate", "migrating", "adopt", "pick", "picked", "choose", "chose", "keep", "sticking", "stick"]);
+const LEADING_STOP = new Set([
+  "the",
+  "a",
+  "an",
+  "some",
+  "any",
+  "this",
+  "that",
+  "using",
+  "use",
+  "go",
+  "going",
+  "with",
+  "to",
+  "switch",
+  "switching",
+  "move",
+  "moving",
+  "migrate",
+  "migrating",
+  "adopt",
+  "pick",
+  "picked",
+  "choose",
+  "chose",
+  "keep",
+  "sticking",
+  "stick",
+]);
 
 /**
  * The value phrase that follows a cue.
@@ -204,7 +270,8 @@ function takePhrase(window: string): string {
 
     const lower = clean.toLowerCase();
     if (words.length > 0 && (TRAILING_STOP.has(lower) || STOPWORDS.has(lower))) break;
-    if (words.length > 0 && !INNER_WORDS.has(lower) && !/[.\-@/#]/.test(clean) && !isKnown(lower)) break;
+    if (words.length > 0 && !INNER_WORDS.has(lower) && !/[.\-@/#]/.test(clean) && !isKnown(lower))
+      break;
     if (words.length >= 4) break;
 
     words.push(clean);
@@ -235,7 +302,12 @@ const STRENGTH_SCORE: Readonly<Record<ValueStrength, number>> = {
  * Called with the cue's context window rather than the whole episode: a value
  * mentioned three sentences away is not the value this decision is about.
  */
-export function rankValues(text: string, start: number, end: number, hintVariable?: DecisionVariable | null): readonly ValueCandidate[] {
+export function rankValues(
+  text: string,
+  start: number,
+  end: number,
+  hintVariable?: DecisionVariable | null,
+): readonly ValueCandidate[] {
   const window = text.slice(start, end);
   const candidates: ValueCandidate[] = [];
   const seen = new Set<string>();
@@ -335,7 +407,9 @@ export function isTechShaped(surface: string): boolean {
  * on.
  */
 export function knownValuesIn(text: string, start: number, end: number): readonly ValueCandidate[] {
-  return rankValues(text, start, end, null).filter((c) => c.strength === "known" || c.strength === "scoped-known");
+  return rankValues(text, start, end, null).filter(
+    (c) => c.strength === "known" || c.strength === "scoped-known",
+  );
 }
 
 export function describeStrength(strength: ValueStrength): string {

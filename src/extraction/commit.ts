@@ -56,6 +56,14 @@
  * ---------------------------------------------------------------------------
  */
 
+import {
+  formatAlternativeId,
+  formatDecisionId,
+  formatEpisodeId,
+  formatJustificationId,
+  formatPremiseId,
+} from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
 import type {
   AlternativeId,
   Confidence,
@@ -64,29 +72,16 @@ import type {
   EpisodeId,
   EventId,
   ISODateString,
-  JustificationId,
   PremiseId,
   TranscriptId,
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { Actor } from "@/types/common";
-import type {
-  EventType,
-  JustificationAttachedPayload,
-  NewEvent,
-} from "@/types/events";
 import type { Justification } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import {
-  formatAlternativeId,
-  formatDecisionId,
-  formatEpisodeId,
-  formatJustificationId,
-  formatPremiseId,
-} from "@/lib/ids";
+import type { EventType, JustificationAttachedPayload, NewEvent } from "@/types/events";
+import { isDerivedPremise } from "./review";
 import { isAccepted } from "./types";
 import type { ResolvedCandidate, ReviewAction } from "./types";
-import { isDerivedPremise } from "./review";
 
 export interface CommitInput {
   readonly transcriptId: TranscriptId;
@@ -170,7 +165,10 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   // `contest` is not an acceptance and not a discard: it parks the item. Phase 2
   // turns the Contested queue into proposals; until then a contested item is
   // recorded as a discard so it does not silently vanish, with the human's reason.
-  const accepted = reviewed.filter((item) => item.action !== null && item.action.type !== "discard" && item.action.type !== "contest");
+  const accepted = reviewed.filter(
+    (item) =>
+      item.action !== null && item.action.type !== "discard" && item.action.type !== "contest",
+  );
   const rejected = reviewed.filter((item) => item.action?.type === "discard");
   const contested = reviewed.filter((item) => item.action?.type === "contest");
   if (accepted.length === 0 && rejected.length === 0 && contested.length === 0) {
@@ -204,8 +202,8 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   let premiseCount = 0;
   let premiseConfirmations = 0;
 
-  input.items.forEach((item) => {
-    if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) return;
+  for (const item of input.items) {
+    if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) continue;
 
     // A merge does not create a node: `PremiseAsserted` on an EXISTING id appends
     // evidence and takes the max confidence, which is what corroboration is.
@@ -233,10 +231,17 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
     premiseCount += 1;
 
     if (item.action?.type === "edit") {
-      drafts.push(reviewEvent("PremiseCorrected", {
-        premiseId: id,
-        fields: item.action.fields,
-      }, `Premise ${id} corrected by hand: ${item.premise.predicate}`, reasons));
+      drafts.push(
+        reviewEvent(
+          "PremiseCorrected",
+          {
+            premiseId: id,
+            fields: item.action.fields,
+          },
+          `Premise ${id} corrected by hand: ${item.premise.predicate}`,
+          reasons,
+        ),
+      );
     } else if (isDerivedPremise(item.premise.predicate, item.premise.text)) {
       /* A DERIVED EXCLUSION is NOT confirmed.
        *
@@ -257,19 +262,25 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
        * non-monotonic justification running in the right direction.
        */
     } else {
-      drafts.push(reviewEvent("PremiseConfirmed", { premiseId: id },
-        `Premise ${id} confirmed: ${item.premise.text}`, reasons));
+      drafts.push(
+        reviewEvent(
+          "PremiseConfirmed",
+          { premiseId: id },
+          `Premise ${id} confirmed: ${item.premise.text}`,
+          reasons,
+        ),
+      );
       premiseConfirmations += 1;
     }
-  });
+  }
 
   /* ---- 2. decisions ---- */
   let decisionCount = 0;
   let approvals = 0;
   let edits = 0;
 
-  input.items.forEach((item) => {
-    if (item.kind !== "decision" || item.decision === null || !isAccepted(item.action)) return;
+  for (const item of input.items) {
+    if (item.kind !== "decision" || item.decision === null || !isAccepted(item.action)) continue;
 
     const id =
       item.resolution.action === "merge" && item.resolution.matchedId !== null
@@ -291,7 +302,9 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         value: item.decision.value,
         statement: item.decision.statement,
         ...(item.decision.rationale === undefined ? {} : { rationale: item.decision.rationale }),
-        ...(item.decision.acceptedDownside === undefined ? {} : { acceptedDownside: item.decision.acceptedDownside }),
+        ...(item.decision.acceptedDownside === undefined
+          ? {}
+          : { acceptedDownside: item.decision.acceptedDownside }),
         origin: item.origin,
         modality: item.decision.modality,
         confidence: item.confidence,
@@ -338,30 +351,46 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
 
     /* ---- 5. the review event ---- */
     if (item.action?.type === "edit") {
-      drafts.push(reviewEvent("DecisionEdited", {
-        decisionId: id,
-        fields: item.action.fields,
-      }, `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`, reasons));
+      drafts.push(
+        reviewEvent(
+          "DecisionEdited",
+          {
+            decisionId: id,
+            fields: item.action.fields,
+          },
+          `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`,
+          reasons,
+        ),
+      );
       edits += 1;
     } else {
-      const viaBulk = item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
-      drafts.push(reviewEvent("DecisionApproved", {
-        decisionId: id,
-        viaBulkApprove: viaBulk,
-      }, approvalReason(item, viaBulk), reasons));
+      const viaBulk =
+        item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
+      drafts.push(
+        reviewEvent(
+          "DecisionApproved",
+          {
+            decisionId: id,
+            viaBulkApprove: viaBulk,
+          },
+          approvalReason(item, viaBulk),
+          reasons,
+        ),
+      );
       approvals += 1;
     }
-  });
+  }
 
   /* ---- 4. alternatives, after their decisions ---- */
   let alternativeCount = 0;
 
-  input.items.forEach((item) => {
-    if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action)) return;
+  for (const item of input.items) {
+    if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action))
+      continue;
 
     const decisionKey = `decision:${item.alternative.decisionRef}`;
     const decisionId = decisionIds.get(decisionKey);
-    if (decisionId === undefined) return; // its decision was discarded, so it has nothing to be an alternative TO
+    if (decisionId === undefined) continue; // its decision was discarded, so it has nothing to be an alternative TO
 
     const seq = (alternativesByDecision.get(decisionId) ?? 0) + 1;
     alternativesByDecision.set(decisionId, seq);
@@ -374,14 +403,16 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         decisionId,
         variable: item.alternative.variable,
         value: item.alternative.value,
-        ...(item.alternative.whyRejected === undefined ? {} : { whyRejected: item.alternative.whyRejected }),
+        ...(item.alternative.whyRejected === undefined
+          ? {}
+          : { whyRejected: item.alternative.whyRejected }),
         confidence: item.confidence,
         engine: input.engine,
         snippet: item.alternative.snippet,
       },
     });
     alternativeCount += 1;
-  });
+  }
 
   /* ---- 6. discards ---- */
   let discardCount = 0;
@@ -490,7 +521,9 @@ function resolvePremiseRefs(
 }
 
 function justificationReason(justification: Justification): string {
-  const parts = [`${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`];
+  const parts = [
+    `${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`,
+  ];
   if (justification.outList.length > 0) {
     parts.push(
       `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} — non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
@@ -510,18 +543,21 @@ function justificationReason(justification: Justification): string {
  * and it should say WHICH item it was about, because the reason is what the audit
  * trail shows six months later when somebody asks why a decision is IN.
  */
-function reviewEvent<T extends "DecisionApproved" | "DecisionEdited" | "DecisionRejected" | "PremiseConfirmed" | "PremiseCorrected">(
-  type: T,
-  payload: NewEvent<T>["payload"],
-  reason: string,
-  reasons: string[],
-): NewEvent<T> {
+function reviewEvent<
+  T extends
+    | "DecisionApproved"
+    | "DecisionEdited"
+    | "DecisionRejected"
+    | "PremiseConfirmed"
+    | "PremiseCorrected",
+>(type: T, payload: NewEvent<T>["payload"], reason: string, reasons: string[]): NewEvent<T> {
   reasons.push(reason);
   return { type, payload, reason };
 }
 
 function approvalReason(item: ResolvedCandidate, bulk: boolean): string {
-  const label = item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
+  const label =
+    item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
   return bulk
     ? `Approved ${label} in a bulk action, so it stays UNKNOWN rather than IN until it is approved individually.`
     : `Approved ${label}: the extraction is accepted and the decision is asserted.`;
@@ -553,6 +589,5 @@ function episodeIdFor(
   // sequence rather than a guess at an existing one.
   return formatEpisodeId(state.counters.episodes + Math.max(1, episodeIndex + 1));
 }
-
 
 export { PLACEHOLDER_EVENT_ID };

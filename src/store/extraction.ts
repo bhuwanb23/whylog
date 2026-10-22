@@ -32,34 +32,33 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
-import type { EngineId, ISODateString, TranscriptId } from "@/types/common";
-import { ok, err, type Result } from "@/lib/result";
-import { nowISO } from "@/lib/format";
-import { useWhyLog } from "./whylog";
 import { getEngine } from "@/ai/engine";
 import {
+  type CommitPreview,
   DEFAULT_REVIEW_OPTIONS,
+  type ReviewItem,
+  type ReviewQueueOptions,
+  applyAction,
+  approve,
   commitReview,
   describeCommit,
   describeFailure,
   describeQueue,
+  discard,
   filterQueue,
   previewCommit,
   queueFromRun,
   sortQueue,
   summariseQueue,
-  applyAction,
-  applyBatch,
-  approve,
-  discard,
-  type CommitPreview,
-  type ReviewItem,
-  type ReviewQueueOptions,
 } from "@/extraction";
-import { runExtraction, type PipelineFailure } from "@/extraction/pipeline";
+import { type PipelineFailure, runExtraction } from "@/extraction/pipeline";
 import type { ExtractionRun, ResolvedCandidate, ReviewAction } from "@/extraction/types";
+import { nowISO } from "@/lib/format";
 import { formatTranscriptId } from "@/lib/ids";
+import { type Result, err, ok } from "@/lib/result";
+import type { EngineId, ISODateString } from "@/types/common";
+import { create } from "zustand";
+import { useWhyLog } from "./whylog";
 
 const REVIEW_KEY = "whylog:review:v1";
 
@@ -126,7 +125,8 @@ export const useExtraction = create<ExtractionState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message = "The log is read-only: its hash chain is broken. Nothing can be imported until it is restored.";
+      const message =
+        "The log is read-only: its hash chain is broken. Nothing can be imported until it is restored.";
       set({ status: "error", error: message });
       return err(message);
     }
@@ -154,7 +154,10 @@ export const useExtraction = create<ExtractionState>()((set, get) => ({
           engine: active.id,
         },
       },
-      { reason: `Imported a ${raw.length.toLocaleString("en-IN")}-character transcript for extraction.`, occurredAt: at },
+      {
+        reason: `Imported a ${raw.length.toLocaleString("en-IN")}-character transcript for extraction.`,
+        occurredAt: at,
+      },
     );
     if (!imported.ok) {
       set({ status: "error", error: imported.error });
@@ -208,7 +211,11 @@ export const useExtraction = create<ExtractionState>()((set, get) => ({
   },
 
   actOnVisible: (action) => {
-    const visible = new Set(get().visible().map((item) => item.key));
+    const visible = new Set(
+      get()
+        .visible()
+        .map((item) => item.key),
+    );
     const queue = get().queue.map((item) =>
       visible.has(item.key) && item.action === null ? applyAction(item, action) : item,
     );
@@ -221,7 +228,10 @@ export const useExtraction = create<ExtractionState>()((set, get) => ({
     // decisions promoted to IN by a single click is how a machine inference ends up
     // driving a cascade, so the fast path is fast without being authoritative.
     const expanded = new Set(
-      get().items().filter((item) => item.expanded && item.action === null).map((item) => item.key),
+      get()
+        .items()
+        .filter((item) => item.expanded && item.action === null)
+        .map((item) => item.key),
     );
     const queue = get().queue.map((item) =>
       expanded.has(item.key) ? applyAction(item, approve(true)) : item,
@@ -232,10 +242,15 @@ export const useExtraction = create<ExtractionState>()((set, get) => ({
 
   discardAllCollapsed: () => {
     const collapsed = new Set(
-      get().items().filter((item) => !item.expanded && item.action === null).map((item) => item.key),
+      get()
+        .items()
+        .filter((item) => !item.expanded && item.action === null)
+        .map((item) => item.key),
     );
     const queue = get().queue.map((item) =>
-      collapsed.has(item.key) ? applyAction(item, discard("collapsed and discarded in bulk")) : item,
+      collapsed.has(item.key)
+        ? applyAction(item, discard("collapsed and discarded in bulk"))
+        : item,
     );
     set({ queue });
     persist(get());
@@ -361,7 +376,11 @@ interface Persisted {
 function persist(state: ExtractionState): void {
   if (state.run === null) return;
   try {
-    const payload: Persisted = { run: state.run, queue: state.queue, savedAt: nowISO() as ISODateString };
+    const payload: Persisted = {
+      run: state.run,
+      queue: state.queue,
+      savedAt: nowISO() as ISODateString,
+    };
     localStorage.setItem(REVIEW_KEY, JSON.stringify(payload));
   } catch {
     // A review that cannot be persisted is still a review. Failing loudly here
