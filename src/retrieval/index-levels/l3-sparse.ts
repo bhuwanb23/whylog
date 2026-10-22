@@ -35,9 +35,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import { type SparseCorpus, buildCorpus, searchSparse } from "@/lib/bm25";
 import type { DecisionId } from "@/types/common";
 import type { IndexArtifacts, RankedHit } from "@/types/retrieval";
+import { buildCorpus, searchSparse, type SparseCorpus } from "@/lib/bm25";
 import { rank } from "../rrf";
 
 /**
@@ -102,5 +102,5 @@ export function describeL3(artifacts: IndexArtifacts): string {
   const count = l3Count(artifacts);
   return count === 0
     ? "L3 sparse lexical — no documents. Either the log is empty or every decision is superseded."
-    : `L3 sparse lexical (BM25) — ${count} document(s), terms alias-folded both ways. Never stale, never needs a key, and the level that guarantees a technology name in the query finds the technology name in the decision.`;
+    : "L3 sparse lexical (BM25) — " + count + " document(s), terms alias-folded both ways. Never stale, never needs a key, and the level that guarantees a technology name in the query finds the technology name in the decision.";
 }

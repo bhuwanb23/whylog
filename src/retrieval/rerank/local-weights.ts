@@ -46,12 +46,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { IndexArtifacts, RetrievedHit } from "@/types/retrieval";
+import type { GraphState } from "@/substrate/graph-state";
 import { exactTermHits } from "../index-levels/l3-sparse";
 import type { StructuralMatch } from "../index-levels/l4-structural";
-import { type PremiseMatch, premiseOverlap, premisesOfDecision } from "../index-levels/l5-premises";
+import {
+  premiseOverlap,
+  premisesOfDecision,
+  type PremiseMatch,
+} from "../index-levels/l5-premises";
 
 /** The five weights. Named, exported, and rendered in the UI — a weight the user cannot
  *  see is a weight the user cannot argue with. */
@@ -129,7 +133,11 @@ export function rerankLocally(input: LocalRerankInput): readonly ScoredCandidate
      * variable-only match scores three quarters. Both are exact; the difference is
      * specificity, not confidence. */
     const structural =
-      candidate.structural === null ? 0 : candidate.structural.via === "value" ? 1 : 0.75;
+      candidate.structural === null
+        ? 0
+        : candidate.structural.via === "value"
+          ? 1
+          : 0.75;
 
     /* ---- 0.30 lexical: exact names dominate, BM25 fills in ---- */
     /* Exact technology-name matches are worth more than aggregate BM25, because BM25 can
@@ -140,12 +148,15 @@ export function rerankLocally(input: LocalRerankInput): readonly ScoredCandidate
     const lexical = Math.max(exactComponent, bm25Component);
 
     /* ---- 0.20 dense: fused L1+L2 cosine, clamped ---- */
-    const dense = candidate.denseScore === null ? 0 : clamp01((candidate.denseScore + 1) / 2);
+    const dense =
+      candidate.denseScore === null ? 0 : clamp01((candidate.denseScore + 1) / 2);
 
     /* ---- 0.10 premise overlap: graph proximity, deliberately weak ---- */
     const candidatePremises = premisesOfDecision(input.artifacts, candidate.decisionId);
     const premise =
-      candidate.premise !== null ? 1 : premiseOverlap(input.queryPremises, candidatePremises);
+      candidate.premise !== null
+        ? 1
+        : premiseOverlap(input.queryPremises, candidatePremises);
 
     /* ---- 0.05 recency: tie-break only ---- */
     const recency = recencyComponent(input.state, candidate.decisionId, input.now);
@@ -192,7 +203,7 @@ function recencyComponent(state: GraphState, decisionId: DecisionId, now: number
   if (!Number.isFinite(ms)) return 0.5;
 
   const ageDays = Math.max(0, (now - ms) / 86_400_000);
-  return 0.5 ** (ageDays / RECENCY_HALF_LIFE_DAYS);
+  return Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
 }
 
 function clamp01(value: number): number {
@@ -220,13 +231,13 @@ export function explainScore(scored: ScoredCandidate): string {
   const w = RERANK_WEIGHTS;
 
   return [
-    `${scored.candidate.decisionId} — rerank ${scored.total.toFixed(3)}`,
-    `  ${w.structural.toFixed(2)} × structural ${c.structural.toFixed(2)}${scored.candidate.structural === null ? " (no exact slot or value match)" : ` (${scored.candidate.structural.explanation})`}`,
-    `  ${w.lexical.toFixed(2)} × lexical    ${c.lexical.toFixed(2)}${scored.exactTerms.length === 0 ? " (BM25 only)" : ` (exact: ${scored.exactTerms.join(", ")})`}`,
-    `  ${w.dense.toFixed(2)} × dense      ${c.dense.toFixed(2)}${scored.candidate.denseScore === null ? " (unavailable — index stale or not built)" : ""}`,
-    `  ${w.premise.toFixed(2)} × premise    ${c.premise.toFixed(2)}`,
-    `  ${w.recency.toFixed(2)} × recency    ${c.recency.toFixed(2)} (tie-break, ${RECENCY_HALF_LIFE_DAYS}-day half-life)`,
-    `  = ${scored.total.toFixed(3)}`,
+    scored.candidate.decisionId + " — rerank " + scored.total.toFixed(3),
+    "  " + w.structural.toFixed(2) + " × structural " + c.structural.toFixed(2) + (scored.candidate.structural === null ? " (no exact slot or value match)" : " (" + scored.candidate.structural.explanation + ")"),
+    "  " + w.lexical.toFixed(2) + " × lexical    " + c.lexical.toFixed(2) + (scored.exactTerms.length === 0 ? " (BM25 only)" : " (exact: " + scored.exactTerms.join(", ") + ")"),
+    "  " + w.dense.toFixed(2) + " × dense      " + c.dense.toFixed(2) + (scored.candidate.denseScore === null ? " (unavailable — index stale or not built)" : ""),
+    "  " + w.premise.toFixed(2) + " × premise    " + c.premise.toFixed(2),
+    "  " + w.recency.toFixed(2) + " × recency    " + c.recency.toFixed(2) + " (tie-break, " + RECENCY_HALF_LIFE_DAYS + "-day half-life)",
+    "  = " + scored.total.toFixed(3),
   ].join("\n");
 }
 
@@ -256,7 +267,7 @@ export function dominantComponents(scored: ScoredCandidate): readonly string[] {
   return contributions
     .filter((entry) => entry.amount > 0)
     .sort((a, b) => b.amount - a.amount)
-    .map((entry) => `${entry.name} ${entry.amount.toFixed(3)}`);
+    .map((entry) => entry.name + " " + entry.amount.toFixed(3));
 }
 
 /** A `RetrievedHit` carries no rerank breakdown, so the score is attached here for the

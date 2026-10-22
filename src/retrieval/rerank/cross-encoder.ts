@@ -43,8 +43,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { WhyLogEngine } from "@/ai/types";
 import type { DecisionId, EngineId } from "@/types/common";
+import type { WhyLogEngine } from "@/ai/types";
 
 export interface ModelRerankInput {
   readonly id: DecisionId;

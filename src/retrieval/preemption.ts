@@ -41,13 +41,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import { foldKey } from "@/ontology/canonicalize";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 import type { PreemptionNotice } from "@/types/retrieval";
 import { isClassifiable } from "./contradiction";
+import { foldKey } from "@/ontology/canonicalize";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
 
 /* -------------------------------------------------------------------------- */
 /* Detection                                                                  */
@@ -98,9 +98,7 @@ export function findPreemptions(
     const canonical = foldKey(alternative.value);
     const matched =
       foldedQuery.includes(canonical) ||
-      [...foldedTerms].some(
-        (term) => term.length > 2 && (canonical.includes(term) || term.includes(canonical)),
-      );
+      [...foldedTerms].some((term) => term.length > 2 && (canonical.includes(term) || term.includes(canonical)));
 
     if (!matched) continue;
 
@@ -169,7 +167,7 @@ export function renderPreemption(notice: PreemptionNotice): string {
     notice.restsOn.length === 0
       ? "It rests on no recorded premise, so there is nothing to check it against."
       : notice.restsOn
-          .map((entry) => `${entry.premiseId} "${entry.text}" (${entry.label})`)
+          .map((entry) => entry.premiseId + ' "' + entry.text + '" (' + entry.label + ")")
           .join(", ");
 
   const status = notice.stillHolds
@@ -177,9 +175,10 @@ export function renderPreemption(notice: PreemptionNotice): string {
     : "At least one premise it rests on is no longer IN, so the reason may have expired.";
 
   return [
-    `You are asking about ${notice.alternativeValue}. You REJECTED it on ${decided} in ${notice.rejectedByDecisionId}.`,
-    `Reason: ${notice.whyRejected}`,
-    `It rests on ${premises}.`,
+    'You are asking about ' + notice.alternativeValue + ". You REJECTED it on " + decided +
+      " in " + notice.rejectedByDecisionId + ".",
+    "Reason: " + notice.whyRejected,
+    "It rests on " + premises + ".",
     status,
     notice.stillHolds
       ? "Has anything changed since then?"
@@ -190,12 +189,7 @@ export function renderPreemption(notice: PreemptionNotice): string {
 /** How many alternatives are pre-emption eligible — both §3.10 conditions met. The gap
  *  between this and the total alternative count is what Phase 1's 15.4% precision costs,
  *  and showing it is more honest than showing a pre-emption feature that never fires. */
-export function countPreemptions(state: GraphState): {
-  eligible: number;
-  total: number;
-  missingReason: number;
-  unconfirmed: number;
-} {
+export function countPreemptions(state: GraphState): { eligible: number; total: number; missingReason: number; unconfirmed: number } {
   let eligible = 0;
   let total = 0;
   let missingReason = 0;
