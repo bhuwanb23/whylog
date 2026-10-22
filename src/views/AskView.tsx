@@ -43,25 +43,25 @@
  * ---------------------------------------------------------------------------
  */
 
-import { NEAREST_RELATED_LIMIT, TOPICALITY_FLOOR } from "@/retrieval/answer";
-import { MAX_SEARCHES } from "@/retrieval/evidence-contract";
-import { GROUNDED_FLOOR, PARTIAL_FLOOR } from "@/retrieval/groundedness";
-import { RERANK_WEIGHTS } from "@/retrieval/rerank";
-import { RRF_K } from "@/retrieval/rrf";
+import { useMemo, useState, type ReactElement } from "react";
+import type { DecisionId } from "@/types/common";
+import type { Answer, Claim, GroundednessVerdict, RetrievedHit } from "@/types/retrieval";
+import type { DecisionLabel } from "@/types/domain";
+import { LABEL_BACKGROUND, LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import { useWhyLog } from "@/store/whylog";
 import {
-  type ExpandedCitationResult,
   describeHowProduced,
   describeIndex,
   describePreemptionCoverage,
   renderExpansion,
   useAsk,
+  type ExpandedCitationResult,
 } from "@/store/ask";
-import { useWhyLog } from "@/store/whylog";
-import { LABEL_BACKGROUND, LABEL_COLOUR, LABEL_MEANING } from "@/theme";
-import type { DecisionId } from "@/types/common";
-import type { DecisionLabel } from "@/types/domain";
-import type { Answer, Claim, GroundednessVerdict, RetrievedHit } from "@/types/retrieval";
-import { type ReactElement, useMemo, useState } from "react";
+import { GROUNDED_FLOOR, PARTIAL_FLOOR } from "@/retrieval/groundedness";
+import { MAX_SEARCHES } from "@/retrieval/evidence-contract";
+import { RERANK_WEIGHTS } from "@/retrieval/rerank";
+import { RRF_K } from "@/retrieval/rrf";
+import { NEAREST_RELATED_LIMIT, TOPICALITY_FLOOR } from "@/retrieval/answer";
 
 /* -------------------------------------------------------------------------- */
 /* Gate G3                                                                    */
@@ -144,9 +144,10 @@ export function AskView(): ReactElement {
         <h2 className="card-title">Ask the log</h2>
 
         <p className="dim" style={{ margin: "0 0 12px" }}>
-          Natural-language questions over your decisions, answered under an evidence contract: at
-          most {MAX_SEARCHES} searches, every citation checked against what this run retrieved, and
-          "insufficient evidence" as a first-class answer. Works with no API key.
+          Natural-language questions over your decisions, answered under an evidence contract:
+          at most {MAX_SEARCHES} searches, every citation checked against what this run
+          retrieved, and "insufficient evidence" as a first-class answer. Works with no API
+          key.
         </p>
 
         <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -165,12 +166,7 @@ export function AskView(): ReactElement {
             disabled={busy}
             style={{ flex: 1, resize: "vertical" }}
           />
-          <button
-            type="button"
-            className="badge"
-            onClick={submit}
-            disabled={busy || draft.trim().length === 0}
-          >
+          <button type="button" className="badge" onClick={submit} disabled={busy || draft.trim().length === 0}>
             {ask.status === "asking" ? "Searching…" : "Ask"}
           </button>
         </div>
@@ -179,18 +175,13 @@ export function AskView(): ReactElement {
           ⌘/Ctrl + Enter to ask. {logSize} decision(s) in the log.
         </div>
 
-        <div
-          style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--edge-soft, #333)" }}
-        >
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--edge-soft, #333)" }}>
           <div className="faint" style={{ fontSize: 11, marginBottom: 6 }}>
             GATE G3 — both halves must pass. Run them in order:
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {G3_QUESTIONS.map((entry) => (
-              <div
-                key={entry.question}
-                style={{ display: "flex", gap: 8, alignItems: "flex-start" }}
-              >
+              <div key={entry.question} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <button
                   type="button"
                   className="badge"
@@ -257,9 +248,10 @@ export function AskView(): ReactElement {
           <p className="dim" style={{ margin: 0 }}>
             Five index levels fused by RRF at k = {RRF_K}, then reranked by{" "}
             {Object.entries(RERANK_WEIGHTS)
-              .map(([name, weight]) => `${name} ${weight}`)
+              .map(([name, weight]) => name + " " + weight)
               .join(" · ")}
-            . Every weight, threshold and rule is listed here rather than tuned behind your back.
+            . Every weight, threshold and rule is listed here rather than tuned behind your
+            back.
           </p>
         ) : (
           <pre className="mono" style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 11 }}>
@@ -302,18 +294,18 @@ function AnswerPanel({ answer }: { answer: Answer }): ReactElement {
         </pre>
 
         <div className="faint" style={{ marginTop: 10, fontSize: 11 }}>
-          {answer.engine.model} · answered {answer.answeredAt} · {answer.trace.searches.length} of{" "}
+          {answer.engine} · answered {answer.answeredAt} · {answer.trace.searches.length} of{" "}
           {answer.trace.maxSearches} searches · {answer.retrieved.length} candidates ranked
         </div>
       </section>
 
-      <ClaimsCard
-        claims={answer.claims}
-        groundedness={answer.groundedness}
-        notes={answer.ungroundedNotes}
-      />
+      <ClaimsCard claims={answer.claims} groundedness={answer.groundedness} notes={answer.ungroundedNotes} />
 
-      <CitationsCard answer={answer} expanded={expanded} toggle={toggle} />
+      <CitationsCard
+        answer={answer}
+        expanded={expanded}
+        toggle={toggle}
+      />
 
       <TraceCard answer={answer} />
 
@@ -333,9 +325,9 @@ function VerdictBanner({ answer }: { answer: Answer }): ReactElement {
   return (
     <div
       style={{
-        borderLeft: `3px solid ${style.colour}`,
+        borderLeft: "3px solid " + style.colour,
         padding: "8px 12px",
-        background: `color-mix(in srgb, ${style.colour} 8%, transparent)`,
+        background: "color-mix(in srgb, " + style.colour + " 8%, transparent)",
       }}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
@@ -343,7 +335,7 @@ function VerdictBanner({ answer }: { answer: Answer }): ReactElement {
         <span className="mono" style={{ fontSize: 12 }}>
           {answer.claims.length === 0
             ? "no claims made"
-            : `${percent}% grounded · ${groundedCount(answer)} of ${answer.claims.length} claims`}
+            : percent + "% grounded · " + groundedCount(answer) + " of " + answer.claims.length + " claims"}
         </span>
       </div>
       <div className="dim" style={{ marginTop: 4, fontSize: 12 }}>
@@ -372,24 +364,24 @@ function ClaimsCard({
 }): ReactElement {
   return (
     <section className="card">
-      <h2 className="card-title">Claims · {(groundedness * 100).toFixed(0)}% grounded</h2>
+      <h2 className="card-title">
+        Claims · {(groundedness * 100).toFixed(0)}% grounded
+      </h2>
 
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
         groundedness = |claims with ≥1 resolving citation| / |total claims|. ≥{" "}
         {(GROUNDED_FLOOR * 100).toFixed(0)}% is GROUNDED, {(PARTIAL_FLOOR * 100).toFixed(0)}–
-        {(GROUNDED_FLOOR * 100).toFixed(0)}% is PARTIAL, below that is INSUFFICIENT_EVIDENCE. A
-        claim is grounded only if one of ITS OWN citations resolved in this run.
+        {(GROUNDED_FLOOR * 100).toFixed(0)}% is PARTIAL, below that is INSUFFICIENT_EVIDENCE.
+        A claim is grounded only if one of ITS OWN citations resolved in this run.
       </p>
 
       {claims.length === 0 ? (
         <div className="notice notice-info">
-          This answer makes no claims. 0/0 is not treated as perfectly grounded — that would make
-          "say nothing" the optimal answer.
+          This answer makes no claims. 0/0 is not treated as perfectly grounded — that would
+          make "say nothing" the optimal answer.
         </div>
       ) : (
-        <ol
-          style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}
-        >
+        <ol style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
           {claims.map((claim, index) => (
             <li key={claim.text.slice(0, 40) + String(index)} style={{ fontSize: 12 }}>
               <span
@@ -459,29 +451,29 @@ function CitationsCard({
     <section className="card">
       <h2 className="card-title">
         Citations · {answer.citations.length}
-        {unresolved.length > 0 ? ` · ${unresolved.length} unresolved` : ""}
+        {unresolved.length > 0 ? " · " + unresolved.length + " unresolved" : ""}
       </h2>
 
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
-        A citation is valid ONLY if it points to a decision retrieved in THIS run — not merely one
-        that exists in the log. Expand any citation to see the argument it stands for: the premises
-        it rests on with their live labels, the conditions it excludes, what was rejected and why,
-        its guards, and its provenance.
+        A citation is valid ONLY if it points to a decision retrieved in THIS run — not merely
+        one that exists in the log. Expand any citation to see the argument it stands for: the
+        premises it rests on with their live labels, the conditions it excludes, what was
+        rejected and why, its guards, and its provenance.
       </p>
 
       {unresolved.length > 0 ? (
         <div className="notice notice-warning" style={{ marginBottom: 10 }}>
           {unresolved.length} citation(s) point at decisions this run never retrieved:{" "}
-          <span className="mono">{unresolved.map((c) => c.decisionId).join(", ")}</span>. They are
-          counted as unresolved, not silently dropped and not silently credited.
+          <span className="mono">{unresolved.map((c) => c.decisionId).join(", ")}</span>. They
+          are counted as unresolved, not silently dropped and not silently credited.
         </div>
       ) : null}
 
       {ask.missingCitations.length > 0 ? (
         <div className="notice notice-error" style={{ marginBottom: 10 }}>
           {ask.missingCitations.length} cited decision(s) do not exist in the log at all:{" "}
-          <span className="mono">{ask.missingCitations.join(", ")}</span>. This should not happen —
-          a citation that resolved in-run must exist.
+          <span className="mono">{ask.missingCitations.join(", ")}</span>. This should not
+          happen — a citation that resolved in-run must exist.
         </div>
       ) : null}
 
@@ -498,9 +490,7 @@ function CitationsCard({
         ))}
 
         {byId.size === 0 ? (
-          <div className="faint" style={{ fontSize: 12 }}>
-            No citations to expand.
-          </div>
+          <div className="faint" style={{ fontSize: 12 }}>No citations to expand.</div>
         ) : null}
       </div>
     </section>
@@ -523,7 +513,7 @@ function ExpandedCitationRow({
   return (
     <div
       style={{
-        border: `1px solid ${selected ? "var(--action)" : "var(--edge-soft, #333)"}`,
+        border: "1px solid " + (selected ? "var(--action)" : "var(--edge-soft, #333)"),
         borderRadius: 4,
         padding: "8px 10px",
       }}
@@ -546,14 +536,14 @@ function ExpandedCitationRow({
         rests on {entry.restsOn.length} premise(s) · excludes {entry.excludes.length} · rejected{" "}
         {entry.rejected.length} alternative(s) · {entry.guardsPassing} of {entry.guardsTotal}{" "}
         guard(s) passing
-        {entry.guardsNeverRun > 0 ? ` · ${entry.guardsNeverRun} never run` : ""}
+        {entry.guardsNeverRun > 0 ? " · " + entry.guardsNeverRun + " never run" : ""}
       </div>
 
       {entry.restsOn.length === 0 ? (
         <div className="notice notice-warning" style={{ marginTop: 8, fontSize: 12 }}>
-          This decision has NO recorded premise. Nothing can falsify it, so the log can report what
-          was decided but cannot report whether it still holds — a gap worth filling on the Review
-          tab.
+          This decision has NO recorded premise. Nothing can falsify it, so the log can report
+          what was decided but cannot report whether it still holds — a gap worth filling on
+          the Review tab.
         </div>
       ) : null}
 
@@ -619,23 +609,15 @@ function TraceCard({ answer }: { answer: Answer }): ReactElement {
 
       {answer.trace.boundedOut ? (
         <div className="notice notice-warning" style={{ marginBottom: 10 }}>
-          The search budget ran out while the answer was still short of evidence. That is different
-          from "searched and found nothing", and the remedy differs: this one needs a narrower
-          question, that one needs a fuller log.
+          The search budget ran out while the answer was still short of evidence. That is
+          different from "searched and found nothing", and the remedy differs: this one needs a
+          narrower question, that one needs a fuller log.
         </div>
       ) : null}
 
       {open ? (
         <>
-          <ol
-            style={{
-              margin: 0,
-              paddingLeft: 20,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
+          <ol style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             {answer.trace.searches.map((step, index) => (
               <li key={String(index) + step.query.slice(0, 24)} style={{ fontSize: 12 }}>
                 <div className="mono" style={{ fontSize: 11 }}>
@@ -690,9 +672,9 @@ function NearestRelatedCard({
 
       {verdict === "INSUFFICIENT_EVIDENCE" ? (
         <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
-          These are the closest decisions the log has. They did not clear the topicality floor of{" "}
-          {TOPICALITY_FLOOR}, so they are offered as context and explicitly not composed into an
-          answer. Up to {NEAREST_RELATED_LIMIT} are shown.
+          These are the closest decisions the log has. They did not clear the topicality floor
+          of {TOPICALITY_FLOOR}, so they are offered as context and explicitly not composed into
+          an answer. Up to {NEAREST_RELATED_LIMIT} are shown.
         </p>
       ) : null}
 
@@ -735,8 +717,8 @@ function RankingCard({ hits }: { hits: readonly RetrievedHit[] }): ReactElement 
       {!open ? (
         <p className="dim" style={{ margin: 0, fontSize: 12 }}>
           Five levels fused by RRF at k = {RRF_K}, then reranked. Promoted hits are held at the
-          front and the reranker cannot demote them: an exact structural or premise match is a fact,
-          not a rank, and averaging a fact into a statistical consensus is backwards.
+          front and the reranker cannot demote them: an exact structural or premise match is a
+          fact, not a rank, and averaging a fact into a statistical consensus is backwards.
         </p>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -758,11 +740,7 @@ function RankingCard({ hits }: { hits: readonly RetrievedHit[] }): ReactElement 
                 </td>
                 <td style={{ padding: "4px 6px" }}>
                   <span className="mono faint">{hit.decisionId}</span> {hit.decision.statement}
-                  {hit.promoted ? (
-                    <span className="badge" style={{ marginLeft: 6 }}>
-                      promoted
-                    </span>
-                  ) : null}
+                  {hit.promoted ? <span className="badge" style={{ marginLeft: 6 }}>promoted</span> : null}
                 </td>
                 <td className="mono" style={{ padding: "4px 6px" }}>
                   {hit.finalScore.toFixed(3)}
@@ -796,8 +774,8 @@ function EmptyState({ logSize, coverage }: { logSize: number; coverage: string }
 
       {logSize === 0 ? (
         <div className="notice notice-info">
-          The log is empty. Paste a transcript on the Foundation tab and the decisions in it become
-          searchable — extraction runs keyless on the local engine.
+          The log is empty. Paste a transcript on the Foundation tab and the decisions in it
+          become searchable — extraction runs keyless on the local engine.
         </div>
       ) : (
         <div className="metric-grid">
@@ -815,10 +793,10 @@ function EmptyState({ logSize, coverage }: { logSize: number; coverage: string }
         </pre>
         <p className="dim" style={{ margin: "8px 0 0", fontSize: 12 }}>
           When a question matches something you already REJECTED, the answer leads with the
-          rejection, the reason, and whether that reason still holds — catching the mistake before
-          the decision instead of after it. This is only possible because alternatives are indexed
-          first-class; a tool that stores decisions and not the things it turned down cannot produce
-          that sentence at any retrieval quality.
+          rejection, the reason, and whether that reason still holds — catching the mistake
+          before the decision instead of after it. This is only possible because alternatives
+          are indexed first-class; a tool that stores decisions and not the things it turned
+          down cannot produce that sentence at any retrieval quality.
         </p>
       </div>
     </section>
@@ -840,11 +818,7 @@ function IndexCard(): ReactElement {
     <section className="card">
       <h2 className="card-title">
         Index
-        {stale ? (
-          <span className="badge" style={{ marginLeft: 8, color: "var(--label-out)" }}>
-            STALE
-          </span>
-        ) : null}
+        {stale ? <span className="badge" style={{ marginLeft: 8, color: "var(--label-out)" }}>STALE</span> : null}
         <button
           type="button"
           className="badge"
@@ -866,9 +840,9 @@ function IndexCard(): ReactElement {
 
       {stale ? (
         <div className="notice notice-warning" style={{ marginBottom: 10 }}>
-          The embeddings were built by a different engine, or the log has changed since. L3, L4 and
-          L5 still work — they are pure functions of the log — but L1 and L2 will return nothing
-          until you rebuild. Rebuilding embeds only the decisions whose text changed.
+          The embeddings were built by a different engine, or the log has changed since. L3, L4
+          and L5 still work — they are pure functions of the log — but L1 and L2 will return
+          nothing until you rebuild. Rebuilding embeds only the decisions whose text changed.
         </div>
       ) : null}
 
@@ -880,7 +854,7 @@ function IndexCard(): ReactElement {
         <p className="dim" style={{ margin: 0, fontSize: 12 }}>
           {ask.artifacts === null
             ? "No index yet. It is built automatically on your first question."
-            : `Built by ${ask.artifacts.engine} · ${ask.artifacts.dimensions} dimensions · ${ask.artifacts.stale ? "stale" : "current"}.`}
+            : "Built by " + ask.artifacts.engine + " · " + ask.artifacts.dimensions + " dimensions · " + (ask.artifacts.stale ? "stale" : "current") + "."}
         </p>
       )}
     </section>
