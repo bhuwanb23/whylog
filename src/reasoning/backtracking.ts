@@ -61,10 +61,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
-import type { Justification } from "@/types/domain";
-import type { BacktrackResult } from "@/types/reasoning";
 import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, PremiseId } from "@/types/common";
+import type { BacktrackResult } from "@/types/reasoning";
 import { indexGraph, justificationsFor } from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
 
@@ -214,7 +213,7 @@ export function partialCulprits(
   if (!result.truncated) return [];
 
   const culprits = new Set(result.culpritPremises);
-  return result.path.filter((nodeId) => {
+  return result.path.filter((nodeId): nodeId is PremiseId => {
     const asPremise = nodeId as PremiseId;
     return state.premises.has(asPremise) && !culprits.has(asPremise);
   });

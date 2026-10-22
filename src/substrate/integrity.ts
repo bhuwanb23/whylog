@@ -25,12 +25,12 @@
 
 import { nowISO } from "@/lib/format";
 import type { ISODateString } from "@/types/common";
-import type { IntegrityStamp, StampVerification } from "@/types/export";
 import { isWorldObservable } from "@/types/domain";
+import type { IntegrityStamp, StampVerification } from "@/types/export";
 import type { GraphState } from "./graph-state";
 import { GENESIS_HASH, linkHash } from "./hash-chain";
-import { SCHEMA_VERSION } from "./schema";
 import { compliance, coverage, soundness } from "./projections/metrics";
+import { SCHEMA_VERSION } from "./schema";
 
 /**
  * Build the stamp for the current state.
@@ -159,7 +159,7 @@ export function countChangedSince(state: GraphState, headHash: string): number |
   // position at which the running hash equals the stamp's.
   // Recompute from genesis using the same link function the log uses.
   const { GENESIS_HASH: genesis, linkHash: link } = chainHelpers();
-  let running = genesis;
+  let running: string = genesis;
 
   for (let i = 0; i < state.events.length; i += 1) {
     const event = state.events[i];
