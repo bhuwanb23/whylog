@@ -12,15 +12,10 @@
 
 import type { DecisionVariable, PremiseType } from "@/types/domain";
 import { DECISION_VARIABLES, PREMISE_TYPES } from "@/types/domain";
-import { ALIASES, GLOBAL_ALIASES, NONE_VALUES } from "./data/aliases";
 import { ANTONYMS, antonymPairCount, antonymsOf, areAntonyms } from "./data/antonyms";
-import {
-  DECISION_CUES,
-  assertiveCues,
-  pivotCues,
-  rejectionCues,
-  speculativeCues,
-} from "./data/decision-cues";
+import { ALIASES, GLOBAL_ALIASES, NONE_VALUES } from "./data/aliases";
+import { DECISION_CUES, assertiveCues, pivotCues, rejectionCues, speculativeCues } from "./data/decision-cues";
+import { PREMISE_CUES, cueCountByType, cuesFor, explicitCues, topicalCues } from "./data/premise-cues";
 import {
   EXCLUSIONS,
   exclusionCount,
@@ -30,13 +25,6 @@ import {
   primaryExclusion,
   validateExclusions,
 } from "./data/exclusions";
-import {
-  PREMISE_CUES,
-  cueCountByType,
-  cuesFor,
-  explicitCues,
-  topicalCues,
-} from "./data/premise-cues";
 import {
   PREMISE_TYPE_META,
   PREMISE_TYPE_ORDER,
@@ -90,8 +78,7 @@ export const PREMISE_ORDER: readonly PremiseType[] = PREMISE_TYPE_ORDER;
 
 /** World-observable = falsifiable by a guard or repo scan. Intent-based = only a
  *  human can retract it. */
-export const WORLD_OBSERVABLE_TYPES: readonly PremiseType[] =
-  PREMISE_ORDER.filter(isWorldObservable);
+export const WORLD_OBSERVABLE_TYPES: readonly PremiseType[] = PREMISE_ORDER.filter(isWorldObservable);
 export const INTENT_BASED_TYPES: readonly PremiseType[] = PREMISE_ORDER.filter(
   (t) => !isWorldObservable(t),
 );
@@ -164,7 +151,9 @@ export function structuralContradiction(
   valueB: string,
 ): StructuralCheck {
   const result = areAntonyms(variable, valueA, valueB);
-  return result.antonym ? { contradicts: true, why: result.why } : { contradicts: false, why: "" };
+  return result.antonym
+    ? { contradicts: true, why: result.why }
+    : { contradicts: false, why: "" };
 }
 
 /** Is this value a deliberate absence? "no auth at all" is a DECISION, not a
@@ -230,8 +219,8 @@ export function describeOntology(): string {
   return [
     `${size.typedVariables} typed decision slots (plus OTHER as a tracked escape hatch), `,
     `${size.premiseTypes} premise types with ${size.predicates} standard predicates, `,
-    `${size.aliases} value aliases, ${size.antonymPairs} variable-scoped antonym pairs ` +
-      `and ${size.exclusions} exclusion rules over ${exclusionCoverage()} predicates. `,
+    `${size.aliases} value aliases, ${size.antonymPairs} variable-scoped antonym pairs `
+    + `and ${size.exclusions} exclusion rules over ${exclusionCoverage()} predicates. `,
     `World-observable premise types — falsifiable by a guard: ${observable}. `,
     `Intent-based — retractable only by a human: ${intent}.`,
   ].join("");
