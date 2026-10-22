@@ -37,20 +37,29 @@
  * ---------------------------------------------------------------------------
  * WHAT "CONTRADICTOR" MEANS
  *
- * A decision on the same variable whose value is an antonym of the newcomer's, per the
- * ontology. That is the same test gate (a) uses, so the adjudicator and the detector
- * cannot disagree about what counts as a conflict — a disagreement there would produce
- * the worst possible failure: retracting something the system never claimed contradicted
- * anything.
+ * Whatever gate (a) says. `findContradictors` delegates to `wouldContradict` rather
+ * than re-implementing a test, because an adjudicator with a narrower rule than the
+ * detector produces the worst possible failure: gate (a) reports a structural
+ * contradiction while adjudication declines to screen against it, so nothing is
+ * retracted and the conflict is warned about but never resolved.
+ *
+ * Gate (a) fires on TWO conditions — a declared antonym pair, or simply two different
+ * live values for one variable — and excludes superseded decisions and non-overlapping
+ * validity windows. All four of those properties are inherited here by delegation.
  * ---------------------------------------------------------------------------
  */
 
-import { areAntonyms, canonicalValueOf } from "@/ontology";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { Decision, DecisionOrigin, DecisionVariable } from "@/types/domain";
+import { canonicalValueOf } from "@/ontology";
+import { wouldContradict } from "./gates/structural";
 import type { AdjudicationOutcome, EntrenchmentBreakdown } from "@/types/reasoning";
-import { type GuardStatus, entrenchmentOf } from "./entrenchment";
+import {
+  ENTRENCHMENT_WEIGHTS,
+  UNKNOWN_IMPLEMENTATION_COST,
+} from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import { entrenchmentOf, type GuardStatus } from "./entrenchment";
 
 /* -------------------------------------------------------------------------- */
 /* The newcomer                                                               */
@@ -128,6 +137,12 @@ export function adjudicate(
       blockingDecisionId: blocker.decisionId,
       newcomerEntrenchment: round4(newcomerScore),
       incumbentEntrenchment: blocker.breakdown.capped,
+      /* §2.8 requires the FULL breakdown of both sides in the Contested queue. Two
+       * totals cannot show that the newcomer lost on corroboration and implementation
+       * cost rather than on authority, and "override anyway" is only an informed choice
+       * if the arithmetic is visible. */
+      newcomerBreakdown: newcomerBreakdownOf(input.newcomer),
+      incumbentBreakdown: blocker.breakdown,
       considered,
     };
   }
@@ -156,29 +171,39 @@ export function adjudicate(
  * refusing a newcomer because it contradicts something the log has given up would be
  * absurd.
  */
-/** One incumbent the newcomer contradicts, with the ontology rule that says so. */
+/** One incumbent the newcomer contradicts, with the rule that says so. */
 export interface Contradictor {
   readonly decisionId: DecisionId;
-  /** The antonym-table reason, verbatim. Shown to the user; never paraphrased. */
+  /** The structural reason, verbatim from gate (a). Shown to the user; never paraphrased. */
   readonly why: string;
+  /** `"antonym-pair"` when the ontology table named the conflict, `"different-value"`
+   *  when the two are simply different live answers to one question. */
+  readonly via: "antonym-pair" | "different-value";
 }
 
+/**
+ * Every live decision the newcomer contradicts.
+ *
+ * This DELEGATES to gate (a) rather than re-implementing the test. That is not
+ * tidiness, it is correctness: if the adjudicator used a narrower rule than the
+ * detector — antonym pairs only, say — then a newcomer could be ACCEPTED while gate (a)
+ * was simultaneously reporting a structural contradiction between it and an incumbent.
+ * The system would retract nothing and warn about a conflict it had just declined to
+ * adjudicate. One predicate, one answer, everywhere.
+ *
+ * `wouldContradict` also carries the two conditions the adjudicator must not lose:
+ * superseded and archived decisions are excluded (a reversal is not a contradiction),
+ * and validity windows must overlap (two decisions true at different times are a
+ * history, not a conflict).
+ */
 export function findContradictors(state: GraphState, newcomer: Newcomer): readonly Contradictor[] {
-  const canonicalNew = canonicalValueOf(newcomer.variable, newcomer.value);
-  const out: Contradictor[] = [];
+  const hits = wouldContradict(state, newcomer.variable, newcomer.value);
 
-  for (const decision of state.decisions.values()) {
-    if (decision.variable !== newcomer.variable) continue;
-    if (decision.label !== "IN") continue;
-
-    const canonicalIncumbent = canonicalValueOf(decision.variable, decision.value);
-    if (canonicalIncumbent === canonicalNew) continue;
-
-    const verdict = areAntonyms(decision.variable, canonicalIncumbent, canonicalNew);
-    if (verdict.antonym) out.push({ decisionId: decision.id, why: verdict.why });
-  }
-
-  return out;
+  return hits.map((hit) => ({
+    decisionId: hit.decisionA,
+    why: hit.explanation,
+    via: hit.via,
+  }));
 }
 
 /** Just the ids, for callers that only need the set. */
@@ -210,26 +235,66 @@ export function contradictorIds(contradictors: readonly Contradictor[]): readonl
  * exactly the trade-off Hansson's screening is meant to make explicit.
  */
 export function scoreNewcomer(newcomer: Newcomer): number {
-  const authority = authorityOf(newcomer.origin);
+  return newcomerBreakdownOf(newcomer).total;
+}
 
-  const w = WEIGHTS;
-  const score =
+/**
+ * The newcomer's breakdown, in the SAME shape as an incumbent's.
+ *
+ * Two terms are structurally zero and one is unknown, and the shape makes that visible
+ * rather than hiding it inside a total:
+ *
+ *   · corroboration 0 — one observation is one observation
+ *   · implementation cost 0 — nothing is built on it yet
+ *   · recency 1 — it just arrived
+ *
+ * `implementationCostUnknown` is true here for a different reason than it is for an
+ * unguarded incumbent: an incumbent's cost is UNMEASURED (a guard could exist later),
+ * while a newcomer's is genuinely ZERO (nothing can be built on a decision that is not
+ * in the log). Both render as "unknown" in the breakdown, and the explanation string is
+ * what tells them apart.
+ */
+export function newcomerBreakdownOf(newcomer: Newcomer): EntrenchmentBreakdown {
+  const authority = authorityOf(newcomer.origin);
+  const confidence = clamp01(newcomer.confidence);
+  const w = ENTRENCHMENT_WEIGHTS;
+
+  const total =
     w.sourceAuthority * authority +
     w.implementationCost * 0 +
     w.corroboration * 0 +
-    w.confidence * clamp01(newcomer.confidence) +
+    w.confidence * confidence +
     w.recency * 1;
 
-  return round4(score);
+  return {
+    total: round4(total),
+    capped: round4(total),
+    /* No premises yet, so the EE3 cap has nothing to bind to. A newcomer resting on
+     * premises gets capped once it is asserted and the cycle re-runs. */
+    ee3CapApplied: false,
+    components: {
+      sourceAuthority: round4(authority),
+      implementationCost: 0,
+      corroboration: 0,
+      confidence: round4(confidence),
+      recency: 1,
+    },
+    weights: w,
+    implementationCostUnknown: true,
+  };
 }
 
-const WEIGHTS = {
-  sourceAuthority: 0.3,
-  implementationCost: 0.2,
-  corroboration: 0.2,
-  confidence: 0.15,
-  recency: 0.15,
-} as const;
+/** What an unguarded incumbent's unknown cost means, versus a newcomer's zero. */
+export function describeNewcomerCost(): string {
+  return [
+    "implementation cost 0.00 — nothing is built on it yet, so it costs nothing to give up.",
+    "corroboration 0.00 — one observation. This is the term that stops a single remark",
+    "from outranking a decision three independent sources agree on.",
+    "An incumbent's unknown cost is UNMEASURED (a guard could exist later); a newcomer's",
+    "is genuinely ZERO. Both show as unknown in the breakdown, and only this note tells",
+    "them apart.",
+  ].join("\n");
+}
 
 function authorityOf(origin: Newcomer["origin"]): number {
   const table: Record<string, number> = {
@@ -267,6 +332,9 @@ export function explainRefusal(
   return [
     `Refused: "${newcomer.text}" would contradict ${blockingName}.`,
     blocker.why,
+    blocker.via === "different-value"
+      ? "Note that the ontology has no antonym pair for these two values — they conflict because one variable cannot hold two live answers, not because the table says so."
+      : "",
     `The newcomer scores ${newcomerScore.toFixed(2)}; the incumbent scores ${blocker.breakdown.capped.toFixed(2)}.`,
     `The newcomer has one observation, no corroboration and nothing built on it. ${blockingName} has had time to accumulate both.`,
     `What decides it: ${dominantTerm(state, blockingId)}.`,
@@ -282,18 +350,9 @@ function dominantTerm(state: GraphState, decisionId: DecisionId): string {
   const w = breakdown.weights;
 
   const contributions: { readonly name: string; readonly amount: number }[] = [
-    {
-      name: `who stated it (${c.sourceAuthority.toFixed(2)})`,
-      amount: w.sourceAuthority * c.sourceAuthority,
-    },
-    {
-      name: `how many sources agree (${c.corroboration.toFixed(2)})`,
-      amount: w.corroboration * c.corroboration,
-    },
-    {
-      name: `extraction confidence (${c.confidence.toFixed(2)})`,
-      amount: w.confidence * c.confidence,
-    },
+    { name: `who stated it (${c.sourceAuthority.toFixed(2)})`, amount: w.sourceAuthority * c.sourceAuthority },
+    { name: `how many sources agree (${c.corroboration.toFixed(2)})`, amount: w.corroboration * c.corroboration },
+    { name: `extraction confidence (${c.confidence.toFixed(2)})`, amount: w.confidence * c.confidence },
     { name: `how recent it is (${c.recency.toFixed(2)})`, amount: w.recency * c.recency },
   ];
 
