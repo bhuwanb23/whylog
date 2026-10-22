@@ -45,15 +45,10 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type {
-  DecisionOrigin,
-  DecisionVariable,
-  Modality,
-  PremiseType,
-} from "@/types/domain";
-import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { DecisionOrigin, DecisionVariable, Modality, PremiseType } from "@/types/domain";
 import type { GuardSpec } from "@/types/guards";
 import type { ProposedGuard } from "@/types/guards";
+import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
 import type { Answer } from "@/types/retrieval";
 
 /* -------------------------------------------------------------------------- */
@@ -387,8 +382,4 @@ export const NULL_CAPABILITIES: EngineCapabilities = {
 /* Types referenced only by implementers                                      */
 /* -------------------------------------------------------------------------- */
 
-export type _SeamTypesReferenced =
-  | AlternativeId
-  | EpisodeId
-  | GuardSpec
-  | Answer;
+export type _SeamTypesReferenced = AlternativeId | EpisodeId | GuardSpec | Answer;

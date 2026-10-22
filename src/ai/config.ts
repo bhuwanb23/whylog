@@ -23,14 +23,14 @@
  * ---------------------------------------------------------------------------
  */
 
-import { ok, err, type Result } from "@/lib/result";
-import type { EngineId } from "@/types/common";
+import { type Result, err, ok } from "@/lib/result";
 import {
+  type StoredConfig,
   clearApiKey as clearStoredKey,
   loadConfig,
   saveConfig,
-  type StoredConfig,
 } from "@/substrate/persistence";
+import type { EngineId } from "@/types/common";
 
 export type ProviderId = "openai" | "anthropic" | "openrouter" | "local";
 
@@ -99,9 +99,11 @@ export function readConfig(): EngineConfig {
 }
 
 function fromStored(stored: StoredConfig): EngineConfig {
-  const provider = isProvider(stored.engineKind === "local" ? "local" : stored.provider)
-    ? (stored.provider ?? "local")
-    : "local";
+  // `engineKind` is the authority on WHICH engine runs; `provider` only says
+  // which remote provider to use when that engine is the LLM one. Reading the
+  // provider alone would report "openai" for a log that is running locally.
+  const requested = stored.engineKind === "local" ? "local" : stored.provider;
+  const provider: ProviderId = isProvider(requested) ? requested : "local";
 
   return {
     provider,

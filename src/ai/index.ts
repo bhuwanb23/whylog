@@ -6,7 +6,15 @@
  * implementation or a type.
  */
 
-export { getEngine, getLocalEngine, activeEngineId, activeCapabilities, can, invalidateEngine, type ActiveEngine } from "./engine";
+export {
+  getEngine,
+  getLocalEngine,
+  activeEngineId,
+  activeCapabilities,
+  can,
+  invalidateEngine,
+  type ActiveEngine,
+} from "./engine";
 export {
   DEFAULT_CONFIG,
   DEFAULT_MODELS,
@@ -25,7 +33,17 @@ export {
   type EngineConfig,
   type ProviderId,
 } from "./config";
-export { createEngine, listEngines, nullEngine, registerEngine, unregisterEngine, clearRegistry, type EngineChoice, type EngineFactory, type EngineOptions } from "./registry";
+export {
+  createEngine,
+  listEngines,
+  nullEngine,
+  registerEngine,
+  unregisterEngine,
+  clearRegistry,
+  type EngineChoice,
+  type EngineFactory,
+  type EngineOptions,
+} from "./registry";
 export {
   LOCAL_CAPABILITIES,
   NULL_CAPABILITIES,
