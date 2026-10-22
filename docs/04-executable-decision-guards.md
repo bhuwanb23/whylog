@@ -94,32 +94,32 @@ Eight kinds, ordered from most deterministic to least. The first six need no mod
         value:    sqlite
         rejected: [postgres, supabase]
         applies:  src/db/**, package.json
-                    ³
+                    │
                     ▼
         ┌──────────────────────────────┐
-        ³   TEMPLATE RULES per variable ³  ← deterministic, covers ~80%
-        ³   DATABASE → driver present/  ³
-        ³              absent checks    ³
-        ³   FRAMEWORK → build config +  ³
-        ³              dependency       ³
-        ³   HOSTING  → config file +    ³
-        ³              deploy manifest  ³
-        ³   AUTH     → middleware/lib   ³
+        │   TEMPLATE RULES per variable │  ← deterministic, covers ~80%
+        │   DATABASE → driver present/  │
+        │              absent checks    │
+        │   FRAMEWORK → build config +  │
+        │              dependency       │
+        │   HOSTING  → config file +    │
+        │              deploy manifest  │
+        │   AUTH     → middleware/lib   │
         └──────────────────────────────┘
-                    ³
+                    │
               covered? ──no──► ┌───────────────────────┐
-                    ³          ³  LLM SYNTHESIS        ³
-                   yes         ³  decision + file list  ³
-                    ³          ³  → proposed guard set  ³
-                    ³          ³  (marked generatedBy:  ³
-                    ³          ³   llm, needs review)   ³
-                    ³          └───────────────────────┘
+                    │          │  LLM SYNTHESIS        │
+                   yes         │  decision + file list  │
+                    │          │  → proposed guard set  │
+                    │          │  (marked generatedBy:  │
+                    │          │   llm, needs review)   │
+                    │          └───────────────────────┘
                     ▼
         ┌──────────────────────────────┐
-        ³  HUMAN REVIEW — guards are    ³
-        ³  proposed, never silent       ³
+        │  HUMAN REVIEW — guards are    │
+        │  proposed, never silent       │
         └──────────────────────────────┘
-                    ³
+                    │
                     ▼
               guard set attached to the decision
 ```
@@ -194,20 +194,20 @@ This is where guards stop being a linting feature and become part of the reasoni
 
 ```
    GUARD RUN
-      ³
+      │
       ├── PASS ──► corroboration +1 for the decision
-      ³            implementation_cost ↑  (feeds entrenchment E(d))
-      ³
+      │            implementation_cost ↑  (feeds entrenchment E(d))
+      │
       └── FAIL ──► emit PremiseEvidence event
-                        ³
+                        │
                         ▼
                    REVISE() STEP 1  ← same entry point as a transcript
-                        ³
+                        │
                         ▼
               does this falsify a premise the decision rests on?
-                   ³                ³
+                   │                │
                   yes               no
-                   ³                ³
+                   │                │
                    ▼                ▼
             gate (c) fires     gate (a) fires
             premise-            structural drift:
@@ -227,9 +227,9 @@ This is where guards stop being a linting feature and become part of the reasoni
 ## 7. Decision Compliance
 
 ```
-                  ä | IN decisions whose guards all pass |
+                  Σ | IN decisions whose guards all pass |
    compliance  =  ─────────────────────────────────────────
-                  ä | IN decisions with ≥1 accepted guard  |
+                  Σ | IN decisions with ≥1 accepted guard  |
 ```
 
 Reported alongside three companions:

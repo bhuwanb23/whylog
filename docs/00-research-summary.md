@@ -64,25 +64,25 @@ Plot everyone on two axes:
 ```
                  REASONS ABOUT TRUTH
                           ▲
-                          ³
-        Veritas ●         ³        ● ← WhyLog goes here
-     (agent beliefs,      ³     (developer decisions, extracted
-      no extraction,      ³      from dialogue, premised, cascaded,
-      no code)            ³      and VERIFIED against the code)
-                          ³
-   Kantara/2506.11005 ●   ³
-   (detects contradictions³
-    in commits, never     ³
-    revises, no premises) ³
-                          ³
+                          │
+        Veritas ●         │        ● ← WhyLog goes here
+     (agent beliefs,      │     (developer decisions, extracted
+      no extraction,      │      from dialogue, premised, cascaded,
+      no code)            │      and VERIFIED against the code)
+                          │
+   Kantara/2506.11005 ●   │
+   (detects contradictions│
+    in commits, never     │
+    revises, no premises) │
+                          │
  ─────────────────────────┼──────────────────────────────►
-                          ³                    EXTRACTS FROM
-    adr-staleness ●       ³              NATURAL DIALOGUE
-    Repowise ●            ³
-  (manual maps,           ³   ● ai-memory   ● agentmemory
-   timestamp drift)       ³   ● Zep/Graphiti ● Mem0/Letta/cognee
-                          ³   (store, index, retrieve, inject)
-                          ³
+                          │                    EXTRACTS FROM
+    adr-staleness ●       │              NATURAL DIALOGUE
+    Repowise ●            │
+  (manual maps,           │   ● ai-memory   ● agentmemory
+   timestamp drift)       │   ● Zep/Graphiti ● Mem0/Letta/cognee
+                          │   (store, index, retrieve, inject)
+                          │
                  STORES & RETRIEVES
 ```
 
@@ -279,7 +279,7 @@ Each decision is indexed at four levels, all computed offline:
 | **L3** | sparse keyword index over `statement + rationale + alternatives + variable + value` | Exact tech names must never be missed. BM25/keyword catches "postgres" when the embedding drifts. |
 | **L4** | structural index: `variable → value → premise ids` | Deterministic, exact, and the only level that can see negation. |
 
-**Fusion:** Reciprocal Rank Fusion, `RRF(d) = ä_r 1/(k + rank_r(d))`, `k = 60`, over L1+L2 (dense) and L3 (sparse). Then rerank.
+**Fusion:** Reciprocal Rank Fusion, `RRF(d) = Σ_r 1/(k + rank_r(d))`, `k = 60`, over L1+L2 (dense) and L3 (sparse). Then rerank.
 
 ### 3.2 Two-stage retrieval
 
@@ -306,7 +306,7 @@ Every answer from the Ask view carries one of three verdicts:
 - **PARTIAL** — some claims grounded; the ungrounded part is explicitly marked.
 - **INSUFFICIENT EVIDENCE** — *"Your log has no decision about auth. Nearest related: WLD-0004 (session handling, Oct 3)."*
 
-Bounded retrieval (ó3 searches), and **every citation must resolve to evidence retrieved during this run**. A decision-memory tool that refuses to invent rationale is more trustworthy than one that always answers — and it's a 20-line feature that reads as rigour.
+Bounded retrieval (≤3 searches), and **every citation must resolve to evidence retrieved during this run**. A decision-memory tool that refuses to invent rationale is more trustworthy than one that always answers — and it's a 20-line feature that reads as rigour.
 
 ---
 
@@ -400,21 +400,21 @@ That is a **self-enforcing decision record**, and it is the thing that makes an 
 
 ```
 ┌─ L5 PRESENTATION ──────────────────────────────────────────────────────────────┐
-³  Timeline · Ask (evidence-contract answers) · Graph (premise lattice) ·        ³
-³  Export (compiled per-agent) · Health (compliance + agency + staleness)        ³
+│  Timeline · Ask (evidence-contract answers) · Graph (premise lattice) ·        │
+│  Export (compiled per-agent) · Health (compliance + agency + staleness)        │
 ├─ L4 SYNTHESIS ─────────────────────────────────────────────────────────────────┤
-³  answer() · compile() → CLAUDE.md/.cursorrules/AGENTS.md + verify commands     ³
-³  guard synthesis · revision proposals · time-travel materialisation            ³
+│  answer() · compile() → CLAUDE.md/.cursorrules/AGENTS.md + verify commands     │
+│  guard synthesis · revision proposals · time-travel materialisation            │
 ├─ L3 RETRIEVAL ─────────────────────────────────────────────────────────────────┤
-³  4-level index → RRF fusion → cross-encoder/NLI rerank → structural gate       ³
-├─ L2 REASONING  ← the differentiating layer ────────────────────────────────────┐³
-³  JTMS labeller · contradiction detector (3 gates) · dependency-directed        ³³
-³  backtracking · cascade · entrenchment-ordered adjudication · nogood recording ³³
+│  4-level index → RRF fusion → cross-encoder/NLI rerank → structural gate       │
+├─ L2 REASONING  ← the differentiating layer ────────────────────────────────────┐│
+│  JTMS labeller · contradiction detector (3 gates) · dependency-directed        ││
+│  backtracking · cascade · entrenchment-ordered adjudication · nogood recording ││
 ├─ L1 EXTRACTION ────────────────────────────────────────────────────────────────┤
-³  transcript → decisions + PREMISES + alternatives + provenance + snippets      ³
-³  entity resolution onto existing nodes (merge, don't append)                   ³
+│  transcript → decisions + PREMISES + alternatives + provenance + snippets      │
+│  entity resolution onto existing nodes (merge, don't append)                   │
 ├─ L0 SUBSTRATE ─────────────────────────────────────────────────────────────────┤
-³  append-only bi-temporal event log · hash chain · localStorage + JSON import   ³
+│  append-only bi-temporal event log · hash chain · localStorage + JSON import   │
 └────────────────────────────────────────────────────────────────────────────────┘
            AI seam: every L1–L4 operation has an LLM impl and a local impl
 ```
