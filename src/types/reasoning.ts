@@ -126,8 +126,13 @@ export interface BacktrackResult {
  * A recorded impossible conjunction of assumptions.
  *
  * In classical TMS a nogood is internal bookkeeping. Here it is THE EXPLANATION:
- * "these two assumptions cannot both hold" is the single most useful sentence
- * the system can produce. It is also reused to block re-assertion.
+ * "these two assumptions cannot both hold" is the single most
+ * useful sentence the system can produce. Display it prominently, and check
+ * new proposals against recorded nogoods before suggesting them.
+ *
+ * An ALIAS of the persisted node, not a second shape of it: a nogood recorded
+ * in the log and a nogood reported to the user have to be the same thing, and
+ * two interfaces for one concept drift.
  */
 export interface NogoodRecord {
   readonly id: NogoodId;
@@ -159,17 +164,12 @@ export type AdjudicationOutcome =
       readonly blockingDecisionId: DecisionId;
       readonly newcomerEntrenchment: number;
       readonly incumbentEntrenchment: number;
-      /**
-       * §2.8: "A rejected newcomer appears in a Contested queue with the FULL
-       * ENTRENCHMENT BREAKDOWN OF BOTH SIDES and an explicit 'override anyway' action."
-       *
-       * Two numbers are not a breakdown. Without the components the user cannot see
-       * that the newcomer lost on corroboration and implementation cost rather than on
-       * authority — and "override anyway" is only an informed choice if the arithmetic
-       * is visible. Optional so an adjudication run without them still typechecks.
-       */
-      readonly newcomerBreakdown?: EntrenchmentBreakdown;
-      readonly incumbentBreakdown?: EntrenchmentBreakdown;
+      /** §2.8: the FULL breakdown of BOTH sides. Two totals cannot show that the
+       *  newcomer lost on corroboration and implementation cost rather than on
+       *  authority, and "override anyway" is only an informed choice if the
+       *  arithmetic is visible. */
+      readonly newcomerBreakdown: EntrenchmentBreakdown;
+      readonly incumbentBreakdown: EntrenchmentBreakdown;
     }
   /** Nothing to adjudicate. */
   | { readonly kind: "none" };

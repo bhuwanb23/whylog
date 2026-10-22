@@ -27,19 +27,19 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { InputShape, NormalizedTurn } from "./types";
 import {
+  type AttributionResult,
+  type RawTurn,
+  type SpeakerMarker,
   acceptsOpeningClause,
   detectShape,
   isAcceptanceOnly,
   linesWithOffsets,
   matchMarker,
   trimTrailing,
-  type AttributionResult,
-  type RawTurn,
-  type SpeakerMarker,
 } from "./lines";
 import { attributeJsonl, attributeUnmarked } from "./speakers-fallback";
+import type { InputShape, NormalizedTurn } from "./types";
 
 /* The primitives moved to `./lines` to break the import cycle with
  * `speakers-fallback.ts`. They are re-exported so that `@/extraction/speakers`
@@ -82,7 +82,16 @@ function openTurn(
   marker: SpeakerMarker | null,
   attribution: NormalizedTurn["attribution"],
 ): MutableTurn {
-  return { index: -1, speaker, rawStart, rawEnd: rawStart, bodyStart, bodyEnd: bodyStart, marker, attribution };
+  return {
+    index: -1,
+    speaker,
+    rawStart,
+    rawEnd: rawStart,
+    bodyStart,
+    bodyEnd: bodyStart,
+    marker,
+    attribution,
+  };
 }
 
 function closeTurn(turns: MutableTurn[], current: MutableTurn | null): MutableTurn | null {
@@ -116,7 +125,10 @@ function seal(turns: readonly MutableTurn[], raw: string): readonly RawTurn[] {
 /* Attribution                                                                */
 /* -------------------------------------------------------------------------- */
 
-export function attributeSpeakers(raw: string, shape: InputShape = detectShape(raw)): AttributionResult {
+export function attributeSpeakers(
+  raw: string,
+  shape: InputShape = detectShape(raw),
+): AttributionResult {
   if (shape === "jsonl") return attributeJsonl(raw);
 
   const lines = linesWithOffsets(raw);
@@ -172,7 +184,6 @@ export function attributeSpeakers(raw: string, shape: InputShape = detectShape(r
     unattributed: sealed.filter((t) => t.speaker === "unknown").length,
   };
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* Origin evidence                                                            */

@@ -52,10 +52,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, JustificationId, PremiseId } from "@/types/common";
 import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, JustificationId, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
-import { validityOf, type Labelled, type NodeId } from "../labeller";
+import { type Labelled, type NodeId, validityOf } from "../labeller";
 
 export type InvalidationClause = "in-list" | "out-list";
 
@@ -97,7 +97,10 @@ export interface GateCResult {
  *               gate that re-derives them can disagree with the labeller, and a
  *               disagreement between two parts of one cycle is untraceable.
  */
-export function detectPremiseInvalidation(state: GraphState, labels: ReadonlyMap<NodeId, Labelled>): GateCResult {
+export function detectPremiseInvalidation(
+  state: GraphState,
+  labels: ReadonlyMap<NodeId, Labelled>,
+): GateCResult {
   const invalidations: PremiseInvalidation[] = [];
   const triggering = new Set<PremiseId>();
   let checked = 0;
@@ -129,9 +132,20 @@ export function detectPremiseInvalidation(state: GraphState, labels: ReadonlyMap
       clause: verdict.failedClause,
       premiseText: premise.text,
       decisionStatement: decision?.statement ?? justification.consequent,
-      explanation: verdict.failedClause === "out-list"
-        ? outListExplanation(premise.id, premise.text, justification.consequent, decision?.statement)
-        : inListExplanation(premise.id, premise.text, justification.consequent, decision?.statement),
+      explanation:
+        verdict.failedClause === "out-list"
+          ? outListExplanation(
+              premise.id,
+              premise.text,
+              justification.consequent,
+              decision?.statement,
+            )
+          : inListExplanation(
+              premise.id,
+              premise.text,
+              justification.consequent,
+              decision?.statement,
+            ),
     });
   }
 
@@ -242,9 +256,10 @@ export function previewInvalidation(
         clause: verdict.failedClause,
         premiseText: premise.text,
         decisionStatement: decision.statement,
-        explanation: verdict.failedClause === "out-list"
-          ? outListExplanation(premiseId, premise.text, decisionId, decision.statement)
-          : inListExplanation(premiseId, premise.text, decisionId, decision.statement),
+        explanation:
+          verdict.failedClause === "out-list"
+            ? outListExplanation(premiseId, premise.text, decisionId, decision.statement)
+            : inListExplanation(premiseId, premise.text, decisionId, decision.statement),
       });
     }
   }
@@ -271,7 +286,9 @@ export function loadBearingPremises(
     out.push({ premiseId, decisions: decisions.length, text: premise.text, label: premise.label });
   }
 
-  return out.sort((a, b) => b.decisions - a.decisions || a.premiseId.localeCompare(b.premiseId)).slice(0, limit);
+  return out
+    .sort((a, b) => b.decisions - a.decisions || a.premiseId.localeCompare(b.premiseId))
+    .slice(0, limit);
 }
 
 export function describeResult(result: GateCResult): string {

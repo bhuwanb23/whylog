@@ -22,6 +22,7 @@
 
 import type {
   AlternativeId,
+  BiTemporal,
   Confidence,
   DecisionId,
   EngineId,
@@ -30,6 +31,7 @@ import type {
   GuardId,
   ISODateString,
   JustificationId,
+  NogoodId,
   PremiseId,
   SourceSpan,
   TranscriptId,
@@ -58,12 +60,7 @@ export type DecisionLabel =
   | "UNFOUNDED";
 
 /** Lifecycle state, orthogonal to the label. */
-export type DecisionStatus =
-  | "proposed"
-  | "active"
-  | "contested"
-  | "superseded"
-  | "archived";
+export type DecisionStatus = "proposed" | "active" | "contested" | "superseded" | "archived";
 
 /* -------------------------------------------------------------------------- */
 /* The decision variable ontology                                             */
@@ -238,6 +235,23 @@ export interface Premise {
    *  "single user" (scale) and "single sign-on user flow" (requirement) are
    *  never the same node. A false merge produces a spectacular wrong cascade. */
   readonly resolvedFrom: readonly EventId[];
+
+  /** The justifications that cite this premise — the REVERSE index of
+   *  `Justification.{inList, outList}`.
+   *
+   *  The reasoning layer needs it in both directions: "which justifications
+   *  rest on this premise" is what the backtracker walks when a premise dies,
+   *  and it is what distinguishes a DERIVED premise (something concluded, so
+   *  it can be retracted) from an ASSUMPTION (something taken as given, so it
+   *  has to be argued). Without it the cascade has to scan every justification
+   *  to find the ones that mention a premise. */
+  readonly justifications: readonly JustificationId[];
+
+  /** Where this came from: the verbatim span it was read out of, who said it,
+   *  and which engine recovered it. Plan §1.6 — every extracted item is
+   *  traceable, not just decisions. Without it the evidence contract has
+   *  nothing to resolve a citation against. */
+  readonly provenance: Provenance;
 }
 
 export interface PremiseEvidence {
@@ -276,6 +290,8 @@ export interface RejectedAlternative {
   /** Alternatives require explicit confirmation before entering the
    *  pre-emption index. A false pre-emption is worse than none. */
   readonly confirmedByHuman: boolean;
+  /** Where this was read out of. Same shape as a decision's provenance. */
+  readonly provenance: Provenance;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -384,7 +400,7 @@ export interface Justification {
  * new proposals against recorded nogoods before suggesting them.
  */
 export interface Nogood {
-  readonly id: string;
+  readonly id: NogoodId;
   readonly premiseIds: readonly PremiseId[];
   readonly derivedFrom: EventId;
   readonly recordedAt: ISODateString;
@@ -466,3 +482,6 @@ export interface AsOfQuery {
   readonly axis: "valid" | "learned";
   readonly at: ISODateString;
 }
+
+/** Referenced by ValidityWindow consumers; keeps the import list honest. */
+export type _DomainTypesReferenced = BiTemporal;
