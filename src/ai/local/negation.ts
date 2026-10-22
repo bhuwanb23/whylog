@@ -32,9 +32,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { CueDirection } from "@/ontology/data/decision-cues";
 import type { CueHit } from "@/extraction/cue-scan";
 import { tokenise } from "@/lib/text";
+import type { CueDirection } from "@/ontology/data/decision-cues";
 
 /** +X means X is chosen. −X means X is refused and belongs in
  *  `RejectedAlternative`. */
@@ -60,12 +60,45 @@ export interface PolarityEvidence {
 export const NEGATION_SCOPE_TOKENS = 6;
 
 const NEGATIONS: readonly string[] = [
-  "not", "no", "never", "neither", "nor", "without", "avoid", "avoiding",
-  "skip", "skipping", "skipped", "drop", "dropping", "dropped",
-  "dont", "don't", "doesnt", "doesn't", "didnt", "didn't",
-  "wont", "won't", "cant", "can't", "cannot", "couldnt", "couldn't",
-  "shouldnt", "shouldn't", "isnt", "isn't", "arent", "aren't", "wasnt", "wasn't",
-  "hardly", "barely", "rather", "instead",
+  "not",
+  "no",
+  "never",
+  "neither",
+  "nor",
+  "without",
+  "avoid",
+  "avoiding",
+  "skip",
+  "skipping",
+  "skipped",
+  "drop",
+  "dropping",
+  "dropped",
+  "dont",
+  "don't",
+  "doesnt",
+  "doesn't",
+  "didnt",
+  "didn't",
+  "wont",
+  "won't",
+  "cant",
+  "can't",
+  "cannot",
+  "couldnt",
+  "couldn't",
+  "shouldnt",
+  "shouldn't",
+  "isnt",
+  "isn't",
+  "arent",
+  "aren't",
+  "wasnt",
+  "wasn't",
+  "hardly",
+  "barely",
+  "rather",
+  "instead",
 ];
 
 /** Verb patterns that carry polarity independent of any cue. Checked when the cue
@@ -134,7 +167,10 @@ function clauseStartBefore(text: string, from: number): number {
     // A comma also bounds the window, but only when it follows a conjunction —
     // "single file, synchronous API" is one thought, while "not a big team, so"
     // is two.
-    if (ch === "," && /\b(?:so|because|since|but|and so)\s*$/i.test(text.slice(Math.max(0, i - 24), i))) {
+    if (
+      ch === "," &&
+      /\b(?:so|because|since|but|and so)\s*$/i.test(text.slice(Math.max(0, i - 24), i))
+    ) {
       return i + 1;
     }
   }
@@ -189,10 +225,13 @@ export function polarityOf(text: string, hit: CueHit, value?: string): PolarityE
   const positive = POSITIVE_VERBS.some((pattern) => pattern.test(verbText));
   const negative = NEGATIVE_VERBS.some((pattern) => pattern.test(verbText));
 
-  if (negative && !positive) return { polarity: "negative", via: "verb-pattern", marker: verbText, scope };
-  if (positive && !negative) return { polarity: "positive", via: "verb-pattern", marker: verbText, scope };
+  if (negative && !positive)
+    return { polarity: "negative", via: "verb-pattern", marker: verbText, scope };
+  if (positive && !negative)
+    return { polarity: "positive", via: "verb-pattern", marker: verbText, scope };
 
-  if (negated !== null) return { polarity: "negative", via: "negation-flip", marker: negated, scope };
+  if (negated !== null)
+    return { polarity: "negative", via: "negation-flip", marker: negated, scope };
 
   // No evidence either way. DEFAULT POSITIVE: a decision cue with no polarity
   // signal is far more often a commitment than a refusal, and the review UI shows
@@ -238,9 +277,10 @@ export const NEGATION_CUES: readonly string[] = NEGATIONS;
  */
 export function rejectedAfterCue(text: string, hit: CueHit): string | null {
   const trailing = text.slice(hit.end, hit.end + 90);
-  const match = /(?:^|[\s,])(?:not|rather than|instead of|over|no)\s+([A-Za-z0-9@/._+-]+(?:\s+[A-Za-z0-9@/._+-]+)?)/i.exec(
-    trailing,
-  );
+  const match =
+    /(?:^|[\s,])(?:not|rather than|instead of|over|no)\s+([A-Za-z0-9@/._+-]+(?:\s+[A-Za-z0-9@/._+-]+)?)/i.exec(
+      trailing,
+    );
   return match?.[1]?.trim() ?? null;
 }
 
@@ -264,7 +304,7 @@ export function describeDirection(direction: CueDirection): string {
     case "reject":
       return "the value after this cue is refused";
     case "pivot":
-      return "\"X instead of Y\" — accepts X, refuses Y";
+      return '"X instead of Y" — accepts X, refuses Y';
     case "neutral":
       return "a decision is present; direction comes from the verb or a negation";
   }

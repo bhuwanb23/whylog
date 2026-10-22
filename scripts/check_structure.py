@@ -204,10 +204,14 @@ def value_expected(src: str, i: int, prev: str) -> bool:
 
 
 def rel(path: pathlib.Path) -> str:
+    # POSIX separators, always. The allowlists below name files with forward
+    # slashes ("src/ai/config.ts"), and on Windows `str(relative_to(...))` gives
+    # backslashes — so every allowlist entry silently fails to match and every
+    # exempted file gets reported as a violation.
     try:
-        return str(path.relative_to(ROOT))
+        return path.relative_to(ROOT).as_posix()
     except ValueError:
-        return str(path)
+        return path.as_posix()
 
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:
