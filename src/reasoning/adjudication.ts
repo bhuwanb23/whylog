@@ -45,12 +45,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import { areAntonyms, canonicalValueOf } from "@/ontology";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { Decision, DecisionOrigin, DecisionVariable } from "@/types/domain";
-import { areAntonyms, canonicalValueOf } from "@/ontology";
 import type { AdjudicationOutcome, EntrenchmentBreakdown } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
-import { entrenchmentOf, type GuardStatus } from "./entrenchment";
+import { type GuardStatus, entrenchmentOf } from "./entrenchment";
 
 /* -------------------------------------------------------------------------- */
 /* The newcomer                                                               */
@@ -282,9 +282,18 @@ function dominantTerm(state: GraphState, decisionId: DecisionId): string {
   const w = breakdown.weights;
 
   const contributions: { readonly name: string; readonly amount: number }[] = [
-    { name: `who stated it (${c.sourceAuthority.toFixed(2)})`, amount: w.sourceAuthority * c.sourceAuthority },
-    { name: `how many sources agree (${c.corroboration.toFixed(2)})`, amount: w.corroboration * c.corroboration },
-    { name: `extraction confidence (${c.confidence.toFixed(2)})`, amount: w.confidence * c.confidence },
+    {
+      name: `who stated it (${c.sourceAuthority.toFixed(2)})`,
+      amount: w.sourceAuthority * c.sourceAuthority,
+    },
+    {
+      name: `how many sources agree (${c.corroboration.toFixed(2)})`,
+      amount: w.corroboration * c.corroboration,
+    },
+    {
+      name: `extraction confidence (${c.confidence.toFixed(2)})`,
+      amount: w.confidence * c.confidence,
+    },
     { name: `how recent it is (${c.recency.toFixed(2)})`, amount: w.recency * c.recency },
   ];
 

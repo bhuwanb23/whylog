@@ -56,7 +56,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Actor, DecisionId, EventId, NogoodId, PremiseId } from "@/types/common";
+import type { WhyLogEngine } from "@/ai/types";
+import { formatNogoodId } from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
+import type {
+  Actor,
+  DecisionId,
+  EventId,
+  ISODateString,
+  NogoodId,
+  PremiseId,
+} from "@/types/common";
 import type { NewEvent } from "@/types/events";
 import type {
   AdjudicationOutcome,
@@ -64,27 +74,19 @@ import type {
   CascadeResult,
   RevisionProposal,
 } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
-import {
-  label,
-  type Labelled,
-  type LabellingResult,
-  type NodeId,
-} from "./labeller";
-import { runGates, describeRun, type CandidatePair, type GateFinding, type GateRun } from "./gates";
+import { type Newcomer, adjudicate, findContradictors } from "./adjudication";
 import { backtrack, describeBacktrack, splitCulprits } from "./backtracking";
-import { isDuplicate, nogoodForFinding, type NogoodDraft } from "./nogoods";
-import { cascade, describeCascade, MAX_CASCADE_DEPTH } from "./cascade";
-import { entrenchmentOf, describeEntrenchment, type GuardStatus } from "./entrenchment";
-import { adjudicate, findContradictors, type Newcomer } from "./adjudication";
+import { MAX_CASCADE_DEPTH, cascade, describeCascade } from "./cascade";
+import { type GuardStatus, describeEntrenchment, entrenchmentOf } from "./entrenchment";
+import { type CandidatePair, type GateFinding, type GateRun, describeRun, runGates } from "./gates";
+import { type Labelled, type LabellingResult, type NodeId, label } from "./labeller";
+import { type NogoodDraft, isDuplicate, nogoodForFinding } from "./nogoods";
 import {
+  WHY_NOT_AUTO_APPLIED,
   buildProposal,
   evidenceForFinding,
   renderProposal,
-  WHY_NOT_AUTO_APPLIED,
 } from "./proposals";
-import type { WhyLogEngine } from "@/ai/types";
-import { formatNogoodId } from "@/lib/ids";
 
 /** One label flip, as the labeller reports it. `revise` turns these into events. */
 export type LabelChange = LabellingResult["changed"][number];
@@ -97,7 +99,10 @@ export interface ReviseInput {
   readonly state: GraphState;
   readonly engine: WhyLogEngine;
   readonly actor: Actor;
-  readonly now: string;
+  /** The instant the cycle runs. Typed, not `string`: every event it writes
+   *  stamps this as its learned time, and a plain string would let an
+   *  unparseable instant into the log. */
+  readonly now: ISODateString;
   /** Step 1. Absent means "re-examine what is already in the log", which is what a
    *  boot-time run does: gates (a) and (c) can fire on a log nobody has touched. */
   readonly newcomer?: Newcomer;
@@ -130,7 +135,9 @@ export interface ReviseResult {
   readonly labelChanges: readonly LabelChange[];
   readonly gates: GateRun;
   readonly cases: readonly RevisionCase[];
-  readonly adjudication: (AdjudicationOutcome & { readonly considered: readonly DecisionId[] }) | null;
+  readonly adjudication:
+    | (AdjudicationOutcome & { readonly considered: readonly DecisionId[] })
+    | null;
   /** Step 9. Ordered, ready for `appendBatch`. EMPTY on an unchanged log. */
   readonly eventDrafts: readonly EventDraftAny[];
   readonly durationMs: number;
@@ -239,7 +246,13 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
     const retracted = refused ? [] : backtrackResult.culpritPremises;
     const cascadeResult: CascadeResult =
       retracted.length === 0
-        ? { steps: [], flipped: [], survivors: [], truncated: false, potentiallyAffectedBeyondCap: 0 }
+        ? {
+            steps: [],
+            flipped: [],
+            survivors: [],
+            truncated: false,
+            potentiallyAffectedBeyondCap: 0,
+          }
         : cascade(state, labels, retracted);
 
     for (const step of cascadeResult.steps) {
@@ -271,6 +284,7 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
               premiseIds: nogoodDraft.premiseIds,
               explanation: nogoodDraft.explanation,
               derivedFrom: PLACEHOLDER_EVENT_ID,
+              recordedAt: input.now,
             },
           }),
       ...(adjudication === null ? {} : { adjudication }),
@@ -337,10 +351,7 @@ function alreadyRecorded(state: GraphState, finding: GateFinding): boolean {
 /* Step 9 — the drafts                                                        */
 /* -------------------------------------------------------------------------- */
 
-function labelChangedDraft(
-  input: ReviseInput,
-  change: LabelChange,
-): NewEvent<"LabelChanged"> {
+function labelChangedDraft(input: ReviseInput, change: LabelChange): NewEvent<"LabelChanged"> {
   const trigger =
     change.reason.kind === "all-justifications-invalid" ? change.reason.failedPremiseId : null;
   const invalidJustificationId =
@@ -397,7 +408,10 @@ function detectionDraft(input: ReviseInput, finding: GateFinding): EventDraftAny
   };
 }
 
-function premiseInvalidatedDraft(input: ReviseInput, premiseId: PremiseId): NewEvent<"PremiseInvalidated"> {
+function premiseInvalidatedDraft(
+  input: ReviseInput,
+  premiseId: PremiseId,
+): NewEvent<"PremiseInvalidated"> {
   return {
     type: "PremiseInvalidated",
     payload: {
@@ -543,7 +557,9 @@ function summarise(
   if (adjudication !== null && adjudication.kind === "reject-newcomer") {
     lines.push(`Screening: REFUSED. ${adjudication.why}`);
   } else if (adjudication !== null && adjudication.kind === "apply") {
-    lines.push(`Screening: accepted, retracting weakest-first: ${adjudication.retract.join(", ")}.`);
+    lines.push(
+      `Screening: accepted, retracting weakest-first: ${adjudication.retract.join(", ")}.`,
+    );
   }
 
   lines.push(`${cases.length} case(s) worked through backtracking, cascade and entrenchment.`);

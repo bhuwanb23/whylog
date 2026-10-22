@@ -50,10 +50,10 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Justification } from "@/types/domain";
 import type { BacktrackResult } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
 import type { Labelled, NodeId } from "./labeller";
 
 /** Deeper than this and the graph is almost certainly cyclic or the diagnosis has
@@ -82,7 +82,10 @@ export function backtrack(
   let deepest = 0;
   let truncated = false;
 
-  const walk = (nodeId: NodeId, depth: number): void => {
+  // The walk visits DECISIONS and PREMISES. Justifications are what it FOLLOWS,
+  // not what it lands on: the path is the chain of beliefs, and a justification
+  // is the argument between two of them.
+  const walk = (nodeId: DecisionId | PremiseId, depth: number): void => {
     if (visitedNodes.has(nodeId)) return;
     visitedNodes.add(nodeId);
 
@@ -154,14 +157,17 @@ function supportingJustificationsFor(
     ? justificationsOfDecision(state, nodeId as DecisionId)
     : justificationsOfPremise(state, nodeId as PremiseId);
 
-  const inLabelled = justifications.filter((justification) =>
-    labels.get(justification.id)?.label === "IN",
+  const inLabelled = justifications.filter(
+    (justification) => labels.get(justification.id)?.label === "IN",
   );
 
   return inLabelled.length > 0 ? inLabelled : justifications;
 }
 
-function justificationsOfDecision(state: GraphState, decisionId: DecisionId): readonly Justification[] {
+function justificationsOfDecision(
+  state: GraphState,
+  decisionId: DecisionId,
+): readonly Justification[] {
   const decision = state.decisions.get(decisionId);
   if (decision === undefined) return [];
 
@@ -172,7 +178,10 @@ function justificationsOfDecision(state: GraphState, decisionId: DecisionId): re
   return out;
 }
 
-function justificationsOfPremise(state: GraphState, premiseId: PremiseId): readonly Justification[] {
+function justificationsOfPremise(
+  state: GraphState,
+  premiseId: PremiseId,
+): readonly Justification[] {
   const premise = state.premises.get(premiseId);
   if (premise === undefined) return [];
 

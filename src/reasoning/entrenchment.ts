@@ -54,19 +54,17 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision, Premise } from "@/types/domain";
 import { ORIGIN_AUTHORITY } from "@/types/domain";
-import type {
-  EntrenchmentBreakdown,
-} from "@/types/reasoning";
+import type { EntrenchmentBreakdown } from "@/types/reasoning";
 import {
   ENTRENCHMENT_WEIGHTS,
   RECENCY_HALF_LIFE_DAYS,
   UNKNOWN_IMPLEMENTATION_COST,
   entrenchmentBand,
 } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
 
 /* -------------------------------------------------------------------------- */
 /* Decision entrenchment                                                      */

@@ -43,10 +43,10 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { DecisionLabel, Justification } from "@/types/domain";
 import type { CascadeResult, CascadeStep } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
 import type { Labelled, NodeId } from "./labeller";
 
 export const MAX_CASCADE_DEPTH = 6;
@@ -233,12 +233,24 @@ function firstRetractedPremiseOf(
   return null;
 }
 
-/** Premises whose informant is this decision — they lose their support when it goes. */
+/**
+ * The premises a decision's own justification rests on — they lose their support
+ * when the decision goes.
+ *
+ * A justification's `consequent` is the decision it supports and its
+ * `inList` / `outList` are the premises it rests on. So when the decision is
+ * retracted, the premises IT rests on lose their support too, and anything
+ * resting on THEM is next in line.
+ */
 function conclusionsOf(state: GraphState, decisionId: DecisionId): readonly PremiseId[] {
   const out: PremiseId[] = [];
-  for (const premise of state.premises.values()) {
-    if (premise.informant !== undefined && premise.informant.decisionId === decisionId) {
-      out.push(premise.id);
+  const seen = new Set<PremiseId>();
+  for (const justification of state.justifications.values()) {
+    if (justification.consequent !== decisionId) continue;
+    for (const premiseId of [...justification.inList, ...justification.outList]) {
+      if (seen.has(premiseId)) continue;
+      seen.add(premiseId);
+      out.push(premiseId);
     }
   }
   return out;

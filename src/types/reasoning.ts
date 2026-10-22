@@ -6,16 +6,8 @@
  * Research: docs/02-truth-maintenance-theory.md §3, §5
  */
 
-import type {
-  Confidence,
-  DecisionId,
-  EventId,
-  NogoodId,
-  PremiseId,
-  ProposalId,
-  SourceSpan,
-} from "./common";
-import type { DecisionLabel } from "./domain";
+import type { Confidence, DecisionId, EventId, PremiseId, ProposalId, SourceSpan } from "./common";
+import type { DecisionLabel, Nogood } from "./domain";
 
 /* -------------------------------------------------------------------------- */
 /* Entrenchment                                                               */
@@ -126,15 +118,15 @@ export interface BacktrackResult {
  * A recorded impossible conjunction of assumptions.
  *
  * In classical TMS a nogood is internal bookkeeping. Here it is THE EXPLANATION:
- * "these two assumptions cannot both hold" is the single most useful sentence
- * the system can produce. It is also reused to block re-assertion.
+ * "these two assumptions cannot both hold" is the single most
+ * useful sentence the system can produce. Display it prominently, and check
+ * new proposals against recorded nogoods before suggesting them.
+ *
+ * An ALIAS of the persisted node, not a second shape of it: a nogood recorded
+ * in the log and a nogood reported to the user have to be the same thing, and
+ * two interfaces for one concept drift.
  */
-export interface NogoodRecord {
-  readonly id: NogoodId;
-  readonly premiseIds: readonly PremiseId[];
-  readonly explanation: string;
-  readonly derivedFrom: EventId;
-}
+export type NogoodRecord = Nogood;
 
 /* -------------------------------------------------------------------------- */
 /* Adjudication                                                               */

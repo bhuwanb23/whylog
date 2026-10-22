@@ -47,11 +47,11 @@
  * ---------------------------------------------------------------------------
  */
 
+import { foldKey } from "@/ontology/canonicalize";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { ClassificationResult, ContradictionVerdict } from "@/types/retrieval";
 import type { ClassificationRequest, DecisionSnapshot } from "../types";
-import { foldKey } from "@/ontology/canonicalize";
 
 /* -------------------------------------------------------------------------- */
 /* Negation                                                                   */
@@ -133,8 +133,7 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
     return {
       verdict: "contradiction",
       explanation:
-        `Both decisions are about ${a.variable} and both settle on "${a.value}", but one of them negates the other ("${negation}"). ` +
-        "Agreeing on a value while disagreeing about it is a contradiction in the reasoning rather than in the choice: the decision may be fine and the reason broken.",
+        `Both decisions are about ${a.variable} and both settle on "${a.value}", but one of them negates the other ("${negation}"). Agreeing on a value while disagreeing about it is a contradiction in the reasoning rather than in the choice: the decision may be fine and the reason broken.`,
       confidence: 0.55,
     };
   }
@@ -147,8 +146,7 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
     return {
       verdict: "reversal",
       explanation:
-        `Both decisions settle ${a.variable}, one on "${older.value}" (${older.id}, valid from ${older.validFrom}) and one on "${newer.value}" (${newer.id}, valid from ${newer.validFrom}). ` +
-        "The same variable cannot hold two values, so the later one replaces the earlier. This is a change of direction, not a mistake — the earlier decision was right under the conditions it was made in.",
+        `Both decisions settle ${a.variable}, one on "${older.value}" (${older.id}, valid from ${older.validFrom}) and one on "${newer.value}" (${newer.id}, valid from ${newer.validFrom}). The same variable cannot hold two values, so the later one replaces the earlier. This is a change of direction, not a mistake — the earlier decision was right under the conditions it was made in.`,
       confidence: 0.6,
     };
   }
@@ -181,8 +179,7 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
      * nothing added. Neutral, with the duplication named. */
     return {
       verdict: "neutral",
-      explanation:
-        `Both decisions settle ${a.variable} on "${a.value}" with no distinguishing rationale. They look like the same decision recorded twice, which identity resolution should have merged. Nothing to revise.`,
+      explanation: `Both decisions settle ${a.variable} on "${a.value}" with no distinguishing rationale. They look like the same decision recorded twice, which identity resolution should have merged. Nothing to revise.`,
       confidence: 0.45,
     };
   }
@@ -197,8 +194,7 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
    */
   return {
     verdict: "neutral",
-    explanation:
-      `No rule applies: ${a.variable} and ${b.variable} are different variables${negation === null ? ", and no negation cue appears in either statement or rationale" : `, and although "${negation}" appears in one of them, a negation across unrelated variables is not evidence of a conflict`}. Topically related at most; logically compatible. Nothing to revise.`,
+    explanation: `No rule applies: ${a.variable} and ${b.variable} are different variables${negation === null ? ", and no negation cue appears in either statement or rationale" : `, and although "${negation}" appears in one of them, a negation across unrelated variables is not evidence of a conflict`}. Topically related at most; logically compatible. Nothing to revise.`,
     confidence: 0.4,
   };
 }

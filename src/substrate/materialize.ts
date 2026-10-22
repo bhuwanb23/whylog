@@ -428,6 +428,27 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       const p = event.payload;
       const existing = draft.premises.get(p.premiseId);
 
+      // An episode referenced but never separately announced is created here, so
+      // the premise's provenance always resolves. A citation that cannot resolve
+      // is not a citation.
+      if (!draft.episodes.has(p.episodeId)) {
+        const episode: Episode = {
+          id: p.episodeId,
+          transcriptId: p.transcriptId,
+          turnRange: [0, 0] as const,
+          charRange: [p.snippet.start, p.snippet.end] as const,
+        };
+        draft.episodes.set(p.episodeId, episode);
+        draft.counters = { ...draft.counters, episodes: draft.counters.episodes + 1 };
+        const transcript = draft.transcripts.get(p.transcriptId);
+        if (transcript) {
+          draft.transcripts.set(p.transcriptId, {
+            ...transcript,
+            episodeIds: [...transcript.episodeIds, p.episodeId],
+          });
+        }
+      }
+
       if (existing) {
         // Re-assertion of an existing node appends evidence instead of creating a
         // duplicate. Premises are SHARED nodes (invariant I2) and a second copy
@@ -466,6 +487,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         corroboration: 0,
         confidence: p.confidence,
         resolvedFrom: [event.id],
+        justifications: [],
         provenance: {
           transcriptId: p.transcriptId,
           episodeId: p.episodeId,
@@ -613,6 +635,17 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       // leaves the pending queue here rather than at approval.
       for (const id of [...justification.inList, ...justification.outList]) {
         removePendingPremise(draft, id);
+        // The REVERSE index: which justifications cite this premise. The
+        // reasoning layer walks it when a premise dies, and it is what tells a
+        // DERIVED premise (something concluded) from an ASSUMPTION (something
+        // taken as given).
+        const premise = draft.premises.get(id);
+        if (premise === undefined) continue;
+        if (premise.justifications.includes(p.justificationId)) continue;
+        draft.premises.set(id, {
+          ...premise,
+          justifications: [...premise.justifications, p.justificationId],
+        });
       }
       return draft;
     }
@@ -739,6 +772,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
               premiseIds: stored?.premiseIds ?? [],
               explanation: stored?.explanation ?? "",
               derivedFrom: stored?.derivedFrom ?? event.id,
+              recordedAt: stored?.recordedAt ?? event.at,
             };
 
       const proposal: RevisionProposal = {

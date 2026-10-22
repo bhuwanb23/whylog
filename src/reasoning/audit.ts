@@ -49,12 +49,11 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, EventId, ISODateString, PremiseId } from "@/types/common";
 import type { Decision, Justification, Premise } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "./labeller";
 import { premisesOf } from "./entrenchment";
-import { nogoodsInvolving } from "./nogoods";
+import type { Labelled, NodeId } from "./labeller";
 
 /** Deeper than this the chain stops being readable and starts being a graph dump. */
 export const MAX_AUDIT_DEPTH = 8;
@@ -63,11 +62,7 @@ export const MAX_AUDIT_DEPTH = 8;
 /* The chain                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type WeaknessKind =
-  | "unsupported-assumption"
-  | "circular-support"
-  | "sole-support"
-  | "stale";
+export type WeaknessKind = "unsupported-assumption" | "circular-support" | "sole-support" | "stale";
 
 export interface AuditStep {
   readonly depth: number;
@@ -251,10 +246,11 @@ function decisionStep(
   /* `Decision` carries no creating-event id. The justification informant does, and
    * materialize rewrites it to the event that created the decision — so the earliest
    * one is the honest answer to "which event taught the system this?". */
-  const learnedFrom = justifications
-    .map((justification) => informantEventId(justification))
-    .filter((eventId): eventId is EventId => eventId !== null)
-    .sort()[0] ?? null;
+  const learnedFrom =
+    justifications
+      .map((justification) => informantEventId(justification))
+      .filter((eventId): eventId is EventId => eventId !== null)
+      .sort()[0] ?? null;
 
   return {
     depth,
@@ -326,8 +322,7 @@ function premiseStep(
       nodeId: premise.id,
       kind: "unsupported-assumption",
       severity: 0.9,
-      explanation:
-        `"${premise.text}" is an assumption with no evidence behind it — nothing observed it, no guard checked it, nobody asserted it directly. It entered the log because a decision needed it. That is normal for a premise, but it means this is the link that will break first.`,
+      explanation: `"${premise.text}" is an assumption with no evidence behind it — nothing observed it, no guard checked it, nobody asserted it directly. It entered the log because a decision needed it. That is normal for a premise, but it means this is the link that will break first.`,
     });
   }
 
