@@ -17,8 +17,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { ConfidenceTier, ReviewAction } from "@/extraction/types";
 import type { AlternativeId, Confidence, DecisionId, PremiseId } from "@/types/common";
+import type { ConfidenceTier, ReviewAction } from "@/extraction/types";
 
 /* Re-exported because they are part of the queue's vocabulary: a caller reading
  * `review/types.ts` for `ReviewItem` needs these to interpret it, and importing

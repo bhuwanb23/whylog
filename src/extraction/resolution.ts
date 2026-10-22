@@ -48,23 +48,23 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { DecisionId, EngineId, PremiseId } from "@/types/common";
+import type { Decision } from "@/types/domain";
 import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
-import { ONTOLOGY_CANONICALIZER, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import type { GraphState } from "@/substrate/graph-state";
 import {
-  type DecisionResolution,
-  type PremiseResolution,
   decisionPool,
   premiseFingerprint,
   premisePool,
   resolveDecision,
   resolvePremise,
+  type DecisionResolution,
+  type PremiseResolution,
 } from "@/substrate/identity";
-import type { DecisionId, EngineId, PremiseId } from "@/types/common";
-import type { Decision } from "@/types/domain";
-import type { OriginClassification } from "./provenance";
-import type { ResolutionOutcome, ResolvedCandidate } from "./types";
+import { ONTOLOGY_CANONICALIZER, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
+import type { ResolvedCandidate, ResolutionOutcome } from "./types";
 import { tierOf } from "./types";
+import type { OriginClassification } from "./provenance";
 
 export interface ResolutionContext {
   readonly state: GraphState;
@@ -111,11 +111,6 @@ export function resolveExtraction(
   context: ResolutionContext,
 ): ResolutionResult {
   const resolved: ResolvedCandidate[] = [];
-  /* The resolution of each DECISION, in the run's order. An alternative's
-   * `decisionRef` is an index into the run's decisions, so resolving an
-   * alternative needs to know what its parent decision became. Decisions are
-   * resolved first, which the loop order already guarantees. */
-  const decisionOutcomes: ResolutionOutcome[] = [];
   const byRung: Record<number, number> = {};
   let merged = 0;
   let candidates = 0;
@@ -148,13 +143,11 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: [],
       outRefs: [],
-      action: null,
     });
   });
 
   decisions.forEach((entry, index) => {
     const outcome = resolveOneDecision(entry.candidate, context);
-    decisionOutcomes[index] = outcome;
     bump(outcome.rung);
     merged += outcome.action === "merge" ? 1 : 0;
     candidates += outcome.action === "candidate" ? 1 : 0;
@@ -176,7 +169,6 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: entry.candidate.premiseRefs,
       outRefs: [],
-      action: null,
     });
   });
 
@@ -185,7 +177,7 @@ export function resolveExtraction(
     // rejected it, and two decisions can reject the same thing for different
     // reasons. Resolution here only decides whether the SAME decision already
     // rejected the SAME value, which is a duplicate rather than a merge.
-    const outcome = resolveOneAlternative(candidate, context, decisionOutcomes);
+    const outcome = resolveOneAlternative(candidate, context);
     bump(outcome.rung);
     created += outcome.action === "create" ? 1 : 0;
     merged += outcome.action === "merge" ? 1 : 0;
@@ -205,7 +197,6 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: [],
       outRefs: [],
-      action: null,
     });
   });
 
@@ -228,10 +219,7 @@ export function resolveExtraction(
 /* Decisions                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function resolveOneDecision(
-  candidate: DecisionCandidate,
-  context: ResolutionContext,
-): ResolutionOutcome {
+function resolveOneDecision(candidate: DecisionCandidate, context: ResolutionContext): ResolutionOutcome {
   const pool = decisionPool(context.state.decisions, candidate.variable);
   const resolution: DecisionResolution = resolveDecision({
     variable: candidate.variable,
@@ -269,14 +257,9 @@ function resolveOneDecision(
  * and flagging every reversal as a conflict would put the whole supersession
  * mechanism in the conflict queue.
  */
-export function conflictingDecisions(
-  candidate: DecisionCandidate,
-  state: GraphState,
-): readonly DecisionId[] {
+export function conflictingDecisions(candidate: DecisionCandidate, state: GraphState): readonly DecisionId[] {
   const canonical =
-    candidate.variable === "OTHER"
-      ? foldKey(candidate.value)
-      : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
 
   const ids = state.byVariable.get(candidate.variable) ?? [];
   const out: DecisionId[] = [];
@@ -297,10 +280,7 @@ export function conflictingDecisions(
 /* Premises                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function resolveOnePremise(
-  candidate: PremiseCandidate,
-  context: ResolutionContext,
-): ResolutionOutcome {
+function resolveOnePremise(candidate: PremiseCandidate, context: ResolutionContext): ResolutionOutcome {
   // The fast path: the fingerprint index is exact, so a premise whose type and
   // canonical predicate are already in the graph is a merge without running the
   // ladder at all. Double-importing a transcript takes this path for every premise,
@@ -349,18 +329,12 @@ function resolveOnePremise(
 /* Alternatives                                                               */
 /* -------------------------------------------------------------------------- */
 
-function resolveOneAlternative(
-  candidate: AlternativeCandidate,
-  context: ResolutionContext,
-  decisionOutcomes: readonly ResolutionOutcome[],
-): ResolutionOutcome {
+function resolveOneAlternative(candidate: AlternativeCandidate, context: ResolutionContext): ResolutionOutcome {
   const canonical =
-    candidate.variable === "OTHER"
-      ? foldKey(candidate.value)
-      : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
 
   for (const existing of context.state.alternatives.values()) {
-    if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, decisionOutcomes)) continue;
+    if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, context)) continue;
     if (canonicalValueOf(existing.variable, existing.value) !== canonical) continue;
 
     return {
@@ -391,15 +365,8 @@ function resolveOneAlternative(
  * null makes the duplicate check conservative: an alternative whose decision is
  * not yet in the graph is never a duplicate of one that is.
  */
-function decisionIdForRef(
-  ref: number,
-  decisionOutcomes: readonly ResolutionOutcome[],
-): DecisionId | null {
-  const outcome = decisionOutcomes[ref];
-  if (outcome === undefined) return null;
-  if (outcome.action !== "merge") return null;
-  if (outcome.matchedId === null) return null;
-  return outcome.matchedId as DecisionId;
+function decisionIdForRef(_decisionRef: number, _context: ResolutionContext): DecisionId | null {
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -418,9 +385,7 @@ export function describeResolution(report: ResolutionReport): string {
     `${report.created} new`,
   ];
   if (report.conflicts > 0) {
-    outcomes.push(
-      `${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`,
-    );
+    outcomes.push(`${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`);
   }
   return `${parts.join(", ")} → ${outcomes.join(", ")}`;
 }
