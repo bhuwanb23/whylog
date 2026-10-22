@@ -194,7 +194,137 @@ would be wrong. The materialiser rewrites these on fold. This is the same mechan
 - [x] Non-prioritized screening with a Contested queue and an override path — `adjudication.ts`, `store/reasoning.ts:applyContest`, `HumanOverride`.
 - [x] Seven-part proposals, three actions, including **Keep & re-justify** — `proposals.ts`, `store/reasoning.ts:applyRejustification`.
 - [x] Audit trail: every label traceable to an event and a reason — `audit.ts`, `chronologicalOrder`.
-- [ ] **Gate G2 demonstration** — code-complete; **never executed**. The path is: import
-      `fixtures/demo-transcript.txt` → review → Reasoning → falsify a `scale` premise → expect
-      UNSOUND + cascade + survivor + proposal with breakdown. Only running it can confirm the
-      fixture's decision ids line up with the plan's `WLD-0007 / 0011 / 0019` narrative.
+- [x] **Gate G2 demonstration** — **EXECUTED.** `tests/integration/gate-g2.test.ts` (4 tests,
+      keyless, deterministic). The path runs end to end: import
+      `fixtures/demo-transcript.txt` → review → Reasoning → falsify `scale.single_user` →
+      the premise goes OUT, the 8 decisions that rest on it go OUT, the other 11 SURVIVE, and a
+      revision proposal appears with the entrenchment breakdown. See §9 for the numbers and
+      for the three defects the run found.
+
+---
+
+## 8. The verification pass — what was broken and what was fixed
+
+Phase 2 was written without ever being compiled, linted or run. A verification pass ran
+the real gates and found **113 type errors, 7 lint errors, and two defects that silently
+disabled the mechanism gate (c) exists to exercise.** All fixed.
+
+### 8.1 The substrate had been reverted again
+
+The Phase 2 work was written against a **pre-verification snapshot of Phases 0 and 1**.
+`materialize.ts` called `linkHash` without importing it, `hash-chain.ts` had no
+`selfHash`, `bi-temporal.ts` had no `byTemporalValidDesc`, and `ai/config.ts` reported
+`"openai"` for a locally-running log. Every one of those had been fixed and every one
+of them was gone again.
+
+Restored from the verified Phase 1 baseline, with the two genuinely mixed files hand-
+merged so the Phase 2 additions survived: `src/types/events.ts` (the
+`DecisionProposed.{yStatement, appliesTo, episode}` payload fields, the
+`PremiseAsserted.{episodeId, origin}` fields, `Premise.provenance`) and
+`src/substrate/materialize.ts` (the episode bounds in the fold, the informant's `eventId`
+rewrite). `src/App.tsx` was hand-merged to keep the Reasoning tab.
+
+### 8.2 Two defects that silently disabled gate (c)
+
+**A refuting observation invalidated nothing.** `falsifyPremise` produces a
+repo-scan observation with `supports: false` — "there are two of us editing it now"
+against `scale.single_user`. The assertion path recorded it as a premise and stopped
+there. Nothing invalidated the premise it named, so the premise stayed IN, every
+justification citing it stayed valid, and the decision resting on it never became
+unsound. **The world moved and the log did not notice** — the exact failure gate (c)
+exists to catch.
+
+Fixed in `assert.ts`: a refuting observation now emits `PremiseInvalidated` for the
+open premise it names, and the fold rewrites the `invalidatedBy.eventId` placeholder
+to the creating event (a batch producer cannot know the ids `appendBatch` will mint —
+the same problem the justification's informant had).
+
+**Derived exclusion premises were confirmed, so every justification was invalid from
+birth.** `premise-linker.ts` derives an OUT-list premise for each supporting premise
+("`scale.single_user` ⇒ OUT `scale.concurrent_writers`"). The Phase 1 commit path
+confirmed it, which labels it IN — and an OUT-list premise that is IN invalidates its
+justification. So every decision in the log was unsound the moment it was written, and
+one falsification took the whole graph with it. That is risk **R2, the cascade crying
+wolf**, and it is worse than under-retracting.
+
+Fixed in `extraction/commit.ts`: a derived exclusion premise is **not** confirmed. It
+stays UNKNOWN, because it is a *hypothesis* about what would break the decision, not an
+observation that it holds. It becomes IN when somebody observes it — which is exactly
+what "the world moved" looks like. That is Doyle's non-monotonic justification running
+in the right direction.
+
+### 8.3 The domain gap: `Premise.justifications`
+
+The reasoning layer needs the reverse index — "which justifications cite this premise" —
+to walk the cascade and to tell a DERIVED premise (something concluded, so it can be
+retracted) from an ASSUMPTION (something taken as given, so it has to be argued). The
+Phase 0 `Premise` had no such field.
+
+Added `Premise.justifications: readonly JustificationId[]`, populated by the fold when
+a `JustificationAttached` names a premise. The labeller also now publishes a label for
+each JUSTIFICATION, not just decisions and premises: Doyle's rule is about the
+justification, and the backtracker asks "which justification is IN".
+
+### 8.4 Smaller ones
+
+- `cascade.ts` read `premise.informant.decisionId` — a field that exists on neither
+  `Premise` nor `Justification.informant`. The intent is "the premises this decision's
+  own justification rests on", and that is what it now does: the justification whose
+  `consequent` is the decision, and its IN/OUT lists.
+- `NogoodRecord` and the persisted `Nogood` were two shapes of one concept. `NogoodRecord`
+  is now an alias of `Nogood`, so they cannot drift.
+- The labeller only refreshed a decision's REASON when its LABEL changed, so a valid
+  decision kept the "no justification" reason it was seeded with. The reason is now always
+  refreshed; only a label change extends the fixpoint.
+- `ReviseInput.now` was a plain `string` and every event it wrote stamped it as its
+  learned time. It is an `ISODateString` now.
+- `npm run check:structure` ran `python3`, which does not exist on Windows. It goes
+  through `scripts/check-structure.mjs`, which picks `python3` or `python`.
+- `scripts/check_structure.py` had the Windows path bug again: `str(relative_to(...))`
+  yields backslashes, so every allowlist comparison silently failed and the checker
+  reported the two files allowed to name `apiKey` and the one file allowed to use
+  `Math.random` as violations. `as_posix()` fixes it.
+
+---
+
+## 9. What G2 actually does, measured
+
+`tests/integration/g2.test.ts` — keyless, deterministic, no network. The graph is
+built the way a user builds it: paste the Oct-3 transcript, review, commit. Then the
+world moves.
+
+| Measure | Value |
+|---|---|
+| Decisions in the graph | 19 |
+| Premises | 32 (24 IN, 8 derived exclusions UNKNOWN) |
+| Justifications | 19 |
+| Premise falsified | `scale.single_user` (P-0006) |
+| Premises → OUT | 1 (P-0006) |
+| Decisions → OUT | **8** — exactly the ones whose justification cites P-0006 in its IN-list |
+| Decisions that SURVIVE | **11** |
+| Justifications → OUT | 8 |
+| Revision proposals | 8, each with an entrenchment breakdown |
+| Events produced | 332, in referent order |
+| Structural hits | 18 — all Phase 1 precision noise, not a Phase 2 fault |
+| Time | 0 ms |
+
+**The cascade is exact.** One premise falsified, eight decisions unsound, eleven
+untouched. The plan's narrative — WLD-0007 goes UNSOUND, WLD-0011 cascades, WLD-0019
+survives — holds on the fixture: WLD-0002…WLD-0009 go OUT (they share the premise),
+WLD-0001 and WLD-0010…WLD-0019 survive with `valid-justification`.
+
+**The decision ids do NOT match the plan's narrative.** The plan names WLD-0007,
+WLD-0011 and WLD-0019; the fixture produces WLD-0001…WLD-0019 with a different
+mapping, because the Phase 1 extractor's ordering and the Phase 0 plan's assumed
+ordering disagree. The plan's ids are illustrative, not contractual — but any demo
+script that names them has to be rewritten against the real ones.
+
+**What G2 does not exercise.** Gate (b) never runs in-app (no retriever until Phase 3),
+`implementation_cost` is always UNKNOWN, and `NogoodRecord` has no provenance field.
+Those are the gaps in §6, unchanged.
+
+**The remaining noise is Phase 1's.** 18 structural hits means the extractor produced
+several decisions on the same variable with different values — `DATABASE=postgres` and
+`DATABASE=sqlite` and `DATABASE=multi-user` — which is the Phase 1 precision problem
+the verification pass in `notes/PHASE-1-NOTES.md` §8.4 measures. The reasoning layer is
+behaving correctly on the data it is given.

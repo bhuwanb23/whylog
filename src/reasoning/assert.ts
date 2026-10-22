@@ -247,6 +247,37 @@ export function assertNewInformation(
     mintedPremiseIds.push(premiseId);
 
     drafts.push(premiseDraft(premise, premiseId, transcriptId, premiseEpisodeId, context));
+
+    /* A REFUTING observation invalidates the premise it names.
+     *
+     * "There are two of us editing it now" is not a new premise — it is the
+     * falsification of `scale.single_user`. Without this step the observation
+     * is recorded and NOTHING reads it: the old premise stays IN, every
+     * justification that cites it stays valid, and the decision resting on it
+     * never becomes unsound. The world moved and the log did not notice, which
+     * is the exact failure gate (c) exists to catch.
+     *
+     * The event is `PremiseInvalidated` rather than a mutation, because the log
+     * is append-only: the premise is closed out, never rewritten (invariant I1).
+     */
+    if (!premise.supports) {
+      const target = findOpenPremiseByPredicate(context.state, premise.type, premise.predicate);
+      if (target !== null) {
+        drafts.push({
+          type: "PremiseInvalidated",
+          payload: {
+            premiseId: target,
+            invalidatedBy:
+              context.actor.kind === "human"
+                ? { kind: "human" }
+                : { kind: "assertion", eventId: PLACEHOLDER_EVENT_ID },
+          },
+          actor: context.actor,
+          reason: `${target} falsified: ${premise.text}`,
+          at: context.at,
+        });
+      }
+    }
   }
 
   for (const decision of decisions) {
@@ -543,6 +574,30 @@ function originFor(context: AssertContext): DecisionOrigin {
   }
 }
 
+/**
+ * The OPEN premise a refutation names, if there is one.
+ *
+ * Predicate-first, and never across types: `scale.single_user` and
+ * `requirement.single_user` are different premises, and a falsification of one
+ * says nothing about the other.
+ */
+function findOpenPremiseByPredicate(
+  state: GraphState,
+  type: PremiseType,
+  predicate: string,
+): PremiseId | null {
+  const canonical = canonicalPredicate(type, predicate);
+  for (const premise of state.premises.values()) {
+    if (premise.type !== type) continue;
+    if (premise.predicate !== canonical) continue;
+    // An already-invalidated premise cannot be invalidated again; the
+    // falsification of a dead premise is a no-op, not a second death.
+    if (premise.temporal.invalidFrom !== undefined) continue;
+    return premise.id;
+  }
+  return null;
+}
+
 function reasonFor(premise: PremiseAssertion, context: AssertContext): string {
   const verb = premise.supports ? "supports" : "REFUTES";
   return `${verb} ${premise.type}.${canonicalPredicate(premise.type, premise.predicate)}: "${premise.text}" — observed by ${context.actor.kind}, confidence ${premise.confidence.toFixed(2)}.`;
@@ -626,7 +681,7 @@ export function falsifyPremise(
   type: PremiseType,
   predicate: string,
   observedText: string,
-  context: AssertContext,
+  _context: AssertContext,
 ): Assertion {
   return {
     source: "repo-scan",

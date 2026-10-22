@@ -132,8 +132,7 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
   if (negation !== null && sameVariable && sameValue) {
     return {
       verdict: "contradiction",
-      explanation:
-        `Both decisions are about ${a.variable} and both settle on "${a.value}", but one of them negates the other ("${negation}"). Agreeing on a value while disagreeing about it is a contradiction in the reasoning rather than in the choice: the decision may be fine and the reason broken.`,
+      explanation: `Both decisions are about ${a.variable} and both settle on "${a.value}", but one of them negates the other ("${negation}"). Agreeing on a value while disagreeing about it is a contradiction in the reasoning rather than in the choice: the decision may be fine and the reason broken.`,
       confidence: 0.55,
     };
   }
@@ -145,8 +144,7 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
 
     return {
       verdict: "reversal",
-      explanation:
-        `Both decisions settle ${a.variable}, one on "${older.value}" (${older.id}, valid from ${older.validFrom}) and one on "${newer.value}" (${newer.id}, valid from ${newer.validFrom}). The same variable cannot hold two values, so the later one replaces the earlier. This is a change of direction, not a mistake — the earlier decision was right under the conditions it was made in.`,
+      explanation: `Both decisions settle ${a.variable}, one on "${older.value}" (${older.id}, valid from ${older.validFrom}) and one on "${newer.value}" (${newer.id}, valid from ${newer.validFrom}). The same variable cannot hold two values, so the later one replaces the earlier. This is a change of direction, not a mistake — the earlier decision was right under the conditions it was made in.`,
       confidence: 0.6,
     };
   }
@@ -165,11 +163,11 @@ export function classifyLocally(request: ClassificationRequest): RuleVerdict {
     if (oneAddsRationale || differentRationale) {
       return {
         verdict: "refinement",
-        explanation:
-          `Both decisions settle ${a.variable} on "${a.value}" and agree. ` +
-          (oneAddsRationale
+        explanation: `Both decisions settle ${a.variable} on "${a.value}" and agree. ${
+          oneAddsRationale
             ? "One records a reason the other does not. This is an elaboration, not a conflict — the two should be merged so the reason survives."
-            : "They give different reasons for the same choice. Both may be true; merge them rather than treating either as superseded."),
+            : "They give different reasons for the same choice. Both may be true; merge them rather than treating either as superseded."
+        }`,
         confidence: 0.5,
       };
     }

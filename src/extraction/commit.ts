@@ -248,6 +248,25 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
           reasons,
         ),
       );
+    } else if (isDerivedPremise(item.premise.predicate, item.premise.text)) {
+      /* A DERIVED EXCLUSION is NOT confirmed.
+       *
+       * An exclusion premise describes a condition the decision EXCLUDES —
+       * "more than one process needs to write at once". It is a hypothesis
+       * about what would break the decision, not an observation that it holds.
+       *
+       * Confirming it would label it IN, and an OUT-list premise that is IN
+       * invalidates its justification: the decision is unsound because the
+       * thing it excluded turns out to be true. So confirming every derived
+       * exclusion makes EVERY decision in the log unsound the moment it is
+       * written, and the cascade takes the whole graph with it. That is risk
+       * R2 — the cascade crying wolf — and it is worse than under-retracting.
+       *
+       * It stays UNKNOWN until somebody OBSERVES it, and an observation is
+       * exactly what makes it IN: the world moved, the excluded condition
+       * turned out to hold, and the decision has to be revisited. That is
+       * Doyle's non-monotonic justification running in the right direction.
+       */
     } else {
       drafts.push(
         reviewEvent(

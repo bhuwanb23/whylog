@@ -41,7 +41,7 @@ import { formatProposalId } from "@/lib/ids";
 import type { GraphState } from "@/substrate/graph-state";
 import type { Confidence, DecisionId, EventId, PremiseId, SourceSpan } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import type { Decision, Premise } from "@/types/domain";
+import type { Premise } from "@/types/domain";
 import type {
   AdjudicationOutcome,
   CascadeResult,
@@ -114,7 +114,6 @@ export interface ProposalEvidence {
 export function buildProposal(input: ProposalInput): RevisionProposal {
   const { state, finding } = input;
 
-  const decision: Decision | undefined = state.decisions.get(finding.decisionId);
   const failedPremise: Premise | undefined =
     finding.premiseId === null ? undefined : state.premises.get(finding.premiseId);
 

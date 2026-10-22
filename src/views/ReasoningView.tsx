@@ -889,7 +889,6 @@ function FalsifySection(): ReactElement {
                     onChange={(event) => setObserved(event.target.value)}
                     placeholder={`what you observed instead — e.g. "there are two of us editing it now"`}
                     style={{ flex: 1, minWidth: 260 }}
-                    autoFocus
                   />
                   <RunButton
                     label={busy ? "Running the cycle…" : "Falsify it"}

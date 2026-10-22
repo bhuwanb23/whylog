@@ -272,7 +272,7 @@ function informantEventId(justification: Justification): EventId | null {
 }
 
 function justificationStep(
-  state: GraphState,
+  _state: GraphState,
   justification: Justification,
   depth: number,
   build: (nodeId: DecisionId | PremiseId, depth: number) => AuditStep | null,

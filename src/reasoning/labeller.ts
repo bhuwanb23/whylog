@@ -168,10 +168,17 @@ export function label(state: GraphState): LabellingResult {
 
       const next = labelDecision(decision.id, decision.justificationIds, state, labels);
       const previous = labels.get(decision.id);
-      if (previous === undefined || previous.label !== next.label) {
-        labels.set(decision.id, next);
-        dirty = true;
-      }
+      // The reason is ALWAYS refreshed, even when the label is unchanged: a
+      // decision that is IN because a valid justification supports it must not
+      // keep the "no justification" reason it was seeded with above. The reason
+      // is what the review UI shows for "why is this IN?", so a stale one is a
+      // wrong answer, not a missing one.
+      //
+      // Only a LABEL change extends the fixpoint. The reason changing cannot
+      // change any other node's label, so it must not dirty the iteration.
+      const labelChanged = previous === undefined || previous.label !== next.label;
+      labels.set(decision.id, next);
+      if (labelChanged) dirty = true;
     }
   }
 
@@ -195,7 +202,7 @@ export function label(state: GraphState): LabellingResult {
 /* -------------------------------------------------------------------------- */
 
 function labelDecision(
-  id: DecisionId,
+  _id: DecisionId,
   justificationIds: readonly JustificationId[],
   state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,

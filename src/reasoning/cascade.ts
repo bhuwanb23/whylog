@@ -267,7 +267,7 @@ function conclusionsOf(state: GraphState, decisionId: DecisionId): readonly Prem
  * truncation explicitly, because "we checked four and three were fine" is a different
  * message from "we checked one".
  */
-export function describeCascade(state: GraphState, result: CascadeResult): string {
+export function describeCascade(_state: GraphState, result: CascadeResult): string {
   if (result.steps.length === 0) {
     return "Nothing else depended on it. No other decision changed.";
   }

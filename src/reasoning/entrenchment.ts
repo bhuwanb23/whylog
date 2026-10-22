@@ -239,7 +239,7 @@ export function recencyScore(validFromMs: number, now: number): number {
   if (!Number.isFinite(validFromMs)) return 0.5;
 
   const ageDays = Math.max(0, (now - validFromMs) / 86_400_000);
-  return Math.pow(0.5, ageDays / RECENCY_HALF_LIFE_DAYS);
+  return 0.5 ** (ageDays / RECENCY_HALF_LIFE_DAYS);
 }
 
 function validFromMs(decision: Decision): number {

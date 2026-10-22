@@ -16,7 +16,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check .",
-    "check:structure": "python3 scripts/check_structure.py",
+    "check:structure": "node scripts/check-structure.mjs",
     "check:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",

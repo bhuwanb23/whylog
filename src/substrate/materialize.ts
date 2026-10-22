@@ -691,10 +691,18 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
 
     case "PremiseInvalidated": {
       const p = event.payload;
+      // The `assertion` eventId is REWRITTEN to the event that created the
+      // invalidation, for the same reason the justification's informant is: a
+      // batch producer cannot know the ids `appendBatch` will mint, and a
+      // placeholder that reaches the log is a pointer to nothing.
+      const invalidatedBy =
+        p.invalidatedBy.kind === "assertion"
+          ? { ...p.invalidatedBy, eventId: event.id }
+          : p.invalidatedBy;
       const kind: PremiseEvidence["kind"] =
-        p.invalidatedBy.kind === "guard"
+        invalidatedBy.kind === "guard"
           ? "guard"
-          : p.invalidatedBy.kind === "human"
+          : invalidatedBy.kind === "human"
             ? "human"
             : "transcript";
 
