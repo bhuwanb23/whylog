@@ -106,7 +106,8 @@ export function classifyOrigin(
       origin: "human_override",
       authority: ORIGIN_AUTHORITY.human_override,
       via: "human-override",
-      explanation: `A human turn reverses what was proposed here, so the decision is theirs even though the words came from the agent.`,
+      explanation:
+        "A human turn reverses what was proposed here, so the decision is theirs even though the words came from the agent.",
       acceptedInTurn: acceptedIn,
       reversedInTurn: reversedIn,
     };

@@ -122,7 +122,7 @@ export function previewCommit(
       case "premise": {
         if (candidate.resolution.action === "merge") mergedPremises += 1;
         else newPremises += 1;
-        if (candidate.premise !== null && candidate.premise.text.includes("— excluded by")) {
+        if (candidate.premise?.text.includes("— excluded by")) {
           derivedPremises += 1;
         }
         break;
@@ -186,8 +186,8 @@ function labelFor(candidate: ResolvedCandidate): string {
 export function describeCommit(preview: CommitPreview, unreviewed: number): string {
   if (preview.events === 1) {
     return unreviewed > 0
-      ? `Nothing reviewed. Committing now would append one event recording that this extraction was reviewed and everything in it left undecided.`
-      : `Nothing to commit.`;
+      ? "Nothing reviewed. Committing now would append one event recording that this extraction was reviewed and everything in it left undecided."
+      : "Nothing to commit.";
   }
 
   const lines: string[] = [];

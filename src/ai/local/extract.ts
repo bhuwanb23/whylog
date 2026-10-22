@@ -171,7 +171,7 @@ export function extractLocal(
     premiseCount += episodePremises.length;
 
     /* ---- excluded conditions become premises too ---- */
-    episodeExcluded.forEach((excluded) => {
+    for (const excluded of episodeExcluded) {
       const source = episodePremises[excluded.sourcePremiseIndex];
       const attached = source !== undefined;
       const breakdown = scorePremise(
@@ -189,7 +189,7 @@ export function extractLocal(
           confidence: asConfidence(Math.min(breakdown.total, excluded.confidence)),
         },
       });
-    });
+    }
     premiseCount += episodeExcluded.length;
 
     /* ---- alternatives ---- */

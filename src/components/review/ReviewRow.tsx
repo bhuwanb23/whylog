@@ -63,6 +63,10 @@ export function ReviewRow({
   const decided = item.action !== null;
 
   return (
+    // The card itself is a click target, but it is NOT a button: it contains a
+    // real <button> (the expand toggle), and a button inside a button is invalid
+    // HTML. So the article carries no interactive role — the keyboard path is
+    // the title button below, and the mouse path is the whole card.
     <article
       className="card"
       style={{
@@ -73,10 +77,11 @@ export function ReviewRow({
       }}
       onClick={onSelect}
       onKeyDown={(event) => {
-        if (event.key === "Enter") onSelect();
+        // Only when the CARD itself is the target. The title button has its own
+        // handler, and without this guard an Enter on it would select twice.
+        if (event.target !== event.currentTarget) return;
+        if (event.key === "Enter" || event.key === " ") onSelect();
       }}
-      role="button"
-      tabIndex={0}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "10px 14px" }}>
         <button
@@ -96,7 +101,19 @@ export function ReviewRow({
         <span className="badge" title={TIER_HINTS[item.tier]}>
           {item.kind}
         </span>
-        <strong style={{ fontSize: 13 }}>{item.title}</strong>
+        {/* The title is the keyboard path to selecting a row. The card is the
+            mouse path; this button is the accessible one. */}
+        <button
+          type="button"
+          className="faint"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect();
+          }}
+          style={{ fontWeight: 600, textAlign: "left", padding: 0 }}
+        >
+          <strong style={{ fontSize: 13 }}>{item.title}</strong>
+        </button>
 
         {item.derived && (
           <span

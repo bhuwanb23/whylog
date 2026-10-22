@@ -51,7 +51,7 @@ export function describeFailure(failure: CommitFailure): string {
     case "unreviewed":
       return [
         `${failure.keys.length} item${failure.keys.length === 1 ? "" : "s"} have no review action, and nothing enters the log unreviewed.`,
-        `Decide each one, or discard the unreviewed ones explicitly.`,
+        "Decide each one, or discard the unreviewed ones explicitly.",
         `${failure.keys.slice(0, 6).join(", ")}${failure.keys.length > 6 ? ", …" : ""}`,
       ].join(" ");
     case "empty":

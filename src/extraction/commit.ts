@@ -204,7 +204,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   let premiseConfirmations = 0;
 
   for (const item of input.items) {
-    if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) return;
+    if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) continue;
 
     // A merge does not create a node: `PremiseAsserted` on an EXISTING id appends
     // evidence and takes the max confidence, which is what corroboration is.
@@ -267,7 +267,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   let edits = 0;
 
   for (const item of input.items) {
-    if (item.kind !== "decision" || item.decision === null || !isAccepted(item.action)) return;
+    if (item.kind !== "decision" || item.decision === null || !isAccepted(item.action)) continue;
 
     const id =
       item.resolution.action === "merge" && item.resolution.matchedId !== null
@@ -374,11 +374,11 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
 
   for (const item of input.items) {
     if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action))
-      return;
+      continue;
 
     const decisionKey = `decision:${item.alternative.decisionRef}`;
     const decisionId = decisionIds.get(decisionKey);
-    if (decisionId === undefined) return; // its decision was discarded, so it has nothing to be an alternative TO
+    if (decisionId === undefined) continue; // its decision was discarded, so it has nothing to be an alternative TO
 
     const seq = (alternativesByDecision.get(decisionId) ?? 0) + 1;
     alternativesByDecision.set(decisionId, seq);
