@@ -3,21 +3,26 @@
  *
  * Phase 0 · sub-phase 0.10
  *
- * The import of "@/ai/local" is a SIDE EFFECT: it registers the local engine in
- * the registry. That must happen before the store boots, because `getEngine()`
- * resolves against the registry and a registry with no `local` entry would leave
- * the app with no engine at all — in the one configuration that is supposed to
- * always work.
+ * The imports of "@/ai/local" and "@/ai/llm" are SIDE EFFECTS: they register the
+ * engines in the registry. That must happen before the store boots, because
+ * `getEngine()` resolves against the registry and a registry with no `local` entry
+ * would leave the app with no engine at all — in the one configuration that is
+ * supposed to always work.
+ *
+ * `@/ai/llm` registers three providers that all require a key. Registering them
+ * with no key saved is harmless and is what lets Settings show the row greyed with
+ * a reason instead of not showing it at all.
  */
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import "@/ai/local";
+import "@/ai/llm";
 import "./index.css";
 
-import { bootOnce } from "@/store/whylog";
 import { App } from "./App";
+import { bootOnce } from "@/store/whylog";
 
 const container = document.getElementById("root");
 

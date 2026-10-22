@@ -87,12 +87,6 @@ Every design choice in these files traces to [`../docs/`](../docs/):
 
 ## Start here
 
-**Phase 0 is complete and verified** — the substrate, the ontology, the engine
-seam and the store. `npm run verify` is green. See
-[`../notes/PHASE-0-NOTES.md`](../notes/PHASE-0-NOTES.md) for what was built, what
-deviated, and what the verification pass found.
+**Phase 0, sub-phase 0.7 — the domain ontology.** Smallest artifact in the plan, largest leverage: every extractor, every contradiction gate and every guard template reads from it.
 
-**Next: Phase 1, sub-phase 1.4 — premise extraction.** That is the load-bearing
-novelty. If premises cannot be recovered from dialogue at usable precision, the
-concept needs rethinking before anything else is built — which is exactly why it
-comes second rather than last.
+Then **Phase 1, sub-phase 1.4 — premise extraction.** That is the load-bearing novelty. If premises cannot be recovered from dialogue at usable precision, the concept needs rethinking before anything else is built — which is exactly why it comes second rather than last.

@@ -10,9 +10,9 @@
  */
 
 import type { EngineId } from "@/types/common";
-import { EngineError } from "./errors";
 import type { WhyLogEngine } from "./types";
 import { NULL_CAPABILITIES } from "./types";
+import { EngineError } from "./errors";
 
 /** Constructs an engine from its configuration. May throw `EngineError`. */
 export type EngineFactory = (options: EngineOptions) => WhyLogEngine;
@@ -66,14 +66,12 @@ export interface EngineChoice {
  *  because it is the default, not because of its id. */
 export function listEngines(): readonly EngineChoice[] {
   return [...registry.values()]
-    .map(
-      (r): EngineChoice => ({
-        id: r.id,
-        label: r.label,
-        requiresKey: r.requiresKey,
-        available: r.available,
-      }),
-    )
+    .map((r): EngineChoice => ({
+      id: r.id,
+      label: r.label,
+      requiresKey: r.requiresKey,
+      available: r.available,
+    }))
     .sort((a, b) => {
       if (a.id === "local") return -1;
       if (b.id === "local") return 1;

@@ -14,14 +14,19 @@
  * ---------------------------------------------------------------------------
  */
 
-import { persistenceAvailable, useWhyLog } from "@/store/whylog";
-import { MODE_BADGE } from "@/theme";
+import { useEffect, useState, ReactElement } from "react";
+import { useWhyLog, persistenceAvailable } from "@/store/whylog";
 import { FoundationView } from "@/views/FoundationView";
-import { type ReactElement, useEffect, useState } from "react";
+import { ReviewView } from "@/views/ReviewView";
+import { MODE_BADGE } from "@/theme";
 
-type ViewId = "foundation" | "timeline" | "conflict" | "ask" | "guards" | "export" | "health";
+type ViewId = "review" | "foundation" | "timeline" | "conflict" | "ask" | "guards" | "export" | "health";
 
 const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
+  // FIRST, and the default view: gate G1 is "a messy transcript becomes reviewed,
+  // structured, persisted decisions with premises". A product whose entry point is
+  // an empty graph is a product nobody reaches the point of.
+  { id: "review", label: "Import & review", phase: "1" },
   { id: "foundation", label: "Foundation", phase: "0" },
   { id: "timeline", label: "Timeline", phase: "6.1" },
   { id: "conflict", label: "Conflict", phase: "6.5" },
@@ -35,7 +40,7 @@ export function App(): ReactElement {
   const status = useWhyLog((s) => s.status);
   const engine = useWhyLog((s) => s.engine);
   const state = useWhyLog((s) => s.state);
-  const [view, setView] = useState<ViewId>("foundation");
+  const [view, setView] = useState<ViewId>("review");
 
   // StrictMode mounts twice in development; boot is idempotent so this only
   // matters if the store was reset between mounts.
@@ -77,7 +82,9 @@ export function App(): ReactElement {
       </header>
 
       <main className="shell-main">
-        {view === "foundation" ? (
+        {view === "review" ? (
+          <ReviewView />
+        ) : view === "foundation" ? (
           <FoundationView />
         ) : (
           <NotYet view={VIEWS.find((v) => v.id === view)} />
@@ -124,11 +131,7 @@ function ChainBadge({ status }: { status: string }): ReactElement {
   }
   if (status === "degraded") {
     return (
-      <span
-        className="badge"
-        style={{ color: "var(--action)" }}
-        title="The hash chain failed verification on load. The log is read-only."
-      >
+      <span className="badge" style={{ color: "var(--action)" }} title="The hash chain failed verification on load. The log is read-only.">
         chain broken
       </span>
     );
@@ -150,8 +153,8 @@ function NotYet({ view }: { view: { label: string; phase: string } | undefined }
       <h2 className="card-title">{view?.label ?? "View"}</h2>
       <p className="dim">
         This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it — the
-        append-only log, the fold, the bi-temporal projections and the hash chain — is built and is
-        what the Foundation view reports on.
+        append-only log, the fold, the bi-temporal projections and the hash chain — is built and
+        is what the Foundation view reports on.
       </p>
     </section>
   );
