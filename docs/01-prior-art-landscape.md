@@ -103,7 +103,7 @@ What it does:
 - **JTMS-style propagation** (Doyle 1979): retract a belief → dependents re-evaluated → orphaned beliefs cascade-retract *unless they stand on their own source*. Explicitly framed as **zombie-belief prevention**: "derived beliefs cannot outlive their premises."
 - **Entrenchment** as a transparent weighted score:
   `0.40 × source_reliability + 0.25 × corroboration (log-scaled justification count) + 0.20 × confidence + 0.15 × recency (30-day half-life)`
-- Respects **Gärdenfors–Makinson EE2 (dominance) and EE3**: a derived belief is capped at its weakest premise.
+- Respects **GΣrdenfors–Makinson EE2 (dominance) and EE3**: a derived belief is capped at its weakest premise.
 - **Non-prioritized revision (Hansson)**: the store *screens* newcomers — if the new belief is weaker than **any** contradictor it is **REJECTED** rather than overwriting. Rationale: classical AGM's Success postulate (always accept input) is wrong for noisy environments.
 - **Append-only audit log** recording reasons, not just events.
 - Pluggable contradiction detectors ("bring your own NLI model"); the *retraction decision* is deterministic once a contradiction is given.

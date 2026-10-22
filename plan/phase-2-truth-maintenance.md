@@ -448,7 +448,7 @@ Veritas's principle, adopted verbatim as a design rule: **"Nothing disappears si
 | **Cascade cries wolf** | 🔴 | Shared-premise edges only; stop at independent support; depth cap; over-retraction treated as worse than under-retraction |
 | **False premise resolution** → spectacular wrong cascade | 🔴 | Predicate-first identity; forbid cross-type merges; ambiguous matches go to human confirmation, never to a guess |
 | Refinement flagged as conflict → user disables the feature | 🟠 | Refinement is an explicit verdict; tune for it specifically; it is the most common relationship |
-| Entrenchment weights feel arbitrary to a judge | 🟡 | Cite the lineage (Veritas's published scoring, Gärdenfors–Makinson conditions) and show all five components in the UI |
+| Entrenchment weights feel arbitrary to a judge | 🟡 | Cite the lineage (Veritas's published scoring, GΣrdenfors–Makinson conditions) and show all five components in the UI |
 | Circular justifications from the extractor | 🟡 | Cycle detection on write; `UNFOUNDED` label; never silently IN |
 | Gate (b) blocked on Phase 3 | 🟡 | Build (a) and (c) first — they carry the demo. Add (b) when the index exists |
 | `implementation_cost` unavailable until Phase 4 | 🟡 | Default 0.5, displayed as "unknown — no guard". Never as "medium" |

@@ -182,7 +182,7 @@ Append-only bi-temporal event log · hash chain · domain ontology · transcript
 |---|---|---|
 | Auth, multi-user, teams, cloud sync | Not the concept; adds nothing to the argument | "Single-user by construction — which is itself a premise the tool tracks." |
 | **Live capture via agent hooks** | agentmemory owns this with 12 hooks and 22k stars; competing on plumbing loses | "Deliberately not built. We'd rather consume their transcripts via MCP than build a thirteenth capture daemon." |
-| Vector database / ANN index | Corpus is 10²–10³ documents; brute force is sub-millisecond | Stated as an architecture decision with numbers, not an omission |
+| Vector database / ANN index | Corpus is 10²–10│ documents; brute force is sub-millisecond | Stated as an architecture decision with numbers, not an omission |
 | Graph database | Same reasoning; the graph is shallow and small | Same |
 | ATMS multi-context reasoning | JTMS is the right backbone for a single current belief set | "v2 — it answers 'what would the log look like if we *did* go multi-user?'" |
 | IDE extension / repo connection | Needs a filesystem; the paste-and-virtual-project path is honest and works anywhere | "Repo connection is how guards get their file list automatically. Today you paste it." |

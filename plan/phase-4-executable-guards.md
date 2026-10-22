@@ -126,10 +126,10 @@
 | Metric | Definition | Why it matters |
 |---|---|---|
 | **Decision Compliance** | above | The headline. *"Your codebase has quietly stopped believing 3 of your 12 decisions."* |
-| **Verifiable Coverage** | IN decisions with ≥1 accepted guard ÷ all IN decisions | Low coverage = most of the log is unfalsifiable prose |
-| **Log Soundness** | IN decisions ÷ all non-superseded decisions | The truth-maintenance counterpart: how much of what you believe is still supported |
+| **Verifiable Coverage** | IN decisions with ≥1 accepted guard ≈ all IN decisions | Low coverage = most of the log is unfalsifiable prose |
+| **Log Soundness** | IN decisions ≈ all non-superseded decisions | The truth-maintenance counterpart: how much of what you believe is still supported |
 | **Drift Age** | Days since a failing guard was first observed | A failure ignored for 30 days is a decision you no longer hold |
-| **Deterministic Ratio** | Deterministic guards ÷ all guards | How much of your verification is trustworthy without a model |
+| **Deterministic Ratio** | Deterministic guards ≈ all guards | How much of your verification is trustworthy without a model |
 
 **Baseline pattern — borrowed from fitness-function practice.** A legacy codebase will fail many guards on first run. **Do not make that a wall of red.** Freeze the initial state as a baseline, fail only on *new* violations, and let the user shrink the baseline deliberately. The literature's phrasing: *"Never write fitness functions for the codebase you want — write them for the one you have… The function is a lock, not a goal."*
 

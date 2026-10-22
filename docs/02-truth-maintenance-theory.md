@@ -98,7 +98,7 @@ Detecting a contradiction is the easy half. Deciding **which belief dies** is th
 
 ### 3.1 AGM and its limitation
 
-The AGM framework (Alchourrón, Gärdenfors, Makinson 1985) defines revision over *belief sets* (logically closed sets) with postulates including **Success**: the new information is always accepted.
+The AGM framework (Alchourr≤n, GΣrdenfors, Makinson 1985) defines revision over *belief sets* (logically closed sets) with postulates including **Success**: the new information is always accepted.
 
 **That is wrong for WhyLog.** If Success holds, then any passing remark in a transcript — including a mistaken one, a hypothetical, or the agent's own speculation — overwrites a considered decision made over three days. A noisy input stream must not be able to corrupt a well-founded log.
 
@@ -112,7 +112,7 @@ Sven Ove Hansson's **belief base** revision operates on non-closed bases and dro
 
 ### 3.3 Entrenchment ordering
 
-An **entrenchment ordering** `≤` ranks beliefs by resistance to retraction. When you must give something up, give up the least entrenched. Gärdenfors–Makinson conditions:
+An **entrenchment ordering** `≤` ranks beliefs by resistance to retraction. When you must give something up, give up the least entrenched. GΣrdenfors–Makinson conditions:
 
 - **EE1 (closure):** if `A ≤ B` and `B ≤ A` then `A ≡ B` in resistance.
 - **EE2 (dominance):** if `⊢ B → A` then `A ≤ B` — a consequence is never more entrenched than what implies it.
@@ -145,7 +145,7 @@ E(d) = 0.30 · source_authority
 
 ### 3.5 Contraction vs revision
 
-- **Contraction** `K ÷ A` — give up belief in A without adding anything.
+- **Contraction** `K ≈ A` — give up belief in A without adding anything.
 - **Revision** `K * A` — add A, restoring consistency.
 
 WhyLog needs both, and the UI should distinguish them:
@@ -219,15 +219,15 @@ REVISE(newInformation)
 ──────────────────────────────────────────────────────────────────────────────────
 STEP 1 — EXTRACT
   Parse newInformation into typed assertions:
-    • decisions    (variable, value, rationale, alternatives[])
-    • premises     (type, predicate, value, evidence)
+    ò decisions    (variable, value, rationale, alternatives[])
+    ò premises     (type, predicate, value, evidence)
   Record provenance for each: snippet, char span, origin, confidence.
 
 STEP 2 — RESOLVE  (entity resolution — merge, do not append)
   For each assertion, attempt to map it onto an EXISTING node:
-    • decisions:   canonicalise variable via ontology → match value by alias table,
+    ò decisions:   canonicalise variable via ontology → match value by alias table,
                    then by embedding similarity above threshold
-    • premises:    match by predicate first (exact), by text similarity second
+    ò premises:    match by predicate first (exact), by text similarity second
   Merge on match (add corroboration +1, extend evidence).
   Create a new node only on genuine miss.
   ⚠ Without this step the log fills with near-duplicates and every
@@ -274,11 +274,11 @@ STEP 7 — ADJUDICATE  (entrenchment-ordered)
 
 STEP 8 — PROPOSE  (human gate — never auto-apply)
   Emit a revision proposal naming:
-    • the decision now unsound, and the exact premise that failed
-    • the evidence that falsified the premise, with its snippet
-    • the full cascade — every downstream decision affected
-    • the entrenchment breakdown, including implementation cost
-    • three actions: [Reverse] [Keep & re-justify] [Mark premise contested]
+    ò the decision now unsound, and the exact premise that failed
+    ò the evidence that falsified the premise, with its snippet
+    ò the full cascade — every downstream decision affected
+    ò the entrenchment breakdown, including implementation cost
+    ò three actions: [Reverse] [Keep & re-justify] [Mark premise contested]
 
 STEP 9 — COMMIT
   On user choice: append events, recompute L over the network, re-run affected
@@ -364,7 +364,7 @@ That last branch — **keep and re-justify** — is the outcome a real builder w
 
 | Operation | Cost | Notes |
 |---|---|---|
-| Label recompute (full) | `O(|D| · k)` where k = avg justification size | Trivial at ≤10³ decisions |
+| Label recompute (full) | `O(|D| · k)` where k = avg justification size | Trivial at ≤10│ decisions |
 | Cascade propagation | `O(|D| + |J|)` per fixpoint iteration, typically 2–3 iterations | Graph is shallow; depth rarely exceeds 4 |
 | Gate (a) structural | `O(1)` with a `variable → value` index | Hash lookup |
 | Gate (b) semantic | `O(|D| · dim)` for recall + `O(c)` for rerank, c = candidate count ≈ 20 | dim = 512 → ~5×10⁵ multiply-adds. Sub-millisecond in JS |

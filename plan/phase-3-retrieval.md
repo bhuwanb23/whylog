@@ -343,7 +343,7 @@ This is the highest-value sentence the retrieval layer can produce, and it is on
 | Confident answer with no evidence | 🔴 | Evidence contract; INSUFFICIENT EVIDENCE is a first-class verdict; groundedness is computed, not assumed |
 | Local reranking too weak to demo | 🟡 | Structural and lexical components carry 0.65 of the weight and are exact; measure against the fixture corpus before judging |
 | Index bloat in `localStorage` | 🟡 | Vectors live outside the event log (Phase 0.8), 8-bit rounded if needed |
-| Over-retrieval drowning a small answer | 🟢 | k = 5 after rerank; at 10²–10³ documents, top-5 is usually the whole relevant set |
+| Over-retrieval drowning a small answer | 🟢 | k = 5 after rerank; at 10²–10│ documents, top-5 is usually the whole relevant set |
 
 ---
 

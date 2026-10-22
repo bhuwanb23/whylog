@@ -13,9 +13,9 @@ authoring environment.
 | Layer | Files | What is there |
 |---|---|---|
 | `src/types/` | 7 | The contracts. Closed **36**-type event vocabulary, `EventPayloadMap`, `TypedEvent<T>`; the 14 variables; the closed 8 premise types with world-observable flags; guards, retrieval, reasoning, export shapes |
-| `src/lib/` | 10 | `hash` (canonical JSON + stable 128-bit digest) ú `ids` (all 12 id formats) ú `cosine` (dot, normalise, stable top-K) ú `text` (tokenise, n-grams, speaker detection) ú `bm25` ú `glob` ú `format` ú `invariant` ú `result` ú `rng` |
+| `src/lib/` | 10 | `hash` (canonical JSON + stable 128-bit digest) · `ids` (all 12 id formats) · `cosine` (dot, normalise, stable top-K) · `text` (tokenise, n-grams, speaker detection) · `bm25` · `glob` · `format` · `invariant` · `result` · `rng` |
 | `src/substrate/` | 19 | The whole of L0: event log, validation, hash chain, bi-temporal, the fold, graph state, identity ladder, schema/migrations, persistence, portability, snapshots, index artifacts, integrity stamp, 7 projections |
-| `src/ontology/` | 8 | 14 variables + OTHER with metadata ú 8 premise types with 47 predicates ú ~560 aliases ú 84 variable-scoped antonym pairs ú 82 decision cues ú ~180 premise cues ú canonicalisation ú self-validating facade |
+| `src/ontology/` | 8 | 14 variables + OTHER with metadata · 8 premise types with 47 predicates · ~560 aliases · 84 variable-scoped antonym pairs · 82 decision cues · ~180 premise cues · canonicalisation · self-validating facade |
 | `src/ai/` | 7 | The seam: `WhyLogEngine` (extract/classify/embed/rerank/compose/synthesizeGuards + capabilities + id), registry, config, typed errors, and the local engine with a **complete** hashed n-gram vectoriser |
 | `src/store/` | 3 | Zustand store over log + folded state, selectors, settings slice |
 | `src/` root + views | 6 | `main.tsx`, `App.tsx`, `index.css`, `theme.ts`, `vite-env.d.ts`, `views/FoundationView.tsx` |
@@ -193,7 +193,7 @@ Current status:
 
 ```
 66 source files, 17,595 lines
-  imports resolve ú brackets balance ú event vocabulary agrees ú no forbidden patterns
+  imports resolve · brackets balance · event vocabulary agrees · no forbidden patterns
 ```
 
 It is deliberately **not** a typechecker. `npm run typecheck` is the real gate;

@@ -99,7 +99,7 @@ ends up driving a cascade.
 ## 4. The fixture audit that grew the cue table
 
 `fixtures/demo-transcript.txt` contains six decisions. The original 85-cue table
-matched **three** of them, so the ò5-decision acceptance criterion would have failed
+matched **three** of them, so the ≥5-decision acceptance criterion would have failed
 on the fixture the plan specified.
 
 The gap was not fixture-specific phrasing. It was four whole classes of dialogue the

@@ -14,7 +14,7 @@ Decision-log retrieval is **not** general RAG. Its characteristics change the ri
 | Documents are **tiny** (one sentence + a rationale clause) | Chunking is meaningless. Bi-encoder embeddings of very short texts are noisy and lose discriminative power |
 | Queries are **short and interrogative** ("why did we drop auth?") | Question↔statement style mismatch — the exact gap HyDE/HyPE exist to close |
 | Vocabulary is **highly specific** (postgres, better-sqlite3, clerk, fly.io) | Exact token match is *more* reliable than semantic match for the terms that matter most. Sparse retrieval is not optional |
-| Corpus is **small** (10²–10³ documents) | Brute force is optimal. ANN indexes add error and infrastructure for no gain |
+| Corpus is **small** (10²–10│ documents) | Brute force is optimal. ANN indexes add error and infrastructure for no gain |
 | The **answer must be attributable** | Retrieval quality is a trust property, not a relevance property |
 | **Negation and modality carry the meaning** | "don't use Postgres" ≠ "use Postgres". Vector space cannot represent this |
 
@@ -272,7 +272,7 @@ Everything above must work with **no model, no network, no download**. This is n
                           L2-normalise → 512-d vector
 ```
 
-**Properties:** deterministic (same text → same vector, forever, on every machine), no training data, no download, sub-millisecond. Collisions are expected and tolerable — hashing vectorizers trade a little precision for total independence from infrastructure, and at 10²–10³ documents the collision rate is not the bottleneck.
+**Properties:** deterministic (same text → same vector, forever, on every machine), no training data, no download, sub-millisecond. Collisions are expected and tolerable — hashing vectorizers trade a little precision for total independence from infrastructure, and at 10²–10│ documents the collision rate is not the bottleneck.
 
 ### 6.2 The domain lexicon — where the local path earns its keep
 

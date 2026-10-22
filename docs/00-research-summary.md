@@ -37,7 +37,7 @@ That is a solved problem in a 45-year-old branch of AI that nobody has pointed a
 | **[ai-memory](https://github.com/hyxnj666-creator/ai-memory)** | `extract` from Cursor/Claude Code history → typed Markdown (decisions/architecture/conventions/todos/issues); `rules --target agents-md`; `recall "OAuth"` shows git lineage; MCP `remember`/`recall`; D3 knowledge graph; works keyless | No consistency reasoning. No premises. No contradiction detection at all. No verification against code. |
 | **[agentmemory](https://github.com/rohitg00/agentmemory)** | 4-tier memory (working/episodic/semantic/procedural), Ebbinghaus decay, BM25+vector+graph with RRF, R@5 95.2%, 12 hooks, JSONL import, session replay | Memory of **what the agent did**, not of **why you decided**. Contradiction handling = recency/dedup, not logic. |
 | **[Zep / Graphiti](https://arxiv.org/abs/2501.13956)** | **Bi-temporal** knowledge graph: every fact has `valid_at` / `invalid_at`; contradicted facts are closed out, never deleted; LongMemEval 63.8–71.2% vs Mem0's 49% | Fact invalidation on **arrival of a contradicting fact**. No dependency cascade, no premises, no code grounding. Generic agent memory, not decision rationale. |
-| **[Veritas (veritas-tms)](https://github.com/Iam-Raghava/veritas)** | **The closest thing that exists.** JTMS-style justifications, entrenchment-ordered contraction (Gärdenfors–Makinson), cascade retraction, append-only audit, "derived beliefs cannot outlive their premises" | Operates on **machine-asserted propositions** with hand-supplied `source_reliability`. No extraction from dialogue, no domain ontology, no code grounding, no human-in-the-loop revision, not developer-facing. |
+| **[Veritas (veritas-tms)](https://github.com/Iam-Raghava/veritas)** | **The closest thing that exists.** JTMS-style justifications, entrenchment-ordered contraction (GΣrdenfors–Makinson), cascade retraction, append-only audit, "derived beliefs cannot outlive their premises" | Operates on **machine-asserted propositions** with hand-supplied `source_reliability`. No extraction from dialogue, no domain ontology, no code grounding, no human-in-the-loop revision, not developer-facing. |
 | **[Kantara instantiation — Dhaouadi, Oakes & Famelis 2025](https://arxiv.org/abs/2506.11005)** | **The closest academic work.** Builds a *Rationale and Decision Graph* (decision nodes → rationale nodes, edges labelled Similar / Contradicts) from Linux kernel commits using NLI + LLMs. Found 396 contradictory decision pairs and 86 inconsistencies in the OOM-Killer module; F1 0.70–0.75 across 6 projects. Two mechanisms: **M1** = similar decisions with contradictory rationales, **M2** = contradictory decisions with similar rationales | **Detects, never revises.** No dependency-directed backtracking, no minimal revision set, no premises/assumptions, no executable verification. Source = commit messages, not human–AI dialogue. It's an analysis instrument for studying erosion, not a tool a developer uses mid-build. |
 | **[adr-staleness-check](https://github.com/chenhz01/adr-staleness-check)** | Drift detector: superseded ADR still anchored in the implementation map (M3), accepted ADR with zero implementation evidence (M4), cycles in the supersedes graph (G1) | Requires a **hand-maintained implementation map**. No extraction, no semantics, no premises. |
 | **[Repowise](https://repowise.dev/guides/decisions-adr)** | `verified / fuzzy / unverified` from literal evidence spans; `supersedes / refines / conflicts_with` lineage; stale flag from governed-file last-commit vs decision last-update | Closest commercial product. Deterministic staleness = timestamp comparison, not logical validity. No cascade, no premises. |
@@ -116,7 +116,7 @@ A **Decision Knowledge Base** `K = ⟨D, P, J, L⟩`:
 
 **Soundness (JTMS validity):** a decision `d` is **IN** iff at least one of its justifications is valid — every node in the IN-list is IN, and no node in the OUT-list is IN. Otherwise `d` is **OUT** (unsound) and *is not deleted*; it is relabelled, with the reason retained.
 
-**Entrenchment** (how resistant to retraction, adapted from Veritas/Gärdenfors–Makinson, with one term that is ours):
+**Entrenchment** (how resistant to retraction, adapted from Veritas/GΣrdenfors–Makinson, with one term that is ours):
 
 ```
 E(d) = 0.30 · source_authority      human-stated > human-approved-agent-proposal > agent-inferred
@@ -425,7 +425,7 @@ The one-line architecture pitch: **"An event-sourced, bi-temporal decision knowl
 
 ## 8. What to cut, and what to build first
 
-Everything above is the *concept*. For an afternoon-to-weekend build, rank by (novelty × demo-impact) ÷ cost:
+Everything above is the *concept*. For an afternoon-to-weekend build, rank by (novelty × demo-impact) ≈ cost:
 
 | Build | Why | Cost |
 |---|---|---|
