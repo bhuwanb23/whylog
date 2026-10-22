@@ -211,10 +211,6 @@ export interface Answer {
   readonly nearestRelated?: readonly RetrievedHit[];
   /** Present only for PARTIAL: which claims are not grounded and why. */
   readonly ungroundedNotes?: readonly string[];
-  /** A note about HOW the answer was composed, not a claim about the log. It is kept
-   *  out of `claims` on purpose: it carries no decision id, so counting it as a
-   *  claim would score a fully-sourced answer as ungrounded. */
-  readonly disclosure?: string;
 }
 
 export interface Citation {
