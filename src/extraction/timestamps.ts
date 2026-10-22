@@ -29,8 +29,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { ISODateString } from "@/types/common";
 import { nowISO, toISO } from "@/lib/format";
+import type { ISODateString } from "@/types/common";
 import { linesWithOffsets } from "./speakers";
 
 export interface RecoveredTime {
@@ -43,18 +43,30 @@ export interface RecoveredTime {
 }
 
 const MONTHS: Readonly<Record<string, number>> = {
-  jan: 0, january: 0,
-  feb: 1, february: 1,
-  mar: 2, march: 2,
-  apr: 3, april: 3,
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
   may: 4,
-  jun: 5, june: 5,
-  jul: 6, july: 6,
-  aug: 7, august: 7,
-  sep: 8, sept: 8, september: 8,
-  oct: 9, october: 9,
-  nov: 10, november: 10,
-  dec: 11, december: 11,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
 };
 
 /** ISO 8601, with or without time: `2026-10-03`, `2026-10-03T14:22`,
@@ -172,16 +184,10 @@ function parseMonthName(text: string, reference: Date): Parsed | null {
   if (!Number.isFinite(day) || day < 1 || day > 31) return null;
 
   const explicitYear = match[1] !== undefined ? match[3] : match[9];
-  const year = explicitYear === undefined ? resolveYear(month, day, reference) : Number(explicitYear);
+  const year =
+    explicitYear === undefined ? resolveYear(month, day, reference) : Number(explicitYear);
 
-  const at = buildDate(
-    year,
-    month,
-    day,
-    Number(match[4] ?? 0),
-    Number(match[5] ?? 0),
-    0,
-  );
+  const at = buildDate(year, month, day, Number(match[4] ?? 0), Number(match[5] ?? 0), 0);
   if (at === null) return null;
   return { at, evidence: match[0] };
 }
@@ -193,7 +199,9 @@ function parseMonthName(text: string, reference: Date): Parsed | null {
 export function resolveYear(month: number, day: number, reference: Date): number {
   const thisYear = reference.getFullYear();
   const candidate = new Date(Date.UTC(thisYear, month, day));
-  const today = new Date(Date.UTC(reference.getFullYear(), reference.getMonth(), reference.getDate()));
+  const today = new Date(
+    Date.UTC(reference.getFullYear(), reference.getMonth(), reference.getDate()),
+  );
   return candidate.getTime() <= today.getTime() ? thisYear : thisYear - 1;
 }
 

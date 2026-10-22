@@ -27,10 +27,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
 import type { DiscardedCandidate } from "@/ai/types";
 import { isAccepted } from "@/extraction/types";
 import type { ResolvedCandidate, ReviewAction } from "@/extraction/types";
+import type { AlternativeId, DecisionId, PremiseId } from "@/types/common";
 
 export interface CommitPreview {
   readonly newDecisions: number;
@@ -45,7 +45,10 @@ export interface CommitPreview {
   readonly edited: number;
   readonly conflicts: readonly DecisionId[];
   /** Nodes the commit will merge onto, so the preview can name them. */
-  readonly mergeTargets: readonly { readonly id: DecisionId | PremiseId; readonly label: string }[];
+  readonly mergeTargets: readonly {
+    readonly id: DecisionId | PremiseId | AlternativeId;
+    readonly label: string;
+  }[];
   /** Events the commit will append. Shown as a count because the list is long and
    *  the number is what tells the user how big the act is. */
   readonly events: number;
@@ -75,7 +78,7 @@ export function previewCommit(
   discards: readonly DiscardedCandidate[] = [],
 ): CommitPreview {
   const actions: Record<ReviewAction["type"], number> = { ...NO_ACTIONS };
-  const mergeTargets: { id: DecisionId | PremiseId; label: string }[] = [];
+  const mergeTargets: { id: DecisionId | PremiseId | AlternativeId; label: string }[] = [];
   const conflicts = new Set<DecisionId>();
 
   let newDecisions = 0;
@@ -190,9 +193,14 @@ export function describeCommit(preview: CommitPreview, unreviewed: number): stri
   const lines: string[] = [];
 
   const created: string[] = [];
-  if (preview.newDecisions > 0) created.push(`${preview.newDecisions} new decision${plural(preview.newDecisions)}`);
-  if (preview.newPremises > 0) created.push(`${preview.newPremises} new premise${plural(preview.newPremises)}`);
-  if (preview.newAlternatives > 0) created.push(`${preview.newAlternatives} rejected alternative${plural(preview.newAlternatives)}`);
+  if (preview.newDecisions > 0)
+    created.push(`${preview.newDecisions} new decision${plural(preview.newDecisions)}`);
+  if (preview.newPremises > 0)
+    created.push(`${preview.newPremises} new premise${plural(preview.newPremises)}`);
+  if (preview.newAlternatives > 0)
+    created.push(
+      `${preview.newAlternatives} rejected alternative${plural(preview.newAlternatives)}`,
+    );
   if (created.length > 0) lines.push(`Creates ${created.join(", ")}.`);
 
   const merged = preview.mergedDecisions + preview.mergedPremises;

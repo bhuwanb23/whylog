@@ -37,17 +37,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Confidence } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import type {
   AlternativeCandidate,
   DecisionCandidate,
   ExtractionResult,
   PremiseCandidate,
 } from "@/ai/types";
-import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import { normalise } from "@/lib/text";
-import { tierOf, type ConfidenceTier } from "./types";
+import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
+import type { Confidence } from "@/types/common";
+import { asConfidence } from "@/types/common";
+import { type ConfidenceTier, tierOf } from "./types";
 
 /** How many runs must agree for full confidence. Two of three, per the plan. */
 export const MAJORITY_OF_THREE = 2;
@@ -173,7 +173,9 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       if (decisionKeys[0]?.has(decisionKey(candidate))) continue;
       const agreement = agreementFor(decisionKey(candidate), decisionKeys, total);
       if (agreement.presentIn < MAJORITY_OF_THREE) continue;
-      decisions.push(applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })));
+      decisions.push(
+        applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })),
+      );
       decisionAgreement.push(agreement);
     }
 
@@ -182,7 +184,11 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       const agreement = agreementFor(premiseKey(candidate), premiseKeys, total);
       if (agreement.presentIn < MAJORITY_OF_THREE) continue;
       premises.push(
-        applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence, needsReview: true })),
+        applyFactor(candidate, agreement.factor, (c, confidence) => ({
+          ...c,
+          confidence,
+          needsReview: true,
+        })),
       );
       premiseAgreement.push(agreement);
     }
@@ -191,10 +197,14 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       if (alternativeKeys[0]?.has(alternativeKey(candidate))) continue;
       const agreement = agreementFor(alternativeKey(candidate), alternativeKeys, total);
       if (agreement.presentIn < MAJORITY_OF_THREE) continue;
-      alternatives.push(applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })));
+      alternatives.push(
+        applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })),
+      );
       alternativeAgreement.push(agreement);
     }
   }
+
+  const usage = sumUsage(runs);
 
   return {
     result: {
@@ -207,7 +217,9 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       // every candidate any run produced.
       discarded: dedupeDiscards(runs),
       durationMs: runs.reduce((sum, run) => sum + run.durationMs, 0),
-      usage: sumUsage(runs),
+      // `usage` is optional on `ExtractionResult`, and `exactOptionalPropertyTypes`
+      // means the key must be ABSENT rather than present-and-undefined.
+      ...(usage === undefined ? {} : { usage }),
     },
     runsUsed: total,
     decisionAgreement,
@@ -225,7 +237,9 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
 /** variable + canonical value. Stable across rephrasings, which is the point. */
 export function decisionKey(candidate: DecisionCandidate): string {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
   return `D\u0000${candidate.variable}\u0000${normalise(canonical)}`;
 }
 
@@ -238,7 +252,9 @@ export function premiseKey(candidate: PremiseCandidate): string {
 
 export function alternativeKey(candidate: AlternativeCandidate): string {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
   return `A\u0000${candidate.decisionRef}\u0000${candidate.variable}\u0000${normalise(canonical)}`;
 }
 
@@ -246,7 +262,11 @@ export function alternativeKey(candidate: AlternativeCandidate): string {
 /* Agreement                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function agreementFor(key: string, keySets: readonly (ReadonlySet<string> | undefined)[], total: number): RunAgreement {
+function agreementFor(
+  key: string,
+  keySets: readonly (ReadonlySet<string> | undefined)[],
+  total: number,
+): RunAgreement {
   let presentIn = 0;
   for (const set of keySets) {
     if (set?.has(key)) presentIn += 1;

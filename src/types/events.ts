@@ -37,12 +37,6 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "./common";
-import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
-import type {
-  ContradictionVerdict,
-  GroundednessVerdict,
-  RetrievedHit,
-} from "./retrieval";
 import type {
   DecisionLabel,
   DecisionOrigin,
@@ -50,8 +44,10 @@ import type {
   Justification,
   PremiseType,
 } from "./domain";
-import type { EntrenchmentBreakdown } from "./reasoning";
 import type { ExportTarget, IntegrityStamp } from "./export";
+import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
+import type { EntrenchmentBreakdown } from "./reasoning";
+import type { ContradictionVerdict, GroundednessVerdict, RetrievedHit } from "./retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Event type union                                                           */
@@ -227,6 +223,13 @@ export interface DecisionProposedPayload {
 export interface PremiseAssertedPayload {
   readonly premiseId: PremiseId;
   readonly transcriptId: TranscriptId;
+  /** The episode the premise was read out of. Carried so the premise node can
+   *  hold a full `Provenance` — a premise is an extracted item like any other
+   *  (plan §1.6) and the review UI has to show where it came from. */
+  readonly episodeId: EpisodeId;
+  /** Who stated the assumption. `agent_inferred` is the honest default: an
+   *  unlabelled premise was recovered by a machine, not asserted by a human. */
+  readonly origin: DecisionOrigin;
   readonly type: PremiseType;
   /** Namespaced predicate, e.g. "scale.max_users". Identity is type+predicate
    *  wherever possible — see src/substrate/identity.ts resolution ladder. */
@@ -241,6 +244,11 @@ export interface PremiseAssertedPayload {
 export interface AlternativeRejectedPayload {
   readonly alternativeId: AlternativeId;
   readonly decisionId: DecisionId;
+  /** Which import the rejected value was heard in. Present so the alternative
+   *  node can hold a full `Provenance` (plan §1.6). */
+  readonly transcriptId: TranscriptId;
+  readonly episodeId: EpisodeId;
+  readonly origin: DecisionOrigin;
   readonly variable: DecisionVariable;
   readonly value: string;
   /** An alternative with no whyRejected is stored but EXCLUDED from the
@@ -568,7 +576,15 @@ export interface NewEvent<T extends EventType> {
    * one until the review that authorises the batch.
    */
   readonly actor?: Actor;
-  readonly reason: string;
+  /**
+   * Why the event happened. OPTIONAL on input, MANDATORY on the sealed event.
+   *
+   * `seal()` falls back to the append context's reason, so a caller may omit it
+   * and still get a fully-reasoned event. The substrate's validation checks the
+   * SEALED event, so the audit trail is unaffected — a state-changing event
+   * always ends up with a non-empty reason.
+   */
+  readonly reason?: string;
   readonly at?: ISODateString;
   readonly occurredAt?: ISODateString;
 }

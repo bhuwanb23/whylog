@@ -66,11 +66,11 @@ import type { CascadeResult, NogoodRecord, RevisionProposal } from "@/types/reas
 import { entrenchmentBand } from "@/types/reasoning";
 import { closeWindow, openWindow, reopenWindow } from "./bi-temporal";
 import {
-  INDEX_UNBUILT,
-  ZERO_COUNTERS,
   type ContradictionRecord,
   type ExportRecordState,
   type GraphState,
+  INDEX_UNBUILT,
+  ZERO_COUNTERS,
 } from "./graph-state";
 import { GENESIS_HASH, linkHash } from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
@@ -357,9 +357,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
             : { variable: bounds.variable }),
           turnRange: bounds === undefined ? ([0, 0] as const) : bounds.turnRange,
           charRange:
-            bounds === undefined
-              ? ([p.snippet.start, p.snippet.end] as const)
-              : bounds.charRange,
+            bounds === undefined ? ([p.snippet.start, p.snippet.end] as const) : bounds.charRange,
         };
         draft.episodes.set(p.episodeId, episode);
         draft.counters = { ...draft.counters, episodes: draft.counters.episodes + 1 };
@@ -468,6 +466,14 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         corroboration: 0,
         confidence: p.confidence,
         resolvedFrom: [event.id],
+        provenance: {
+          transcriptId: p.transcriptId,
+          episodeId: p.episodeId,
+          snippet: p.snippet,
+          origin: p.origin,
+          extractedBy: p.engine,
+          confidence: p.confidence,
+        },
       };
 
       draft.premises.set(p.premiseId, premise);
@@ -489,6 +495,14 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         // pre-emption index: a false pre-emption is worse than none, and ARGUS
         // measured 15.4% precision on exactly this component.
         confirmedByHuman: false,
+        provenance: {
+          transcriptId: p.transcriptId,
+          episodeId: p.episodeId,
+          snippet: p.snippet,
+          origin: p.origin,
+          extractedBy: p.engine,
+          confidence: p.confidence,
+        },
       };
       draft.alternatives.set(p.alternativeId, alternative);
 
@@ -905,7 +919,8 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       const accepted = patchGuard(draft, p.guardId, (g) => ({ ...g, lifecycle: "accepted" }));
       if (!accepted) skip(draft, event, `unknown guard ${p.guardId}`);
       const guard = draft.guards.get(p.guardId);
-      if (guard) patchDecision(draft, guard.decisionId, (d) => ({ ...d, verifiability: "verified" }));
+      if (guard)
+        patchDecision(draft, guard.decisionId, (d) => ({ ...d, verifiability: "verified" }));
       return draft;
     }
 
@@ -1087,7 +1102,6 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
     }
   }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* Editing                                                                    */
@@ -1339,13 +1353,15 @@ function rebuildCorroboration(draft: Draft): void {
     const refs = premiseRefs.get(id) ?? 0;
     // log2 scaling: the fourth independent justification is worth much less than
     // the second. Matches docs/02 §3.4's corroboration term.
-    const corroboration = refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
+    const corroboration =
+      refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
     draft.premises.set(id, { ...premise, corroboration });
   }
 
   for (const [id, decision] of draft.decisions) {
     const refs = decision.justificationIds.length;
-    const corroboration = refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
+    const corroboration =
+      refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
     draft.decisions.set(id, { ...decision, corroboration });
   }
 }
@@ -1419,14 +1435,23 @@ function rebuildMetrics(draft: Draft): void {
     ["decisionsUnknown", decisions.filter((d) => d.label === "UNKNOWN").length],
     ["decisionsUnfounded", decisions.filter((d) => d.label === "UNFOUNDED").length],
     ["premises", draft.premises.size],
-    ["premisesOpen", [...draft.premises.values()].filter((p) => p.temporal.invalidFrom === undefined).length],
+    [
+      "premisesOpen",
+      [...draft.premises.values()].filter((p) => p.temporal.invalidFrom === undefined).length,
+    ],
     ["justifications", draft.justifications.size],
-    ["nonMonotonicJustifications", [...draft.justifications.values()].filter((j) => j.outList.length > 0).length],
+    [
+      "nonMonotonicJustifications",
+      [...draft.justifications.values()].filter((j) => j.outList.length > 0).length,
+    ],
     ["nogoods", draft.nogoods.size],
     ["transcripts", draft.transcripts.size],
     ["episodes", draft.episodes.size],
     ["alternatives", draft.alternatives.size],
-    ["alternativesConfirmed", [...draft.alternatives.values()].filter((a) => a.confirmedByHuman).length],
+    [
+      "alternativesConfirmed",
+      [...draft.alternatives.values()].filter((a) => a.confirmedByHuman).length,
+    ],
     ["guards", guards.length],
     ["guardsAccepted", accepted.length],
     ["guardsPassing", passing.length],
@@ -1440,7 +1465,10 @@ function rebuildMetrics(draft: Draft): void {
     // are not covering the corpus and Phase 1's numbers cannot be trusted.
     ["otherVariableRate", decisions.length === 0 ? 0 : otherCount / decisions.length],
     ["compliance", accepted.length === 0 ? 1 : passing.length / accepted.length],
-    ["verifiableCoverage", live.length === 0 ? 0 : live.filter((d) => d.guardIds.length > 0).length / live.length],
+    [
+      "verifiableCoverage",
+      live.length === 0 ? 0 : live.filter((d) => d.guardIds.length > 0).length / live.length,
+    ],
     ["skippedEvents", draft.skipped.length],
   ];
 
