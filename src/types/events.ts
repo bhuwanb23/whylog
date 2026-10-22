@@ -37,6 +37,12 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "./common";
+import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
+import type {
+  ContradictionVerdict,
+  GroundednessVerdict,
+  RetrievedHit,
+} from "./retrieval";
 import type {
   DecisionLabel,
   DecisionOrigin,
@@ -44,10 +50,8 @@ import type {
   Justification,
   PremiseType,
 } from "./domain";
-import type { ExportTarget, IntegrityStamp } from "./export";
-import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
 import type { EntrenchmentBreakdown } from "./reasoning";
-import type { ContradictionVerdict, GroundednessVerdict, RetrievedHit } from "./retrieval";
+import type { ExportTarget, IntegrityStamp } from "./export";
 
 /* -------------------------------------------------------------------------- */
 /* Event type union                                                           */
@@ -148,18 +152,6 @@ export interface DomainEvent<T extends EventType = EventType, P = unknown> {
   readonly reason: string;
   /** Hash chain link. h(n) = hash(h(n-1) || event(n)). See src/substrate/hash-chain.ts */
   readonly prevHash: string;
-  /**
-   * Hash of this event's own CONTENT (everything except `prevHash` and
-   * `selfHash`).
-   *
-   * Without it, an edited payload is only detectable at the NEXT event, because
-   * that is where the chain links stop matching. Carrying the content hash on
-   * the event itself means the edit is reported AT the event that was edited,
-   * which is what plan/phase-0-foundation.md §0.5 asks for — and it means the
-   * last event in the chain is protected too, instead of relying on the
-   * head-hash comparison to catch it.
-   */
-  readonly selfHash: string;
   /** Schema version at write time, so migrations can be replayed. */
   readonly schemaVersion: number;
 }
@@ -200,6 +192,24 @@ export interface DecisionProposedPayload {
   /** Links to premises proposed in the same batch. Resolved at approval. */
   readonly premiseIds: readonly PremiseId[];
   readonly alternativeIds: readonly AlternativeId[];
+
+  /** Full Y-statement form, when Phase 1.3 could recover all the slots. Stored
+   *  rather than re-derived because the slots come from the EPISODE, and the
+   *  episode text is not on the node. Added in Phase 1 as an OPTIONAL field: an
+   *  event written before it existed still validates, so `SCHEMA_VERSION` stays
+   *  at 1 and `MIGRATIONS` stays empty. */
+  readonly yStatement?: string;
+  /** File globs the decision governs. Drives `applies_to` in export and guard
+   *  scoping. Optional for the same reason. */
+  readonly appliesTo?: readonly string[];
+  /** Real episode bounds. Without this the fold synthesises an episode from the
+   *  decision's own snippet, and the review UI cannot show the negotiation that
+   *  produced it. Optional: hand-recorded decisions legitimately have none. */
+  readonly episode?: {
+    readonly variable?: DecisionVariable;
+    readonly turnRange: readonly [start: number, end: number];
+    readonly charRange: readonly [start: number, end: number];
+  };
 }
 
 export interface PremiseAssertedPayload {
@@ -550,8 +560,7 @@ export interface NewEvent<T extends EventType> {
  *  3. `prevHash` equals the current head hash.
  *  4. `at` >= the previous event's `at` (learned time is monotonic).
  *  5. `occurredAt` may be in the past — that is the point of bi-temporality.
- *  6. The payload matches the shape declared in EventPayloadMap.
- *  7. `selfHash` equals the hash of the event's own content.
+ * 6. The payload matches the shape declared in EventPayloadMap.
  *
  * A violation throws; the log is never partially appended.
  */
@@ -565,9 +574,9 @@ export type ValidationResult =
 
 /** Narrowing helper for switch statements over `AnyEvent`. */
 export function isEventType<T extends EventType>(
-  event: DomainEvent,
+  event: AnyEvent,
   type: T,
-): event is DomainEvent<T, EventPayloadMap[T]> {
+): event is TypedEvent<T> {
   return event.type === type;
 }
 

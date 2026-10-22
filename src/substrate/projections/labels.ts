@@ -147,20 +147,8 @@ export function toPayload(change: LabelChange): LabelChangedPayload {
 export function labelHistory(
   events: readonly { id: EventId; type: string; at: string; payload: unknown; reason: string }[],
   nodeId: DecisionId | PremiseId,
-): readonly {
-  at: string;
-  from: DecisionLabel;
-  to: DecisionLabel;
-  reason: string;
-  gate?: LabelGate;
-}[] {
-  const out: {
-    at: string;
-    from: DecisionLabel;
-    to: DecisionLabel;
-    reason: string;
-    gate?: LabelGate;
-  }[] = [];
+): readonly { at: string; from: DecisionLabel; to: DecisionLabel; reason: string; gate?: LabelGate }[] {
+  const out: { at: string; from: DecisionLabel; to: DecisionLabel; reason: string; gate?: LabelGate }[] = [];
 
   for (const event of events) {
     if (event.type !== "LabelChanged") continue;

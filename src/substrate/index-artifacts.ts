@@ -35,18 +35,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import { type Scored, cosine, l2normalise, topK } from "@/lib/cosine";
-import { nowISO } from "@/lib/format";
 import { hashStable } from "@/lib/hash";
-import { type Result, err, ok } from "@/lib/result";
+import { cosine, l2normalise, topK, type Scored } from "@/lib/cosine";
+import { err, ok, type Result } from "@/lib/result";
+import { nowISO } from "@/lib/format";
 import type { DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
-import type {
-  DenseIndexEntry,
-  IndexArtifacts,
-  PremiseIndex,
-  SparseIndexEntry,
-  StructuralIndex,
-} from "@/types/retrieval";
+import type { DenseIndexEntry, IndexArtifacts, PremiseIndex, SparseIndexEntry, StructuralIndex } from "@/types/retrieval";
 import { loadIndexBlob, saveIndexBlob } from "./persistence";
 
 /* -------------------------------------------------------------------------- */
@@ -76,11 +70,7 @@ export interface StoredIndexBlob {
   readonly textHashes: Readonly<Record<string, string>>;
 }
 
-export function emptyBlob(
-  engine: EngineId,
-  dimensions: number,
-  at: ISODateString,
-): StoredIndexBlob {
+export function emptyBlob(engine: EngineId, dimensions: number, at: ISODateString): StoredIndexBlob {
   return {
     formatVersion: INDEX_FORMAT_VERSION,
     engine,
@@ -116,8 +106,7 @@ export function staleness(blob: StoredIndexBlob | null, current: EngineId): Stal
   if (blob === null) {
     return {
       stale: true,
-      reason:
-        "No embeddings have been built. Lexical, structural and premise retrieval are working; semantic retrieval is off.",
+      reason: "No embeddings have been built. Lexical, structural and premise retrieval are working; semantic retrieval is off.",
       builtBy: null,
       builtAt: null,
       dimensions: 0,
@@ -261,10 +250,7 @@ export function prune(
   liveDecisionIds: ReadonlySet<string>,
   livePremiseIds: ReadonlySet<string>,
 ): StoredIndexBlob {
-  const keep = <T>(
-    record: Readonly<Record<string, T>>,
-    live: ReadonlySet<string>,
-  ): Record<string, T> => {
+  const keep = <T>(record: Readonly<Record<string, T>>, live: ReadonlySet<string>): Record<string, T> => {
     const out: Record<string, T> = {};
     for (const [key, value] of Object.entries(record)) {
       if (live.has(key)) out[key] = value;
@@ -304,16 +290,14 @@ export function searchDense(
   level: "decision" | "question" | "premise" = "decision",
 ): readonly Scored<string>[] {
   const source: Readonly<Record<string, readonly number[]>> =
-    level === "question"
-      ? blob.questionVectors
-      : level === "premise"
-        ? blob.premises
-        : blob.decisions;
+    level === "question" ? blob.questionVectors : level === "premise" ? blob.premises : blob.decisions;
 
   const entries = Object.entries(source);
-  return topK(entries, ([, vector]) => cosine(queryVector, vector), k).map(
-    ({ item, score }): Scored<string> => ({ item: item[0], score }),
-  );
+  return topK(
+    entries,
+    ([, vector]) => cosine(queryVector, vector),
+    k,
+  ).map(({ item, score }): Scored<string> => ({ item: item[0], score }));
 }
 
 export function vectorFor(blob: StoredIndexBlob, id: string): Float32Array | null {
@@ -327,10 +311,7 @@ export function questionVectorFor(blob: StoredIndexBlob, id: string): Float32Arr
 }
 
 /** Vectors for the identity ladder's rungs 4 and 5. */
-export function vectorMap(
-  blob: StoredIndexBlob,
-  kind: "decision" | "premise",
-): ReadonlyMap<string, Float32Array> {
+export function vectorMap(blob: StoredIndexBlob, kind: "decision" | "premise"): ReadonlyMap<string, Float32Array> {
   const source = kind === "decision" ? blob.decisions : blob.premises;
   const out = new Map<string, Float32Array>();
   for (const [id, vector] of Object.entries(source)) out.set(id, Float32Array.from(vector));
@@ -392,9 +373,7 @@ export function assemble(
 }
 
 /** Which levels this artifact actually supports right now. */
-export function availableLevels(
-  artifacts: IndexArtifacts,
-): readonly ("L1" | "L2" | "L3" | "L4" | "L5")[] {
+export function availableLevels(artifacts: IndexArtifacts): readonly ("L1" | "L2" | "L3" | "L4" | "L5")[] {
   const out: ("L1" | "L2" | "L3" | "L4" | "L5")[] = [];
   if (!artifacts.stale) {
     if (artifacts.dense.some((e) => e.level === "L1")) out.push("L1");

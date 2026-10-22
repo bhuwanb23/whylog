@@ -22,7 +22,6 @@
 
 import type {
   AlternativeId,
-  BiTemporal,
   Confidence,
   DecisionId,
   EngineId,
@@ -59,7 +58,12 @@ export type DecisionLabel =
   | "UNFOUNDED";
 
 /** Lifecycle state, orthogonal to the label. */
-export type DecisionStatus = "proposed" | "active" | "contested" | "superseded" | "archived";
+export type DecisionStatus =
+  | "proposed"
+  | "active"
+  | "contested"
+  | "superseded"
+  | "archived";
 
 /* -------------------------------------------------------------------------- */
 /* The decision variable ontology                                             */
@@ -462,6 +466,3 @@ export interface AsOfQuery {
   readonly axis: "valid" | "learned";
   readonly at: ISODateString;
 }
-
-/** Referenced by ValidityWindow consumers; keeps the import list honest. */
-export type _DomainTypesReferenced = BiTemporal;
