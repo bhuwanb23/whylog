@@ -47,12 +47,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Actor, DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
-import type { NewEvent } from "@/types/events";
-import type { IndexArtifacts } from "@/types/retrieval";
-import type { GraphState } from "@/substrate/graph-state";
 import type { WhyLogEngine } from "@/ai/types";
+import { nowISO } from "@/lib/format";
+import { hashStable } from "@/lib/hash";
+import type { GraphState } from "@/substrate/graph-state";
 import {
+  type StalenessReport,
+  type StoredIndexBlob,
   assemble,
   emptyBlob,
   estimateBlobBytes,
@@ -61,8 +62,6 @@ import {
   sameSpace,
   saveBlob,
   staleness,
-  type StalenessReport,
-  type StoredIndexBlob,
 } from "@/substrate/index-artifacts";
 import {
   buildPremiseIndex,
@@ -70,8 +69,9 @@ import {
   buildStructuralIndex,
   questionsFor,
 } from "@/substrate/projections/indexes";
-import { hashStable } from "@/lib/hash";
-import { nowISO } from "@/lib/format";
+import type { Actor, DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
+import type { NewEvent } from "@/types/events";
+import type { IndexArtifacts } from "@/types/retrieval";
 import { l1Text } from "./index-levels/l1-dense";
 import { l2Text } from "./index-levels/l2-questions";
 
@@ -234,7 +234,10 @@ async function embedChanged(
      * decision edited in a way that does not change its questions does not re-embed them. */
     const questionText = l2Text(questionsFor(decision));
     questions[decision.id] = questionText;
-    if (blob.questions[decision.id] !== questionText || blob.questionVectors[decision.id] === undefined) {
+    if (
+      blob.questions[decision.id] !== questionText ||
+      blob.questionVectors[decision.id] === undefined
+    ) {
       pendingQuestions.push({ id: decision.id, text: questionText });
     }
   }
@@ -375,9 +378,7 @@ function indexDrafts(
       reason:
         levels.length === 0
           ? "Index built with no levels available: the log has no live decisions."
-          : "Index rebuilt. Levels " +
-            levels.join(", ") +
-            ". The vectors themselves live outside the log — this event records the FACT that an index exists, who built it and when, because that is history and the floats are not.",
+          : `Index rebuilt. Levels ${levels.join(", ")}. The vectors themselves live outside the log — this event records the FACT that an index exists, who built it and when, because that is history and the floats are not.`,
       at,
     },
   ];
@@ -442,18 +443,20 @@ function nowMs(): number {
  */
 export function describeBuild(report: BuildReport): string {
   const lines = [
-    "Index build — " + report.durationMs + " ms",
-    "  levels available: " + (report.levels.length === 0 ? "none" : report.levels.join(", ")),
-    "  vectors embedded: " + report.embedded + "  ·  decisions unchanged: " + report.skipped,
-    "  inverted questions: " + report.questionsBuilt + "  ·  dead vectors pruned: " + report.pruned,
-    "  estimated blob size: " + Math.round(report.estimatedBytes / 1024) + " KB",
+    `Index build — ${report.durationMs} ms`,
+    `  levels available: ${report.levels.length === 0 ? "none" : report.levels.join(", ")}`,
+    `  vectors embedded: ${report.embedded}  ·  decisions unchanged: ${report.skipped}`,
+    `  inverted questions: ${report.questionsBuilt}  ·  dead vectors pruned: ${report.pruned}`,
+    `  estimated blob size: ${Math.round(report.estimatedBytes / 1024)} KB`,
   ];
 
   if (report.staleness.stale && report.staleness.reason !== null) {
-    lines.push("  STALE: " + report.staleness.reason);
+    lines.push(`  STALE: ${report.staleness.reason}`);
   }
   if (!report.saved && report.saveError !== null) {
-    lines.push("  NOT SAVED: " + report.saveError + " — the index works this session and is rebuilt next load.");
+    lines.push(
+      `  NOT SAVED: ${report.saveError} — the index works this session and is rebuilt next load.`,
+    );
   }
 
   return lines.join("\n");

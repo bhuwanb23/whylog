@@ -19,7 +19,7 @@ Each phase file below is self-contained: objective, sub-phases with acceptance c
 | 6 | **[Presentation](phase-6-presentation.md)** | L5 | 6.5 h | Decision card, revision proposal surface, **premise lattice**, time machine |
 | 7 | **[Evaluation & Pitch](phase-7-evaluation.md)** | — | 5 h | `DecisionMemEval`, ten metrics, ablation harness, demo kit |
 
-**Total ≈ 43 h.** Minimum demonstrable product: **Phases 0 → 1 → 2 → 6.1–6.3 ≈ 22 h.**
+**Total ÷ 43 h.** Minimum demonstrable product: **Phases 0 → 1 → 2 → 6.1–6.3 ÷ 22 h.**
 
 ★ Phase 2 is the product. If its gate fails, nothing downstream is worth polishing.
 
@@ -29,8 +29,8 @@ Each phase file below is self-contained: objective, sub-phases with acceptance c
 
 ```
    P0 ──► P1 ──► P2 ──────────────► P5 ──► P6 ──► P7
-           │      ▲                  ▲
-           ├─► P3 ┘ (feeds gate b)   │
+           ³      ▲                  ▲
+           ├─► P3 ┘ (feeds gate b)   ³
            └─► P4 ───────────────────┘ (feeds implementation_cost + verify cmds)
 
    parallel:  P6.1 ──► P6.2 ──► P6.3   (built alongside P1–P2, not after)

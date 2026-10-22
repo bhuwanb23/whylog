@@ -54,15 +54,26 @@ export function artifactDigest(contents: string): string {
   return hashStable(stripStamp(contents));
 }
 
-/** Remove the stamp block so a digest covers only the compiled content. */
+/** Remove the stamp block so a digest covers only the compiled content.
+ *
+ *  The WHOLE block goes: the horizontal rule that separates it from the body,
+ *  the marker, the payload, and the human-readable footer under it. All of it is
+ *  stamp, and all of it has to be removed for the digest to reproduce — the
+ *  digest is computed over the body alone, so a stripper that leaves the rule or
+ *  the footer behind reconstructs a DIFFERENT string, the digest never matches,
+ *  and every artifact is born unverifiable. Which is what happened: the first
+ *  version of this removed only the marker and the payload.
+ */
 export function stripStamp(contents: string): string {
   const start = contents.lastIndexOf(STAMP_MARKER);
   if (start < 0) return contents.trim();
 
-  const end = contents.indexOf(STAMP_MARKER_END, start);
-  if (end < 0) return contents.slice(0, start).trim();
+  // The rule immediately before the marker is part of the stamp block.
+  const before = contents.slice(0, start);
+  const rule = before.lastIndexOf("\n---");
+  const head = rule < 0 ? before : before.slice(0, rule);
 
-  return (contents.slice(0, start) + contents.slice(end + STAMP_MARKER_END.length)).trim();
+  return head.trim();
 }
 
 /** Re-exported from `lib/hash.ts` rather than reimplemented. A full 64-character hash in a

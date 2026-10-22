@@ -51,6 +51,16 @@
  * ---------------------------------------------------------------------------
  */
 
+import {
+  formatDecisionId,
+  formatEpisodeId,
+  formatJustificationId,
+  formatPremiseId,
+  formatTranscriptId,
+  premiseFingerprint,
+} from "@/lib/ids";
+import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
+import type { GraphState } from "@/substrate/graph-state";
 import type {
   Actor,
   Confidence,
@@ -67,18 +77,8 @@ import type {
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionOrigin, DecisionVariable, Justification, PremiseType } from "@/types/domain";
-import type { EventType, NewEvent } from "@/types/events";
-import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
-import {
-  formatDecisionId,
-  formatEpisodeId,
-  formatJustificationId,
-  formatPremiseId,
-  formatTranscriptId,
-  premiseFingerprint,
-} from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
 import type { Nogood } from "@/types/domain";
+import type { EventType, NewEvent } from "@/types/events";
 import type { Newcomer } from "./adjudication";
 import { blocksConjunction } from "./nogoods";
 
@@ -263,8 +263,17 @@ export function assertNewInformation(
   let episodeNumber = context.state.counters.episodes;
 
   const transcriptId: TranscriptId =
-    transcriptIdFor(assertion, context) ??
-    nextTranscriptId(context, drafts, ++transcriptNumber);
+    transcriptIdFor(assertion, context) ?? nextTranscriptId(context, drafts, ++transcriptNumber);
+
+  /* The premises of ONE assertion belong to ONE episode: they were observed
+   * together, and a premise asserted in isolation has no context to show. The
+   * episode id is minted lazily so an assertion with no premises does not burn
+   * one. */
+  let premiseEpisodeId: EpisodeId | null = null;
+  const episodeIdOf = (): EpisodeId => {
+    if (premiseEpisodeId === null) premiseEpisodeId = formatEpisodeId(++episodeNumber);
+    return premiseEpisodeId;
+  };
 
   /* A human, a guard or a repo scan is its own authority: what it says is confirmed on
    * arrival. A transcript is not — extracted prose enters as UNKNOWN and waits for
@@ -296,7 +305,16 @@ export function assertNewInformation(
       premiseNumber += 1;
       const premiseId = formatPremiseId(premiseNumber);
       mintedPremiseIds.push(premiseId);
-      drafts.push(premiseDraft(premise, premiseId, transcriptId, context));
+      drafts.push(
+        premiseDraft(
+          premise,
+          premiseId,
+          transcriptId,
+          episodeIdOf(),
+          originOf(assertion.source),
+          context,
+        ),
+      );
 
       /* Confirming it makes it IN, which is what lets an OUT-list exclusion fire:
        * "an excluded condition arrived" only invalidates a justification once the
@@ -318,7 +336,16 @@ export function assertNewInformation(
      * appends evidence and takes the max confidence; minting a second node would halve
      * the corroboration count on both and leave gate (c) looking at a premise that
      * nothing rests on. */
-    drafts.push(premiseDraft(premise, existingId, transcriptId, context));
+    drafts.push(
+      premiseDraft(
+        premise,
+        existingId,
+        transcriptId,
+        episodeIdOf(),
+        originOf(assertion.source),
+        context,
+      ),
+    );
     mintedPremiseIds.push(existingId);
 
     /* If it was UNKNOWN and this source is authoritative, it becomes IN — which is the
@@ -342,7 +369,12 @@ export function assertNewInformation(
        * are the same node. */
       justificationNumber += 1;
       drafts.push(
-        justificationDraft(formatJustificationId(justificationNumber), existingDecision, inList, context),
+        justificationDraft(
+          formatJustificationId(justificationNumber),
+          existingDecision,
+          inList,
+          context,
+        ),
       );
       continue;
     }
@@ -367,6 +399,7 @@ export function assertNewInformation(
   }
 
   /* A decision-level assertion becomes a newcomer for the adjudicator. */
+  const source = sourceOf(assertion.source);
   const firstDecision = decisions[0];
   if (firstDecision !== undefined) {
     newcomer = {
@@ -375,7 +408,9 @@ export function assertNewInformation(
       text: firstDecision.statement,
       origin: firstDecision.origin,
       confidence: firstDecision.confidence,
-      source: sourceOf(assertion.source),
+      // `source` is optional on the newcomer, and `exactOptionalPropertyTypes`
+      // means the key must be ABSENT rather than present-and-undefined.
+      ...(source === undefined ? {} : { source }),
     };
   }
 
@@ -429,6 +464,8 @@ function premiseDraft(
   premise: PremiseAssertion,
   premiseId: PremiseId,
   transcriptId: TranscriptId,
+  episodeId: EpisodeId,
+  origin: DecisionOrigin,
   context: AssertContext,
 ): NewEvent<"PremiseAsserted"> {
   const text = premise.text.trim();
@@ -438,6 +475,8 @@ function premiseDraft(
     payload: {
       premiseId,
       transcriptId,
+      episodeId,
+      origin,
       type: premise.type,
       predicate: canonicalPredicate(premise.type, premise.predicate),
       ...(premise.value === undefined ? {} : { value: premise.value }),
@@ -447,13 +486,12 @@ function premiseDraft(
       text: premise.supports ? text : `refuted: ${text}`,
       confidence: premise.confidence,
       engine: context.engine,
-      snippet:
-        premise.span ?? {
-          transcriptId,
-          start: 0,
-          end: text.length,
-          text,
-        },
+      snippet: premise.span ?? {
+        transcriptId,
+        start: 0,
+        end: text.length,
+        text,
+      },
     },
     actor: context.actor,
     reason: reasonFor(premise, context),
@@ -521,8 +559,12 @@ function decisionDraft(
         modality: "asserted",
         confidence: decision.confidence,
         engine: context.engine,
-        snippet:
-          decision.span ?? { transcriptId, start: 0, end: statement.length, text: statement },
+        snippet: decision.span ?? {
+          transcriptId,
+          start: 0,
+          end: statement.length,
+          text: statement,
+        },
         premiseIds: inList,
         alternativeIds: [],
         ...(decision.appliesTo === undefined ? {} : { appliesTo: decision.appliesTo }),
@@ -530,7 +572,9 @@ function decisionDraft(
       actor: context.actor,
       reason: `Asserted from ${sourceLabel(context.source)}: ${statement}`,
       at: context.at,
-      ...(assertionOccurredAt(context) === null ? {} : { occurredAt: assertionOccurredAt(context) as ISODateString }),
+      ...(assertionOccurredAt(context) === null
+        ? {}
+        : { occurredAt: assertionOccurredAt(context) as ISODateString }),
     },
     {
       type: "JustificationAttached",
@@ -579,10 +623,7 @@ export type PremiseResolution =
  * candidates are handed to a human, which is what §2.11 means by "surfaced for human
  * confirmation rather than guessed".
  */
-export function resolvePremise(
-  state: GraphState,
-  assertion: PremiseAssertion,
-): PremiseResolution {
+export function resolvePremise(state: GraphState, assertion: PremiseAssertion): PremiseResolution {
   const canonical = canonicalPredicate(assertion.type, assertion.predicate);
 
   /* The fold's OWN identity index, keyed by `premiseFingerprint(type, predicate)`.
@@ -682,6 +723,10 @@ function invalidateDraft(
       premiseId,
       invalidatedBy,
       ...(premise.span === undefined ? {} : { evidenceSpan: premise.span }),
+      /* A guard's finding is a line of a manifest, not a slice of a
+       * conversation, so there is no span - but the text is the evidence, and
+       * it is what the revision proposal has to quote. */
+      ...(premise.span === undefined ? { evidenceQuote: premise.text } : {}),
     },
     actor: context.actor,
     reason: `${premiseId} is no longer true: "${premise.text}" — observed by ${sourceLabel(source)}. Every decision resting on it is re-examined, and this event is the record of what falsified it.`,
@@ -720,8 +765,6 @@ type PremiseInvalidatedBy = NewEvent<"PremiseInvalidated">["payload"]["invalidat
  *  does for every other forward reference in this codebase. */
 const PLACEHOLDER_GUARD_ID = "WLD-0000.g0" as GuardId;
 
-
-
 /**
  * Is this decision already in the log?
  *
@@ -748,10 +791,7 @@ export function findExistingDecision(
 /* Transcripts, informants, reasons                                           */
 /* -------------------------------------------------------------------------- */
 
-function transcriptIdFor(
-  assertion: Assertion,
-  context: AssertContext,
-): TranscriptId | null {
+function transcriptIdFor(assertion: Assertion, context: AssertContext): TranscriptId | null {
   if (assertion.source === "transcript") return assertion.transcriptId;
   return context.humanTranscriptId ?? null;
 }
@@ -791,7 +831,9 @@ function nextTranscriptId(
 function informantFor(context: AssertContext): Justification["informant"] {
   /* A human informant has no event to point at, and pointing at an unrelated one would
    * be worse than saying so. */
-  return context.actor.kind === "human" ? { kind: "human" } : { kind: "rejustification", eventId: PLACEHOLDER_EVENT_ID };
+  return context.actor.kind === "human"
+    ? { kind: "human" }
+    : { kind: "rejustification", eventId: PLACEHOLDER_EVENT_ID };
 }
 
 /** Resolved to the creating event by the materialiser on fold. */
@@ -812,6 +854,24 @@ function sourceOf(source: AssertionSource): Newcomer["source"] {
       return "guard";
     case "repo-scan":
       return "repo-scan";
+  }
+}
+
+/**
+ * Who an asserted premise is attributed to.
+ *
+ * A human typed it or a human said it: `human_stated`. A guard observed it or
+ * a scan found it: `agent_inferred`, which is the honest answer — a machine
+ * reading the world, not a person making a claim.
+ */
+function originOf(source: AssertionSource): DecisionOrigin {
+  switch (source) {
+    case "transcript":
+    case "user-decision":
+      return "human_stated";
+    case "guard-result":
+    case "repo-scan":
+      return "agent_inferred";
   }
 }
 
@@ -868,7 +928,9 @@ function summarise(
     nogoodWarning,
     unresolvedNote,
     `Asserted from ${sourceLabel(assertion.source)}: ${premiseCount} premise(s), ${decisionCount} decision(s).`,
-    parts.length === 0 ? "No events — everything was already in the log." : `Events: ${parts.join(", ")}.`,
+    parts.length === 0
+      ? "No events — everything was already in the log."
+      : `Events: ${parts.join(", ")}.`,
     refuting.trim(),
   ]
     .filter((part) => part.length > 0)
@@ -892,7 +954,7 @@ export function falsifyPremise(
   type: PremiseType,
   predicate: string,
   observedText: string,
-  context: AssertContext,
+  _context: AssertContext,
 ): Assertion {
   return {
     source: "repo-scan",
@@ -924,4 +986,3 @@ export function guardResult(
 ): Assertion {
   return { source: "guard-result", decisionId, passed, observation };
 }
-

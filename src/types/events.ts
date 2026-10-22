@@ -37,12 +37,6 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "./common";
-import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
-import type {
-  ContradictionVerdict,
-  GroundednessVerdict,
-  RetrievedHit,
-} from "./retrieval";
 import type {
   DecisionLabel,
   DecisionOrigin,
@@ -50,8 +44,10 @@ import type {
   Justification,
   PremiseType,
 } from "./domain";
-import type { EntrenchmentBreakdown } from "./reasoning";
 import type { ExportTarget, IntegrityStamp } from "./export";
+import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
+import type { EntrenchmentBreakdown } from "./reasoning";
+import type { ContradictionVerdict, GroundednessVerdict, RetrievedHit } from "./retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Event type union                                                           */
@@ -152,6 +148,18 @@ export interface DomainEvent<T extends EventType = EventType, P = unknown> {
   readonly reason: string;
   /** Hash chain link. h(n) = hash(h(n-1) || event(n)). See src/substrate/hash-chain.ts */
   readonly prevHash: string;
+  /**
+   * Hash of this event's own CONTENT (everything except `prevHash` and
+   * `selfHash`).
+   *
+   * Without it, an edited payload is only detectable at the NEXT event, because
+   * that is where the chain links stop matching. Carrying the content hash on
+   * the event itself means the edit is reported AT the event that was edited,
+   * which is what plan/phase-0-foundation.md §0.5 asks for — and it means the
+   * last event in the chain is protected too, instead of relying on the
+   * head-hash comparison to catch it.
+   */
+  readonly selfHash: string;
   /** Schema version at write time, so migrations can be replayed. */
   readonly schemaVersion: number;
 }
@@ -215,6 +223,13 @@ export interface DecisionProposedPayload {
 export interface PremiseAssertedPayload {
   readonly premiseId: PremiseId;
   readonly transcriptId: TranscriptId;
+  /** The episode the premise was read out of. Carried so the premise node can
+   *  hold a full `Provenance` — a premise is an extracted item like any other
+   *  (plan §1.6) and the review UI has to show where it came from. */
+  readonly episodeId: EpisodeId;
+  /** Who stated the assumption. `agent_inferred` is the honest default: an
+   *  unlabelled premise was recovered by a machine, not asserted by a human. */
+  readonly origin: DecisionOrigin;
   readonly type: PremiseType;
   /** Namespaced predicate, e.g. "scale.max_users". Identity is type+predicate
    *  wherever possible — see src/substrate/identity.ts resolution ladder. */
@@ -229,6 +244,11 @@ export interface PremiseAssertedPayload {
 export interface AlternativeRejectedPayload {
   readonly alternativeId: AlternativeId;
   readonly decisionId: DecisionId;
+  /** Which import the rejected value was heard in. Present so the alternative
+   *  node can hold a full `Provenance` (plan §1.6). */
+  readonly transcriptId: TranscriptId;
+  readonly episodeId: EpisodeId;
+  readonly origin: DecisionOrigin;
   readonly variable: DecisionVariable;
   readonly value: string;
   /** An alternative with no whyRejected is stored but EXCLUDED from the
@@ -320,6 +340,10 @@ export interface PremiseInvalidatedPayload {
     | { readonly kind: "guard"; readonly guardId: GuardId }
     | { readonly kind: "human" };
   readonly evidenceSpan?: SourceSpan;
+  /** VERBATIM text of what falsified it, when there is no span to point at.
+   *  A guard failure carries the line of the manifest that falsified the
+   *  premise, and that line is the evidence the proposal must quote. */
+  readonly evidenceQuote?: string;
 }
 
 export interface NogoodRecordedPayload {
@@ -352,6 +376,16 @@ export interface RevisionProposedPayload {
   readonly cascade: readonly { decisionId: DecisionId; became: DecisionLabel }[];
   readonly survivors: readonly DecisionId[];
   readonly entrenchment: EntrenchmentBreakdown;
+  /** Part 2 of the proposal: the verbatim quote, where it came from, and how much
+   *  it is worth. It has to be IN the event, because the event is the log: a
+   *  proposal reconstructed from the log has to carry the same evidence the
+   *  reasoning cycle saw. Without it the fold has nothing to store but the
+   *  event's reason, and the reason is the "why not auto-applied" note. */
+  readonly evidence: {
+    readonly quote: string;
+    readonly source: "transcript" | "guard" | "human" | "repo-scan";
+    readonly confidence: Confidence;
+  };
   /** Set when the newcomer was screened out rather than applied. */
   readonly rejectedNewcomer?: { readonly eventId: EventId; readonly why: string };
   readonly availableActions: readonly ("reverse" | "rejustify" | "contest")[];
@@ -546,8 +580,25 @@ export type AnyEvent = {
 export interface NewEvent<T extends EventType> {
   readonly type: T;
   readonly payload: EventPayloadMap[T];
-  readonly actor: Actor;
-  readonly reason: string;
+  /**
+   * Who caused it. OPTIONAL on input, MANDATORY on the sealed event.
+   *
+   * The substrate's `seal()` fills it from the append context when it is absent,
+   * and validation runs on the SEALED event — so a caller may omit it and still
+   * get a fully-attributed event. A batch producer (the extraction pipeline
+   * commits many events at once) legitimately does not know the actor for each
+   * one until the review that authorises the batch.
+   */
+  readonly actor?: Actor;
+  /**
+   * Why the event happened. OPTIONAL on input, MANDATORY on the sealed event.
+   *
+   * `seal()` falls back to the append context's reason, so a caller may omit it
+   * and still get a fully-reasoned event. The substrate's validation checks the
+   * SEALED event, so the audit trail is unaffected — a state-changing event
+   * always ends up with a non-empty reason.
+   */
+  readonly reason?: string;
   readonly at?: ISODateString;
   readonly occurredAt?: ISODateString;
 }
@@ -560,7 +611,8 @@ export interface NewEvent<T extends EventType> {
  *  3. `prevHash` equals the current head hash.
  *  4. `at` >= the previous event's `at` (learned time is monotonic).
  *  5. `occurredAt` may be in the past — that is the point of bi-temporality.
- * 6. The payload matches the shape declared in EventPayloadMap.
+ *  6. The payload matches the shape declared in EventPayloadMap.
+ *  7. `selfHash` equals the hash of the event's own content.
  *
  * A violation throws; the log is never partially appended.
  */
@@ -574,9 +626,9 @@ export type ValidationResult =
 
 /** Narrowing helper for switch statements over `AnyEvent`. */
 export function isEventType<T extends EventType>(
-  event: AnyEvent,
+  event: DomainEvent,
   type: T,
-): event is TypedEvent<T> {
+): event is DomainEvent<T, EventPayloadMap[T]> {
   return event.type === type;
 }
 

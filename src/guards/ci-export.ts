@@ -50,12 +50,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { Guard } from "@/types/guards";
 import { isDeterministic } from "@/types/guards";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
 import { specTarget } from "./feedback";
 
 /* -------------------------------------------------------------------------- */
@@ -119,7 +119,7 @@ export function exportCi(input: CiExportInput): CiExport {
       seenDecisions.add(decision.id);
       notExported.push({
         decisionId: decision.id,
-        reason: "the decision is " + decision.status + ", so its guards are withdrawn with it",
+        reason: `the decision is ${decision.status}, so its guards are withdrawn with it`,
       });
       continue;
     }
@@ -129,8 +129,8 @@ export function exportCi(input: CiExportInput): CiExport {
         decisionId: decision.id,
         reason:
           guard.spec.kind === "command_exit_zero"
-            ? guard.id + " is a command guard — exported separately below, since CI is exactly where a command can run"
-            : guard.id + " is judged by a model, so it is advisory and cannot fail a build deterministically",
+            ? `${guard.id} is a command guard — exported separately below, since CI is exactly where a command can run`
+            : `${guard.id} is judged by a model, so it is advisory and cannot fail a build deterministically`,
       });
 
       /* Command guards CAN be exported: CI has a shell, which the browser does not. They are
@@ -221,8 +221,8 @@ export function renderRunner(guards: readonly ExportedGuard[], headHash: string)
   lines.push("/**");
   lines.push(" * WhyLog decision guards — generated. Do not edit by hand.");
   lines.push(" *");
-  lines.push(" * Log head: " + headHash);
-  lines.push(" * Guards:   " + guards.length);
+  lines.push(` * Log head: ${headHash}`);
+  lines.push(` * Guards:   ${guards.length}`);
   lines.push(" *");
   lines.push(" * Exits non-zero if any BLOCKING guard fails. Warning failures are printed");
   lines.push(" * as advice and do not affect the exit code.");
@@ -234,7 +234,7 @@ export function renderRunner(guards: readonly ExportedGuard[], headHash: string)
   lines.push('const fs = require("node:fs");');
   lines.push('const path = require("node:path");');
   lines.push("");
-  lines.push("const GUARDS = " + JSON.stringify(guards, null, 2) + ";");
+  lines.push(`const GUARDS = ${JSON.stringify(guards, null, 2)};`);
   lines.push("");
   lines.push(RUNNER_BODY);
 
@@ -465,45 +465,19 @@ function undoHint(guard) {
 
 /* -------------------------------------------------------------------- main -- */
 
-/* `--decision WLD-0007` restricts the run to one decision's guards. The verify command exported  */
-/* into CLAUDE.md / AGENTS.md / DECISIONS.md uses exactly this flag, so an agent can check one    */
-/* rule without running the whole set. It is supported HERE rather than by a second runner: two   */
-/* runners would drift, and a verify command naming a flag the runner ignores would exit 0 for a  */
-/* decision that is broken.                                                                       */
-function parseArgs(argv) {
-  const opts = { decision: null };
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === "--decision" && argv[i + 1] !== undefined) { opts.decision = argv[i + 1]; i += 1; }
-    else if (typeof argv[i] === "string" && argv[i].startsWith("--decision=")) { opts.decision = argv[i].slice(11); }
-  }
-  return opts;
-}
-
 function main() {
-  const opts = parseArgs(process.argv.slice(2));
   const manifest = readManifest();
   const files = listFiles(".");
   const project = { dependencies: manifest.dependencies, devDependencies: manifest.devDependencies, files: files };
 
-  const selected = opts.decision === null ? GUARDS : GUARDS.filter((g) => g.decisionId === opts.decision);
-
-  if (opts.decision !== null && selected.length === 0) {
-    /* Exiting 0 here would tell an agent the decision is fine when the truth is that this runner
-     * holds no guards for it — most likely because the export predates the decision. Exit 2 says
-     * "I could not check this", which is a different claim from "it passed". */
-    console.error("\x1b[31mNo guards in this runner for decision " + opts.decision + ".\x1b[0m");
-    console.error("The exported runner is probably older than that decision. Re-export from WhyLog.");
-    process.exit(2);
-  }
-
-  console.log("WhyLog decision guards \\u00b7 " + selected.length + " of " + GUARDS.length + " guard(s)" + (opts.decision === null ? "" : " for " + opts.decision) + " \\u00b7 " + files.length + " file(s) scanned");
+  console.log("WhyLog decision guards \\u00b7 " + GUARDS.length + " guard(s) \\u00b7 " + files.length + " file(s) scanned");
 
   let blocking = 0;
   let warnings = 0;
   let passed = 0;
   let skipped = 0;
 
-  for (const guard of selected) {
+  for (const guard of GUARDS) {
     const result = evaluate(guard, project);
 
     if (result.outcome === "pass") { passed += 1; continue; }
@@ -543,7 +517,7 @@ main();
 export function renderWorkflow(guardCount: number): string {
   return [
     "# Generated by WhyLog. Runs the exported decision guards on every push and PR.",
-    "# " + guardCount + " guard(s). Re-export from the app when the log changes.",
+    `# ${guardCount} guard(s). Re-export from the app when the log changes.`,
     "name: decision-guards",
     "",
     "on:",
@@ -588,22 +562,23 @@ export function describeExport(exported: CiExport): string {
   }
 
   const lines = [
-    "Exported " + exported.guards.length + " guard(s) over " + new Set(exported.guards.map((g) => g.decisionId)).size + " decision(s).",
-    "Log head: " + exported.headHash,
+    `Exported ${exported.guards.length} guard(s) over ${new Set(exported.guards.map((g) => g.decisionId)).size} decision(s).`,
+    `Log head: ${exported.headHash}`,
     "",
   ];
 
   for (const [kind, count] of [...kinds.entries()].sort((a, b) => b[1] - a[1])) {
-    lines.push("  " + kind.padEnd(24) + count);
+    lines.push(`  ${kind.padEnd(24)}${count}`);
   }
 
   if (exported.notExported.length > 0) {
     lines.push("");
-    lines.push("Not exported (" + exported.notExported.length + "):");
+    lines.push(`Not exported (${exported.notExported.length}):`);
     for (const entry of exported.notExported.slice(0, 10)) {
-      lines.push("  " + entry.decisionId + " — " + entry.reason);
+      lines.push(`  ${entry.decisionId} — ${entry.reason}`);
     }
-    if (exported.notExported.length > 10) lines.push("  … " + (exported.notExported.length - 10) + " more");
+    if (exported.notExported.length > 10)
+      lines.push(`  … ${exported.notExported.length - 10} more`);
   }
 
   lines.push("");

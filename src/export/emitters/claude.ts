@@ -14,9 +14,9 @@
  */
 
 import type { ExportCif, ExportRecord } from "@/types/export";
-import { renderRejectedBlock } from "../rejected-block";
 import { renderIndex } from "../budget";
-import { ANTI_RELITIGATION, renderStatus } from "../record";
+import { ANTI_RELITIGATION } from "../record";
+import { renderRejectedBlock } from "../rejected-block";
 import { renderRecord } from "./shared";
 
 export interface ClaudeOptions {
@@ -28,7 +28,7 @@ export function emitClaudeMd(cif: ExportCif, stampBlock: string, options?: Claud
 
   const sections: string[] = [];
 
-  sections.push("# " + name + " — decision record for agents");
+  sections.push(`# ${name} — decision record for agents`);
   sections.push("");
   sections.push(
     "These rules were compiled from a decision log, not written by hand. Each carries the premises " +
@@ -45,11 +45,13 @@ export function emitClaudeMd(cif: ExportCif, stampBlock: string, options?: Claud
         "file containing a reversed rule next to its replacement invites an agent to pick one arbitrarily.",
     );
   } else {
-    sections.push("## Active decisions (" + cif.records.length + ")");
+    sections.push(`## Active decisions (${cif.records.length})`);
     sections.push("");
 
     for (const record of cif.records) {
-      sections.push(renderRecord(record, { annotations: true, antiRelitigation: ANTI_RELITIGATION }));
+      sections.push(
+        renderRecord(record, { annotations: true, antiRelitigation: ANTI_RELITIGATION }),
+      );
       sections.push("");
     }
   }

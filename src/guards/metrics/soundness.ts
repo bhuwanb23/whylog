@@ -14,10 +14,10 @@
  * substitutes for the other.
  */
 
-import type { DecisionId } from "@/types/common";
-import type { DecisionLabel } from "@/types/domain";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId } from "@/types/common";
+import type { DecisionLabel } from "@/types/domain";
 
 export interface SoundnessResult {
   readonly score: number;
@@ -67,13 +67,13 @@ export function describeSoundness(result: SoundnessResult): string {
   if (result.denominator === 0) return "No live decisions to assess.";
 
   const parts = [
-    "Log soundness: " + result.inCount + " of " + result.denominator + " live decisions are IN.",
+    `Log soundness: ${result.inCount} of ${result.denominator} live decisions are IN.`,
   ];
 
   for (const label of ["OUT", "UNKNOWN", "UNFOUNDED"] as const) {
     const count = result.byLabel[label];
     if (count === 0) continue;
-    parts.push("  " + label + ": " + count + " — " + meaningOf(label));
+    parts.push(`  ${label}: ${count} — ${meaningOf(label)}`);
   }
 
   parts.push("");

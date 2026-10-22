@@ -6,7 +6,15 @@
  * implementation or a type.
  */
 
-export { getEngine, getLocalEngine, activeEngineId, activeCapabilities, can, invalidateEngine, type ActiveEngine } from "./engine";
+export {
+  getEngine,
+  getLocalEngine,
+  activeEngineId,
+  activeCapabilities,
+  can,
+  invalidateEngine,
+  type ActiveEngine,
+} from "./engine";
 export {
   DEFAULT_CONFIG,
   DEFAULT_MODELS,
@@ -25,13 +33,29 @@ export {
   type EngineConfig,
   type ProviderId,
 } from "./config";
-export { createEngine, listEngines, nullEngine, registerEngine, unregisterEngine, clearRegistry, type EngineChoice, type EngineFactory, type EngineOptions } from "./registry";
+export {
+  createEngine,
+  listEngines,
+  nullEngine,
+  registerEngine,
+  unregisterEngine,
+  clearRegistry,
+  type EngineChoice,
+  type EngineFactory,
+  type EngineOptions,
+} from "./registry";
 
 /* The LLM path. Imported for its registration side effect by `main.tsx`; these
  * exports are for Settings, which needs to say which provider a saved key belongs
  * to, and for Phase 7, which measures the two engines against each other. */
 export { createLlmEngine, providerWithKey, SYSTEM_PROMPT, type LlmEngineOptions } from "./llm";
-export { chat, extractJson, type ChatMessage, type ChatRequest, type ChatResponse } from "./providers/openai-compatible";
+export {
+  chat,
+  extractJson,
+  type ChatMessage,
+  type ChatRequest,
+  type ChatResponse,
+} from "./providers/openai-compatible";
 export {
   LOCAL_CAPABILITIES,
   NULL_CAPABILITIES,

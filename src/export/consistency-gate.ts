@@ -48,12 +48,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import { wouldContradict } from "@/reasoning/gates/structural";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { ConflictPair, ConsistencyGateResult, ExportWarning } from "@/types/export";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { wouldContradict } from "@/reasoning/gates/structural";
 
 export interface GateInput {
   readonly state: GraphState;
@@ -110,7 +110,8 @@ export function consistencyGate(input: GateInput): GateReport {
 
     for (const hit of hits) {
       const other = hit.decisionA === decisionId ? hit.decisionB : hit.decisionA;
-      const key = decisionId < other ? decisionId + "\u0000" + other : other + "\u0000" + decisionId;
+      const key =
+        decisionId < other ? `${decisionId}\u0000${other}` : `${other}\u0000${decisionId}`;
       if (seenPairs.has(key)) continue;
       seenPairs.add(key);
 
@@ -141,9 +142,7 @@ export function consistencyGate(input: GateInput): GateReport {
         annotations.push({
           decisionId,
           kind: "contested-premise",
-          text:
-            "Premise " + premiseId + (premise === undefined ? "" : ' ("' + premise.text + '")') +
-            " is CONTESTED — neither confirmed nor refuted. This rule rests on something the log has not settled, so it may be about to change.",
+          text: `Premise ${premiseId}${premise === undefined ? "" : ` ("${premise.text}")`} is CONTESTED — neither confirmed nor refuted. This rule rests on something the log has not settled, so it may be about to change.`,
         });
       }
     }
@@ -155,9 +154,7 @@ export function consistencyGate(input: GateInput): GateReport {
       annotations.push({
         decisionId,
         kind: "failing-guard",
-        text:
-          "VERIFY CURRENTLY FAILS: " + failing.join(", ") +
-          ". The code does not currently satisfy this rule. Either the rule has drifted or the decision has been reversed in practice and not in the log — resolve it before trusting the rule.",
+        text: `VERIFY CURRENTLY FAILS: ${failing.join(", ")}. The code does not currently satisfy this rule. Either the rule has drifted or the decision has been reversed in practice and not in the log — resolve it before trusting the rule.`,
       });
     }
 
@@ -166,21 +163,16 @@ export function consistencyGate(input: GateInput): GateReport {
       annotations.push({
         decisionId,
         kind: "no-guards",
-        text:
-          "UNVERIFIABLE: no guard could be compiled from this decision, so nothing would tell you if it stopped holding. It is emitted because it is believed, not because it is checked.",
+        text: "UNVERIFIABLE: no guard could be compiled from this decision, so nothing would tell you if it stopped holding. It is emitted because it is believed, not because it is checked.",
       });
     }
   }
 
   /* Only a conflict where BOTH sides are emitted blocks. Anything else the file survives. */
-  const blocking = conflicts.filter(
-    (pair) => candidateSet.has(pair.a) && candidateSet.has(pair.b),
-  );
+  const blocking = conflicts.filter((pair) => candidateSet.has(pair.a) && candidateSet.has(pair.b));
 
   const result: ConsistencyGateResult =
-    blocking.length === 0
-      ? { ok: true }
-      : { ok: false, blocking, warnings };
+    blocking.length === 0 ? { ok: true } : { ok: false, blocking, warnings };
 
   return { result, conflicts, warnings, annotations, blocked: blocking.length > 0 };
 }
@@ -239,8 +231,8 @@ export function renderBlocked(report: GateReport, state: GraphState): string {
 
   const lines = [
     "EXPORT BLOCKED — the log contradicts itself, and compiling it would hand an agent two",
-    "incompatible rules. \"If two rules contradict each other, the model may pick one",
-    "arbitrarily.\" Neither side is dropped: dropping one would produce a clean-looking file and",
+    'incompatible rules. "If two rules contradict each other, the model may pick one',
+    'arbitrarily." Neither side is dropped: dropping one would produce a clean-looking file and',
     "hide the fact that the log disagrees with itself.",
     "",
   ];
@@ -249,17 +241,17 @@ export function renderBlocked(report: GateReport, state: GraphState): string {
     const a = state.decisions.get(pair.a);
     const b = state.decisions.get(pair.b);
 
-    lines.push("  " + pair.a + " — " + (a?.statement ?? "(not in log)"));
-    lines.push("  " + pair.b + " — " + (b?.statement ?? "(not in log)"));
-    lines.push("  " + pair.explanation);
+    lines.push(`  ${pair.a} — ${a?.statement ?? "(not in log)"}`);
+    lines.push(`  ${pair.b} — ${b?.statement ?? "(not in log)"}`);
+    lines.push(`  ${pair.explanation}`);
 
     const nogood = relevantNogood(state, pair);
     if (nogood !== null) {
-      lines.push("  Recorded nogood " + nogood.id + ": " + nogood.explanation);
+      lines.push(`  Recorded nogood ${nogood.id}: ${nogood.explanation}`);
     }
 
     const proposal = relevantProposal(state, pair);
-    if (proposal !== null) lines.push("  Revision proposal " + proposal + " already covers this pair.");
+    if (proposal !== null) lines.push(`  Revision proposal ${proposal} already covers this pair.`);
 
     lines.push("");
     lines.push("  Resolve it on the Reasoning tab: reverse one, re-justify one, or vouch for the");
@@ -270,7 +262,10 @@ export function renderBlocked(report: GateReport, state: GraphState): string {
   return lines.join("\n");
 }
 
-function relevantNogood(state: GraphState, pair: ConflictPair): { id: string; explanation: string } | null {
+function relevantNogood(
+  state: GraphState,
+  pair: ConflictPair,
+): { id: string; explanation: string } | null {
   const a = state.decisions.get(pair.a);
   const b = state.decisions.get(pair.b);
   if (a === undefined || b === undefined) return null;
@@ -297,19 +292,23 @@ function relevantNogood(state: GraphState, pair: ConflictPair): { id: string; ex
  *  proposal is ABOUT a failure, not about a decision in the abstract. */
 function relevantProposal(state: GraphState, pair: ConflictPair): string | null {
   for (const proposal of state.proposals.values()) {
-    if (proposal.unsoundDecisionId === pair.a || proposal.unsoundDecisionId === pair.b) return proposal.id;
+    if (proposal.unsoundDecisionId === pair.a || proposal.unsoundDecisionId === pair.b)
+      return proposal.id;
   }
   return null;
 }
 
 /** The annotations for one record, as the lines appended to it. */
 export function annotationsFor(report: GateReport, decisionId: DecisionId): readonly string[] {
-  return report.annotations.filter((entry) => entry.decisionId === decisionId).map((entry) => entry.text);
+  return report.annotations
+    .filter((entry) => entry.decisionId === decisionId)
+    .map((entry) => entry.text);
 }
 
 /** Warnings that do not block, for the export summary. */
 export function renderWarnings(report: GateReport): string {
-  if (report.warnings.length === 0) return "No warnings. Every emitted decision is IN, settled, and currently passing its guards.";
+  if (report.warnings.length === 0)
+    return "No warnings. Every emitted decision is IN, settled, and currently passing its guards.";
 
   const counts = new Map<string, number>();
   for (const warning of report.warnings) {
@@ -318,12 +317,16 @@ export function renderWarnings(report: GateReport): string {
 
   const lines = ["Annotated rather than hidden:"];
   for (const [kind, count] of counts) {
-    lines.push("  " + count + " × " + describeWarningKind(kind));
+    lines.push(`  ${count} × ${describeWarningKind(kind)}`);
   }
 
   lines.push("");
-  lines.push("Each of these appears INLINE on the record it concerns. An agent reading the file has");
-  lines.push("to see them at the point of use — a warning in a side panel is a warning it never sees.");
+  lines.push(
+    "Each of these appears INLINE on the record it concerns. An agent reading the file has",
+  );
+  lines.push(
+    "to see them at the point of use — a warning in a side panel is a warning it never sees.",
+  );
 
   return lines.join("\n");
 }

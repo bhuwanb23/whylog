@@ -40,45 +40,49 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
-import type { Actor } from "@/types/common";
-import type { DecisionId, GuardId, ISODateString } from "@/types/common";
-import type { EventType, NewEvent } from "@/types/events";
-import type { GuardBaseline, GuardSeverity, GuardSpec, UnverifiableDecision, VirtualProject } from "@/types/guards";
-import type { GraphState } from "@/substrate/graph-state";
-import { EMPTY_VIRTUAL_PROJECT } from "@/types/guards";
-import { label } from "@/reasoning/labeller";
-import type { Assertion } from "@/reasoning/assert";
 import {
-  NO_BASELINE,
-  acceptedGuards,
-  buildProject,
-  describeBaseline,
-  describeExport,
-  describeProject,
-  evaluatedFromState,
-  exportCi,
-  freezeBaseline,
-  guardsForDecision,
-  hasBaseline,
-  metrics as computeMetrics,
-  overCap,
-  runAll,
-  shrinkBaseline,
-  synthesiseAll,
-  synthesiseDecision,
-  whyDisabled,
   type DecisionGuards,
   type EvaluatedGuard,
   type MetricsResult,
   type ProjectInput,
   type ProjectParseReport,
   type SynthesisReport,
+  acceptedGuards,
+  buildProject,
+  metrics as computeMetrics,
+  describeBaseline,
+  describeExport,
+  describeProject,
+  exportCi,
+  freezeBaseline,
+  guardsForDecision,
+  hasBaseline,
+  overCap,
+  runAll,
+  shrinkBaseline,
+  synthesiseAll,
+  synthesiseDecision,
+  whyDisabled,
 } from "@/guards";
 import { nowISO } from "@/lib/format";
-import { ok, err, type Result } from "@/lib/result";
-import { useWhyLog } from "./whylog";
+import { type Result, err, ok } from "@/lib/result";
+import type { Assertion } from "@/reasoning/assert";
+import { label } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Actor } from "@/types/common";
+import type { DecisionId, GuardId, ISODateString } from "@/types/common";
+import type { EventType, NewEvent } from "@/types/events";
+import type {
+  GuardBaseline,
+  GuardSeverity,
+  GuardSpec,
+  UnverifiableDecision,
+  VirtualProject,
+} from "@/types/guards";
+import { EMPTY_VIRTUAL_PROJECT } from "@/types/guards";
+import { create } from "zustand";
 import { useReasoning } from "./reasoning";
+import { useWhyLog } from "./whylog";
 
 /** Persisted alongside the log. The virtual project is a paste, not a derivation: losing it on
  *  reload would mean re-pasting a file listing every session, which is enough friction that the
@@ -126,14 +130,21 @@ export interface GuardState {
 
   /* --- actions --- */
   readonly loadProject: (input: ProjectInput) => void;
-  readonly synthesise: (options?: { templatesOnly?: boolean; decisionId?: DecisionId }) => Promise<Result<number, string>>;
+  readonly synthesise: (options?: { templatesOnly?: boolean; decisionId?: DecisionId }) => Promise<
+    Result<number, string>
+  >;
   readonly run: () => Promise<Result<number, string>>;
   readonly freeze: () => void;
   readonly removeFromBaseline: (guardId: GuardId) => void;
   readonly accept: (guardId: GuardId) => Result<void, string>;
   readonly suppress: (guardId: GuardId, reason: string) => Result<void, string>;
   readonly remove: (guardId: GuardId, reason: string) => Result<void, string>;
-  readonly edit: (guardId: GuardId, spec: GuardSpec, rationale: string, severity?: GuardSeverity) => Result<void, string>;
+  readonly edit: (
+    guardId: GuardId,
+    spec: GuardSpec,
+    rationale: string,
+    severity?: GuardSeverity,
+  ) => Result<void, string>;
   readonly select: (decisionId: DecisionId | null) => void;
   readonly exportForCi: () => Result<{ runner: string; workflow: string; summary: string }, string>;
   readonly groupFor: (decisionId: DecisionId) => DecisionGuards;
@@ -157,13 +168,15 @@ function load(): PersistedGuards {
     /* The virtual project survives JSON intact — it is strings and arrays. The `Float32Array`s
      * that make the index blob awkward to persist have no counterpart here, which is part of why
      * the pasted-project design is the default rather than a fallback. */
-    const project = record.project !== null && typeof record.project === "object"
-      ? (record.project as VirtualProject)
-      : null;
+    const project =
+      record["project"] !== null && typeof record["project"] === "object"
+        ? (record["project"] as VirtualProject)
+        : null;
 
-    const baseline = record.baseline !== null && typeof record.baseline === "object"
-      ? (record.baseline as GuardBaseline)
-      : null;
+    const baseline =
+      record["baseline"] !== null && typeof record["baseline"] === "object"
+        ? (record["baseline"] as GuardBaseline)
+        : null;
 
     return { project, baseline };
   } catch {
@@ -209,8 +222,20 @@ export const useGuards = create<GuardState>()((set, get) => ({
 
   loadProject: (input) => {
     const report = buildProject(input);
-    set({ project: report.project, parse: report });
-    persist(report.project, get().baseline);
+    /* The baseline is CLEARED, and this is load-bearing rather than tidy.
+     *
+     * A baseline records the failures that were known when it was frozen, and
+     * it is keyed by guard id. Guard ids are derived from the DECISION id, so
+     * the same log produces the same ids whatever project is pasted. Keeping a
+     * baseline across a paste would therefore mark every failure in the NEW
+     * project as already-known: the run would report no new violations, and a
+     * silent all-clear would enter the compliance score. That is the failure
+     * mode the baseline pattern exists to prevent.
+     *
+     * A baseline describes ONE project. Pasting another means nothing is known
+     * about it yet, and the user freezes again on purpose. */
+    set({ project: report.project, parse: report, baseline: null });
+    persist(report.project, null);
   },
 
   /* ---------------------------------------------------------------------- */
@@ -221,7 +246,8 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message = "The log is read-only: its hash chain is broken. Synthesis needs to append events.";
+      const message =
+        "The log is read-only: its hash chain is broken. Synthesis needs to append events.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -246,7 +272,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
           state: whylog.state,
           decisionId: options.decisionId,
           engine: whylog.engine.engine,
-          templatesOnly: options.templatesOnly,
+          ...(options.templatesOnly === undefined ? {} : { templatesOnly: options.templatesOnly }),
           actor: GUARD_ACTOR,
           at,
         });
@@ -257,7 +283,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
         const all = await synthesiseAll({
           state: whylog.state,
           engine: whylog.engine.engine,
-          templatesOnly: options?.templatesOnly,
+          ...(options?.templatesOnly === undefined ? {} : { templatesOnly: options.templatesOnly }),
         });
 
         reports = all.reports;
@@ -269,13 +295,14 @@ export const useGuards = create<GuardState>()((set, get) => ({
         const claimed = new Map<DecisionId, number>();
 
         for (const report of all.reports) {
-          let index = claimed.get(report.decisionId) ?? countExisting(whylog.state, report.decisionId);
+          let index =
+            claimed.get(report.decisionId) ?? countExisting(whylog.state, report.decisionId);
 
           for (const proposed of report.proposed) {
             drafts.push({
               type: "GuardSynthesised",
               payload: {
-                guardId: mintGuardId(report.decisionId, index),
+                guardId: mintGuardId(report.decisionId, String(index)),
                 decisionId: report.decisionId,
                 kind: proposed.spec.kind,
                 spec: proposed.spec,
@@ -284,9 +311,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
                 generatedBy: proposed.generatedBy,
               },
               actor: GUARD_ACTOR,
-              reason:
-                "Compiled from " + report.decisionId + " by the " + proposed.generatedBy + " path: " +
-                proposed.spec.kind + ". PROPOSED — it will not run until a human accepts it.",
+              reason: `Compiled from ${report.decisionId} by the ${proposed.generatedBy} path: ${proposed.spec.kind}. PROPOSED — it will not run until a human accepts it.`,
               at,
             });
             index += 1;
@@ -298,8 +323,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
 
       if (drafts.length > 0) {
         const committed = whylog.recordBatch(drafts, {
-          reason:
-            "Synthesised " + drafts.length + " proposed guard(s) from the decisions in the log. Nothing is installed: every one is PROPOSED and will not run until accepted.",
+          reason: `Synthesised ${drafts.length} proposed guard(s) from the decisions in the log. Nothing is installed: every one is PROPOSED and will not run until accepted.`,
           actor: GUARD_ACTOR,
           occurredAt: at,
         });
@@ -329,7 +353,8 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message = "The log is read-only: its hash chain is broken. A guard run needs to append events.";
+      const message =
+        "The log is read-only: its hash chain is broken. A guard run needs to append events.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -362,10 +387,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
       /* ---- batch 1: the verification events ---- */
       if (result.drafts.length > 0) {
         const committed = whylog.recordBatch(result.drafts, {
-          reason:
-            "Ran " + guards.length + " accepted guard(s) against the pasted project: " +
-            result.report.blockingFailures + " new blocking failure(s), " +
-            result.report.warningFailures + " new warning(s).",
+          reason: `Ran ${guards.length} accepted guard(s) against the pasted project: ${result.report.blockingFailures} new blocking failure(s), ${result.report.warningFailures} new warning(s).`,
           actor: GUARD_ACTOR,
           occurredAt: at,
         });
@@ -381,7 +403,12 @@ export const useGuards = create<GuardState>()((set, get) => ({
         lastRunAt: at,
         lastRunDurationMs: result.report.durationMs,
         lastEvaluated: result.evaluated,
-        lastRunSummary: summariseRun(result.report.blockingFailures, result.report.warningFailures, result.report.nothingCheckable, result.assertions.length),
+        lastRunSummary: summariseRun(
+          result.report.blockingFailures,
+          result.report.warningFailures,
+          result.report.nothingCheckable,
+          result.assertions.length,
+        ),
       });
       persist(get().project, result.baseline);
 
@@ -421,7 +448,9 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const evaluated = get().lastEvaluated;
 
     if (get().lastRunAt === null || evaluated.length === 0) {
-      set({ error: "Run the guards first. A baseline freezes a set of results, and there are none yet." });
+      set({
+        error: "Run the guards first. A baseline freezes a set of results, and there are none yet.",
+      });
       return;
     }
 
@@ -431,9 +460,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
     set({
       baseline: frozen,
       error: null,
-      lastRunSummary:
-        "Baseline frozen at " + frozen.frozenAt + ": " + known + " known failure(s) recorded and " +
-        frozen.enforced.length + " guard(s) ratcheted as enforced. Only violations NEW since this freeze surface as drift.",
+      lastRunSummary: `Baseline frozen at ${frozen.frozenAt}: ${known} known failure(s) recorded and ${frozen.enforced.length} guard(s) ratcheted as enforced. Only violations NEW since this freeze surface as drift.`,
     });
 
     persist(get().project, frozen);
@@ -459,16 +486,16 @@ export const useGuards = create<GuardState>()((set, get) => ({
         type: "GuardAccepted",
         payload: { guardId: guard.id },
         actor: GUARD_ACTOR,
-        reason:
-          "A human accepted guard " + guard.id + " (" + guard.spec.kind + ") for " + guard.decisionId +
-          ". It was proposed by the " + guard.generatedBy + " path and does not run before this point — an unaccepted check that fails is noise nobody agreed to hear.",
+        reason: `A human accepted guard ${guard.id} (${guard.spec.kind}) for ${guard.decisionId}. It was proposed by the ${guard.generatedBy} path and does not run before this point — an unaccepted check that fails is noise nobody agreed to hear.`,
         at,
       },
     ]),
 
   suppress: (guardId, reason) => {
     if (reason.trim().length === 0) {
-      return err("A suppression needs a reason. Silencing a failing check is the act most in need of a recorded justification.");
+      return err(
+        "A suppression needs a reason. Silencing a failing check is the act most in need of a recorded justification.",
+      );
     }
 
     return reviewAction(guardId, (guard, _state, at) => [
@@ -476,7 +503,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
         type: "GuardSuppressed",
         payload: { guardId: guard.id, suppressionReason: reason.trim() },
         actor: GUARD_ACTOR,
-        reason: "A human suppressed guard " + guard.id + " on " + guard.decisionId + ": " + reason.trim(),
+        reason: `A human suppressed guard ${guard.id} on ${guard.decisionId}: ${reason.trim()}`,
         at,
       },
     ]);
@@ -488,10 +515,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
         type: "GuardDeleted",
         payload: { guardId: guard.id },
         actor: GUARD_ACTOR,
-        reason:
-          "A human deleted guard " + guard.id + " from " + guard.decisionId +
-          (reason.trim().length > 0 ? ": " + reason.trim() : ". No reason given.") +
-          " The record is retained with lifecycle `deleted`; nothing is ever removed from the log.",
+        reason: `A human deleted guard ${guard.id} from ${guard.decisionId}${reason.trim().length > 0 ? `: ${reason.trim()}` : ". No reason given."} The record is retained with lifecycle \`deleted\`; nothing is ever removed from the log.`,
         at,
       },
     ]),
@@ -508,8 +532,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
           type: "GuardDeleted",
           payload: { guardId: guard.id },
           actor: GUARD_ACTOR,
-          reason:
-            "Guard " + guard.id + " was edited, and editing is delete + re-synthesise: the closed vocabulary has no edit event, so the previous spec stays in the log. A guard whose spec changed quietly after it started failing would be indistinguishable from one weakened to make the failure go away.",
+          reason: `Guard ${guard.id} was edited, and editing is delete + re-synthesise: the closed vocabulary has no edit event, so the previous spec stays in the log. A guard whose spec changed quietly after it started failing would be indistinguishable from one weakened to make the failure go away.`,
           at,
         },
         {
@@ -524,9 +547,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
             generatedBy: "user" as const,
           },
           actor: GUARD_ACTOR,
-          reason:
-            "Replacement for " + guard.id + ", written by a human: " + spec.kind +
-            ". PROPOSED — an edit does not inherit the old guard's acceptance, because that would let an edit activate a check nobody reviewed.",
+          reason: `Replacement for ${guard.id}, written by a human: ${spec.kind}. PROPOSED — an edit does not inherit the old guard's acceptance, because that would let an edit activate a check nobody reviewed.`,
           at,
         },
       ];
@@ -545,19 +566,16 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const exported = exportCi({
       state: whylog.state,
       labels,
-      /* `EventLog.headHash`, not a `head` object. The earlier `whylog.log.head?.hash` was
-       * always undefined, so every CI export stamped "unknown" — and a runner whose provenance
-       * is "unknown" cannot be tied back to the log state that produced it, which is the entire
-       * reason the export carries a head hash. */
       headHash: whylog.log.headHash,
     });
 
     if (exported.guards.length === 0) {
       return err(
-        "Nothing to export. " +
-          (acceptedGuards(whylog.state).length === 0
+        `Nothing to export. ${
+          acceptedGuards(whylog.state).length === 0
             ? "No guard has been accepted yet — CI should run what a human accepted, not what a template proposed."
-            : "Every accepted guard is non-deterministic, so none can fail a build reproducibly."),
+            : "Every accepted guard is non-deterministic, so none can fail a build reproducibly."
+        }`,
       );
     }
 
@@ -607,14 +625,14 @@ function reviewAction(
   if (whylog.status === "degraded") return err("The log is read-only: its hash chain is broken.");
 
   const guard = findGuard(whylog.state, guardId);
-  if (guard === undefined) return err("Guard " + guardId + " is not in the log.");
+  if (guard === undefined) return err(`Guard ${guardId} is not in the log.`);
 
   const at = nowISO() as ISODateString;
   const events = build(guard, whylog.state, at);
   if (events.length === 0) return err("That action produced no events.");
 
   const committed = whylog.recordBatch(events, {
-    reason: events[0]?.reason ?? "Guard review action on " + guardId + ".",
+    reason: events[0]?.reason ?? `Guard review action on ${guardId}.`,
     actor: GUARD_ACTOR,
     occurredAt: at,
   });
@@ -637,17 +655,13 @@ function countExisting(state: GraphState, decisionId: DecisionId): number {
   return count;
 }
 
-function nextFreeSuffix(
-  state: GraphState,
-  decisionId: DecisionId,
-  excluding: GuardId,
-): string {
+function nextFreeSuffix(state: GraphState, decisionId: DecisionId, excluding: GuardId): string {
   const used = new Set<string>();
 
   for (const guard of state.guards.values()) {
     if (guard.decisionId !== decisionId) continue;
     if (guard.id === excluding) continue;
-    used.add(guard.id.slice(("G-" + decisionId.slice(4)).length));
+    used.add(guard.id.slice(`G-${decisionId.slice(4)}`.length));
   }
 
   for (const letter of "abcdefghijklmnopqrstuvwxyz") {
@@ -658,7 +672,7 @@ function nextFreeSuffix(
 
 /** `G-0007a` — mirrors `formatGuardId` in `lib/ids.ts`. */
 function mintGuardId(decisionId: DecisionId, suffix: string): GuardId {
-  return ("G-" + decisionId.slice(4) + suffix) as GuardId;
+  return `G-${decisionId.slice(4)}${suffix}` as GuardId;
 }
 
 function summariseRun(
@@ -671,13 +685,11 @@ function summariseRun(
     return "Every guard SKIPPED — the pasted project did not contain the data any of them needs. This is not a clean run: nothing was checked. Paste a package.json, a file listing, or file contents.";
   }
 
-  const parts = [
-    blocking + " new blocking failure(s), " + warnings + " new warning(s).",
-  ];
+  const parts = [`${blocking} new blocking failure(s), ${warnings} new warning(s).`];
 
   if (assertions > 0) {
     parts.push(
-      assertions + " failure(s) entered the reasoning cycle as evidence, through the same entry point a transcript uses.",
+      `${assertions} failure(s) entered the reasoning cycle as evidence, through the same entry point a transcript uses.`,
     );
   } else if (blocking + warnings > 0) {
     parts.push(
@@ -696,7 +708,8 @@ function recomputeMetrics(): void {
 
   /* Prefer the retained run: it carries baseline-relative novelty, which `evaluatedFrom` cannot
    * reconstruct, because a stored `lastRun` does not record whether the baseline knew about it. */
-  const evaluated = guardStore.lastEvaluated.length > 0 ? guardStore.lastEvaluated : evaluatedFromState(whylog.state);
+  const evaluated =
+    guardStore.lastEvaluated.length > 0 ? guardStore.lastEvaluated : evaluatedFrom(whylog.state);
 
   useGuards.setState({
     metricsResult: computeMetrics({
@@ -707,6 +720,29 @@ function recomputeMetrics(): void {
       now: Date.now(),
     }),
   });
+}
+
+/** The stored last-run results are on the guard records themselves (`lastRun`), so the metrics
+ *  can be recomputed from the graph without keeping a run report in the store. */
+function evaluatedFrom(state: GraphState): readonly EvaluatedGuard[] {
+  const out: EvaluatedGuard[] = [];
+
+  for (const guard of state.guards.values()) {
+    if (guard.lifecycle !== "accepted") continue;
+    if (guard.lastRun === undefined) continue;
+
+    out.push({
+      guard,
+      result: guard.lastRun,
+      skipped: guard.lastRun.outcome === "skip",
+      skipReason: guard.lastRun.skipReason ?? null,
+      /* Without a baseline in hand this cannot be decided, so a stored failure counts as new.
+       * The run path computes it properly; this is only for recomputing metrics between runs. */
+      newViolation: guard.lastRun.outcome === "fail",
+    });
+  }
+
+  return out;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -721,7 +757,7 @@ export function describeGuardStore(state: GuardState): string {
     "Virtual project:",
     describeProject(state.project),
     "",
-    "Guards: " + whylog.state.guards.size + " record(s), " + accepted.length + " accepted.",
+    `Guards: ${whylog.state.guards.size} record(s), ${accepted.length} accepted.`,
     "",
     "Baseline:",
     describeBaseline(state.baseline),
@@ -732,14 +768,18 @@ export function describeGuardStore(state: GuardState): string {
     .join("\n");
 }
 
-/** Decisions with more guards than the cap, for the review panel. */
-export function overCapDecisions(state: GuardState): readonly { decisionId: DecisionId; over: number }[] {
-  const whylog = useWhyLog.getState();
-  const labels = label(whylog.state).labels;
+/** Decisions with more guards than the cap, for the review panel.
+ *
+ *  Takes the graph state as an argument rather than reading the global store:
+ *  a view that memoises on one state must not be answered from another. */
+export function overCapDecisions(
+  state: GraphState,
+): readonly { decisionId: DecisionId; over: number }[] {
+  const labels = label(state).labels;
   const out: { decisionId: DecisionId; over: number }[] = [];
 
-  for (const decision of whylog.state.decisions.values()) {
-    const group = guardsForDecision(whylog.state, labels, decision.id);
+  for (const decision of state.decisions.values()) {
+    const group = guardsForDecision(state, labels, decision.id);
     const over = overCap(group);
     if (over.length > 0) out.push({ decisionId: decision.id, over: over.length });
   }

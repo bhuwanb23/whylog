@@ -31,11 +31,11 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import type { RejectedBlockEntry } from "@/types/export";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
 
 /**
  * Build the block.
@@ -64,7 +64,8 @@ export function rejectedBlock(
     for (const alternativeId of decision.alternativeIds) {
       const alternative = state.alternatives.get(alternativeId);
       if (alternative === undefined) continue;
-      if (alternative.whyRejected === undefined || alternative.whyRejected.trim().length === 0) continue;
+      if (alternative.whyRejected === undefined || alternative.whyRejected.trim().length === 0)
+        continue;
 
       const contested = premiseEntries.find((entry) => entry.contested);
 
@@ -82,7 +83,13 @@ export function rejectedBlock(
    * about revisiting, and burying it under forty settled ones is how it gets ignored. */
   return out.sort((a, b) => {
     if (a.contested !== b.contested) return a.contested ? -1 : 1;
-    return a.decisionId < b.decisionId ? -1 : a.decisionId > b.decisionId ? 1 : a.value < b.value ? -1 : 1;
+    return a.decisionId < b.decisionId
+      ? -1
+      : a.decisionId > b.decisionId
+        ? 1
+        : a.value < b.value
+          ? -1
+          : 1;
   });
 }
 
@@ -137,16 +144,16 @@ function renderPremiseStatus(premises: readonly PremiseEntry[]): string {
   }
 
   return premises
-    .map((entry) =>
-      "premise " + entry.id + " " + shorten(entry.text) + " " +
-      (entry.contested ? "CONTESTED" : "still " + entry.label),
+    .map(
+      (entry) =>
+        `premise ${entry.id} ${shorten(entry.text)} ${entry.contested ? "CONTESTED" : `still ${entry.label}`}`,
     )
     .join("; ");
 }
 
 function shorten(text: string): string {
   const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length <= 34 ? flat : flat.slice(0, 31) + "...";
+  return flat.length <= 34 ? flat : `${flat.slice(0, 31)}...`;
 }
 
 /** The block as Markdown. */
@@ -161,15 +168,11 @@ export function renderRejectedBlock(entries: readonly RejectedBlockEntry[]): str
     ].join("\n");
   }
 
-  const lines = [
-    "## Rejected — do not re-propose without superseding the record",
-    "",
-  ];
+  const lines = ["## Rejected — do not re-propose without superseding the record", ""];
 
   for (const entry of entries) {
     lines.push(
-      "- **" + entry.value + "** (" + entry.decisionId + ") — " + entry.why + "; " + entry.premiseStatus +
-        (entry.contested ? "  ⚠ UNDER REVIEW" : ""),
+      `- **${entry.value}** (${entry.decisionId}) — ${entry.why}; ${entry.premiseStatus}${entry.contested ? "  ⚠ UNDER REVIEW" : ""}`,
     );
   }
 

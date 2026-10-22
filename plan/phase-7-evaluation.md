@@ -194,30 +194,30 @@ Sources: [docs/02 §7](../docs/02-truth-maintenance-theory.md) (8 reasoning fail
 
 ```
    ┌──────────────────┐      label       ┌──────────────────┐
-   │  30 FIXTURE      │ ───────────────► │  GROUND TRUTH    │
-   │  TRANSCRIPTS     │                  │  decisions,      │
-   │  clean / messy / │                  │  premises,       │
-   │  adversarial     │                  │  alternatives,   │
-   └────────┬─────────┘                  │  spans, planted  │
-            │                            │  contradictions  │
+   ³  30 FIXTURE      ³ ───────────────► ³  GROUND TRUTH    ³
+   ³  TRANSCRIPTS     ³                  ³  decisions,      ³
+   ³  clean / messy / ³                  ³  premises,       ³
+   ³  adversarial     ³                  ³  alternatives,   ³
+   └────────┬─────────┘                  ³  spans, planted  ³
+            ³                            ³  contradictions  ³
             ▼                            └────────┬─────────┘
-   ┌──────────────────┐                           │
-   │  WhyLog pipeline │                           │
-   │  both engines    │                           │
-   └────────┬─────────┘                           │
-            │                                     │
+   ┌──────────────────┐                           ³
+   ³  WhyLog pipeline ³                           ³
+   ³  both engines    ³                           ³
+   └────────┬─────────┘                           ³
+            ³                                     ³
             ▼                                     ▼
    ┌──────────────────┐                  ┌──────────────────┐
-   │  10 METRICS      │ ◄──── compare ───│                  │
+   ³  10 METRICS      ³ ◄──── compare ───³                  ³
    └────────┬─────────┘                  └──────────────────┘
-            │
+            ³
             ├──► per-engine, always separate
-            │
+            ³
             ▼
    ┌──────────────────┐      toggle      ┌──────────────────┐
-   │  ABLATION HARNESS│ ───────────────► │  delta table     │
-   │  11 switches     │                  │  which component │
-   └──────────────────┘                  │  earned what     │
+   ³  ABLATION HARNESS³ ───────────────► ³  delta table     ³
+   ³  11 switches     ³                  ³  which component ³
+   └──────────────────┘                  ³  earned what     ³
                                          └──────────────────┘
 ```
 

@@ -62,9 +62,7 @@ export function all<T, E>(results: readonly Result<T, E>[]): Result<T[], E> {
 
 /** Collect results, partitioning successes from failures. Used by the extraction
  *  review queue, where a partially-successful batch is the normal case. */
-export function partition<T, E>(
-  results: readonly Result<T, E>[],
-): { values: T[]; errors: E[] } {
+export function partition<T, E>(results: readonly Result<T, E>[]): { values: T[]; errors: E[] } {
   const values: T[] = [];
   const errors: E[] = [];
   for (const result of results) {

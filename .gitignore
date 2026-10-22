@@ -42,3 +42,8 @@ tmp/
 # Commit them deliberately if you want them versioned with a project.
 .whylog/
 whylog-export/
+
+# The reconciliation tool's scratch directory, and Python's bytecode cache.
+.reconcile/
+__pycache__/
+

@@ -41,9 +41,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import { nowISO } from "@/lib/format";
 import type { GuardId, ISODateString } from "@/types/common";
 import type { GuardBaseline, GuardRunResult } from "@/types/guards";
-import { nowISO } from "@/lib/format";
 import type { EvaluatedGuard } from "./types";
 
 /** No baseline yet. Distinct from an empty baseline: `frozenAt` empty means nothing has been
@@ -128,7 +128,7 @@ export function applyBaseline(
 
 /** Failures the baseline already knew about. Listed, not hidden. */
 export function baselinedFailures(
-  baseline: GuardBaseline | null,
+  _baseline: GuardBaseline | null,
   evaluated: readonly EvaluatedGuard[],
 ): readonly EvaluatedGuard[] {
   return evaluated.filter((entry) => entry.result.outcome === "fail" && !entry.newViolation);
@@ -144,10 +144,7 @@ export function newViolations(evaluated: readonly EvaluatedGuard[]): readonly Ev
  * Shrinking the baseline is the deliberate act the pattern depends on. If it could only grow,
  * the baseline would eventually contain everything and the guards would check nothing.
  */
-export function shrinkBaseline(
-  baseline: GuardBaseline,
-  guardId: GuardId,
-): GuardBaseline {
+export function shrinkBaseline(baseline: GuardBaseline, guardId: GuardId): GuardBaseline {
   const frozenFailures: Record<string, string> = {};
 
   for (const [id, evidence] of Object.entries(baseline.frozenFailures)) {
@@ -203,9 +200,9 @@ export function describeBaseline(baseline: GuardBaseline | null): string {
   const frozen = Object.keys(baseline.frozenFailures).length;
 
   return [
-    "Baseline frozen " + baseline.frozenAt + ".",
-    "  known failures   " + frozen,
-    "  enforced (ratcheted) " + baseline.enforced.length,
+    `Baseline frozen ${baseline.frozenAt}.`,
+    `  known failures   ${frozen}`,
+    `  enforced (ratcheted) ${baseline.enforced.length}`,
     "",
     "Only violations NEW since that freeze surface as drift. An enforced guard that starts",
     "failing is new by definition, because the baseline recorded it passing — that is the",

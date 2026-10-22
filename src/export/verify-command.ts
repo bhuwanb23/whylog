@@ -47,9 +47,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import { shellQuote } from "@/guards/eval/command";
 import type { DecisionId } from "@/types/common";
 import type { Guard } from "@/types/guards";
-import { shellQuote } from "@/guards/eval/command";
 
 /** The runner's path, matching `TARGET_FILENAMES["ci-guards"]`. One constant so the emitted
  *  command and the emitted file cannot disagree about where the file is. */
@@ -95,11 +95,9 @@ export function verifyCommandFor(
   }
 
   return {
-    command: "node " + RUNNER_PATH + " --decision " + decisionId,
+    command: `node ${RUNNER_PATH} --decision ${decisionId}`,
     needsRunner: true,
-    explains:
-      live.map((guard) => explainGuard(guard)).join("; ") +
-      ". Path and string checks need glob and word-boundary matching, which lives in the exported runner rather than being reimplemented inside a shell one-liner — one evaluator, not two that can drift.",
+    explains: `${live.map((guard) => explainGuard(guard)).join("; ")}. Path and string checks need glob and word-boundary matching, which lives in the exported runner rather than being reimplemented inside a shell one-liner — one evaluator, not two that can drift.`,
   };
 }
 
@@ -128,34 +126,29 @@ export function dependencyOneLiner(guards: readonly Guard[]): string {
 
   const conditions: string[] = [];
 
-  for (const pkg of present) conditions.push("d[" + quote(pkg) + "]");
-  for (const pkg of absent) conditions.push("!r[" + quote(pkg) + "]");
-  for (const pkg of absentIncludingDev) conditions.push("!d[" + quote(pkg) + "]");
+  for (const pkg of present) conditions.push(`d[${quote(pkg)}]`);
+  for (const pkg of absent) conditions.push(`!r[${quote(pkg)}]`);
+  for (const pkg of absentIncludingDev) conditions.push(`!d[${quote(pkg)}]`);
 
   if (conditions.length === 0) return "true";
 
   /* `r` is runtime dependencies, `d` is runtime + dev. Two maps rather than one because the
    * asymmetry is the semantics: a build-only dependency does not mean a decision was
    * implemented, but a rejected package installed for tooling is still installed. */
-  return (
-    "node -e " +
-    doubleQuote(
-      "const p=require('./package.json');const r=p.dependencies||{};" +
-        "const d=Object.assign({},r,p.devDependencies||{});" +
-        "process.exit(" + conditions.join("&&") + "?0:1)",
-    ),
-  );
+  return `node -e ${doubleQuote(
+    `const p=require('./package.json');const r=p.dependencies||{};const d=Object.assign({},r,p.devDependencies||{});process.exit(${conditions.join("&&")}?0:1)`,
+  )}`;
 }
 
 function quote(pkg: string): string {
-  return "'" + pkg.replace(/'/g, "\\'") + "'";
+  return `'${pkg.replace(/'/g, "\\'")}'`;
 }
 
 function doubleQuote(body: string): string {
   /* The body contains single quotes, so it is wrapped in double quotes; any double quote inside
    * has to be escaped or the shell ends the string early and the command silently checks less
    * than it appears to. */
-  return '"' + body.replace(/"/g, '\\"') + '"';
+  return `"${body.replace(/"/g, '\\"')}"`;
 }
 
 export function explainGuard(guard: Guard): string {
@@ -163,21 +156,21 @@ export function explainGuard(guard: Guard): string {
 
   switch (spec.kind) {
     case "dependency_present":
-      return spec.package + " must be installed";
+      return `${spec.package} must be installed`;
     case "dependency_absent":
-      return spec.package + " must NOT be installed" + (spec.includeDev === true ? " (including devDependencies)" : "");
+      return `${spec.package} must NOT be installed${spec.includeDev === true ? " (including devDependencies)" : ""}`;
     case "path_glob_exists":
-      return "a file matching " + spec.glob + " must exist";
+      return `a file matching ${spec.glob} must exist`;
     case "path_glob_absent":
-      return "no file matching " + spec.glob + " may exist";
+      return `no file matching ${spec.glob} may exist`;
     case "string_in_files":
-      return JSON.stringify(spec.pattern) + " must appear within " + spec.glob;
+      return `${JSON.stringify(spec.pattern)} must appear within ${spec.glob}`;
     case "string_absent_in_files":
-      return JSON.stringify(spec.pattern) + " must NOT appear within " + spec.glob;
+      return `${JSON.stringify(spec.pattern)} must NOT appear within ${spec.glob}`;
     case "command_exit_zero":
-      return shellQuote(spec.command) + " must exit 0";
+      return `${shellQuote(spec.command)} must exit 0`;
     case "llm_judge":
-      return "a rubric verdict over " + spec.scopeGlobs.join(", ") + " (advisory — never fails a build)";
+      return `a rubric verdict over ${spec.scopeGlobs.join(", ")} (advisory — never fails a build)`;
   }
 }
 
@@ -189,11 +182,7 @@ export function renderVerify(verify: VerifyCommand | null): string {
     return "Verify: none — this decision is UNVERIFIABLE. No guard could be compiled from it, so nothing would tell you if it stopped holding.";
   }
 
-  return (
-    "Verify: " + verify.command +
-    (verify.needsRunner ? "   (needs " + RUNNER_PATH + ", exported alongside)" : "") +
-    "\n        checks: " + verify.explains
-  );
+  return `Verify: ${verify.command}${verify.needsRunner ? `   (needs ${RUNNER_PATH}, exported alongside)` : ""}\n        checks: ${verify.explains}`;
 }
 
 export function describeVerifyPolicy(): string {
@@ -204,7 +193,7 @@ export function describeVerifyPolicy(): string {
     "",
     "  all-dependency guards  a self-contained `node -e` one-liner. Runs anywhere with Node,",
     "                         installs nothing, and a human can read what it claims.",
-    "  anything else          `node " + RUNNER_PATH + " --decision <id>`. Glob and word-boundary",
+    `  anything else          \`node ${RUNNER_PATH} --decision <id>\`. Glob and word-boundary`,
     "                         matching live in ONE evaluator rather than being reimplemented",
     "                         inside a string literal — which is the drift this phase prevents.",
     "  no accepted guards     no command, and the record says UNVERIFIABLE. Never a plausible-",

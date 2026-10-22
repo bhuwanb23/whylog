@@ -51,11 +51,11 @@
  * ---------------------------------------------------------------------------
  */
 
+import { type PairVerdict, classifyPair, describeRules } from "@/retrieval/contradiction";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
 import type { ClassificationRequest } from "../types";
-import { classifyPair, describeRules, diagnose, type PairVerdict } from "@/retrieval/contradiction";
 
 /** No local verdict may claim more certainty than a model reading both statements. The
  *  rule engine's antonym case reaches 0.95 because it is a table lookup with no ambiguity

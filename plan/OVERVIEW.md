@@ -24,21 +24,21 @@ Full argument: [`docs/00-research-summary.md`](../docs/00-research-summary.md) �
 
 ```
 ┌─ L5  PRESENTATION ─────────────────────────────────────────────────────────────┐
-│   Timeline · Ask (evidence-contract answers) · Health (metrics)                │
-│   Premise Lattice (graph) · Time Machine (bi-temporal replay) · Export         │
+³   Timeline · Ask (evidence-contract answers) · Health (metrics)                ³
+³   Premise Lattice (graph) · Time Machine (bi-temporal replay) · Export         ³
 ├─ L4  SYNTHESIS ────────────────────────────────────────────────────────────────┤
-│   answer() with groundedness verdict · compile() → agent files + verify cmds   │
-│   guard synthesis · revision proposals · time-travel materialisation           │
+³   answer() with groundedness verdict · compile() → agent files + verify cmds   ³
+³   guard synthesis · revision proposals · time-travel materialisation           ³
 ├─ L3  RETRIEVAL ────────────────────────────────────────────────────────────────┤
-│   4-level index → RRF fusion → rerank → structural gate → evidence contract    │
+³   4-level index → RRF fusion → rerank → structural gate → evidence contract    ³
 ├─ L2  REASONING   ← the differentiating layer ──────────────────────────────────┤
-│   JTMS labeller · 3-gate contradiction detector · dependency-directed          │
-│   backtracking · cascade · entrenchment adjudication · nogood recording        │
+³   JTMS labeller · 3-gate contradiction detector · dependency-directed          ³
+³   backtracking · cascade · entrenchment adjudication · nogood recording        ³
 ├─ L1  EXTRACTION ───────────────────────────────────────────────────────────────┤
-│   transcript → decisions + PREMISES + alternatives + provenance + snippets     │
-│   entity resolution onto existing nodes (merge, never append duplicates)       │
+³   transcript → decisions + PREMISES + alternatives + provenance + snippets     ³
+³   entity resolution onto existing nodes (merge, never append duplicates)       ³
 ├─ L0  SUBSTRATE ────────────────────────────────────────────────────────────────┤
-│   append-only bi-temporal event log · hash chain · domain ontology · persist   │
+³   append-only bi-temporal event log · hash chain · domain ontology · persist   ³
 └────────────────────────────────────────────────────────────────────────────────┘
 
         THE AI SEAM (vertical, cuts L1–L4)
@@ -64,7 +64,7 @@ Full argument: [`docs/00-research-summary.md`](../docs/00-research-summary.md) �
 | **7** | Evaluation, Hardening & Pitch | — | `DecisionMemEval`, measured numbers, ablation toggles, demo kit, docs | 5 h | [phase-7](phase-7-evaluation.md) |
 
 **Total: ~43 hours** of focused work for the complete concept.
-**Minimum demonstrable product: Phases 0 → 1 → 2 → 6.1–6.3 ≈ 22 hours.** See §5.
+**Minimum demonstrable product: Phases 0 → 1 → 2 → 6.1–6.3 ÷ 22 hours.** See §5.
 
 ---
 
@@ -72,51 +72,51 @@ Full argument: [`docs/00-research-summary.md`](../docs/00-research-summary.md) �
 
 ```
                         ┌──────────────┐
-                        │   PHASE 0    │  Foundation & Substrate
-                        │  event log   │  (everything depends on this)
-                        │  ontology    │
+                        ³   PHASE 0    ³  Foundation & Substrate
+                        ³  event log   ³  (everything depends on this)
+                        ³  ontology    ³
                         └──────┬───────┘
-                               │
+                               ³
                                ▼
                         ┌──────────────┐
-                        │   PHASE 1    │  Extraction Pipeline
-                        │ decisions +  │
-                        │  PREMISES    │
+                        ³   PHASE 1    ³  Extraction Pipeline
+                        ³ decisions +  ³
+                        ³  PREMISES    ³
                         └──────┬───────┘
-                               │
+                               ³
               ┌────────────────┼────────────────┐
               ▼                ▼                ▼
       ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-      │   PHASE 2    │ │   PHASE 3    │ │   PHASE 4    │
-      │    TRUTH     │ │  RETRIEVAL   │ │   GUARDS     │
-      │  MAINTENANCE │ │    & Q&A     │ │              │
+      ³   PHASE 2    ³ ³   PHASE 3    ³ ³   PHASE 4    ³
+      ³    TRUTH     ³ ³  RETRIEVAL   ³ ³   GUARDS     ³
+      ³  MAINTENANCE ³ ³    & Q&A     ³ ³              ³
       └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
-             │                │                │
-             │   ┌────────────┴───┐            │
-             │   │  gate (b) of   │            │
-             └──►│  Phase 2 uses  │◄───────────┘
-                 │  Phase 3 stack │  implementation_cost
+             ³                ³                ³
+             ³   ┌────────────┴───┐            ³
+             ³   ³  gate (b) of   ³            ³
+             └──►³  Phase 2 uses  ³◄───────────┘
+                 ³  Phase 3 stack ³  implementation_cost
                  └────────┬───────┘  feeds entrenchment
-                          │
+                          ³
                           ▼
                    ┌──────────────┐
-                   │   PHASE 5    │  Export Compiler
-                   │ needs graph  │  (reads L2 state + L4 guards)
-                   │ + guards     │
+                   ³   PHASE 5    ³  Export Compiler
+                   ³ needs graph  ³  (reads L2 state + L4 guards)
+                   ³ + guards     ³
                    └──────┬───────┘
-                          │
+                          ³
                           ▼
                    ┌──────────────┐
-                   │   PHASE 6    │  Presentation
-                   │ (can start   │  (6.1–6.3 after Phase 1)
-                   │  early,      │
-                   │  finishes    │
-                   │  last)       │
+                   ³   PHASE 6    ³  Presentation
+                   ³ (can start   ³  (6.1–6.3 after Phase 1)
+                   ³  early,      ³
+                   ³  finishes    ³
+                   ³  last)       ³
                    └──────┬───────┘
-                          │
+                          ³
                           ▼
                    ┌──────────────┐
-                   │   PHASE 7    │  Evaluation & Pitch
+                   ³   PHASE 7    ³  Evaluation & Pitch
                    └──────────────┘
 ```
 
@@ -137,9 +137,9 @@ Full argument: [`docs/00-research-summary.md`](../docs/00-research-summary.md) �
  CRITICAL PATH ───────────────────────────────────────────────────────────►
 
   P0 ──► P1 ──► P2 ──────────────► P5 ──► P6 ──► P7
-           │      ▲                  ▲
-           │      │                  │
-           └─► P3 ┘ (feeds gate b)   │
+           ³      ▲                  ▲
+           ³      ³                  ³
+           └─► P3 ┘ (feeds gate b)   ³
            └─► P4 ───────────────────┘ (feeds implementation_cost + verify cmds)
 
  PARALLEL TRACK ──────────────────────────────────────────────────────────►
