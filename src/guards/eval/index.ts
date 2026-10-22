@@ -30,18 +30,18 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { WhyLogEngine } from "@/ai/types";
+import { monotonicNow, nowISO } from "@/lib/format";
 import type { EngineId, GuardId, ISODateString } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import type { Guard, GuardRunResult, VirtualProject } from "@/types/guards";
-import type { WhyLogEngine } from "@/ai/types";
 import { isBrowserRunnable } from "@/types/guards";
-import { monotonicNow, nowISO } from "@/lib/format";
 import type { EvaluatedGuard } from "../types";
+import { evalCommand } from "./command";
 import { evalDependency } from "./dependency";
+import { type JudgeVerdict, evalLlmJudge } from "./llm-judge";
 import { evalPath } from "./path";
 import { evalString } from "./string";
-import { evalCommand } from "./command";
-import { evalLlmJudge, type JudgeVerdict } from "./llm-judge";
 import type { Evaluation } from "./types";
 
 /** Stamped on an `llm_judge` verdict when the caller ran it without naming an engine, so the
@@ -83,10 +83,7 @@ export async function runGuard(input: RunGuardInput): Promise<EvaluatedGuard> {
 
 /** Evaluate without the label/lifecycle gate — used by CI export, which emits code for guards
  *  that will run outside the app and therefore outside the label logic. */
-export async function evaluateSpec(
-  guard: Guard,
-  project: VirtualProject,
-): Promise<Evaluation> {
+export async function evaluateSpec(guard: Guard, project: VirtualProject): Promise<Evaluation> {
   if (!isBrowserRunnable(guard.spec.kind)) {
     return evalCommand({ kind: "command_exit_zero", command: "" }, project);
   }
@@ -164,11 +161,11 @@ export function lifecycleGate(guard: Guard, decisionLabel: DecisionLabel): Evalu
       return {
         outcome: "skip",
         evidence: "",
-        skipReason:
-          "Suppressed" +
-          (guard.suppressionReason === undefined || guard.suppressionReason.length === 0
+        skipReason: `Suppressed${
+          guard.suppressionReason === undefined || guard.suppressionReason.length === 0
             ? "."
-            : ": " + guard.suppressionReason),
+            : `: ${guard.suppressionReason}`
+        }`,
       };
     case "deleted":
       return {
@@ -184,9 +181,7 @@ export function lifecycleGate(guard: Guard, decisionLabel: DecisionLabel): Evalu
     return {
       outcome: "skip",
       evidence: "",
-      skipReason:
-        "Its decision is labelled " + decisionLabel +
-        ", so this guard is disabled. Guards inherit their decision's label: a reversed or unsupported decision must stop nagging, and re-enabling requires the decision to return to IN.",
+      skipReason: `Its decision is labelled ${decisionLabel}, so this guard is disabled. Guards inherit their decision's label: a reversed or unsupported decision must stop nagging, and re-enabling requires the decision to return to IN.`,
     };
   }
 
@@ -278,7 +273,8 @@ export async function runGuards(
     const byOutcome = outcomeOrder(a.result.outcome) - outcomeOrder(b.result.outcome);
     if (byOutcome !== 0) return byOutcome;
 
-    const bySeverity = (a.guard.severity === "blocking" ? 0 : 1) - (b.guard.severity === "blocking" ? 0 : 1);
+    const bySeverity =
+      (a.guard.severity === "blocking" ? 0 : 1) - (b.guard.severity === "blocking" ? 0 : 1);
     if (bySeverity !== 0) return bySeverity;
 
     return a.guard.id < b.guard.id ? -1 : a.guard.id > b.guard.id ? 1 : 0;
@@ -297,15 +293,16 @@ function outcomeOrder(outcome: GuardRunResult["outcome"]): number {
 }
 
 export function describeKindCoverage(project: VirtualProject): string {
-  const manifest = Object.keys(project.dependencies).length + Object.keys(project.devDependencies).length > 0;
+  const manifest =
+    Object.keys(project.dependencies).length + Object.keys(project.devDependencies).length > 0;
   const listing = project.filePaths.length > 0;
   const contents = Object.keys(project.fileContents).length > 0;
 
   return [
     "What can run against the pasted project:",
-    "  dependency_present / dependency_absent   " + (manifest ? "yes" : "SKIP — no manifest"),
-    "  path_glob_exists / path_glob_absent      " + (listing ? "yes" : "SKIP — no listing"),
-    "  string_in_files / string_absent_in_files " + (listing && contents ? "yes" : "SKIP — needs both a listing and contents"),
+    `  dependency_present / dependency_absent   ${manifest ? "yes" : "SKIP — no manifest"}`,
+    `  path_glob_exists / path_glob_absent      ${listing ? "yes" : "SKIP — no listing"}`,
+    `  string_in_files / string_absent_in_files ${listing && contents ? "yes" : "SKIP — needs both a listing and contents"}`,
     "  command_exit_zero                        SKIP always — export to CI, there is no shell here",
     "  llm_judge                                needs a key; advisory only, never in compliance",
     "",

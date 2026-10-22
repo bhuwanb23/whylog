@@ -28,7 +28,6 @@ import type {
   GuardOutcome,
   GuardRunResult,
   GuardSeverity,
-  GuardSpec,
   VirtualProject,
 } from "@/types/guards";
 
