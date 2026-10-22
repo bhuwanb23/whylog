@@ -14,6 +14,7 @@
  * ---------------------------------------------------------------------------
  */
 
+<<<<<<< 800657a
 import { persistenceAvailable, useWhyLog } from "@/store/whylog";
 import { MODE_BADGE } from "@/theme";
 import { AskView } from "@/views/AskView";
@@ -22,17 +23,40 @@ import { GuardsView } from "@/views/GuardsView";
 import { ReasoningView } from "@/views/ReasoningView";
 import { ReviewView } from "@/views/ReviewView";
 import { type ReactElement, useEffect, useState } from "react";
+=======
+import { useEffect, useState, ReactElement } from "react";
+import { useWhyLog, persistenceAvailable } from "@/store/whylog";
+import { FoundationView } from "@/views/FoundationView";
+import { ReviewView } from "@/views/ReviewView";
+import { ReasoningView } from "@/views/ReasoningView";
+import { AskView } from "@/views/AskView";
+import { GuardsView } from "@/views/GuardsView";
+import { ExportView } from "@/views/ExportView";
+import { GraphView } from "@/views/GraphView";
+import { HealthView } from "@/views/HealthView";
+import { SettingsView } from "@/views/SettingsView";
+import { TimeMachineView } from "@/views/TimeMachineView";
+import { TimelineView } from "@/views/TimelineView";
+import { MODE_BADGE } from "@/theme";
+import { describeKeybinds, useKeybinds, type KeybindAction } from "@/components/common";
+import { useExtraction } from "@/store/extraction";
+/* Bundled rather than fetched: the sandboxed preview has no network, and §6.9 requires the demo to
+ * be one click from a cold start. */
+import demoTranscript from "../fixtures/demo-transcript.txt?raw";
+>>>>>>> 1e61ad6
 
 type ViewId =
   | "review"
   | "reasoning"
   | "foundation"
   | "timeline"
-  | "conflict"
+  | "graph"
   | "ask"
   | "guards"
   | "export"
-  | "health";
+  | "time-machine"
+  | "health"
+  | "settings";
 
 const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   // FIRST, and the default view: gate G1 is "a messy transcript becomes reviewed,
@@ -45,7 +69,14 @@ const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   { id: "reasoning", label: "Reasoning", phase: "2" },
   { id: "foundation", label: "Foundation", phase: "0" },
   { id: "timeline", label: "Timeline", phase: "6.1" },
-  { id: "conflict", label: "Conflict", phase: "6.5" },
+  // 6.6 — the signature visual. Bipartite: assumptions are the load-bearing nodes and decisions
+  // hang off them. Nobody in the category has this picture, because nobody stores that structure.
+  { id: "graph", label: "Lattice", phase: "6.6" },
+  // `conflict` is deliberately ABSENT. §6.5's seven-part revision proposal surface is already
+  // rendered by ReasoningView, which Phase 2 built as the gate-G2 surface. A second Conflict view
+  // would be a second implementation of one screen — the same duplication this codebase keeps
+  // removing — and the two would drift apart about what a proposal says.
+  { id: "time-machine", label: "Time machine", phase: "6.7" },
   // THIRD: gate G3 — "it answers". Retrieval, the evidence contract and the Ask surface all
   // land in Phase 3, so the view belongs to it rather than to the presentation phase that
   // originally held the slot.
@@ -53,8 +84,15 @@ const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   // Gate G4 — "it verifies". Synthesis, the interpreter, the metrics and the feedback loop all
   // land in Phase 4.
   { id: "guards", label: "Guards", phase: "4" },
+<<<<<<< 800657a
   { id: "export", label: "Export", phase: "6.11" },
   { id: "health", label: "Health", phase: "6.9" },
+=======
+  // Gate G5 — "it closes the loop". The compiler, the gate and the stamp all land in Phase 5.
+  { id: "export", label: "Export", phase: "5" },
+  { id: "health", label: "Health", phase: "6.4" },
+  { id: "settings", label: "Settings", phase: "6.8" },
+>>>>>>> 1e61ad6
 ];
 
 export function App(): ReactElement {
@@ -70,6 +108,30 @@ export function App(): ReactElement {
   }, [status]);
 
   const mode = modeOf(engine?.id.kind, state.index.stale);
+
+  /**
+   * Load the demo fixture and land on the review queue.
+   *
+   * §6.9: "the demo path must be one click from a cold start." A judge will not paste their own
+   * transcript, and if the fixture is not one click away the product is never seen. It goes through
+   * `importText`, which is the same entry point a real paste uses — so the demo exercises extraction,
+   * resolution and the review queue rather than a pre-seeded state that skips them.
+   */
+  const loadDemo = (): void => {
+    setView("review");
+    void useExtraction.getState().importText(demoTranscript, "demo-transcript");
+  };
+
+  /* ---- 6.9 keyboard ---- */
+  const keybinds: readonly KeybindAction[] = [
+    { key: "k", meta: true, label: "ask the log", run: () => setView("ask") },
+    { key: "n", label: "quick-log a decision", run: () => setView("timeline") },
+    { key: "p", label: "paste a transcript", run: () => setView("review") },
+    { key: "g", label: "the premise lattice", run: () => setView("graph") },
+    { key: "Escape", label: "back to the timeline", run: () => setView("timeline") },
+  ];
+
+  useKeybinds(keybinds);
 
   return (
     <div className="shell">
@@ -99,6 +161,14 @@ export function App(): ReactElement {
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <ModeBadge mode={mode} />
           <ChainBadge status={status} />
+          {state.decisions.size === 0 ? (
+            <button type="button" className="badge" onClick={loadDemo} title="Load fixtures/demo-transcript.txt and extract it — the same path a real paste takes.">
+              load demo
+            </button>
+          ) : null}
+          <span className="faint" style={{ fontSize: 10 }} title={describeKeybinds(keybinds)}>
+            ⌘K ask · N log · P paste · G lattice
+          </span>
         </div>
       </header>
 
@@ -113,6 +183,21 @@ export function App(): ReactElement {
           <AskView />
         ) : view === "guards" ? (
           <GuardsView />
+<<<<<<< 800657a
+=======
+        ) : view === "export" ? (
+          <ExportView />
+        ) : view === "timeline" ? (
+          <TimelineView />
+        ) : view === "graph" ? (
+          <GraphView />
+        ) : view === "time-machine" ? (
+          <TimeMachineView />
+        ) : view === "health" ? (
+          <HealthView />
+        ) : view === "settings" ? (
+          <SettingsView />
+>>>>>>> 1e61ad6
         ) : (
           <NotYet view={VIEWS.find((v) => v.id === view)} />
         )}

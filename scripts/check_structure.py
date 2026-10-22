@@ -295,6 +295,12 @@ def rel(path: pathlib.Path) -> str:
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:
     """Map an import specifier to a filesystem path, or None for a package."""
+    # Vite appends a query suffix to say HOW to load a file: `?raw` inlines it as a string,
+    # `?url` emits an asset URL, `?worker` wraps it. The path on disk has no suffix, so it must be
+    # stripped before resolving — otherwise `fixtures/demo-transcript.txt?raw` looks for a file
+    # literally named that and reports an unresolved import that resolves perfectly at build time.
+    spec = spec.split("?", 1)[0]
+
     if spec.startswith("@/"):
         target = SRC / spec[2:]
     elif spec.startswith("."):

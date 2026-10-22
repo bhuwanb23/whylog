@@ -77,7 +77,43 @@ import type { Justification, PremiseType } from "@/types/domain";
  * error the structural checker cannot see, because it verifies that imports RESOLVE, not that
  * every identifier used is declared. Found by a string-aware scan for undeclared identifiers. */
 import type { EventType, NewEvent } from "@/types/events";
+<<<<<<< 800657a
 import { create } from "zustand";
+=======
+import type { Justification, PremiseType } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
+import { foldKey } from "@/ontology/canonicalize";
+import { canonicalPredicate } from "@/ontology/canonicalize";
+import {
+  formatJustificationId,
+  formatPremiseId,
+  formatProposalId,
+  formatTranscriptId,
+} from "@/lib/ids";
+import type { Result } from "@/lib/result";
+import { err, ok } from "@/lib/result";
+import { nowISO } from "@/lib/format";
+import {
+  assertNewInformation,
+  revise,
+  type AssertContext,
+  type Assertion,
+  type AssertionResult,
+  type UnresolvedPremise,
+  type DecisionAssertion,
+  type ReviseInput,
+  type ReviseResult,
+  type RevisionCase,
+} from "@/reasoning";
+import type { Newcomer } from "@/reasoning/adjudication";
+import type { CandidatePair } from "@/reasoning/gates/semantic";
+/* Imported from the module rather than the `@/guards` barrel: the barrel pulls in the CI
+ * exporter and the metrics, none of which the reasoning store needs, and a narrower import keeps
+ * the dependency edge honest about what is actually used. */
+import { guardStatusMap } from "@/guards/feedback";
+import { useTuning } from "./settings";
+import { useWhyLog } from "./whylog";
+>>>>>>> 1e61ad6
 import { useAsk } from "./ask";
 import { useWhyLog } from "./whylog";
 
@@ -196,6 +232,9 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
        *
        * This is the term no belief-revision system has, because none is attached to a codebase. */
       guards: guardStatusMap(whylog.state),
+      /* The user's cascade depth cap, from the persisted tuning store. Until this line the setting
+       * existed, was displayed, and changed nothing. */
+      cascadeDepthCap: useTuning.getState().cascadeDepthCap,
       /* Gate (b) is WIRED as of Phase 3. It was hardcoded off in Phase 2 because there was no
        * retriever to ask; now there is one, so the default flips to "run it" and `skipSemantic`
        * becomes what it was always meant to be — an opt-out for the keyless demo and for

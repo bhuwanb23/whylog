@@ -612,3 +612,74 @@ worse than reporting nothing, because it sends you looking for a bug in the sour
 the checker. It is now a character scanner that tracks string state, and strips line comments too.
 Globs like `**/*` are common in this codebase, so this would have recurred constantly.
 
+<<<<<<< 800657a
+=======
+### 18.5 Phase 5 deviations
+
+| # | Plan says | Built | Why |
+|---|---|---|---|
+| 🟠 1 | §10 listed 21 files in `src/export/` | **22** — `emitters/shared.ts` added | Three agent targets all want the same record; only the FILE differs. Rendering the record three times would mean a record that reads differently in `CLAUDE.md` than in `AGENTS.md` — two agents following the same log would disagree about the same decision. This pushes the intermediate form's guarantee one level down: not only does no emitter read the graph, no emitter renders a record either. |
+| 🟠 2 | §5.1 describes one CIF | **Two**, from one graph in one pass | DECISIONS.md must carry superseded and OUT decisions (§5.3: "nothing is emitted for SUPERSEDED decisions except in DECISIONS.md"), and must not obey a token budget — a human document is not read into a context window. One CIF cannot be both filtered and unfiltered. Both are built from the same snapshot in the same call, so the single-pass guarantee holds; what changed is that emitters are pure functions of *a* CIF, not of *the* CIF. |
+| 🟠 3 | §5.2 lists `.cursorrules` / `.cursor/rules/*.md` | `.cursorrules` only | The per-rule-file layout is a directory of files with front-matter globs, not a single artifact — a different output shape and a different download flow. Recorded in the emitter's header as a v2 target rather than half-implemented, because a partial version would emit files Cursor does not read. |
+| 🟡 4 | §5.5's stamp carries a content digest | The digest covers the artifact **body, excluding the stamp** | A digest cannot cover the stamp that contains it — that is circular. `renderStamp` digests the body; `verifyStamp` strips the stamp before digesting on the way back in, so the two agree. Digesting a placeholder instead would produce a stamp that fails verification the moment anyone checks it, which is worse than no digest. |
+| 🟡 5 | §5.7 says DECISIONS.md and the JSON export are both re-importable | Both, with **different fidelity, stated** | The JSON path is exact — it is the event log itself, and `substrate/portability.ts` already replays it with chain verification. DECISIONS.md is lossy by nature: it never carried snippets, spans, confidence or learned times, so they cannot come back. `round-trip.ts` says so in the merge plan rather than implying a faithful round trip. Claiming exactness for Markdown would be the same category of error as faking a cross-encoder result. |
+| 🟡 6 | §5.3's verify command | Two shapes, chosen by guard kind | All-dependency guards get a self-contained `node -e` one-liner that runs anywhere with Node and installs nothing. Anything needing glob or word-boundary matching delegates to the exported runner, because reimplementing `lib/glob.ts` semantics inside a string literal would be a second copy that could drift — the exact risk §5.1's single-pass rule exists to remove. |
+| 🟡 7 | — | `guards/ci-export.ts` runner gained `--decision <id>` | The exported verify commands invoke that flag. Without support the runner would ignore it and evaluate every guard, so a check on one decision would pass or fail on the strength of the others — and exiting 0 for a decision it never filtered to is the dangerous direction. Added to Phase 4's runner rather than a second runner, because two runners would drift. |
+
+**Bugs found and fixed during the build:**
+
+- `store/guards.ts` (Phase 4) stamped the CI export with `whylog.log.head?.hash`. `EventLog` has no
+  `head` object — the field is `headHash`. The optional chain made it silently `undefined`, so
+  **every CI export was stamped `"unknown"`**: a runner whose provenance is unknown cannot be tied
+  back to the log that produced it, which is the entire reason it carries a head hash.
+- `emitters/shared.ts` called `renderStatus` without importing it — the same checker blind spot as
+  the four Phase 4 cases. Found by the string-aware undeclared-identifier scan.
+- `round-trip.ts` first used a **module-level mutable array** to collect rejected-alternative rows.
+  Parsing two files in one session would attribute the first file's rejections to the second file's
+  decisions, invisibly, because each parse would look individually plausible. Now local to the call.
+- `round-trip.ts` took the source head hash from `verification.found`, which is **inverted**: a
+  successful verification reports no `found` hash, because nothing was wrong. `MergePlan` now
+  carries `sourceHeadHash` from the parsed stamp.
+- `compiler.ts` had `formatExportId(state.counters.exports ?? 0 + 1)` — operator precedence makes
+  that `?? 1`, so every export in a session would have taken id `X-0001`.
+- `ci/index.ts` first fabricated a stamp full of zeros for the CI artifacts. It now receives the
+  same `IntegrityStamp` the documents carry: a second opinion about the log's counts would disagree
+  with the first the moment either was computed after a mutation.
+
+### 18.6 Phase 6 deviations
+
+| # | Plan says | Built | Why |
+|---|---|---|---|
+| 🟠 1 | §6.5 is a `Conflict` view; the nav had a `conflict` entry | **Retired.** `ReasoningView` (Phase 2, 1,199 lines) already renders the seven-part proposal surface | Phase 2 built §6.5 as its gate-G2 surface: what failed, the evidence quote, the nogood, the cascade with survivors distinguished, the entrenchment breakdown, "why not auto-applied", and the re-justification composer. A second Conflict view would be a second implementation of one screen, and the two would drift apart about what a proposal says. Documented in `App.tsx` at the point where the entry used to be. |
+| 🟠 2 | §6.8 lists `cascade depth cap` and `confidence-tier thresholds` as settings | They were **inert end to end**, and are now real | `SettingsState` declared `setThresholds` and `setCascadeDepthCap` as `() => {}`. Worse, `cascade()` accepted a `depthCap` parameter that **no call site ever supplied**, so every run used `MAX_CASCADE_DEPTH` regardless. Added a persisted `useTuning` store (`whylog:settings:v1`), a `ReviseInput.cascadeDepthCap` field, and the missing argument at the `revise()` call site. A settings panel that renders a control which cannot change anything is worse than no control. |
+| 🟡 3 | §6.6's lattice with a force-layout library "for positioning only" | **No layout library.** Deterministic columns by premise type, decisions at the barycentre of their premises | A force layout is not reproducible: positions settle differently each render, so two screenshots of one log differ, a cascade animation moves the nodes being watched, and "the lattice at time T" would not look like the lattice the user remembers. Determinism is what makes the visual usable as evidence rather than decoration. |
+| 🟡 4 | §6.7's time machine with two sliders | Both, but they are computed **differently**, and the view says so | Learned time is a genuine prefix fold via `materializeAsOf`. Valid time **cannot** be a prefix fold — events are stored in learned order, so cutting by index would drop a decision made in January but recorded in October. Valid time filters the current graph by validity window instead, which is the definition of "true at T". Presenting both as the same mechanism would be wrong about one of them. |
+| 🟡 5 | §6.9's keyboard: `⌘K` · `N` · `P` · `Esc` | Those four **plus `G`** for the lattice | The lattice is the signature visual and the one thing a judge should be shown; a keystroke to reach it is worth more than a keystroke for anything else. Bindings never fire inside an editable element — a single-letter binding that does makes the product unusable, and the bug is invisible until someone types the word "no" into a search box. |
+| 🟡 6 | §6.2 lists 10 components in `components/decision/` | **6** — the five small sections share `sections.tsx` | Y-statement, alternatives, accepted downside, guard summary and relations are each under 30 lines of markup reading one field off the decision. Ten files would make the card's structure harder to see, not easier, and the plan's density risk is about the rendered card rather than the file count. The four sections that carry an argument — RESTS ON/EXCLUDES, PROVENANCE, ENTRENCHMENT, AUDIT — each have their own file. |
+| 🟡 7 | §6.6 lists `AntiHairballFilter` as a component | It is a **module**, not a component | The rules are applied in `LatticeLayout`, before positioning. Filtering at render time would leave the layout reserving space for hidden nodes, producing gaps that read as missing data. The module owns the rules and reports what was withheld; it renders nothing. |
+| 🟢 8 | — | `emitters/shared.ts` pattern repeated: `components/graph/LatticeHighlight.ts` added | Not in §12's component list, but highlighting is the interaction half of the anti-hairball rules and needs its own module so the layout and the interaction cannot disagree about what "connected to this node" means. |
+
+**Checker hardened again.** `resolve()` did not understand Vite's `?raw` query suffix, so
+`import demoTranscript from "../fixtures/demo-transcript.txt?raw"` was reported as an unresolved
+import — a path that resolves perfectly at build time. It now strips the query before resolving.
+The declaration in `vite-env.d.ts` is deliberately narrow (`*.txt?raw` only): a blanket wildcard
+would let any file be silently inlined into the bundle, and the one thing that must never be
+inlined is a config file containing a key.
+
+**Pre-existing bugs found and fixed:**
+
+- `store/settings.ts` had `void reloadFrom;` — the banned pattern, discarding a function that was
+  written to be used. `reload()` was therefore `() => {}`.
+- `ProvenanceBlock.tsx` first read `span.episodeId`. `SourceSpan` has no such field — `episodeId`
+  lives on `Provenance`. The same class of error as Phase 4's `log.head?.hash`: an optional chain or
+  a plausible field name turns a wrong reference into `undefined` rather than an error.
+- `sections.tsx` had a `guardTarget` signature written as a conditional type over
+  `Decision["appliesTo"]` that resolved to `never`. It now switches over the `GuardSpec` union, so a
+  ninth guard kind is a compile error rather than `undefined` rendered into the card.
+- `TimeMachineView.tsx` first called `useMemo` **inside a conditional** to supply an empty label map
+  to the decision card. That breaks the rules of hooks and would desync on the render where the panel
+  first appears — and an empty label map makes the card fall back to labels stored at extraction time,
+  showing IN for a decision the replayed graph has already retracted.
+- `GraphView.tsx` had a `require_layout()` indirection wrapping a top-level import. Removed.
+
+>>>>>>> 1e61ad6
