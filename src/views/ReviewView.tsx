@@ -30,9 +30,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import { ImportForm } from "@/components/review/ImportForm";
-import { ReviewRow } from "@/components/review/ReviewRow";
-import { TIER_COLOUR } from "@/components/review/tier-colour";
+import { useEffect, useState, type ReactElement } from "react";
+import { useExtraction } from "@/store/extraction";
+import { useWhyLog } from "@/store/whylog";
 import {
   REVIEW_FILTERS,
   approve,
@@ -44,9 +44,9 @@ import {
   discard,
   summariseCommit,
 } from "@/extraction";
-import { useExtraction } from "@/store/extraction";
-import { useWhyLog } from "@/store/whylog";
-import { type ReactElement, useEffect, useState } from "react";
+import { ImportForm } from "@/components/review/ImportForm";
+import { ReviewRow } from "@/components/review/ReviewRow";
+import { TIER_COLOUR } from "@/components/review/tier-colour";
 
 export function ReviewView(): ReactElement {
   const status = useExtraction((s) => s.status);
@@ -138,15 +138,14 @@ export function ReviewView(): ReactElement {
       <section className="card">
         <h2 className="card-title">Import a transcript</h2>
         <p className="faint" style={{ maxWidth: 620, lineHeight: 1.6 }}>
-          Paste a conversation with an AI coding agent. WhyLog reads it locally — nothing is sent
-          anywhere unless you add an API key in Settings — and proposes decisions, the premises they
-          rest on, and what was rejected. Nothing enters the log until you review it.
+          Paste a conversation with an AI coding agent. WhyLog reads it locally —
+          nothing is sent anywhere unless you add an API key in Settings — and
+          proposes decisions, the premises they rest on, and what was rejected.
+          Nothing enters the log until you review it.
         </p>
 
         {lastSummary !== null && (
-          <p className="notice notice-info" style={{ marginTop: 12 }}>
-            {lastSummary}
-          </p>
+          <p className="notice notice-info" style={{ marginTop: 12 }}>{lastSummary}</p>
         )}
         {error !== null && <p className="notice notice-error">{error}</p>}
 
@@ -159,10 +158,7 @@ export function ReviewView(): ReactElement {
           onLabel={setLabel}
           onImport={async () => {
             setBusy("Extracting…");
-            const result = await importText(
-              paste,
-              label.trim().length > 0 ? label.trim() : undefined,
-            );
+            const result = await importText(paste, label.trim().length > 0 ? label.trim() : undefined);
             setBusy(null);
             if (result.ok) {
               setPaste("");
@@ -173,9 +169,7 @@ export function ReviewView(): ReactElement {
 
         <details style={{ marginTop: 20 }}>
           <summary className="faint">Keyboard</summary>
-          <p className="mono faint" style={{ fontSize: 12, marginTop: 8 }}>
-            {describeKeys()}
-          </p>
+          <p className="mono faint" style={{ fontSize: 12, marginTop: 8 }}>{describeKeys()}</p>
         </details>
       </section>
     );
@@ -187,9 +181,7 @@ export function ReviewView(): ReactElement {
       <header className="card" style={{ padding: "14px 18px" }}>
         <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
           <strong>Review</strong>
-          <span className="faint" style={{ fontSize: 13 }}>
-            {describeQueue(summary)}
-          </span>
+          <span className="faint" style={{ fontSize: 13 }}>{describeQueue(summary)}</span>
           {status === "committing" && <span className="faint">committing…</span>}
         </div>
 
@@ -217,11 +209,7 @@ export function ReviewView(): ReactElement {
           />
         </div>
 
-        {error !== null && (
-          <p className="notice notice-error" style={{ marginTop: 10 }}>
-            {error}
-          </p>
-        )}
+        {error !== null && <p className="notice notice-error" style={{ marginTop: 10 }}>{error}</p>}
       </header>
 
       {items.map((item) => (
@@ -235,7 +223,9 @@ export function ReviewView(): ReactElement {
         />
       ))}
 
-      {items.length === 0 && <p className="card faint">Nothing matches this filter.</p>}
+      {items.length === 0 && (
+        <p className="card faint">Nothing matches this filter.</p>
+      )}
 
       <footer className="card" style={{ padding: "14px 18px", display: "grid", gap: 10 }}>
         <div className="mono faint" style={{ fontSize: 12, whiteSpace: "pre-line" }}>
@@ -261,14 +251,10 @@ export function ReviewView(): ReactElement {
             </button>
           )}
           <span style={{ flex: 1 }} />
-          <button type="button" className="faint" onClick={clear}>
-            Throw this run away
-          </button>
+          <button type="button" className="faint" onClick={clear}>Throw this run away</button>
           {confirming ? (
             <>
-              <button type="button" onClick={() => setConfirming(false)}>
-                Back
-              </button>
+              <button type="button" onClick={() => setConfirming(false)}>Back</button>
               <button
                 type="button"
                 style={{ borderColor: TIER_COLOUR.high }}
@@ -282,11 +268,7 @@ export function ReviewView(): ReactElement {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              disabled={preview.events <= 1}
-            >
+            <button type="button" onClick={() => setConfirming(true)} disabled={preview.events <= 1}>
               Commit ({summariseCommit(preview)})
             </button>
           )}

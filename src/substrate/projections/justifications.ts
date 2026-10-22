@@ -21,9 +21,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import { byIdAsc } from "../bi-temporal";
 import type { DecisionId, JustificationId, PremiseId } from "@/types/common";
 import type { Decision, DecisionLabel, Justification, Premise } from "@/types/domain";
-import { byIdAsc } from "../bi-temporal";
 import type { GraphState } from "../graph-state";
 
 export interface JustificationEvaluation {
@@ -38,7 +38,10 @@ export interface JustificationEvaluation {
   readonly nonMonotonic: boolean;
 }
 
-export function getJustification(state: GraphState, id: JustificationId): Justification | null {
+export function getJustification(
+  state: GraphState,
+  id: JustificationId,
+): Justification | null {
   return state.justifications.get(id) ?? null;
 }
 
@@ -54,8 +57,7 @@ export function evaluate(state: GraphState, justification: Justification): Justi
 
   for (const id of justification.inList) {
     const label = state.premises.get(id)?.label;
-    if (label === undefined)
-      failingIn.push(id); // a missing premise cannot support
+    if (label === undefined) failingIn.push(id); // a missing premise cannot support
     else if (label === "UNKNOWN" || label === "UNFOUNDED") unresolved.push(id);
     else if (label !== "IN") failingIn.push(id);
   }
