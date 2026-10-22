@@ -1,19 +1,19 @@
 /**
- * Rejected-alternative recovery ΓÇö 1.5.
+ * Rejected-alternative recovery — 1.5.
  *
- * Phase 1 ┬╖ sub-phase 1.5
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.5
+ * Phase 1 ú sub-phase 1.5
+ * Plan: plan/phase-1-extraction-pipeline.md §1.5
  *
  * ---------------------------------------------------------------------------
  * WHY THIS GETS ITS OWN SUB-PHASE
  *
- * ARGUS measured **15.4% precision** on Alternatives with run-consistency ╬▒ = 0.64
- * ΓÇö the worst of any rationale component (docs/05 ┬º4). It is also the
+ * ARGUS measured **15.4% precision** on Alternatives with run-consistency à = 0.64
+ * — the worst of any rationale component (docs/05 §4). It is also the
  * highest-value one, because alternatives power PRE-EMPTION: catching a mistake
  * before the decision rather than after.
  *
  * Their finding argues in WhyLog's favour, and it is testable: "Alternatives occur
- * almost exclusively in issues, pull requests, and code reviews" ΓÇö that is, in
+ * almost exclusively in issues, pull requests, and code reviews" — that is, in
  * DISCUSSION. A transcript IS continuous discussion, so it should be the richest
  * available source. Phase 7 tests that hypothesis; this file is written to make the
  * test possible rather than to assume the result.
@@ -33,7 +33,7 @@
  *      become discards, which is the denominator of the precision measurement.
  *
  *   3. **`whyRejected` gates the pre-emption index, not the store.** An
- *      alternative with no reason is recorded ΓÇö losing it would lose information ΓÇö
+ *      alternative with no reason is recorded — losing it would lose information —
  *      but it never warns anybody. Pre-empting without a reason is nagging, and a
  *      tool that nags gets switched off.
  *
@@ -44,16 +44,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DiscardedCandidate, AlternativeCandidate } from "@/ai/types";
-import type { DecisionVariable } from "@/types/domain";
-import { asConfidence } from "@/types/common";
-import type { EpisodeWindow } from "./types";
-import type { DecisionContext, RecoveredDecision } from "./decisions";
-import { spanFrom } from "./offset-map";
-import { locateInEpisode, toNormalised } from "./episode-position";
-import { rankValues, type ValueCandidate } from "@/ai/local/value-phrase";
-import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
+import { type ValueCandidate, rankValues } from "@/ai/local/value-phrase";
+import type { AlternativeCandidate, DiscardedCandidate } from "@/ai/types";
 import { normalise } from "@/lib/text";
+import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
+import { asConfidence } from "@/types/common";
+import type { DecisionVariable } from "@/types/domain";
+import type { DecisionContext, RecoveredDecision } from "./decisions";
+import { locateInEpisode, toNormalised } from "./episode-position";
+import { spanFrom } from "./offset-map";
+import type { EpisodeWindow } from "./types";
 
 export interface RecoveredAlternative {
   readonly candidate: AlternativeCandidate;
@@ -118,7 +118,7 @@ export function recoverAlternatives(
 ): AlternativeRecovery {
   if (decisions.length === 0) {
     // Nothing was chosen, so nothing was chosen AGAINST. Every rejection phrase in
-    // this episode becomes a discard ΓÇö recorded, so the precision denominator is
+    // this episode becomes a discard — recorded, so the precision denominator is
     // honest, and visible in the review UI's "why was this dropped" list.
     return { alternatives: [], discarded: collectOrphans(episode), withReason: 0 };
   }
@@ -137,7 +137,16 @@ export function recoverAlternatives(
       if (value === null) continue;
       seen.add(key);
 
-      const built = build(episode, decisionIndex, decisions, value, "pivot", null, context, discarded);
+      const built = build(
+        episode,
+        decisionIndex,
+        decisions,
+        value,
+        "pivot",
+        null,
+        context,
+        discarded,
+      );
       if (built !== null) found.push(built);
     }
   });
@@ -163,11 +172,25 @@ export function recoverAlternatives(
       }
 
       const decisionIndex = nearestDecision(decisions, episode, at);
-      const key = dedupeKey(value.variable ?? decisions[decisionIndex]?.candidate.variable ?? "OTHER", value.canonical);
+      const key = dedupeKey(
+        value.variable ?? decisions[decisionIndex]?.candidate.variable ?? "OTHER",
+        value.canonical,
+      );
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const built = build(episode, decisionIndex, decisions, value, "cue", cue, context, discarded, at, cue.whyAfter);
+      const built = build(
+        episode,
+        decisionIndex,
+        decisions,
+        value,
+        "cue",
+        cue,
+        context,
+        discarded,
+        at,
+        cue.whyAfter,
+      );
       if (built !== null) found.push(built);
     }
   }
@@ -204,7 +227,8 @@ function build(
   if (normalise(value.canonical) === normalise(decision.candidate.value)) return null;
 
   const variable: DecisionVariable = value.variable ?? decision.candidate.variable;
-  const canonical = variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
+  const canonical =
+    variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
 
   const why = findWhyRejected(episode.text, cueAt ?? value.start, whyAfter ?? true);
   const confidence = score(value, via, cue, why !== null);
@@ -242,7 +266,7 @@ function build(
 /**
  * The reason this alternative was turned down.
  *
- * Sought after the cue ("ruled out Postgres ΓÇö migrations before we have a user")
+ * Sought after the cue ("ruled out Postgres — migrations before we have a user")
  * and, when that fails, before it ("migrations are a hassle, so not Postgres").
  * Both directions because dialogue puts the reason wherever the speaker was
  * heading.
@@ -263,24 +287,47 @@ function findWhyRejected(text: string, at: number, afterFirst: boolean): string 
 }
 
 const REASON_MARKERS = [
-  "because", "since", "due to", "as it", "as they", "so ", "which means",
-  "that means", "but it", "but that", "but you", "but we", "too much", "too many",
-  "requires", "would need", "would mean", "means", "the problem", "the catch",
-  "overkill", "heavier", "more complex", "dependency", "ceremony", "hassle",
+  "because",
+  "since",
+  "due to",
+  "as it",
+  "as they",
+  "so ",
+  "which means",
+  "that means",
+  "but it",
+  "but that",
+  "but you",
+  "but we",
+  "too much",
+  "too many",
+  "requires",
+  "would need",
+  "would mean",
+  "means",
+  "the problem",
+  "the catch",
+  "overkill",
+  "heavier",
+  "more complex",
+  "dependency",
+  "ceremony",
+  "hassle",
 ];
 
 function reasonClause(window: string, reversed: boolean): string | null {
   const lower = window.toLowerCase();
-  const positions = REASON_MARKERS.map((marker) => ({ marker, at: reversed ? lower.lastIndexOf(marker) : lower.indexOf(marker) }))
+  const positions = REASON_MARKERS.map((marker) => ({
+    marker,
+    at: reversed ? lower.lastIndexOf(marker) : lower.indexOf(marker),
+  }))
     .filter((entry) => entry.at >= 0)
     .sort((a, b) => (reversed ? b.at - a.at : a.at - b.at));
 
   const best = positions[0];
   if (best === undefined) return null;
 
-  const body = reversed
-    ? window.slice(0, best.at).trim()
-    : window.slice(best.at).trim();
+  const body = reversed ? window.slice(0, best.at).trim() : window.slice(best.at).trim();
 
   const clause = body.split(/[.!?\n;]/)[0]?.trim() ?? "";
   if (clause.length < 10 || clause.length > 200) return null;
@@ -307,7 +354,11 @@ function valueNear(
   return shaped ?? null;
 }
 
-function valueFromText(text: string, surface: string, hint: DecisionVariable): ValueCandidate | null {
+function valueFromText(
+  text: string,
+  surface: string,
+  hint: DecisionVariable,
+): ValueCandidate | null {
   const at = text.toLowerCase().indexOf(surface.toLowerCase());
   if (at < 0) {
     const variable = variableFromValue(surface)?.variable ?? hint;
@@ -348,7 +399,11 @@ function nearestDecision(
   return best;
 }
 
-function spanFor(episode: EpisodeWindow, value: ValueCandidate, context: DecisionContext): ReturnType<typeof spanFrom> {
+function spanFor(
+  episode: EpisodeWindow,
+  value: ValueCandidate,
+  context: DecisionContext,
+): ReturnType<typeof spanFrom> {
   const located = locateInEpisode(episode, value.start);
   if (located === null) return null;
 
@@ -424,7 +479,7 @@ export function describeRecovery(recovery: AlternativeRecovery): string {
   ];
   if (recovery.alternatives.length > 0) {
     parts.push(
-      `${recovery.withReason} with a reason${recovery.withReason === recovery.alternatives.length ? "" : ` ΓÇö ${recovery.alternatives.length - recovery.withReason} stored but excluded from pre-emption`}`,
+      `${recovery.withReason} with a reason${recovery.withReason === recovery.alternatives.length ? "" : ` — ${recovery.alternatives.length - recovery.withReason} stored but excluded from pre-emption`}`,
     );
   }
   if (recovery.discarded.length > 0) parts.push(`${recovery.discarded.length} discarded`);

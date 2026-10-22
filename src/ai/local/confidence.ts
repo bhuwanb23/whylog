@@ -1,8 +1,8 @@
 /**
- * The local confidence rubrics ΓÇö 1.8.
+ * The local confidence rubrics — 1.8.
  *
- * Phase 1 ┬╖ sub-phase 1.8
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.8
+ * Phase 1 ú sub-phase 1.8
+ * Plan: plan/phase-1-extraction-pipeline.md §1.8
  *
  * ---------------------------------------------------------------------------
  * ADDITIVE AND INSPECTABLE, ON PURPOSE
@@ -22,23 +22,23 @@
  * ---------------------------------------------------------------------------
  * THE TIER RULE LIVES IN `src/extraction/confidence.ts`
  *
- * Scoring is engine-specific ΓÇö the LLM path scores from run agreement, not from
- * cues ΓÇö but tiering is shared, because the review UI has one layout and it must
+ * Scoring is engine-specific — the LLM path scores from run agreement, not from
+ * cues — but tiering is shared, because the review UI has one layout and it must
  * mean the same thing whichever engine produced the item. So this module returns
  * NUMBERS and never tiers.
  * ---------------------------------------------------------------------------
  */
 
+import type { ValueStrength } from "@/ai/local/value-phrase";
+import type { RecoveredAlternative } from "@/extraction/alternatives";
+import type { RecoveredDecision } from "@/extraction/decisions";
+import type { RecoveredPremise } from "@/extraction/premises";
 import type { Confidence } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionOrigin, Modality } from "@/types/domain";
-import type { RecoveredDecision } from "@/extraction/decisions";
-import type { RecoveredPremise } from "@/extraction/premises";
-import type { RecoveredAlternative } from "@/extraction/alternatives";
-import type { ValueStrength } from "@/ai/local/value-phrase";
 
 /* -------------------------------------------------------------------------- */
-/* Decision rubric ΓÇö plan ┬º1.8, verbatim                                      */
+/* Decision rubric — plan §1.8, verbatim                                      */
 /* -------------------------------------------------------------------------- */
 
 export const DECISION_WEIGHTS = {
@@ -94,15 +94,21 @@ export function scoreDecision(
   // either resolved or it did not, and `resolveVariable`'s internal score measures
   // how sure the GUESS was, not whether the slot is real.
   const variableAwarded = variableResolved(decision) ? DECISION_WEIGHTS.variableResolved : 0;
-  terms.push(term("variable resolved to the ontology", variableAwarded, DECISION_WEIGHTS.variableResolved));
+  terms.push(
+    term("variable resolved to the ontology", variableAwarded, DECISION_WEIGHTS.variableResolved),
+  );
 
   const valueAwarded = valueStrengthAward(decision.value.strength, DECISION_WEIGHTS.canonicalValue);
-  terms.push(term("value resolved to a canonical alias", valueAwarded, DECISION_WEIGHTS.canonicalValue));
+  terms.push(
+    term("value resolved to a canonical alias", valueAwarded, DECISION_WEIGHTS.canonicalValue),
+  );
 
-  const rationaleAwarded = decision.fields.rationale === null ? 0 : DECISION_WEIGHTS.rationalePresent;
+  const rationaleAwarded =
+    decision.fields.rationale === null ? 0 : DECISION_WEIGHTS.rationalePresent;
   terms.push(term("rationale clause present", rationaleAwarded, DECISION_WEIGHTS.rationalePresent));
 
-  const modalityAwarded = decision.candidate.modality === "asserted" ? DECISION_WEIGHTS.assertedModality : 0;
+  const modalityAwarded =
+    decision.candidate.modality === "asserted" ? DECISION_WEIGHTS.assertedModality : 0;
   terms.push(term("modality is asserted", modalityAwarded, DECISION_WEIGHTS.assertedModality));
 
   const originAwarded = origin === "human_stated" ? DECISION_WEIGHTS.humanStated : 0;
@@ -161,12 +167,54 @@ export function scorePremise(
 ): DecisionScoreBreakdown {
   const terms: ScoreTerm[] = [];
 
-  terms.push(term("explicit cue", premise.kind === "explicit" ? PREMISE_WEIGHTS.explicitCue : PREMISE_WEIGHTS.explicitCue * premise.cue.weight, PREMISE_WEIGHTS.explicitCue));
-  terms.push(term("predicate came from the cue table", premise.predicateVia === "cue" ? PREMISE_WEIGHTS.predicateFromCue : 0, PREMISE_WEIGHTS.predicateFromCue));
-  terms.push(term("restrictive polarity", premise.polarity === "restrictive" ? PREMISE_WEIGHTS.restrictive : premise.polarity === "negative" ? PREMISE_WEIGHTS.restrictive * 0.5 : 0, PREMISE_WEIGHTS.restrictive));
-  terms.push(term("attached to a decision", attached ? PREMISE_WEIGHTS.attachedToDecision : 0, PREMISE_WEIGHTS.attachedToDecision));
-  terms.push(term("value recovered", premise.candidate.value === undefined ? 0 : PREMISE_WEIGHTS.hasValue, PREMISE_WEIGHTS.hasValue));
-  terms.push(term("world-observable type", worldObservable ? PREMISE_WEIGHTS.worldObservable : 0, PREMISE_WEIGHTS.worldObservable));
+  terms.push(
+    term(
+      "explicit cue",
+      premise.kind === "explicit"
+        ? PREMISE_WEIGHTS.explicitCue
+        : PREMISE_WEIGHTS.explicitCue * premise.cue.weight,
+      PREMISE_WEIGHTS.explicitCue,
+    ),
+  );
+  terms.push(
+    term(
+      "predicate came from the cue table",
+      premise.predicateVia === "cue" ? PREMISE_WEIGHTS.predicateFromCue : 0,
+      PREMISE_WEIGHTS.predicateFromCue,
+    ),
+  );
+  terms.push(
+    term(
+      "restrictive polarity",
+      premise.polarity === "restrictive"
+        ? PREMISE_WEIGHTS.restrictive
+        : premise.polarity === "negative"
+          ? PREMISE_WEIGHTS.restrictive * 0.5
+          : 0,
+      PREMISE_WEIGHTS.restrictive,
+    ),
+  );
+  terms.push(
+    term(
+      "attached to a decision",
+      attached ? PREMISE_WEIGHTS.attachedToDecision : 0,
+      PREMISE_WEIGHTS.attachedToDecision,
+    ),
+  );
+  terms.push(
+    term(
+      "value recovered",
+      premise.candidate.value === undefined ? 0 : PREMISE_WEIGHTS.hasValue,
+      PREMISE_WEIGHTS.hasValue,
+    ),
+  );
+  terms.push(
+    term(
+      "world-observable type",
+      worldObservable ? PREMISE_WEIGHTS.worldObservable : 0,
+      PREMISE_WEIGHTS.worldObservable,
+    ),
+  );
 
   const total = terms.reduce((sum, t) => sum + t.awarded, 0);
   return { total: asConfidence(clamp(total)), terms };
@@ -187,10 +235,36 @@ export const ALTERNATIVE_WEIGHTS = {
 export function scoreAlternative(alternative: RecoveredAlternative): DecisionScoreBreakdown {
   const terms: ScoreTerm[] = [];
 
-  terms.push(term("pivot construction", alternative.via === "pivot" ? ALTERNATIVE_WEIGHTS.pivotConstruction : 0, ALTERNATIVE_WEIGHTS.pivotConstruction));
-  terms.push(term("rejection cue", alternative.cuePhrase === null ? 0 : ALTERNATIVE_WEIGHTS.rejectionCue, ALTERNATIVE_WEIGHTS.rejectionCue));
-  terms.push(term("value known to the ontology", alternative.value.strength === "known" || alternative.value.strength === "scoped-known" ? ALTERNATIVE_WEIGHTS.knownValue : 0, ALTERNATIVE_WEIGHTS.knownValue));
-  terms.push(term("carries a reason", alternative.candidate.whyRejected === undefined ? 0 : ALTERNATIVE_WEIGHTS.hasReason, ALTERNATIVE_WEIGHTS.hasReason));
+  terms.push(
+    term(
+      "pivot construction",
+      alternative.via === "pivot" ? ALTERNATIVE_WEIGHTS.pivotConstruction : 0,
+      ALTERNATIVE_WEIGHTS.pivotConstruction,
+    ),
+  );
+  terms.push(
+    term(
+      "rejection cue",
+      alternative.cuePhrase === null ? 0 : ALTERNATIVE_WEIGHTS.rejectionCue,
+      ALTERNATIVE_WEIGHTS.rejectionCue,
+    ),
+  );
+  terms.push(
+    term(
+      "value known to the ontology",
+      alternative.value.strength === "known" || alternative.value.strength === "scoped-known"
+        ? ALTERNATIVE_WEIGHTS.knownValue
+        : 0,
+      ALTERNATIVE_WEIGHTS.knownValue,
+    ),
+  );
+  terms.push(
+    term(
+      "carries a reason",
+      alternative.candidate.whyRejected === undefined ? 0 : ALTERNATIVE_WEIGHTS.hasReason,
+      ALTERNATIVE_WEIGHTS.hasReason,
+    ),
+  );
 
   const total = terms.reduce((sum, t) => sum + t.awarded, 0);
   return { total: asConfidence(clamp(total)), terms };
@@ -203,7 +277,7 @@ export function scoreAlternative(alternative: RecoveredAlternative): DecisionSco
 /**
  * How much a modality discounts a decision.
  *
- * `proposed` is a real proposal and keeps most of its score ΓÇö it just cannot become
+ * `proposed` is a real proposal and keeps most of its score — it just cannot become
  * IN without a human. `hypothetical` and `reported` never reach here: they are
  * discarded in `decisions.ts`.
  */
@@ -222,7 +296,10 @@ export const MODALITY_FACTOR: Readonly<Record<Modality, number>> = {
  * trustworthy, and the difference matters more at the top of the scale where the
  * bulk-approve threshold sits.
  */
-export function originFactor(origin: DecisionOrigin, authority: Readonly<Record<DecisionOrigin, number>>): number {
+export function originFactor(
+  origin: DecisionOrigin,
+  authority: Readonly<Record<DecisionOrigin, number>>,
+): number {
   return authority[origin];
 }
 

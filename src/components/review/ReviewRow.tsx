@@ -1,18 +1,18 @@
 /**
- * One review row ΓÇö the unit the queue is built from.
+ * One review row — the unit the queue is built from.
  *
- * Phase 1 ┬╖ sub-phase 1.9
+ * Phase 1 ú sub-phase 1.9
  *
  * ---------------------------------------------------------------------------
  * THE ROW IS WHERE THE 13:1 RATIO IS PAID
  *
- * ARGUS measured 155 false positives against 12 false negatives (docs/05 ┬º4), so a
+ * ARGUS measured 155 false positives against 12 false negatives (docs/05 §4), so a
  * review surface is judged on how fast it lets you say NO. Three properties of this
  * row serve that:
  *
- *   ΓÇó it renders ONE LINE when collapsed, and low-tier items arrive collapsed
- *   ΓÇó approve / edit / discard are always visible, never behind a menu
- *   ΓÇó the decision is recorded the moment the button is pressed ΓÇö there is no
+ *   • it renders ONE LINE when collapsed, and low-tier items arrive collapsed
+ *   • approve / edit / discard are always visible, never behind a menu
+ *   • the decision is recorded the moment the button is pressed — there is no
  *     "pending changes" state to lose track of
  *
  * An item with no verifiable quote says so in a warning rather than rendering an
@@ -21,17 +21,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState, type ReactElement } from "react";
-import { useExtraction } from "@/store/extraction";
 import {
+  type ReviewItem,
   TIER_HINTS,
   approve,
   contest,
   describeAction,
   discard,
   edit,
-  type ReviewItem,
 } from "@/extraction";
+import { useExtraction } from "@/store/extraction";
+import { type ReactElement, useEffect, useState } from "react";
 import { TIER_COLOUR } from "./tier-colour";
 
 /* -------------------------------------------------------------------------- */
@@ -75,8 +75,6 @@ export function ReviewRow({
       onKeyDown={(event) => {
         if (event.key === "Enter") onSelect();
       }}
-      role="button"
-      tabIndex={0}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "10px 14px" }}>
         <button
@@ -90,35 +88,57 @@ export function ReviewRow({
           }}
           style={{ width: 16, padding: 0 }}
         >
-          {open ? "ΓêÆ" : "+"}
+          {open ? "−" : "+"}
         </button>
 
-        <span className="badge" title={TIER_HINTS[item.tier]}>{item.kind}</span>
+        <span className="badge" title={TIER_HINTS[item.tier]}>
+          {item.kind}
+        </span>
         <strong style={{ fontSize: 13 }}>{item.title}</strong>
 
         {item.derived && (
-          <span className="badge" title="Inferred from another premise, not quoted from the transcript">
+          <span
+            className="badge"
+            title="Inferred from another premise, not quoted from the transcript"
+          >
             derived
           </span>
         )}
         {item.conflictsWith.length > 0 && (
-          <span className="badge" style={{ borderColor: TIER_COLOUR.high }} title="Same variable, different value">
+          <span
+            className="badge"
+            style={{ borderColor: TIER_COLOUR.high }}
+            title="Same variable, different value"
+          >
             conflicts with {item.conflictsWith.join(", ")}
           </span>
         )}
 
         <span style={{ flex: 1 }} />
 
-        <span className="mono faint" style={{ fontSize: 11 }}>{item.confidence.toFixed(2)}</span>
-        <span className="faint" style={{ fontSize: 11 }}>{item.origin}</span>
+        <span className="mono faint" style={{ fontSize: 11 }}>
+          {item.confidence.toFixed(2)}
+        </span>
+        <span className="faint" style={{ fontSize: 11 }}>
+          {item.origin}
+        </span>
 
         {decided ? (
           <span className="badge">{describeAction(item.action)}</span>
         ) : (
           <span style={{ display: "flex", gap: 4 }}>
             <RowButton label="approve" onClick={() => act(item.key, approve(false))} />
-            <RowButton label="edit" onClick={() => { setDraft(item.detail); setOpen(true); }} />
-            <RowButton label="discard" onClick={() => act(item.key, discard("discarded in review"))} />
+            <RowButton
+              label="edit"
+              onClick={() => {
+                setDraft(item.detail);
+                setOpen(true);
+              }}
+            />
+            <RowButton
+              label="discard"
+              onClick={() => act(item.key, discard("discarded in review"))}
+            />
           </span>
         )}
       </div>
@@ -136,7 +156,10 @@ export function ReviewRow({
                 onCloseEdit();
               }}
               onContest={() => {
-                act(item.key, contest(reason.trim().length > 0 ? reason.trim() : "parked for later"));
+                act(
+                  item.key,
+                  contest(reason.trim().length > 0 ? reason.trim() : "parked for later"),
+                );
                 onCloseEdit();
               }}
               onCancel={onCloseEdit}
@@ -164,11 +187,13 @@ export function ReviewRow({
                 <p className="notice notice-warning" style={{ fontSize: 12, margin: 0 }}>
                   This item has no verifiable quote. The engine returned text that is not a literal
                   substring of your transcript, so its span was dropped and its confidence cut. The
-                  structure may still be right ΓÇö read it and decide.
+                  structure may still be right — read it and decide.
                 </p>
               )}
 
-              <p className="faint" style={{ fontSize: 12, margin: 0 }}>{item.resolution}</p>
+              <p className="faint" style={{ fontSize: 12, margin: 0 }}>
+                {item.resolution}
+              </p>
             </>
           )}
         </div>
@@ -177,7 +202,10 @@ export function ReviewRow({
   );
 }
 
-function RowButton({ label, onClick }: { readonly label: string; readonly onClick: () => void }): ReactElement {
+function RowButton({
+  label,
+  onClick,
+}: { readonly label: string; readonly onClick: () => void }): ReactElement {
   return (
     <button
       type="button"
@@ -234,10 +262,16 @@ function EditForm({
         not thrown away.
       </p>
       <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={onSave}>Save and approve</button>
-        <button type="button" onClick={onContest}>Contest</button>
+        <button type="button" onClick={onSave}>
+          Save and approve
+        </button>
+        <button type="button" onClick={onContest}>
+          Contest
+        </button>
         <span style={{ flex: 1 }} />
-        <button type="button" className="faint" onClick={onCancel}>Cancel</button>
+        <button type="button" className="faint" onClick={onCancel}>
+          Cancel
+        </button>
       </div>
     </div>
   );

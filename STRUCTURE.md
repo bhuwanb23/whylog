@@ -16,7 +16,7 @@ This document is the scaffolding contract. Nothing here is implemented yet — `
 
 | File | Purpose |
 |---|---|
-| `package.json` | Manifest. Node ≥20.11, 3 runtime deps, scripts for dev/build/test/eval/guards |
+| `package.json` | Manifest. Node ò20.11, 3 runtime deps, scripts for dev/build/test/eval/guards |
 | `tsconfig.json` | Solution-style root; references app + node configs |
 | `tsconfig.app.json` | **TypeScript strict**: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noPropertyAccessFromIndexSignature`. Path alias `@/*` → `src/*` |
 | `tsconfig.node.json` | Config-file and script compilation |
@@ -55,21 +55,21 @@ This document is the scaffolding contract. Nothing here is implemented yet — `
 
 ```
 whylog/
-├── .github/workflows/     CI
-├── .vscode/               editor defaults
-├── docs/                  research library (9 documents, written)
-├── fixtures/              demo + evaluation inputs
-├── plan/                  master plan + 8 phase files (written)
-├── public/                static assets
-├── reference/             pre-drafted type contracts
-├── scripts/               build-time utilities
-├── src/                   the application (structure only)
-└── tests/                 unit, integration, e2e
+ÃÄÄ .github/workflows/     CI
+ÃÄÄ .vscode/               editor defaults
+ÃÄÄ docs/                  research library (9 documents, written)
+ÃÄÄ fixtures/              demo + evaluation inputs
+ÃÄÄ plan/                  master plan + 8 phase files (written)
+ÃÄÄ public/                static assets
+ÃÄÄ reference/             pre-drafted type contracts
+ÃÄÄ scripts/               build-time utilities
+ÃÄÄ src/                   the application (structure only)
+ÀÄÄ tests/                 unit, integration, e2e
 ```
 
 ---
 
-## 3. `src/substrate/` — Phase 0 · L0
+## 3. `src/substrate/` — Phase 0 ú L0
 
 The append-only, bi-temporal, hash-chained foundation. Everything else writes events here and reads projections from here.
 
@@ -114,7 +114,7 @@ The shared vocabulary. **Highest-leverage artifact in the plan relative to its s
 
 ---
 
-## 5. `src/ai/` — the engine seam · Phases 0.9, 1.10
+## 5. `src/ai/` — the engine seam ú Phases 0.9, 1.10
 
 One interface, two implementations, selected at runtime, badged in the UI, never mixed silently.
 
@@ -129,7 +129,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `prompts/classification.ts` | Five-verdict contradiction classification prompt |
 | `prompts/composition.ts` | Answer, export-narrative and guard-rationale prompts |
 | `prompts/guard-synthesis.ts` | Decision → guard set prompt (Phase 4.2) |
-| `providers/openai.ts` · `anthropic.ts` · `openrouter.ts` | Thin provider adapters |
+| `providers/openai.ts` ú `anthropic.ts` ú `openrouter.ts` | Thin provider adapters |
 | `local/normalize.ts` | Transcript normalisation: speaker turns, tool noise, code blocks, **offset map** |
 | `local/segment.ts` | Episode segmentation on topic shift (not sentence split) |
 | `local/cues.ts` | Cue-pattern matching against the ontology |
@@ -146,7 +146,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 6. `src/extraction/` — Phase 1 · L1
+## 6. `src/extraction/` — Phase 1 ú L1
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -169,12 +169,12 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `voting.ts` | Three-run majority voting (LLM path), toggleable | 1.8 |
 | `review/index.ts` | Review-queue model; tier-based expansion state | 1.9 |
 | `review/diff.ts` | The transcript↔structure diff model | 1.9 |
-| `review/actions.ts` | Approve · edit · discard · merge-into · mark-contested | 1.9 |
+| `review/actions.ts` | Approve ú edit ú discard ú merge-into ú mark-contested | 1.9 |
 | `commit.ts` | Commit ordering: premises → decision → alternatives → justification → approval | 1.10 |
 
 ---
 
-## 7. `src/reasoning/` — Phase 2 · L2 ★ the differentiating layer
+## 7. `src/reasoning/` — Phase 2 ú L2 ★ the differentiating layer
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -188,14 +188,14 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `backtracking.ts` | Dependency-directed backtracking to assumption nodes; depth bound | 2.6 |
 | `nogoods.ts` | Nogood recording, display text, and re-assertion blocking | 2.6 |
 | `cascade.ts` | Forward propagation; **stop at independent support**; depth cap | 2.7 |
-| `entrenchment.ts` | Five-term score + **EE3 cap** (`E(d) ≤ min premise E`) | 2.8 |
+| `entrenchment.ts` | Five-term score + **EE3 cap** (`E(d) ó min premise E`) | 2.8 |
 | `adjudication.ts` | Weakest-first ordering; **non-prioritized screening**; contested queue | 2.8 |
 | `proposals.ts` | The **seven-part revision proposal**; three actions incl. *keep & re-justify* | 2.9 |
 | `audit.ts` | Reason-carrying trail; per-flip explainability | 2.10 |
 
 ---
 
-## 8. `src/retrieval/` — Phase 3 · L3 ✅ built
+## 8. `src/retrieval/` — Phase 3 ú L3 ✅ built
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -209,7 +209,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `rrf.ts` | Reciprocal Rank Fusion, `k = 60`, score-agnostic | 3.4 |
 | `rerank/index.ts` | Second-stage dispatch by engine capability | 3.5 |
 | `rerank/cross-encoder.ts` | LLM / downloaded-model reranking | 3.5 |
-| `rerank/local-weights.ts` | Five inspectable components: structural .35 · lexical .30 · dense .20 · premise .10 · recency .05 | 3.5 |
+| `rerank/local-weights.ts` | Five inspectable components: structural .35 ú lexical .30 ú dense .20 ú premise .10 ú recency .05 | 3.5 |
 | `negation.ts` | Negation scope resolution shared with the classifier | 3.6 |
 | `contradiction.ts` | Five-verdict classifier; **invariant I3 — similarity never decides** | 3.6 |
 | `preemption.ts` | **Rejected-alternative pre-emption** — warn before the decision, not after | 3.6 |
@@ -221,7 +221,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 9. `src/guards/` — Phase 4 · L2↔L4
+## 9. `src/guards/` — Phase 4 ú L2↔L4
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -230,7 +230,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `project.ts` | The **virtual project** built from pasted `package.json` / file listing / contents | 4.3 |
 | `taxonomy.ts` | Kind metadata: determinism, browser-runnable, default severity | 4.1 |
 | `templates/index.ts` | Template dispatch by decision variable | 4.2 |
-| `templates/database.ts` · `framework.ts` · `hosting.ts` · `auth.ts` · `generic.ts` | Per-variable guard templates (~80% coverage) | 4.2 |
+| `templates/database.ts` ú `framework.ts` ú `hosting.ts` ú `auth.ts` ú `generic.ts` | Per-variable guard templates (~80% coverage) | 4.2 |
 | `synth/index.ts` | Synthesis pipeline; **proposed, never auto-installed** | 4.2 |
 | `synth/llm.ts` | LLM synthesis for decisions templates miss; flagged `requiresReview` | 4.2 |
 | `eval/index.ts` | Interpreter dispatch | 4.3 |
@@ -241,34 +241,34 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `eval/llm-judge.ts` | Rubric verdict; scored **separately** from deterministic compliance | 4.3 |
 | `metrics/compliance.ts` | **Decision Compliance** | 4.4 |
 | `metrics/coverage.ts` | Verifiable coverage; explicit `unverifiable` state | 4.4 |
-| `metrics/soundness.ts` | Log soundness (IN ÷ non-superseded) | 4.4 |
+| `metrics/soundness.ts` | Log soundness (IN ö non-superseded) | 4.4 |
 | `metrics/drift.ts` | Drift age — days since first unresolved failure | 4.4 |
 | `metrics/ratio.ts` | Deterministic ratio | 4.4 |
 | `baseline.ts` | **Baseline + ratchet**: freeze initial failures, fail only on new ones | 4.4 |
 | `feedback.ts` | **Guards as evidence ★** — pass → corroboration + `implementation_cost`; fail → `REVISE()` | 4.5 |
 | `ci-export.ts` | Standalone runner + workflow emission; the rich failure message | 4.6 |
-| `review.ts` | Accept · edit · suppress (with reason) · delete; label inheritance | 4.7 |
+| `review.ts` | Accept ú edit ú suppress (with reason) ú delete; label inheritance | 4.7 |
 
 ---
 
-## 10. `src/export/` — Phase 5 · L4
+## 10. `src/export/` — Phase 5 ú L4
 
 | File | Purpose | Sub-phase |
 |---|---|---|
 | `index.ts` | One graph → CIF → rank → budget → emit → stamp, in a single pass | 5.1 |
 | `compiler.ts` | The compilation pipeline | 5.1 |
 | `cif.ts` | **Canonical intermediate form** — target-agnostic; emitters are pure functions of it | 5.1 |
-| `priority.ts` | Inclusion ranking: soundness .35 · entrenchment .25 · scope .20 · severity .15 · recency .05 | 5.4 |
+| `priority.ts` | Inclusion ranking: soundness .35 ú entrenchment .25 ú scope .20 ú severity .15 ú recency .05 | 5.4 |
 | `budget.ts` | Two-tier emission; ~200-line target; live line/token indicator | 5.4 |
 | `consistency-gate.ts` | **Pre-export check** — block on conflict, exclude `OUT`, annotate contested premises and failing guards | 5.6 |
-| `record.ts` | The agent-optimized record: ID · MUST/MUST NOT · `applies_to` · Because (premise IDs) · Rejected · Verify · Status | 5.3 |
-| `emitters/claude.ts` · `agents.ts` · `cursorrules.ts` · `decisions-md.ts` · `index.ts` | Five targets from one CIF | 5.2 |
+| `record.ts` | The agent-optimized record: ID ú MUST/MUST NOT ú `applies_to` ú Because (premise IDs) ú Rejected ú Verify ú Status | 5.3 |
+| `emitters/claude.ts` ú `agents.ts` ú `cursorrules.ts` ú `decisions-md.ts` ú `index.ts` | Five targets from one CIF | 5.2 |
 | `rejected-block.ts` | **"Rejected — do not re-propose"** with premise status | 5.3 |
 | `verify-command.ts` | Guard → one-line runnable command | 5.3 |
 | `stamp/index.ts` | Integrity stamp assembly | 5.5 |
 | `stamp/hash.ts` | Head-hash computation for exports | 5.5 |
 | `stamp/verify.ts` | Mismatch detection on re-import or file check | 5.5 |
-| `ci/index.ts` · `runner.ts` · `workflow.ts` | Emitted CI guard runner and GitHub workflow | 4.6 / 5.2 |
+| `ci/index.ts` ú `runner.ts` ú `workflow.ts` | Emitted CI guard runner and GitHub workflow | 4.6 / 5.2 |
 | `round-trip.ts` | Export → import: stamp verify, resolve, merge as refinement | 5.7 |
 
 ---
@@ -300,7 +300,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 13. `src/` UI — Phase 6 · L5
+## 13. `src/` UI — Phase 6 ú L5
 
 ### Root
 
@@ -313,51 +313,51 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ### `src/components/common/`
 
-`ModeBadge` · `StatusBadge` · `ConfidenceBar` · `SnippetHighlight` · `Collapsible` · `Modal` · `Drawer` · `Tooltip` · `EmptyState` · `Spinner` · `Toast` · `Keybind`
+`ModeBadge` ú `StatusBadge` ú `ConfidenceBar` ú `SnippetHighlight` ú `Collapsible` ú `Modal` ú `Drawer` ú `Tooltip` ú `EmptyState` ú `Spinner` ú `Toast` ú `Keybind`
 
 ### `src/components/timeline/` — 6.1
 
-`TimelineView` · `TimelineRow` · `TimelineFilters` · `QuickLog`
+`TimelineView` ú `TimelineRow` ú `TimelineFilters` ú `QuickLog`
 
 ### `src/components/review/` — 6.3
 
-`PasteModal` · `ReviewDiff` · `TranscriptPane` · `ExtractedPane` · `DecisionReviewCard` · `PremiseReviewRow` · `AlternativeReviewRow` · `BulkApproveBar` · `ReviewSummary`
+`PasteModal` ú `ReviewDiff` ú `TranscriptPane` ú `ExtractedPane` ú `DecisionReviewCard` ú `PremiseReviewRow` ú `AlternativeReviewRow` ú `BulkApproveBar` ú `ReviewSummary`
 
 ### `src/components/conflict/` — 6.5 ★
 
-`RevisionProposal` (the seven-part surface) · `WhatFailed` · `EvidenceQuote` · `NogoodStatement` · `CascadeTree` · `EntrenchmentBreakdown` · `ProposalActions` · `RejustifyComposer` · `ContestedQueue`
+`RevisionProposal` (the seven-part surface) ú `WhatFailed` ú `EvidenceQuote` ú `NogoodStatement` ú `CascadeTree` ú `EntrenchmentBreakdown` ú `ProposalActions` ú `RejustifyComposer` ú `ContestedQueue`
 
 ### `src/components/ask/` — 6.10
 
-`AskView` · `SearchBar` · `AnswerPanel` · `VerdictBadge` · `GroundednessBar` · `CitationChip` · `CitationExpansion` · `RunTrace` · `NearestRelated` · `PreemptionNotice`
+`AskView` ú `SearchBar` ú `AnswerPanel` ú `VerdictBadge` ú `GroundednessBar` ú `CitationChip` ú `CitationExpansion` ú `RunTrace` ú `NearestRelated` ú `PreemptionNotice`
 
 ### `src/components/guards/`
 
-`GuardPanel` · `GuardCard` · `ProposedGuardCard` · `ComplianceGauge` · `MetricGrid` · `VirtualProjectInput` · `BaselineNotice`
+`GuardPanel` ú `GuardCard` ú `ProposedGuardCard` ú `ComplianceGauge` ú `MetricGrid` ú `VirtualProjectInput` ú `BaselineNotice`
 
 ### `src/components/export/`
 
-`ExportView` · `TargetPicker` · `ArtifactPreview` · `BudgetIndicator` · `IntegrityStamp` · `ConsistencyGateWarning` · `RejectedBlockPreview`
+`ExportView` ú `TargetPicker` ú `ArtifactPreview` ú `BudgetIndicator` ú `IntegrityStamp` ú `ConsistencyGateWarning` ú `RejectedBlockPreview`
 
 ### `src/components/graph/` — 6.6 ★ the signature visual
 
-`PremiseLattice` (bipartite: premises as load-bearing nodes, decisions as leaves) · `LatticeLayout` (columns by premise type) · `PremiseNode` · `DecisionNode` · `LatticeEdge` (`supports` solid / `excludes` dashed / `conflicts` red / `supersedes` grey) · `CascadeAnimation` · `LatticeHighlight` · `AntiHairballFilter` · `DecisionGraph` (supersession chains)
+`PremiseLattice` (bipartite: premises as load-bearing nodes, decisions as leaves) ú `LatticeLayout` (columns by premise type) ú `PremiseNode` ú `DecisionNode` ú `LatticeEdge` (`supports` solid / `excludes` dashed / `conflicts` red / `supersedes` grey) ú `CascadeAnimation` ú `LatticeHighlight` ú `AntiHairballFilter` ú `DecisionGraph` (supersession chains)
 
 ### `src/components/health/` — 6.4
 
-`HealthView` · `MetricCard` · `AgencyRatio` · `HashChainStatus`
+`HealthView` ú `MetricCard` ú `AgencyRatio` ú `HashChainStatus`
 
 ### `src/components/decision/` — 6.2 ★
 
-`DecisionCard` · `YStatement` · `PremiseList` (`RESTS ON` / `EXCLUDES` with live labels) · `AlternativeList` · `AcceptedDownside` · `EntrenchmentBreakdown` · `ProvenanceBlock` · `GuardSummary` · `RelationList` · `AuditTrail`
+`DecisionCard` ú `YStatement` ú `PremiseList` (`RESTS ON` / `EXCLUDES` with live labels) ú `AlternativeList` ú `AcceptedDownside` ú `EntrenchmentBreakdown` ú `ProvenanceBlock` ú `GuardSummary` ú `RelationList` ú `AuditTrail`
 
 ### `src/components/time-machine/` — 6.7
 
-`TimeSlider` (two sliders: valid time and learned time) · `DiffStrip`
+`TimeSlider` (two sliders: valid time and learned time) ú `DiffStrip`
 
 ### `src/views/`
 
-`TimelineView` · `AskView` · `HealthView` · `ExportView` · `GraphView` · `TimeMachineView` · `SettingsView`
+`TimelineView` ú `AskView` ú `HealthView` ú `ExportView` ú `GraphView` ú `TimeMachineView` ú `SettingsView`
 
 ---
 
@@ -365,7 +365,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 | File | Purpose |
 |---|---|
-| `index.ts` · `run.ts` · `report.ts` | Harness entry, CLI, markdown/JSON/CSV reporting |
+| `index.ts` ú `run.ts` ú `report.ts` | Harness entry, CLI, markdown/JSON/CSV reporting |
 | `metrics/types.ts` | `MetricResult` contract |
 | `metrics/extraction.ts` | Decision P/R/F1 (comparator: RecovAr 75/77) |
 | `metrics/premise.ts` | **Premise P/R/F1 — no published comparator** |
@@ -379,8 +379,8 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `metrics/guards.ts` | Guard precision on seeded violations |
 | `metrics/modality.ts` | Correctly-declined hypotheticals |
 | `ablation/toggles.ts` | The 11 switches |
-| `ablation/run.ts` · `ablation/table.ts` | Delta table generation |
-| `corpus/index.ts` · `labels.ts` · `loader.ts` | Corpus loading and ground-truth schema |
+| `ablation/run.ts` ú `ablation/table.ts` | Delta table generation |
+| `corpus/index.ts` ú `labels.ts` ú `loader.ts` | Corpus loading and ground-truth schema |
 
 ---
 
@@ -389,7 +389,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | Path | Covers | Gate |
 |---|---|---|
 | `setup.ts` | jsdom + localStorage shim | — |
-| `helpers/events.ts` · `fixtures.ts` · `graph.ts` | Event builders, corpus loader, graph builders | — |
+| `helpers/events.ts` ú `fixtures.ts` ú `graph.ts` | Event builders, corpus loader, graph builders | — |
 | `unit/substrate/*` | Event validation, fold purity, bi-temporal ordering, resolution ladder, hash chain, portability round-trip | G1 |
 | `unit/extraction/*` | Normalisation, episode segmentation, decisions, **premises**, OUT-list recovery, alternatives, provenance, snippet validation, confidence, voting | G1 |
 | `unit/reasoning/*` | Labeller, **non-monotonic OUT-list**, well-foundedness, gates a/b/c, backtracking, nogoods, **cascade stop condition**, entrenchment + EE3 cap, screening, proposals | **G2** |
@@ -494,7 +494,7 @@ deviations, all deliberate:
 so a premise is never a consequent and every premise is an assumption. Three modules were
 first written as though premises could be conclusions and referenced fields that do not exist
 (`premise.justifications`, `premise.informant`). This file records the real shape, builds the
-two indexes a traversal needs in one pass instead of `O(D² × J)` scans, and holds the
+two indexes a traversal needs in one pass instead of `O(Dý × J)` scans, and holds the
 `isDerivedPremiseText` marker that recognises Phase 1's OUT-list exclusions by TEXT, which is
 the only way they are marked. See `notes/PHASE-2-NOTES.md` §0.
 
@@ -562,7 +562,7 @@ disagree without a note is how the next person reintroduces the bug.
 | 🟠 3 | §3.6 places the hypothetical guard in the classifier | Guard lives in `contradiction.isClassifiable`, applied by the **pipeline** | `DecisionSnapshot` carries no lifecycle status — that is the only field saying whether a decision is settled. An engine told "don't classify this" must invent a verdict to return; never being asked does not. |
 | 🟡 4 | §8 lists 18 files in `src/retrieval/` | **19** — `candidates.ts` added | Gate (b) needed a candidate generator and `gates/semantic.ts` takes one as an injected function. It belongs in the retrieval layer (retrieval proposes, the gate disposes) and reads the L1 vectors already in the index, so gate (b) runs keyless with zero embedding calls. |
 | 🟡 5 | Phase 0 left `templateCompose` inline in `ai/local/index.ts` with a note that Phase 3 would replace it | Extracted to **`ai/local/compose.ts`**, all five `CompositionKind`s | The Phase 0 comment named the file. Templates emit every sentence with its decision id inline, which is what lets `answer.ts` attribute claims to citations by the **same rule** it applies to an LLM's prose — so groundedness is measured identically on both paths instead of the local path being granted 1.0 for having a composer that cannot lie. |
-| 🟡 6 | §3.7 specifies ≤3 bounded searches but not what they search for | Three searches with **distinct purposes**: the question as asked → expansion by shared premise → re-query in the premises' vocabulary | A budget of three identical searches is just a retry loop. Search 2 exists because decisions sharing a `given` often answer a question whose wording does not match; search 3 because the question's vocabulary may not be the log's. |
+| 🟡 6 | §3.7 specifies ó3 bounded searches but not what they search for | Three searches with **distinct purposes**: the question as asked → expansion by shared premise → re-query in the premises' vocabulary | A budget of three identical searches is just a retry loop. Search 2 exists because decisions sharing a `given` often answer a question whose wording does not match; search 3 because the question's vocabulary may not be the log's. |
 | 🟡 7 | §3.10 requires pre-emption on alternatives with a `whyRejected` AND human confirmation | Both conditions enforced (`preemption.ts`), plus `countPreemptions` reporting the gap | The second condition was nearly missed. At Phase 1's measured 15.4% alternative precision, an unconfirmed inferred rejection is more likely wrong than right, and a false pre-emption costs more trust than every correct one earns back. |
 | 🟡 8 | §3.5's weights are fixed constants | `RERANK_WEIGHTS` is `Object.freeze`d but the reranker also accepts `forceLocal` | Phase 7's ablation has to measure what the reranker actually contributes, and an ablation that requires editing source is an ablation that does not get run. |
 

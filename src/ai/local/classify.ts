@@ -1,28 +1,28 @@
 /**
- * The local semantic classifier ΓÇö 2.11, delegating to 3.6.
+ * The local semantic classifier — 2.11, delegating to 3.6.
  *
- * Phase 2 ┬╖ sub-phase 2.11 ΓÇö rewritten in Phase 3 ┬╖ sub-phase 3.6
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.11
- *       plan/phase-3-retrieval.md ┬º3.6 (the canonical rule engine)
+ * Phase 2 ú sub-phase 2.11 — rewritten in Phase 3 ú sub-phase 3.6
+ * Plan: plan/phase-2-truth-maintenance.md §2.11
+ *       plan/phase-3-retrieval.md §3.6 (the canonical rule engine)
  *
  * ---------------------------------------------------------------------------
  * WHY THIS FILE IS NOW 60 LINES INSTEAD OF 253
  *
- * It used to contain its own implementation of the classifier rules. ┬º3.6 then specified
+ * It used to contain its own implementation of the classifier rules. §3.6 then specified
  * the same rules as the retrieval-layer classifier, with a fifth rule added. Two
  * implementations of one judgement is the failure the Phase 2 audit found in the
  * adjudicator: an adjudicator with a narrower rule than its detector silently disagreed
  * with it, so a newcomer could be ACCEPTED while gate (a) reported a contradiction.
  *
  * The rule is now: **one rule engine, and everything else delegates to it.** That engine
- * lives in `retrieval/contradiction.ts` (┬º3.6 names it there, and STRUCTURE.md ┬º8 has it
- * there). This file is the engine's `classify` implementation ΓÇö the adapter between the
+ * lives in `retrieval/contradiction.ts` (§3.6 names it there, and STRUCTURE.md §8 has it
+ * there). This file is the engine's `classify` implementation — the adapter between the
  * `ClassificationRequest` the AI layer speaks and the pair the rule engine speaks.
  *
- * The import points "up" a layer (ai ΓåÆ retrieval), which looks wrong and is deliberate.
+ * The import points "up" a layer (ai → retrieval), which looks wrong and is deliberate.
  * Layering exists to stop the wrong things depending on each other; here the dependency is
  * on pure functions over two snapshots, with no state and no I/O, and the alternative is
- * two classifiers that can disagree. There is no cycle: contradiction.ts ΓåÆ negation.ts ΓåÆ
+ * two classifiers that can disagree. There is no cycle: contradiction.ts → negation.ts →
  * ai/local/negation.ts, and none of those import this file.
  *
  * ---------------------------------------------------------------------------
@@ -37,12 +37,12 @@
  * ---------------------------------------------------------------------------
  * WHAT THIS ADAPTER DELIBERATELY DOES NOT DO
  *
- * It does not implement the hypothetical guard from ┬º3.6 ("a hypothetical or proposed
+ * It does not implement the hypothetical guard from §3.6 ("a hypothetical or proposed
  * decision produces no verdict at all"). It cannot: `DecisionSnapshot` carries
  * `id, variable, value, statement, rationale, validFrom` and no lifecycle status, which is
  * the only field that says whether a decision is settled.
  *
- * That is not a gap in the snapshot ΓÇö it is the right division of labour. Whether a decision
+ * That is not a gap in the snapshot — it is the right division of labour. Whether a decision
  * MAY be classified is pipeline policy, not engine behaviour, and the caller holds the full
  * `Decision` with its status. `retrieval/contradiction.ts` exports `isClassifiable` and the
  * retrieval pipeline applies it before ever building a request, so a `proposed` decision
@@ -51,11 +51,11 @@
  * ---------------------------------------------------------------------------
  */
 
+import { type PairVerdict, classifyPair, describeRules } from "@/retrieval/contradiction";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
 import type { ClassificationRequest } from "../types";
-import { classifyPair, describeRules, diagnose, type PairVerdict } from "@/retrieval/contradiction";
 
 /** No local verdict may claim more certainty than a model reading both statements. The
  *  rule engine's antonym case reaches 0.95 because it is a table lookup with no ambiguity
@@ -70,7 +70,7 @@ export function localClassify(
 
   const pair = classifyPair(request.decisionA, request.decisionB);
 
-  /* The diagnostic needs a rationale similarity, which the request does not carry ΓÇö it
+  /* The diagnostic needs a rationale similarity, which the request does not carry — it
    * carries the two snapshots, and nothing here is allowed to embed them (invariant I3:
    * similarity never produces a verdict, and an M1/M2 label must not smuggle one in). The
    * retrieval pipeline computes the diagnostic where it already has the vectors. */

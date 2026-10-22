@@ -1,8 +1,8 @@
 /**
- * Confidence tiering ΓÇö 1.8, the shared half.
+ * Confidence tiering — 1.8, the shared half.
  *
- * Phase 1 ┬╖ sub-phase 1.8
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.8
+ * Phase 1 ú sub-phase 1.8
+ * Plan: plan/phase-1-extraction-pipeline.md §1.8
  *
  * ---------------------------------------------------------------------------
  * WHAT IS SHARED AND WHAT IS NOT
@@ -21,8 +21,8 @@
  * negatives, a 13:1 ratio (docs/05). So the review surface is optimised for FAST
  * REJECTION rather than careful acceptance:
  *
- *   ΓëÑ0.75  high    expanded, bulk-approvable
- *   0.45ΓÇô  medium  normal
+ *   ò0.75  high    expanded, bulk-approvable
+ *   0.45–  medium  normal
  *   <0.45  low     COLLAPSED BY DEFAULT, one-click discard
  *
  * A tier is therefore a claim about how much of the user's attention an item
@@ -32,22 +32,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import { MODALITY_FACTOR } from "@/ai/local/confidence";
+import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
 import type { Confidence } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import { ORIGIN_AUTHORITY, type DecisionOrigin, type Modality } from "@/types/domain";
-import type {
-  AlternativeCandidate,
-  DecisionCandidate,
-  PremiseCandidate,
-} from "@/ai/types";
-import {
-  demoteTier,
-  tierOf,
-  TIER_HIGH_AT,
-  TIER_MEDIUM_AT,
-  type ConfidenceTier,
-} from "./types";
-import { MODALITY_FACTOR } from "@/ai/local/confidence";
+import { type DecisionOrigin, type Modality, ORIGIN_AUTHORITY } from "@/types/domain";
+import { type ConfidenceTier, TIER_HIGH_AT, TIER_MEDIUM_AT, demoteTier, tierOf } from "./types";
 
 export { TIER_HIGH_AT, TIER_MEDIUM_AT, tierOf, demoteTier };
 export type { ConfidenceTier };
@@ -120,7 +110,7 @@ export function tierPremise(
 ): TieredPremise {
   // A premise the extractor already flagged is capped below the auto-accept line.
   // `needsReview` is true for every topical cue and every explicit cue under 0.9,
-  // so in practice this caps everything ΓÇö which is the honest Phase 1 position.
+  // so in practice this caps everything — which is the honest Phase 1 position.
   const capped = candidate.needsReview ? Math.min(rawScore, TIER_HIGH_AT - 0.01) : rawScore;
   const confidence = asConfidence(clamp(capped));
 
@@ -161,7 +151,8 @@ export function tierAlternative(
     // precision means the expected value of showing one unasked is negative.
     expanded: false,
     tier,
-    preemptionEligible: candidate.whyRejected !== undefined && candidate.whyRejected.trim().length > 0,
+    preemptionEligible:
+      candidate.whyRejected !== undefined && candidate.whyRejected.trim().length > 0,
   };
 }
 
@@ -224,32 +215,32 @@ export function describeHistogram(h: TierHistogram): string {
   if (h.total === 0) return "nothing extracted";
   const parts = [
     `${h.total} item${h.total === 1 ? "" : "s"}`,
-    `${h.high} high ┬╖ ${h.medium} medium ┬╖ ${h.low} low`,
+    `${h.high} high ú ${h.medium} medium ú ${h.low} low`,
   ];
   if (h.bulkApprovable > 0) parts.push(`${h.bulkApprovable} bulk-approvable`);
   const collapsed = h.total - h.expandedByDefault;
   if (collapsed > 0) parts.push(`${collapsed} collapsed by default`);
-  return parts.join(" ┬╖ ");
+  return parts.join(" ú ");
 }
 
 /** What a tier MEANS, in the words the review UI shows. */
 export const TIER_HINTS: Readonly<Record<ConfidenceTier, string>> = {
   high: "Expanded. Safe to bulk-approve if the transcript is one you trust.",
   medium: "Normal review. Read it; the extractor is probably right.",
-  low: "Collapsed. The extractor is probably wrong ΓÇö one click discards it.",
+  low: "Collapsed. The extractor is probably wrong — one click discards it.",
 };
 
 /** The modality discount, exposed so the review UI can explain why an item that
  *  scored well still landed in a lower tier. */
 export function describeModalityDiscount(modality: Modality): string {
   const factor = MODALITY_FACTOR[modality];
-  if (factor === 1) return "asserted ΓÇö no discount";
-  return `${modality} ΓÇö score multiplied by ${factor.toFixed(2)}`;
+  if (factor === 1) return "asserted — no discount";
+  return `${modality} — score multiplied by ${factor.toFixed(2)}`;
 }
 
 /** The origin discount, likewise. */
 export function describeOriginDiscount(origin: DecisionOrigin): string {
   const factor = ORIGIN_AUTHORITY[origin];
-  if (factor === 1) return "human-stated ΓÇö full authority";
-  return `${origin.replace(/_/g, " ")} ΓÇö score multiplied by ${factor.toFixed(2)}`;
+  if (factor === 1) return "human-stated — full authority";
+  return `${origin.replace(/_/g, " ")} — score multiplied by ${factor.toFixed(2)}`;
 }

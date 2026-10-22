@@ -1,7 +1,7 @@
 /**
  * Chunking — 1.1.
  *
- * Phase 1 · sub-phase 1.1
+ * Phase 1 ú sub-phase 1.1
  * Plan: plan/phase-1-extraction-pipeline.md §1.1
  *
  * ---------------------------------------------------------------------------
@@ -180,5 +180,5 @@ export function describeChunking(result: ChunkingResult): string {
       `${result.oversizedTurns} turn${result.oversizedTurns === 1 ? "" : "s"} over budget — sent whole rather than split mid-sentence`,
     );
   }
-  return parts.join(" · ");
+  return parts.join(" ú ");
 }
