@@ -19,14 +19,14 @@
  *                       entrenchment on every decision in the transcript.
  */
 
+import type { InputShape } from "./types";
 import {
+  linesWithOffsets,
+  trimTrailing,
   type AttributionResult,
   type LineSpan,
   type RawTurn,
-  linesWithOffsets,
-  trimTrailing,
 } from "./lines";
-import type { InputShape } from "./types";
 
 /* -------------------------------------------------------------------------- */
 /* JSONL                                                                      */
@@ -76,14 +76,7 @@ function roleFromJson(line: string): "human" | "agent" | "unknown" {
 
   const role = match[1]?.toLowerCase() ?? "";
   if (role === "user" || role === "human") return "human";
-  if (
-    role === "assistant" ||
-    role === "agent" ||
-    role === "bot" ||
-    role === "model" ||
-    role === "ai"
-  )
-    return "agent";
+  if (role === "assistant" || role === "agent" || role === "bot" || role === "model" || role === "ai") return "agent";
   return "unknown";
 }
 
@@ -92,8 +85,7 @@ function roleFromJson(line: string): "human" | "agent" | "unknown" {
 /* -------------------------------------------------------------------------- */
 
 const FIRST_PERSON = /\b(i|i'm|ive|i've|i'll|im|my|me|we|our|us|let's|lets)\b/i;
-const SECOND_PERSON =
-  /\b(you|your|we could|we should|i suggest|i recommend|consider|how about|what if)\b/i;
+const SECOND_PERSON = /\b(you|your|we could|we should|i suggest|i recommend|consider|how about|what if)\b/i;
 
 /**
  * No markers anywhere: split on blank lines and attribute by voice.
@@ -103,18 +95,13 @@ const SECOND_PERSON =
  * evidence is one-sided, because a wrong `human` here inflates entrenchment on
  * every decision in the transcript.
  */
-export function attributeUnmarked(
-  raw: string,
-  lines: readonly LineSpan[],
-  shape: InputShape,
-): AttributionResult {
+export function attributeUnmarked(raw: string, lines: readonly LineSpan[], shape: InputShape): AttributionResult {
   const blocks: { start: number; end: number; bodyStart: number }[] = [];
   let open: { start: number; bodyStart: number } | null = null;
 
   for (const line of lines) {
     if (line.blank) {
-      if (open !== null)
-        blocks.push({ start: open.start, end: line.start, bodyStart: open.bodyStart });
+      if (open !== null) blocks.push({ start: open.start, end: line.start, bodyStart: open.bodyStart });
       open = null;
       continue;
     }

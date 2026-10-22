@@ -39,6 +39,8 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Confidence, SourceSpan, TranscriptId } from "@/types/common";
+import { asConfidence } from "@/types/common";
 import type {
   AlternativeCandidate,
   DecisionCandidate,
@@ -47,8 +49,6 @@ import type {
   PremiseCandidate,
 } from "@/ai/types";
 import { isLiteralSubstring } from "@/lib/text";
-import type { Confidence, SourceSpan, TranscriptId } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import { locateSnippet } from "./offset-map";
 
 /** The confidence a failed validation is reduced TO, not by. A flat floor rather
@@ -65,7 +65,11 @@ export interface SnippetVerdict {
   readonly reason: SnippetFailure | null;
 }
 
-export type SnippetFailure = "not-a-substring" | "empty" | "too-long" | "ambiguous";
+export type SnippetFailure =
+  | "not-a-substring"
+  | "empty"
+  | "too-long"
+  | "ambiguous";
 
 /** A snippet longer than this is a paragraph, not a quote. Models that dump a whole
  *  turn as a "snippet" produce citations that highlight everything and therefore
@@ -111,11 +115,7 @@ export function validateSnippet(
   // The engine may also have supplied offsets. Trust them only if they agree with
   // the text — an offset that disagrees with its own quote is wrong, and the quote
   // is the thing the user will read.
-  if (
-    snippet.start >= 0 &&
-    snippet.end > snippet.start &&
-    raw.slice(snippet.start, snippet.end) === text
-  ) {
+  if (snippet.start >= 0 && snippet.end > snippet.start && raw.slice(snippet.start, snippet.end) === text) {
     return { ok: true, span: snippet, reason: null };
   }
 
