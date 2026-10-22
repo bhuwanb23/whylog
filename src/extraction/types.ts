@@ -21,14 +21,6 @@
  */
 
 import type {
-  AlternativeCandidate,
-  DecisionCandidate,
-  DiscardedCandidate,
-  PremiseCandidate,
-} from "@/ai/types";
-import type { ResolutionAction, ResolutionRung } from "@/substrate/identity";
-import type {
-  AlternativeId,
   Confidence,
   DecisionId,
   EngineId,
@@ -38,7 +30,19 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type { DecisionOrigin, DecisionVariable, Modality } from "@/types/domain";
+import type {
+  DecisionOrigin,
+  DecisionVariable,
+  Modality,
+  PremiseType,
+} from "@/types/domain";
+import type { ResolutionAction, ResolutionRung } from "@/substrate/identity";
+import type {
+  AlternativeCandidate,
+  DecisionCandidate,
+  DiscardedCandidate,
+  PremiseCandidate,
+} from "@/ai/types";
 
 /* -------------------------------------------------------------------------- */
 /* 1.1 — input shapes                                                         */
@@ -116,10 +120,6 @@ export interface NormalizedTurn {
   /** Bounds of `text` in the NORMALISED string. */
   readonly start: number;
   readonly end: number;
-  /** The same bounds in the RAW input. The chunker and the review pane need
-   *  raw coordinates to highlight the source. */
-  readonly rawStart: number;
-  readonly rawEnd: number;
   /** How the speaker was decided, so a wrong attribution is diagnosable. */
   readonly attribution: "marker" | "jsonl-role" | "indentation" | "inherited" | "none";
 }
@@ -188,7 +188,11 @@ export interface NormalizedTranscript {
 
 /** Why an episode ended. Recorded so a bad boundary is diagnosable rather than
  *  merely observed. */
-export type EpisodeBoundaryReason = "topic-shift" | "cue-gap" | "length-cap" | "end-of-transcript";
+export type EpisodeBoundaryReason =
+  | "topic-shift"
+  | "cue-gap"
+  | "length-cap"
+  | "end-of-transcript";
 
 /**
  * A decision episode: a window of consecutive turns bounded by topic shift and
@@ -269,7 +273,12 @@ export interface ExtractionOptions {
   readonly signal?: AbortSignal;
 }
 
-export type StageName = "normalise" | "segment" | "recognise" | "resolve" | "score";
+export type StageName =
+  | "normalise"
+  | "segment"
+  | "recognise"
+  | "resolve"
+  | "score";
 
 /** Per-stage telemetry. Extraction is the layer users trust least, so it reports
  *  what it did rather than only what it found. */
@@ -312,7 +321,7 @@ export interface ResolutionOutcome {
   readonly action: ResolutionAction;
   readonly rung: ResolutionRung;
   /** The existing node this candidate merges into, when `action === "merge"`. */
-  readonly matchedId: DecisionId | PremiseId | AlternativeId | null;
+  readonly matchedId: DecisionId | PremiseId | null;
   readonly score: number;
   readonly explanation: string;
   readonly needsReview: boolean;
@@ -434,10 +443,7 @@ export function isAccepted(action: ReviewAction | null): boolean {
 export interface ReviewOutcome {
   readonly approved: readonly ResolvedCandidate[];
   readonly discarded: readonly ResolvedCandidate[];
-  readonly merged: readonly {
-    readonly candidate: ResolvedCandidate;
-    readonly intoId: DecisionId | PremiseId;
-  }[];
+  readonly merged: readonly { readonly candidate: ResolvedCandidate; readonly intoId: DecisionId | PremiseId }[];
   readonly contested: readonly { readonly candidate: ResolvedCandidate; readonly reason: string }[];
   readonly secondsTaken: number;
 }

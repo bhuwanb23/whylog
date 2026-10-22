@@ -35,9 +35,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { OffsetMapBuilder } from "./offset-map";
-import { type LineSpan, linesWithOffsets } from "./speakers";
 import type { NoiseKind, NoiseRegion } from "./types";
+import { linesWithOffsets, type LineSpan } from "./speakers";
+import { OffsetMapBuilder } from "./offset-map";
 
 /** Shortest run of lines that may be collapsed. Below this, leave it: a
  *  three-line diff is often quoted deliberately. */
@@ -48,20 +48,16 @@ const MIN_DENSE_RUN_LINES = 3;
 
 const TOOL_OPEN = /^\s*(?:⏺|●)\s*[A-Za-z][\w.-]*\s*\(/u;
 const TOOL_CONTINUATION = /^\s*⎿/u;
-const TOOL_LABEL =
-  /^\s*(?:Bash|Read|Write|Edit|Grep|Glob|LS|WebFetch|WebSearch|Task|TodoWrite|NotebookEdit|MultiEdit)\s*\(/;
+const TOOL_LABEL = /^\s*(?:Bash|Read|Write|Edit|Grep|Glob|LS|WebFetch|WebSearch|Task|TodoWrite|NotebookEdit|MultiEdit)\s*\(/;
 
 const DIFF_HEADER = /^(?:diff --git|index [0-9a-f]{7,}\.\.|---\s+a\/|\+\+\+\s+b\/|@@\s)/;
 const DIFF_LINE = /^[+-]\s?\S/;
 
-const TRACE_START =
-  /^\s*(?:at\s+[\w$.<>/[\]-]+\s*\(|(?:[\w$.]+\.)?(?:Error|Exception|Failure|panic|Traceback)\b)/;
+const TRACE_START = /^\s*(?:at\s+[\w$.<>/[\]-]+\s*\(|(?:[\w$.]+\.)?(?:Error|Exception|Failure|panic|Traceback)\b)/;
 const TRACE_FRAME = /^\s*(?:at\s+|File\s+"|Caused by:|\s+from\s+|\tat\s)/;
-const TRACE_PATH =
-  /^\s*(?:node_modules|dist|build|src|\.\/|\.\.\/|\/)[\w./@-]+\.(?:ts|tsx|js|jsx|py|rb|go|rs|java|c|cpp|h)[:(]\d+/;
+const TRACE_PATH = /^\s*(?:node_modules|dist|build|src|\.\/|\.\.\/|\/)[\w./@-]+\.(?:ts|tsx|js|jsx|py|rb|go|rs|java|c|cpp|h)[:(]\d+/;
 
-const FILE_LINE =
-  /^\s*(?:[-*•]\s+)?[\w.@/-]+\.(?:ts|tsx|js|jsx|json|md|py|rb|go|rs|css|html|yml|yaml|toml|svg|sh)(?:\s+\(\d+\s+(?:lines?|bytes?)\))?\s*$/;
+const FILE_LINE = /^\s*(?:[-*•]\s+)?[\w.@/-]+\.(?:ts|tsx|js|jsx|json|md|py|rb|go|rs|css|html|yml|yaml|toml|svg|sh)(?:\s+\(\d+\s+(?:lines?|bytes?)\))?\s*$/;
 const FILE_HEADER = /^\s*(?:file listing|files changed|\d+ files? changed)/i;
 
 const INDENTED_OUTPUT = /^\s{2,}\S/;
@@ -214,19 +210,16 @@ export function placeholderFor(kind: NoiseKind, lineCount: number): string {
 function detectToolCall(lines: readonly LineSpan[], at: number): Run | null {
   const line = lines[at];
   if (line === undefined) return null;
-  if (
-    !TOOL_OPEN.test(line.text) &&
-    !TOOL_LABEL.test(line.text) &&
-    !TOOL_CONTINUATION.test(line.text)
-  )
-    return null;
+  if (!TOOL_OPEN.test(line.text) && !TOOL_LABEL.test(line.text) && !TOOL_CONTINUATION.test(line.text)) return null;
 
   let end = at;
   for (let i = at + 1; i < lines.length; i += 1) {
     const next = lines[i];
     if (next === undefined) break;
     const continues =
-      TOOL_CONTINUATION.test(next.text) || INDENTED_OUTPUT.test(next.text) || next.blank;
+      TOOL_CONTINUATION.test(next.text) ||
+      INDENTED_OUTPUT.test(next.text) ||
+      next.blank;
     // A blank line only continues the run if something noisy follows it.
     if (!continues) break;
     if (next.blank && !hasNoiseWithin(lines, i + 1, 2)) break;

@@ -33,8 +33,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import { variableFromValue } from "@/ontology/canonicalize";
 import type { DecisionVariable } from "@/types/domain";
+import { variableFromValue } from "@/ontology/canonicalize";
 import type { ClauseFields } from "./rationale";
 
 export interface YStatementSlots {
@@ -143,7 +143,10 @@ export function renderYStatement(slots: YStatementSlots): YStatementResult {
  * what a timeline row and an export rule show, and both need the decision in as
  * few words as possible. The Y-statement is the long form, stored alongside.
  */
-export function imperativeStatement(value: string, rejected?: readonly string[]): string {
+export function imperativeStatement(
+  value: string,
+  rejected?: readonly string[],
+): string {
   const chosen = capitalise(ensureVerb(value));
   if (rejected === undefined || rejected.length === 0) return chosen;
   return `${chosen}, not ${rejected.slice(0, 2).join(" or ")}`;
@@ -154,8 +157,7 @@ export function imperativeStatement(value: string, rejected?: readonly string[])
 function ensureVerb(value: string): string {
   const lower = value.toLowerCase().trim();
   if (lower === "none" || lower === "no auth" || lower.startsWith("no ")) return value.trim();
-  if (/^(use|switch|move|migrate|adopt|keep|drop|add|remove|stick)\b/i.test(lower))
-    return value.trim();
+  if (/^(use|switch|move|migrate|adopt|keep|drop|add|remove|stick)\b/i.test(lower)) return value.trim();
   return `use ${value.trim()}`;
 }
 
@@ -175,15 +177,9 @@ export function parseYStatement(text: string): YStatementSlots | null {
   const source = text.trim();
   if (!/^In the context of\b/i.test(source)) return null;
 
-  const context = capture(
-    source,
-    /^In the context of\s+(.+?)(?=,\s*facing\b|,\s*we decided for\b)/i,
-  );
+  const context = capture(source, /^In the context of\s+(.+?)(?=,\s*facing\b|,\s*we decided for\b)/i);
   const concern = capture(source, /,\s*facing\s+(.+?)(?=,\s*we decided for\b)/i);
-  const value = capture(
-    source,
-    /we decided for\s+(.+?)(?=,\s*to achieve\b|,\s*accepting\b|\.?\s*$)/i,
-  );
+  const value = capture(source, /we decided for\s+(.+?)(?=,\s*to achieve\b|,\s*accepting\b|\.?\s*$)/i);
   const quality = capture(source, /,\s*to achieve\s+(.+?)(?=,\s*accepting\b|\.?\s*$)/i);
   const downside = capture(source, /,\s*accepting\s+(.+?)\.?\s*$/i);
 
