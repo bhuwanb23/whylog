@@ -112,11 +112,11 @@ Sven Ove Hansson's **belief base** revision operates on non-closed bases and dro
 
 ### 3.3 Entrenchment ordering
 
-An **entrenchment ordering** `≤` ranks beliefs by resistance to retraction. When you must give something up, give up the least entrenched. Gärdenfors–Makinson conditions:
+An **entrenchment ordering** `ó` ranks beliefs by resistance to retraction. When you must give something up, give up the least entrenched. Gärdenfors–Makinson conditions:
 
-- **EE1 (closure):** if `A ≤ B` and `B ≤ A` then `A ≡ B` in resistance.
-- **EE2 (dominance):** if `⊢ B → A` then `A ≤ B` — a consequence is never more entrenched than what implies it.
-- **EE3:** if `⊢ A → B` then `B ≤ A` … and the practical reading used by Veritas: **a derived belief is capped at its weakest premise.**
+- **EE1 (closure):** if `A ó B` and `B ó A` then `A ≡ B` in resistance.
+- **EE2 (dominance):** if `⊢ B → A` then `A ó B` — a consequence is never more entrenched than what implies it.
+- **EE3:** if `⊢ A → B` then `B ó A` … and the practical reading used by Veritas: **a derived belief is capped at its weakest premise.**
 
 EE3 is load-bearing for WhyLog. A decision resting on three premises can never be more entrenched than the shakiest of them. If "single-user" is a guess and "no budget" is a hard fact, the SQLite decision inherits the guess's fragility.
 
@@ -141,7 +141,7 @@ E(d) = 0.30 · source_authority
 **Properties to preserve:**
 - Every term is in [0,1], so `E(d) ∈ [0,1]` and weights sum to 1.0.
 - The score is **transparent and inspectable** — the UI shows the five components as a breakdown. Veritas calls this out as a design principle and it's right: an opaque retraction decision destroys trust.
-- **Capping rule (EE3):** `E(d) ≤ min(E(p) for p in premises(d))` computed over premise entrenchment, applied *after* the weighted sum. Without this, a well-corroborated decision resting on a wild guess looks unshakeable.
+- **Capping rule (EE3):** `E(d) ó min(E(p) for p in premises(d))` computed over premise entrenchment, applied *after* the weighted sum. Without this, a well-corroborated decision resting on a wild guess looks unshakeable.
 
 ### 3.5 Contraction vs revision
 
@@ -177,22 +177,22 @@ If "single-user" is a string inside each decision's `reasoning` field, then inva
 
 ```
                         ┌──────────────────────────────────────────┐
-                        │                                          │
-   PROPOSED ──approve──► ACTIVE ──────────────────────────────────┐│
-       │                   │                                     ││
-    reject                 │ justification invalidated           ││
-       │                   ▼                                     ││
-       └────────────► UNSOUND (OUT)                              ││
-                           │                                     ││
-              ┌────────────┼────────────┬────────────────┐       ││
-              ▼            ▼            ▼                ▼       ││
-        RE-JUSTIFIED   REVERSED     CONTESTED        ARCHIVED    ││
-        (new premise)  (new value)  (human must      (out of     ││
-              │            │         adjudicate)      scope)     ││
-              └────────────┴────────────┬────────────────┘       ││
-                                        ▼                        ▼│
-                                     ACTIVE ◄─────────────────────┘│
-                                                                   │
+                        ³                                          ³
+   PROPOSED ──approve──► ACTIVE ──────────────────────────────────┐³
+       ³                   ³                                     ³³
+    reject                 ³ justification invalidated           ³³
+       ³                   ▼                                     ³³
+       └────────────► UNSOUND (OUT)                              ³³
+                           ³                                     ³³
+              ┌────────────┼────────────┬────────────────┐       ³³
+              ▼            ▼            ▼                ▼       ³³
+        RE-JUSTIFIED   REVERSED     CONTESTED        ARCHIVED    ³³
+        (new premise)  (new value)  (human must      (out of     ³³
+              ³            ³         adjudicate)      scope)     ³³
+              └────────────┴────────────┬────────────────┘       ³³
+                                        ▼                        ▼³
+                                     ACTIVE ◄─────────────────────┘³
+                                                                   ³
    SUPERSEDED ◄────────────────────────────────────────────────────┘
    (replaced by a later decision; retained, never deleted)
 ```
@@ -219,15 +219,15 @@ REVISE(newInformation)
 ──────────────────────────────────────────────────────────────────────────────────
 STEP 1 — EXTRACT
   Parse newInformation into typed assertions:
-    • decisions    (variable, value, rationale, alternatives[])
-    • premises     (type, predicate, value, evidence)
+    ≥ decisions    (variable, value, rationale, alternatives[])
+    ≥ premises     (type, predicate, value, evidence)
   Record provenance for each: snippet, char span, origin, confidence.
 
 STEP 2 — RESOLVE  (entity resolution — merge, do not append)
   For each assertion, attempt to map it onto an EXISTING node:
-    • decisions:   canonicalise variable via ontology → match value by alias table,
+    ≥ decisions:   canonicalise variable via ontology → match value by alias table,
                    then by embedding similarity above threshold
-    • premises:    match by predicate first (exact), by text similarity second
+    ≥ premises:    match by predicate first (exact), by text similarity second
   Merge on match (add corroboration +1, extend evidence).
   Create a new node only on genuine miss.
   ⚠ Without this step the log fills with near-duplicates and every
@@ -268,17 +268,17 @@ STEP 6 — CASCADE  (forward propagation)
 
 STEP 7 — ADJUDICATE  (entrenchment-ordered)
   Compute E(d) for every node in the minimal revision set.
-  Order weakest-first. Apply the EE3 cap (derived ≤ weakest premise).
+  Order weakest-first. Apply the EE3 cap (derived ó weakest premise).
   Non-prioritized screening: if the newcomer cannot outrank EVERY contradictor,
     REJECT the newcomer and mark it CONTESTED. Do not corrupt the log.
 
 STEP 8 — PROPOSE  (human gate — never auto-apply)
   Emit a revision proposal naming:
-    • the decision now unsound, and the exact premise that failed
-    • the evidence that falsified the premise, with its snippet
-    • the full cascade — every downstream decision affected
-    • the entrenchment breakdown, including implementation cost
-    • three actions: [Reverse] [Keep & re-justify] [Mark premise contested]
+    ≥ the decision now unsound, and the exact premise that failed
+    ≥ the evidence that falsified the premise, with its snippet
+    ≥ the full cascade — every downstream decision affected
+    ≥ the entrenchment breakdown, including implementation cost
+    ≥ three actions: [Reverse] [Keep & re-justify] [Mark premise contested]
 
 STEP 9 — COMMIT
   On user choice: append events, recompute L over the network, re-run affected
@@ -364,10 +364,10 @@ That last branch — **keep and re-justify** — is the outcome a real builder w
 
 | Operation | Cost | Notes |
 |---|---|---|
-| Label recompute (full) | `O(|D| · k)` where k = avg justification size | Trivial at ≤10³ decisions |
+| Label recompute (full) | `O(|D| · k)` where k = avg justification size | Trivial at ó10³ decisions |
 | Cascade propagation | `O(|D| + |J|)` per fixpoint iteration, typically 2–3 iterations | Graph is shallow; depth rarely exceeds 4 |
 | Gate (a) structural | `O(1)` with a `variable → value` index | Hash lookup |
-| Gate (b) semantic | `O(|D| · dim)` for recall + `O(c)` for rerank, c = candidate count ≈ 20 | dim = 512 → ~5×10⁵ multiply-adds. Sub-millisecond in JS |
+| Gate (b) semantic | `O(|D| · dim)` for recall + `O(c)` for rerank, c = candidate count ÷ 20 | dim = 512 → ~5×10⁵ multiply-adds. Sub-millisecond in JS |
 | Gate (c) premise | `O(inverted-index lookup on premise id)` | Premise → dependents index maintained incrementally |
 | Backtracking | `O(depth · branching)` | Depth-bounded to 6; branching bounded by justification count |
 

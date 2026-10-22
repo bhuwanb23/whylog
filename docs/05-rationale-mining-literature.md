@@ -115,7 +115,7 @@ This table is the single most useful thing in this document, because it sets **h
 | **Rationale Miner** | Python mailing-list archives | Heuristics-based IR + NLP; term types: Proposal Identifier, Rationale, Entity, State, Rationale Identifier, Decision Terms, **Negation Terms** | Ideal full-pattern sentences were **"the most rare"**; Decision Terms present in 18% of sentences, **Negation Terms in 12%** |
 | **DRMiner** | Jira issue logs (Cassandra, Flink, Solr) | Decomposes rationale mining into multiple text-classification tasks; LLM prompt tuning + heuristic features | **F1 improvements of +24% (rationale), +22% (solution), +20% (argument)** over best baseline |
 | **ARGUS** (2026) | Commits + issues + PRs + code reviews + Javadoc + inline comments, 63 commits / 5 Java projects / 2,602 labelled sentences across 291 artifacts | Two-stage LLM pipeline: artifact retriever → rationale extractor (reasoning-based few-shot, **three-run majority voting**) → rationale generator | Goal α=0.88, Need α=0.72, **Alternatives α=0.64** (run-to-run consistency). **Precision on Alternatives: 15.4%.** 155 false positives vs 12 false negatives |
-| **Kantara instantiation** (Dhaouadi et al. 2025) | Linux kernel commit messages | Pre-trained models + LLMs; NLI at heuristic thresholds; Rationale & Decision Graph | **F1 ≈ 0.70–0.75** across six OSS projects; 2,234 hand-labelled sentences as ground truth |
+| **Kantara instantiation** (Dhaouadi et al. 2025) | Linux kernel commit messages | Pre-trained models + LLMs; NLI at heuristic thresholds; Rationale & Decision Graph | **F1 ÷ 0.70–0.75** across six OSS projects; 2,234 hand-labelled sentences as ground truth |
 
 ### 4.1 What these numbers force you to conclude
 

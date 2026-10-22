@@ -22,54 +22,54 @@
 ```
                         new information
        ┌──────────────────────┼──────────────────────┐
-       │                      │                      │
+       ³                      ³                      ³
   transcript chunk      user decision           guard result / repo scan
-       │                      │                      │
+       ³                      ³                      ³
        └──────────────────────┼──────────────────────┘
                               ▼
                      ┌─────────────────┐
-                     │  2.1  ASSERT    │  write events, set premise labels
+                     ³  2.1  ASSERT    ³  write events, set premise labels
                      └────────┬────────┘
                               ▼
                      ┌─────────────────┐
-                     │  2.2  LABEL     │  JTMS validity over the network
+                     ³  2.2  LABEL     ³  JTMS validity over the network
                      └────────┬────────┘
                               ▼
               ┌───────────────┴───────────────┐
               ▼               ▼               ▼
         ┌──────────┐   ┌──────────┐    ┌──────────┐
-        │ 2.3 GATE │   │ 2.4 GATE │    │ 2.5 GATE │
-        │  (a)     │   │  (b)     │    │  (c)     │
-        │STRUCTURAL│   │ SEMANTIC │    │ PREMISE  │
-        │ same var │   │ retrieve │    │ IN-list  │
-        │ diff val │   │ +classify│    │ falsified│
-        │  O(1)    │   │ needs P3 │    │ or OUT-  │
-        │          │   │          │    │ list met │
+        ³ 2.3 GATE ³   ³ 2.4 GATE ³    ³ 2.5 GATE ³
+        ³  (a)     ³   ³  (b)     ³    ³  (c)     ³
+        ³STRUCTURAL³   ³ SEMANTIC ³    ³ PREMISE  ³
+        ³ same var ³   ³ retrieve ³    ³ IN-list  ³
+        ³ diff val ³   ³ +classify³    ³ falsified³
+        ³  O(1)    ³   ³ needs P3 ³    ³ or OUT-  ³
+        ³          ³   ³          ³    ³ list met ³
         └────┬─────┘   └────┬─────┘    └────┬─────┘
              └──────────────┼───────────────┘
                             ▼  any gate fired?
                      ┌─────────────────┐
-                     │ 2.6  BACKTRACK  │  dependency-directed → culprit set + nogood
+                     ³ 2.6  BACKTRACK  ³  dependency-directed → culprit set + nogood
                      └────────┬────────┘
                               ▼
                      ┌─────────────────┐
-                     │ 2.7  CASCADE    │  forward propagate, stop at independent support
+                     ³ 2.7  CASCADE    ³  forward propagate, stop at independent support
                      └────────┬────────┘
                               ▼
                      ┌─────────────────┐
-                     │ 2.8 ADJUDICATE  │  entrenchment order, EE3 cap, screen newcomer
+                     ³ 2.8 ADJUDICATE  ³  entrenchment order, EE3 cap, screen newcomer
                      └────────┬────────┘
                               ▼
                      ┌─────────────────┐
-                     │ 2.9  PROPOSE    │  human gate — never auto-apply
+                     ³ 2.9  PROPOSE    ³  human gate — never auto-apply
                      └────────┬────────┘
                               ▼
                      ┌─────────────────┐
-                     │ 2.10 COMMIT     │  events, relabel, re-run guards, bust export cache
+                     ³ 2.10 COMMIT     ³  events, relabel, re-run guards, bust export cache
                      └────────┬────────┘
                               ▼
                      ┌─────────────────┐
-                     │ 2.11 AUDIT      │  every flip carries a reason
+                     ³ 2.11 AUDIT      ³  every flip carries a reason
                      └─────────────────┘
 ```
 
@@ -140,18 +140,18 @@ Every source of new information — a reviewed extraction batch, a manual user d
 
 ```
    candidate ──► RETRIEVE (Phase 3 stack) ──► top-k similar decisions
-                                                     │
+                                                     ³
                                                      ▼
                                         ┌────────────────────────┐
-                                        │       CLASSIFY         │
-                                        │  LLM path: pairwise    │
-                                        │    verdict over top-3  │
-                                        │  Local path: NLI-style │
-                                        │    rules over polarity,│
-                                        │    scope, antonyms     │
+                                        ³       CLASSIFY         ³
+                                        ³  LLM path: pairwise    ³
+                                        ³    verdict over top-3  ³
+                                        ³  Local path: NLI-style ³
+                                        ³    rules over polarity,³
+                                        ³    scope, antonyms     ³
                                         └───────────┬────────────┘
                                                     ▼
-                    contradiction │ reversal │ refinement │ neutral
+                    contradiction ³ reversal ³ refinement ³ neutral
 ```
 
 **Invariant I3, enforced here:** *similarity never produces a verdict.* "Use Postgres" and "don't use Postgres" are ~0.9 cosine similar. A similarity threshold deciding a contradiction is a bug, not a tuning problem.
@@ -188,10 +188,10 @@ Every source of new information — a reviewed extraction batch, a manual user d
 
 ```
    new assertion A
-        │
+        ³
         ├── A falsifies a premise p where  p ∈ IN-list(J) for some decision d
-        │        └──► J becomes invalid ──► d loses support
-        │
+        ³        └──► J becomes invalid ──► d loses support
+        ³
         └── A satisfies a premise q where  q ∈ OUT-list(J) for some decision d
                  └──► J becomes invalid through its OUT-list
                       (Doyle's NON-MONOTONIC justification)
@@ -204,15 +204,15 @@ Every source of new information — a reviewed extraction batch, a manual user d
              OUT: [P-0011 needs-concurrent-writers] ⟩   ⇒  WLD-0007 "SQLite, not Postgres"
 
    new transcript: "the sync worker writes while the UI writes"
-        │
+        ³
         ▼
    EXTRACT   → premise assertion: concurrency.max_writers > 1
    RESOLVE   → matches P-0011 by predicate (exact)
    ASSERT    → L(P-0011) := IN
-        │
+        ³
         ▼
    GATE (c)  → P-0011 ∈ OUT-list(J-0007)  ──► J-0007 INVALID
-        │
+        ³
         ▼
    The user never mentioned SQLite. Never contradicted themselves.
    WLD-0007 is unsound anyway.
@@ -244,14 +244,14 @@ Every source of new information — a reviewed extraction batch, a manual user d
 ```
    contradiction node
           ▲
-          │ justification arcs, traversed backwards
-          │
+          ³ justification arcs, traversed backwards
+          ³
      ┌────┴────┐
-     │ derived │──► keep tracing
+     ³ derived ³──► keep tracing
      └────┬────┘
           ▲
      ┌────┴────┐
-     │ PREMISE │──► stop; add to culprit set C
+     ³ PREMISE ³──► stop; add to culprit set C
      └─────────┘
 
    record NOGOOD:  ¬( P-0002 ∧ P-0011 )
@@ -277,20 +277,20 @@ Every source of new information — a reviewed extraction batch, a manual user d
 
 ```
    P-0011 := IN   (falsifies OUT-list of J-0007)
-        │
+        ³
         ▼
    J-0007 invalid ──► WLD-0007 "SQLite, not Postgres" := OUT
-                            │
+                            ³
               ┌─────────────┼─────────────────┐
               ▼             ▼                 ▼
       J-0011 depends   J-0019 depends    J-0023 depends
       on WLD-0007      on P-0002, P-0005 on WLD-0007 AND
-              │             │             has independent
+              ³             ³             has independent
               ▼             ▼             support
-      WLD-0011 := OUT   WLD-0019 SURVIVES      │
+      WLD-0011 := OUT   WLD-0019 SURVIVES      ³
       "skip connection  "no migration          ▼
        pooling"          tooling"         WLD-0023 := OUT
-              │
+              ³
               ▼
         (recurse, depth-capped)
 ```
@@ -334,7 +334,7 @@ Every source of new information — a reviewed extraction batch, a manual user d
 | `confidence` | Phase 1.8 | Direct |
 | `recency` | `exp(−ln2 · age_days / 30)` on **valid time** | Weighted lowest, because it *raises* entrenchment — a fresh bad decision resists retraction |
 
-**EE3 cap (dominance).** After the weighted sum: `E(d) ≤ min(E(p))` over the decision's premises. **A derived belief is never more entrenched than its weakest premise.** Without this, a well-corroborated decision resting on a wild guess looks unshakeable.
+**EE3 cap (dominance).** After the weighted sum: `E(d) ó min(E(p))` over the decision's premises. **A derived belief is never more entrenched than its weakest premise.** Without this, a well-corroborated decision resting on a wild guess looks unshakeable.
 
 **Non-prioritized screening (Hansson).** If the newcomer cannot outrank **every** contradictor, **reject the newcomer** and mark it `CONTESTED`. Do not corrupt the log. A low-confidence extracted remark must not silently reverse a considered, human-stated, already-implemented decision.
 
