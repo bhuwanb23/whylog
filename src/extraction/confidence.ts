@@ -32,12 +32,22 @@
  * ---------------------------------------------------------------------------
  */
 
-import { MODALITY_FACTOR } from "@/ai/local/confidence";
-import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
 import type { Confidence } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import { type DecisionOrigin, type Modality, ORIGIN_AUTHORITY } from "@/types/domain";
-import { type ConfidenceTier, TIER_HIGH_AT, TIER_MEDIUM_AT, demoteTier, tierOf } from "./types";
+import { ORIGIN_AUTHORITY, type DecisionOrigin, type Modality } from "@/types/domain";
+import type {
+  AlternativeCandidate,
+  DecisionCandidate,
+  PremiseCandidate,
+} from "@/ai/types";
+import {
+  demoteTier,
+  tierOf,
+  TIER_HIGH_AT,
+  TIER_MEDIUM_AT,
+  type ConfidenceTier,
+} from "./types";
+import { MODALITY_FACTOR } from "@/ai/local/confidence";
 
 export { TIER_HIGH_AT, TIER_MEDIUM_AT, tierOf, demoteTier };
 export type { ConfidenceTier };
@@ -151,8 +161,7 @@ export function tierAlternative(
     // precision means the expected value of showing one unasked is negative.
     expanded: false,
     tier,
-    preemptionEligible:
-      candidate.whyRejected !== undefined && candidate.whyRejected.trim().length > 0,
+    preemptionEligible: candidate.whyRejected !== undefined && candidate.whyRejected.trim().length > 0,
   };
 }
 

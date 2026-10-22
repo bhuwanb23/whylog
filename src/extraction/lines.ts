@@ -76,41 +76,24 @@ export const MARKER_RULES: readonly MarkerRule[] = [
   { marker: "claude-glyph", speaker: "human", pattern: /^>\s*/ },
 
   /* ---- explicit role names, with the product-specific ones first ---- */
-  {
-    marker: "role-colon",
-    speaker: "agent",
-    pattern: /^(claude|anthropic|assistant|ai|bot|model)\s*:?\s*/i,
-  },
+  { marker: "role-colon", speaker: "agent", pattern: /^(claude|anthropic|assistant|ai|bot|model)\s*:?\s*/i },
   { marker: "role-colon", speaker: "agent", pattern: /^(copilot|cursor|codex|agent)\s*:?\s*/i },
   { marker: "role-colon", speaker: "human", pattern: /^(user|human|me|you|developer)\s*:?\s*/i },
 
   /* ---- chat-export headings ---- */
   { marker: "role-colon", speaker: "human", pattern: /^#{1,6}\s*(user|human|me|you)\s*$/i },
-  {
-    marker: "role-colon",
-    speaker: "agent",
-    pattern: /^#{1,6}\s*(assistant|claude|ai|bot|copilot|cursor)\s*$/i,
-  },
+  { marker: "role-colon", speaker: "agent", pattern: /^#{1,6}\s*(assistant|claude|ai|bot|copilot|cursor)\s*$/i },
 
   /* ---- timestamped chat logs: "[12:04] Alice:" ---- */
-  {
-    marker: "role-colon",
-    speaker: "human",
-    pattern: /^\[[\d:.]+\]\s*(user|human|me|you)\s*:?\s*/i,
-  },
-  {
-    marker: "role-colon",
-    speaker: "agent",
-    pattern: /^\[[\d:.]+\]\s*(assistant|claude|ai|bot)\s*:?\s*/i,
-  },
+  { marker: "role-colon", speaker: "human", pattern: /^\[[\d:.]+\]\s*(user|human|me|you)\s*:?\s*/i },
+  { marker: "role-colon", speaker: "agent", pattern: /^\[[\d:.]+\]\s*(assistant|claude|ai|bot)\s*:?\s*/i },
 ];
 
 /** Acceptance phrases: a human turn that consists only of these ACCEPTS whatever
  *  the agent proposed in the turn before. Drives
  *  `agent_proposed_human_accepted` and `human_override`. */
 
-const ACCEPTANCE =
-  /^(yeah|yep|yes|ok|okay|sure|fine|deal|agreed|sounds good|looks good|let'?s do that|ship it|go ahead|do it|perfect|nice|cool|lgtm|sgtm|wfm)[\s.,!]*$/i;
+const ACCEPTANCE = /^(yeah|yep|yes|ok|okay|sure|fine|deal|agreed|sounds good|looks good|let'?s do that|ship it|go ahead|do it|perfect|nice|cool|lgtm|sgtm|wfm)[\s.,!]*$/i;
 
 /* -------------------------------------------------------------------------- */
 /* Line-level helpers                                                         */
@@ -183,6 +166,8 @@ export function acceptsOpeningClause(text: string): boolean {
   return ACCEPTANCE.test(first.trim());
 }
 
+
+
 /**
  * Guess the input shape.
  *
@@ -199,9 +184,7 @@ export function detectShape(raw: string): InputShape {
   if (/^(cursor|composer|agent)\s*:?$/imu.test(sample)) return "cursor-chat";
   if (/^\s*(codex|> codex)\b/imu.test(sample)) return "codex-cli";
 
-  const marked = MARKER_RULES.some((rule) =>
-    new RegExp(`^\\s*${rule.pattern.source}`, "imu").test(sample),
-  );
+  const marked = MARKER_RULES.some((rule) => new RegExp(`^\\s*${rule.pattern.source}`, "imu").test(sample));
   if (marked) return "generic-marked";
 
   if (sample.trim().length === 0) return "unknown";
@@ -211,10 +194,7 @@ export function detectShape(raw: string): InputShape {
 /** JSONL: every non-blank line parses as an object with a recognisable role key.
  *  Checked on a sample, because a transcript can be large. */
 export function looksLikeJsonl(sample: string): boolean {
-  const lines = sample
-    .split("\n")
-    .filter((l) => l.trim().length > 0)
-    .slice(0, 5);
+  const lines = sample.split("\n").filter((l) => l.trim().length > 0).slice(0, 5);
   if (lines.length === 0) return false;
 
   let hits = 0;
@@ -225,6 +205,7 @@ export function looksLikeJsonl(sample: string): boolean {
   }
   return hits === lines.length;
 }
+
 
 /** Trim trailing whitespace from a raw range WITHOUT moving the start, so the
  *  body bounds still point at real text. Exported for `speakers-fallback.ts`. */

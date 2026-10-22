@@ -33,6 +33,7 @@ export type {
   CandidateKind,
   CodeBlock,
   ConfidenceTier,
+  CueHit,
   EpisodeBoundaryReason,
   EpisodeWindow,
   ExtractionOptions,
@@ -43,7 +44,9 @@ export type {
   NormalizedTranscript,
   NormalizedTurn,
   NormalizationStats,
+  NormalizerOptions,
   OffsetAnchor,
+  OffsetMap,
   OriginEvidence,
   ResolutionOutcome,
   ResolvedCandidate,
@@ -84,7 +87,6 @@ export {
   rawAt,
   rawBounds,
   spanFrom,
-  type OffsetMap,
 } from "./offset-map";
 export {
   locateInEpisode,
@@ -111,7 +113,6 @@ export {
   findCodeBlocks,
   normaliseTranscript,
   toRawBounds,
-  type NormalizerOptions,
 } from "./normalizer";
 export {
   describeSegmentation,
@@ -131,7 +132,6 @@ export {
   scanCues,
   strongestCue,
   variableAtCue,
-  type CueHit,
 } from "./cue-scan";
 export {
   EMPTY_NOISE_SCAN,
