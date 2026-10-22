@@ -286,7 +286,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 | File | Purpose |
 |---|---|
-| `hash.ts` | SHA-256 via WebCrypto — the hash chain and fingerprints |
+| `hash.ts` | cyrb128 over canonical JSON — the hash chain and fingerprints. Synchronous and non-cryptographic on purpose: an async digest would make `fold()` async, and therefore every projection, selector and store action async. The chain is tamper-*evidence*, not security. See notes/PHASE-0-NOTES.md §2.2 |
 | `ids.ts` | Sequential, addressable ids: `WLD-0007`, `P-0002`, `G-0007a`, `J-0007` |
 | `cosine.ts` | Cosine similarity over `Float32Array` |
 | `bm25.ts` | Sparse scoring |
@@ -385,12 +385,15 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ## 15. `tests/`
 
+**Phase 0 ships two files.** Everything else below is the plan for later phases.
+
 | Path | Covers | Gate |
 |---|---|---|
+| `unit/substrate/round-trip.test.ts` | **Exists.** Append → materialise → export → import → materialise, identical state and head hash; fold purity; projections rebuildable; hash chain detects an edited payload **at the edited event**; bi-temporal replay by learned time | G1 |
+| `unit/substrate/boot-reload.test.ts` | **Exists.** Boots empty, records, persists, survives a reload; a broken chain boots read-only and reports the damage | G1 |
 | `setup.ts` | jsdom + localStorage shim | — |
 | `helpers/events.ts` · `fixtures.ts` · `graph.ts` | Event builders, corpus loader, graph builders | — |
-| `unit/substrate/*` | Event validation, fold purity, bi-temporal ordering, resolution ladder, hash chain, portability round-trip | G1 |
-| `unit/extraction/*` | Normalisation, episode segmentation, decisions, **premises**, OUT-list recovery, alternatives, provenance, snippet validation, confidence, voting | G1 |
+| `unit/subraction/*` | Normalisation, episode segmentation, decisions, **premises**, OUT-list recovery, alternatives, provenance, snippet validation, confidence, voting | G1 |
 | `unit/reasoning/*` | Labeller, **non-monotonic OUT-list**, well-foundedness, gates a/b/c, backtracking, nogoods, **cascade stop condition**, entrenchment + EE3 cap, screening, proposals | **G2** |
 | `unit/retrieval/*` | All five levels, RRF determinism, reranking, classifier verdicts, pre-emption, evidence contract, groundedness, citations | G3 |
 | `unit/guards/*` | Templates, all six deterministic evaluators, metrics, baseline/ratchet, **feedback into `REVISE()`**, CI export | G4 |
@@ -445,24 +448,27 @@ Move these to `src/types/` when Phase 0 starts.
 
 ## 19. Counts
 
-| Area | Directories | Files |
-|---|---|---|
-| Setup (written) | 4 | 19 |
-| `src/substrate` | 2 | 20 |
-| `src/ontology` | 2 | 10 |
-| `src/ai` | 4 | 26 |
-| `src/extraction` | 2 | 21 |
-| `src/reasoning` | 2 | 14 |
-| `src/retrieval` | 3 | 19 |
-| `src/guards` | 5 | 24 |
-| `src/export` | 4 | 18 |
-| `src/store` + `src/lib` | 2 | 13 |
-| UI (components + views) | 12 | 71 |
-| `src/eval` | 4 | 21 |
-| `tests` | 8 | 26 |
-| `fixtures` | 1 | 14 |
-| `scripts` | 1 | 3 |
-| **Total** | **59** | **~320** |
+**Shipped (Phase 0).** 66 TypeScript files under `src/`, ~19,300 lines, plus 2 test
+files. The right-hand column below is the plan's estimate for the whole project.
+
+| Area | Directories | Files | Phase 0 actual | Plan total |
+|---|---|---|---|---|
+| Setup (written) | 4 | 19 | 4 | 19 |
+| `src/substrate` | 2 | 20 | 22 | 20 |
+| `src/ontology` | 2 | 10 | 9 | 10 |
+| `src/ai` | 4 | 26 | 8 | 26 |
+| `src/extraction` | 2 | 21 | 0 | 21 |
+| `src/reasoning` | 2 | 14 | 0 | 14 |
+| `src/retrieval` | 3 | 19 | 0 | 19 |
+| `src/guards` | 5 | 24 | 0 | 24 |
+| `src/export` | 4 | 18 | 0 | 18 |
+| `src/store` + `src/lib` | 2 | 13 | 14 | 13 |
+| UI (components + views) | 12 | 71 | 1 | 71 |
+| `src/eval` | 4 | 21 | 0 | 21 |
+| `tests` | 8 | 26 | 2 | 26 |
+| `fixtures` | 1 | 14 | 1 | 14 |
+| `scripts` | 1 | 3 | 1 | 3 |
+| **Total** | **59** | **~320** | **66 + 2** | **~320** |
 
 ---
 

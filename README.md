@@ -18,7 +18,7 @@ WhyLog stores the premises. When one breaks, it tells you which decisions just b
 
 ## Current status
 
-**Setup complete. No implementation yet.**
+**Phase 0 (Foundation & Substrate) is complete and verified.** Phases 1–7 are not started.
 
 | Area | State |
 |---|---|
@@ -26,9 +26,10 @@ WhyLog stores the premises. When one breaks, it tells you which decisions just b
 | Master plan + phase plans | ✅ Written — [`plan/`](plan/) |
 | Toolchain & config | ✅ Written — see [STRUCTURE.md §1](STRUCTURE.md) |
 | Directory structure | ✅ 66 directories, mapped file-by-file in [STRUCTURE.md](STRUCTURE.md) |
-| Type contracts | 🟡 3 files pre-drafted in [`reference/`](reference/) — move to `src/types/` when Phase 0 starts |
+| Type contracts | ✅ Phase 0 types landed in `src/types/`; the 3 pre-drafted files remain in [`reference/`](reference/) as the contracts later phases code against |
 | Demo fixture | ✅ [`fixtures/demo-transcript.txt`](fixtures/demo-transcript.txt) (a second fixture is needed for the premise-invalidation demo) |
-| Source implementation | ⬜ Not started |
+| **Phase 0 — Foundation** | ✅ **66 source files, ~19,300 lines.** Append-only bi-temporal event log, hash chain, the fold, 7 projections, the domain ontology, the AI engine seam, the store, and the Foundation view. `npm run verify` is green. See [notes/PHASE-0-NOTES.md](notes/PHASE-0-NOTES.md) |
+| Phases 1–7 | ⬜ Not started — next is [Phase 1, sub-phase 1.4](plan/phase-1-extraction-pipeline.md) (premise extraction) |
 
 ---
 
@@ -49,10 +50,13 @@ npm run verify          # typecheck + lint/format check + tests  (pre-push gate)
 npm run typecheck
 npm run check           # Biome lint + format
 npm run test
+npm run check:structure # import resolution, bracket balance, vocabulary drift, secret leaks
 npm run build && npm run preview
 ```
 
 `npm run eval`, `npm run eval:ablation` and `npm run guards:ci` are wired to Phase 7 and Phase 4.6 respectively and will fail until those modules exist.
+
+`npm run check:structure` needs only Python 3 and no `node_modules` — it is the one gate that works before `npm install`.
 
 **No API key is required for anything.** The local engine is the default, not a fallback — extraction, premise invalidation, cascade, entrenchment, guards and export all run offline and deterministically. `.env.example` documents the optional provider config; keys live in `localStorage` at runtime and never reach the event log or an export.
 
