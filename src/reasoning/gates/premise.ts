@@ -1,27 +1,27 @@
 /**
- * Gate (c) ΓÇö premise invalidation. 2.5. Γÿà THE DIFFERENTIATOR.
+ * Gate (c) — premise invalidation. 2.5. ★ THE DIFFERENTIATOR.
  *
- * Phase 2 ┬╖ sub-phase 2.5
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.5
- * Research: docs/02 ┬º2.1 (Doyle's non-monotonic justification),
- *           docs/05 ┬º1.2 (Lehman's Principle of Software Uncertainty)
+ * Phase 2 · sub-phase 2.5
+ * Plan: plan/phase-2-truth-maintenance.md §2.5
+ * Research: docs/02 §2.1 (Doyle's non-monotonic justification),
+ *           docs/05 §1.2 (Lehman's Principle of Software Uncertainty)
  *
  * ---------------------------------------------------------------------------
  * WHAT MAKES THIS GATE WORTH MORE THAN THE OTHER TWO COMBINED
  *
  * Gates (a) and (b) require the user to SAY something inconsistent. Gate (c)
- * requires only that reality drift ΓÇö which is what actually happens.
+ * requires only that reality drift — which is what actually happens.
  *
- *     J-0007  Γƒ¿ IN:  [P-0002 single-user, P-0005 no-deploy-infra]
- *               OUT: [P-0011 needs-concurrent-writers] Γƒ⌐  ΓçÆ  WLD-0007 "SQLite"
+ *     J-0007  ⟨ IN:  [P-0002 single-user, P-0005 no-deploy-infra]
+ *               OUT: [P-0011 needs-concurrent-writers] ⟩  ⇒  WLD-0007 "SQLite"
  *
  *     six weeks later: "the sync worker writes while the UI writes"
- *       EXTRACT ΓåÆ premise assertion matching P-0011 by predicate
- *       ASSERT  ΓåÆ L(P-0011) := IN
- *       GATE (c)ΓåÆ P-0011 Γêê OUT-list(J-0007) ΓçÆ J-0007 INVALID ΓçÆ WLD-0007 UNSOUND
+ *       EXTRACT → premise assertion matching P-0011 by predicate
+ *       ASSERT  → L(P-0011) := IN
+ *       GATE (c)→ P-0011 ∈ OUT-list(J-0007) ⇒ J-0007 INVALID ⇒ WLD-0007 UNSOUND
  *
  * The user never mentioned SQLite. Never contradicted themselves. The decision is
- * unsound anyway ΓÇö and this is the only gate that can see it.
+ * unsound anyway — and this is the only gate that can see it.
  *
  * Lehman is the theoretical warrant: invalidation of assumptions is one of the
  * drivers of the need for continual software evolution. Every decision log stores
@@ -31,7 +31,7 @@
  * TWO FIRING CONDITIONS, ONE MECHANISM
  *
  *   IN-list falsified   a supporting premise stopped holding
- *   OUT-list satisfied  an excluded condition arrived      ΓåÉ the non-monotonic case
+ *   OUT-list satisfied  an excluded condition arrived      ← the non-monotonic case
  *
  * Both invalidate the justification identically, but they READ completely
  * differently and they imply different revisions, so `failedClause` is carried all
@@ -41,7 +41,7 @@
  * ---------------------------------------------------------------------------
  * PRECISION DISCIPLINE
  *
- * Fires ONLY on resolved premise identity ΓÇö an exact predicate match, or a merge
+ * Fires ONLY on resolved premise identity — an exact predicate match, or a merge
  * confirmed in review. NEVER on text similarity.
  *
  * A false premise resolution ("single user" merged with "single sign-on") produces a
@@ -93,7 +93,7 @@ export interface GateCResult {
  * Every justification in the graph whose validity has broken.
  *
  * @param labels the labeller's output. Passed in rather than recomputed because
- *               gate (c) must see the SAME labels the fixpoint converged on ΓÇö a
+ *               gate (c) must see the SAME labels the fixpoint converged on — a
  *               gate that re-derives them can disagree with the labeller, and a
  *               disagreement between two parts of one cycle is untraceable.
  */
@@ -110,7 +110,7 @@ export function detectPremiseInvalidation(state: GraphState, labels: ReadonlyMap
     if (verdict.failedNode === null || verdict.failedClause === null) continue;
 
     // Only a PREMISE can invalidate a justification. A decision in an IN-list is a
-    // derived node, and its failure is handled by the cascade ΓÇö reporting it here
+    // derived node, and its failure is handled by the cascade — reporting it here
     // too would double-count every flip.
     if (!state.premises.has(verdict.failedNode as PremiseId)) continue;
 
@@ -171,7 +171,7 @@ function inListExplanation(
   statement?: string,
 ): string {
   return [
-    `${decisionId}${statement === undefined ? "" : ` ΓÇö "${statement}"`} rests on ${premiseId}: "${premiseText}".`,
+    `${decisionId}${statement === undefined ? "" : ` — "${statement}"`} rests on ${premiseId}: "${premiseText}".`,
     "That assumption no longer holds, so the decision has lost its reason.",
     "Nothing contradicted the decision; one of the things it was true GIVEN has stopped being true.",
   ].join(" ");
@@ -180,7 +180,7 @@ function inListExplanation(
 /**
  * An OUT-list condition arrived: the thing assumed away happened.
  *
- * This is the sentence no other tool can produce, and it is worth getting right ΓÇö
+ * This is the sentence no other tool can produce, and it is worth getting right —
  * it is the moment the product earns its existence.
  */
 function outListExplanation(
@@ -190,9 +190,9 @@ function outListExplanation(
   statement?: string,
 ): string {
   return [
-    `${decisionId}${statement === undefined ? "" : ` ΓÇö "${statement}"`} was made on the condition that ${premiseId} would NOT happen: "${premiseText}".`,
+    `${decisionId}${statement === undefined ? "" : ` — "${statement}"`} was made on the condition that ${premiseId} would NOT happen: "${premiseText}".`,
     "That condition has now been met.",
-    "Nobody contradicted the decision and nothing was reversed ΓÇö the world moved into the space the decision assumed would stay empty.",
+    "Nobody contradicted the decision and nothing was reversed — the world moved into the space the decision assumed would stay empty.",
   ].join(" ");
 }
 
@@ -205,7 +205,7 @@ function outListExplanation(
  *
  * Used by the review UI BEFORE a commit, so the user can see the blast radius of the
  * premise they are about to accept. It is also the only way to answer "what would
- * happen ifΓÇª" without writing anything, which is what makes the labeller's purity
+ * happen if…" without writing anything, which is what makes the labeller's purity
  * worth the extra parameter threading.
  */
 export function previewInvalidation(
@@ -276,7 +276,7 @@ export function loadBearingPremises(
 
 export function describeResult(result: GateCResult): string {
   if (result.invalidations.length === 0) {
-    return `no premise invalidations ΓÇö all ${result.checked} justifications still hold`;
+    return `no premise invalidations — all ${result.checked} justifications still hold`;
   }
 
   const outList = result.invalidations.filter((i) => i.clause === "out-list").length;
@@ -288,7 +288,7 @@ export function describeResult(result: GateCResult): string {
     `${outList} because an excluded condition arrived`,
     `${result.becameUnsound.length} decision${result.becameUnsound.length === 1 ? "" : "s"} lost all support`,
     `${result.triggeringPremises.length} premise${result.triggeringPremises.length === 1 ? "" : "s"} triggered it`,
-  ].join(" ┬╖ ");
+  ].join(" · ");
 }
 
 /**
@@ -301,7 +301,7 @@ export function describeResult(result: GateCResult): string {
 export function describeGate(): string {
   return [
     "Gate (c) does not look for contradictions.",
-    "It looks for decisions whose assumptions stopped holding ΓÇö the case where nobody said anything inconsistent and the decision became wrong anyway.",
+    "It looks for decisions whose assumptions stopped holding — the case where nobody said anything inconsistent and the decision became wrong anyway.",
     "It can only fire on a decision that was recorded WITH its premises, which is why Phase 1 recovers them and why every extracted premise goes through review.",
   ].join(" ");
 }

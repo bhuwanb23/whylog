@@ -1,8 +1,8 @@
 /**
- * Timestamp recovery ΓÇö 1.1.
+ * Timestamp recovery — 1.1.
  *
- * Phase 1 ┬╖ sub-phase 1.1
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1
+ * Phase 1 · sub-phase 1.1
+ * Plan: plan/phase-1-extraction-pipeline.md §1.1
  *
  * ---------------------------------------------------------------------------
  * WHY `uncertain` IS A FIELD AND NOT A FALLBACK
@@ -11,7 +11,7 @@
  * is what the timeline sorts on, what the time machine cuts on, and what
  * `recency()` feeds into entrenchment. Defaulting it to import time and saying
  * nothing would place a decision made in March at the moment it was pasted in
- * October ΓÇö and the error would be invisible, because the date would look
+ * October — and the error would be invisible, because the date would look
  * perfectly reasonable.
  *
  * So: recover a timestamp where the text has one; otherwise use the value the
@@ -65,9 +65,9 @@ const ISO_PATTERN = /\b(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))
 const MONTH_NAME_PATTERN =
   /\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?(?:,?\s*(\d{1,2}):(\d{2}))?\b|\b(\d{1,2})\s+([A-Za-z]{3,9})\.?(?:,?\s*(\d{4}))?/;
 
-/** `[14:22]`, `(14:22:07)`, `14:22 ΓÇö` at the start of a line. Time only: it is
+/** `[14:22]`, `(14:22:07)`, `14:22 —` at the start of a line. Time only: it is
  *  attached to the date recovered from the header, or to today. */
-const TIME_ONLY_PATTERN = /^\s*[\[(<]?(\d{1,2}):(\d{2})(?::(\d{2}))?[\])>]?\s*[ΓÇöΓÇô-]?\s/;
+const TIME_ONLY_PATTERN = /^\s*[\[(<]?(\d{1,2}):(\d{2})(?::(\d{2}))?[\])>]?\s*[—–-]?\s/;
 
 /**
  * How far into the transcript to look for a header timestamp.
@@ -100,7 +100,7 @@ export function recoverTimestamp(
   }
 
   // No date anywhere in the header, but a bare clock time: attach it to the
-  // reference date. Still uncertain ΓÇö the DAY is a guess even though the hour
+  // reference date. Still uncertain — the DAY is a guess even though the hour
   // is not.
   const timeOnly = TIME_ONLY_PATTERN.exec(header.text);
   if (timeOnly !== null) {
@@ -223,7 +223,7 @@ function buildDate(
 export function describeUncertainty(result: RecoveredTime): string | null {
   if (!result.uncertain) return null;
   if (result.source === "inline") {
-    return `The transcript gives a clock time (${result.evidence ?? "?"}) but no date, so the day is assumed to be the import day. Correct it if that is wrong ΓÇö the timeline and the recency term in entrenchment both read this date.`;
+    return `The transcript gives a clock time (${result.evidence ?? "?"}) but no date, so the day is assumed to be the import day. Correct it if that is wrong — the timeline and the recency term in entrenchment both read this date.`;
   }
-  return "No timestamp was found in the transcript, so every decision from it is dated at the moment of import. Correct it in the review header ΓÇö the timeline and the recency term in entrenchment both read this date.";
+  return "No timestamp was found in the transcript, so every decision from it is dated at the moment of import. Correct it in the review header — the timeline and the recency term in entrenchment both read this date.";
 }

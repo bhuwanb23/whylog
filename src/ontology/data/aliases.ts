@@ -1,15 +1,15 @@
 /**
  * Alias table: many surface forms, one canonical value.
  *
- * Phase 0 ┬╖ sub-phase 0.7
- * Plan: plan/phase-0-foundation.md ┬º0.7
+ * Phase 0 · sub-phase 0.7
+ * Plan: plan/phase-0-foundation.md §0.7
  *
  * ---------------------------------------------------------------------------
  * WHY THIS EXISTS
  *
  * "pg", "postgres", "postgresql" and "postgre" (the typo people actually make)
  * are one value. Without folding, rung 2 of the identity ladder misses and a
- * second DATABASE node appears ΓÇö and then the structural contradiction gate
+ * second DATABASE node appears — and then the structural contradiction gate
  * accuses the user of holding two database decisions at once.
  *
  * Alias folding is also what makes gate (a) work at all. Antonym pairs are
@@ -653,7 +653,7 @@ export const GLOBAL_ALIASES: AliasTable = {
 };
 
 /** Values that mean "deliberately absent" in any slot. Needed because `none` is
- *  a real DECISION ("no auth at all") and not a missing value ΓÇö collapsing it
+ *  a real DECISION ("no auth at all") and not a missing value — collapsing it
  *  into undefined would delete the most interesting kind of choice. */
 export const NONE_VALUES: ReadonlySet<string> = new Set([
   "none",

@@ -1,7 +1,7 @@
 /**
  * Parsing and coercion for the LLM path — 1.10.
  *
- * Phase 1 ú sub-phase 1.10
+ * Phase 1 · sub-phase 1.10
  * Plan: STRUCTURE.md §5 names this file; `ai/llm/index.ts` owns the engine object
  * and this owns everything between "the model answered" and "here are candidates".
  *

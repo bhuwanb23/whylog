@@ -1,8 +1,8 @@
 /**
  * The closed set of 8 premise types.
  *
- * Phase 0 ┬╖ sub-phase 0.7 ┬╖ table B
- * Plan: plan/phase-0-foundation.md ┬º0.7 ┬╖ docs/05 ┬º2.1 (RAAM's precision problem)
+ * Phase 0 · sub-phase 0.7 · table B
+ * Plan: plan/phase-0-foundation.md §0.7 · docs/05 §2.1 (RAAM's precision problem)
  *
  * ---------------------------------------------------------------------------
  * BOUNDED RECOVERY BEATS OPEN-ENDED RECOVERY
@@ -10,7 +10,7 @@
  * RAAM's own failure mode is unbounded assumption discovery: given "find the
  * premises", a model returns an unreviewable list of vague conditions, and
  * precision collapses. Eight typed slots with declared predicate namespaces turn
- * the task into classification, which is both more accurate and ΓÇö critically ΓÇö
+ * the task into classification, which is both more accurate and — critically —
  * REVIEWABLE, because a human can see at a glance that "we shipped fast" was
  * filed under `scale` and correct it in one click.
  *
@@ -24,7 +24,7 @@
  *   INTENT-BASED      {team, budget, time, requirement}
  *
  * A world-observable premise can be FALSIFIED BY A GUARD OR A REPO SCAN. That is
- * gate (c) ΓÇö premise invalidation ΓÇö and it is the case where nothing contradicts
+ * gate (c) — premise invalidation — and it is the case where nothing contradicts
  * the user and reality simply moved.
  *
  * An intent-based premise can only be retracted by a human. There is no point
@@ -42,7 +42,7 @@ export interface PremiseTypeMeta {
   readonly label: string;
   readonly description: string;
   /** Predicate namespace, e.g. "scale". Predicates are `namespace.name`, and
-   *  rung 1 of the identity ladder matches on the canonical predicate ΓÇö so the
+   *  rung 1 of the identity ladder matches on the canonical predicate — so the
    *  namespace is part of a premise's IDENTITY, not decoration. */
   readonly namespace: string;
   /** Can a guard or a repo scan falsify this? See the header. */
@@ -77,7 +77,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "multi_tenant", label: "multi-tenant", valueKind: "boolean" },
       { name: "data_residency", label: "data residency requirement", valueKind: "string" },
     ],
-    example: "scale.single_user = true ΓÇö \"it's one person, one machine, one log\"",
+    example: "scale.single_user = true — \"it's one person, one machine, one log\"",
   },
 
   team: {
@@ -93,7 +93,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "review_required", label: "code review required", valueKind: "boolean" },
       { name: "on_call", label: "somebody is on call", valueKind: "boolean" },
     ],
-    example: "team.solo = true ΓÇö \"I'm the only one who'll ever read this\"",
+    example: "team.solo = true — \"I'm the only one who'll ever read this\"",
   },
 
   budget: {
@@ -108,7 +108,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "no_paid_saas", label: "no paid SaaS", valueKind: "boolean" },
       { name: "token_budget", label: "LLM token budget", valueKind: "number", constraint: "tokens" },
     ],
-    example: "budget.free_tier_only = true ΓÇö \"I'm not paying for a database\"",
+    example: "budget.free_tier_only = true — \"I'm not paying for a database\"",
   },
 
   time: {
@@ -123,7 +123,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "hours_available", label: "hours available", valueKind: "number", constraint: "hours" },
       { name: "prototype_only", label: "prototype, will be discarded", valueKind: "boolean" },
     ],
-    example: "time.hackathon = true ΓÇö \"I have until Sunday\"",
+    example: "time.hackathon = true — \"I have until Sunday\"",
   },
 
   deployment: {
@@ -141,7 +141,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "regions", label: "regions", valueKind: "number", constraint: "count" },
       { name: "ci_present", label: "CI is configured", valueKind: "boolean" },
     ],
-    example: "deployment.local_only = true ΓÇö \"this never leaves my laptop\"",
+    example: "deployment.local_only = true — \"this never leaves my laptop\"",
   },
 
   capability: {
@@ -157,7 +157,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "version_floor", label: "minimum version", valueKind: "string", constraint: "semver" },
       { name: "offline_required", label: "must work offline", valueKind: "boolean" },
     ],
-    example: "capability.lacks = \"server-side runtime\" ΓÇö \"there's no backend to put it on\"",
+    example: "capability.lacks = \"server-side runtime\" — \"there's no backend to put it on\"",
   },
 
   requirement: {
@@ -174,7 +174,7 @@ export const PREMISE_TYPE_META: Readonly<Record<PremiseType, PremiseTypeMeta>> =
       { name: "no_network", label: "no network calls", valueKind: "boolean" },
       { name: "accessibility", label: "accessibility level", valueKind: "string" },
     ],
-    example: "requirement.portability = true ΓÇö \"one JSON file I can email to someone\"",
+    example: "requirement.portability = true — \"one JSON file I can email to someone\"",
   },
 
   external: {

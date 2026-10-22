@@ -1,8 +1,8 @@
 /**
- * Premise recovery ΓÇö 1.4. THE LOAD-BEARING SUB-PHASE.
+ * Premise recovery — 1.4. THE LOAD-BEARING SUB-PHASE.
  *
- * Phase 1 ┬╖ sub-phase 1.4
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.4
+ * Phase 1 · sub-phase 1.4
+ * Plan: plan/phase-1-extraction-pipeline.md §1.4
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS THE PRODUCT
@@ -14,7 +14,7 @@
  *
  * If premises cannot be recovered from dialogue at usable precision, the
  * truth-maintenance layer has nothing to maintain and the product collapses to a
- * decision log ΓÇö that is, to `ai-memory`. So this file is the one to prototype and
+ * decision log — that is, to `ai-memory`. So this file is the one to prototype and
  * measure before anything else is built, and the one whose numbers must be reported
  * honestly.
  *
@@ -30,7 +30,7 @@
  * WHY EVERY CANDIDATE IS REVIEWED
  *
  * `needsReview` is true for every topical cue and for every explicit cue below
- * 0.9 ΓÇö which, reading `premise-cues.ts`, is all of them. That is not an oversight
+ * 0.9 — which, reading `premise-cues.ts`, is all of them. That is not an oversight
  * in the table, it is the table saying out loud that premise extraction does not
  * yet earn auto-acceptance. `TOPICAL_AUTO_ACCEPT_THRESHOLD = 1.0` is unreachable by
  * construction. When Phase 7's measurement says otherwise, the threshold moves and
@@ -45,23 +45,23 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { DiscardedCandidate, PremiseCandidate } from "@/ai/types";
+import { canonicalPredicate, snakeCase } from "@/ontology/canonicalize";
+import {
+  EXPLICIT_AUTO_ACCEPT_THRESHOLD,
+  PREMISE_CUES,
+  type PremiseCue,
+  TOPICAL_AUTO_ACCEPT_THRESHOLD,
+  needsReview as cueNeedsReview,
+} from "@/ontology/data/premise-cues";
+import { PREMISE_TYPE_META, lookupPredicate } from "@/ontology/data/premise-types";
 import type { Confidence } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { PremiseType } from "@/types/domain";
-import type { DiscardedCandidate, PremiseCandidate } from "@/ai/types";
-import type { EpisodeWindow } from "./types";
 import type { DecisionContext } from "./decisions";
+import { type Located, locateInEpisode } from "./episode-position";
 import { spanFrom } from "./offset-map";
-import { locateInEpisode, type Located } from "./episode-position";
-import { canonicalPredicate, snakeCase } from "@/ontology/canonicalize";
-import {
-  PREMISE_CUES,
-  EXPLICIT_AUTO_ACCEPT_THRESHOLD,
-  TOPICAL_AUTO_ACCEPT_THRESHOLD,
-  needsReview as cueNeedsReview,
-  type PremiseCue,
-} from "@/ontology/data/premise-cues";
-import { PREMISE_TYPE_META, lookupPredicate } from "@/ontology/data/premise-types";
+import type { EpisodeWindow } from "./types";
 
 export interface RecoveredPremise {
   readonly candidate: PremiseCandidate;
@@ -98,8 +98,20 @@ const CUES_BY_LENGTH: readonly PremiseCue[] = [...PREMISE_CUES].sort(
 );
 
 const WORD_NUMBERS: Readonly<Record<string, number>> = {
-  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
-  nine: 9, ten: 10, twelve: 12, twenty: 20, fifty: 50, hundred: 100,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  twelve: 12,
+  twenty: 20,
+  fifty: 50,
+  hundred: 100,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -175,7 +187,7 @@ function buildPremise(
 
   /* ---- text: the clause, verbatim ---- */
   const clause = readClause(located.turn.text, at - located.offset, cue.phrase.length);
-  if (clause.trim().length < 4) return null;
+  if (clause.text.trim().length < 4) return null;
 
   /* ---- span, in raw coordinates ---- */
   const normalisedStart = located.turn.start + clause.start;
@@ -225,7 +237,7 @@ function buildPremise(
  *
  * Always namespaced under the cue's own type, so rung 1 of the identity ladder can
  * still match it exactly on a re-import. An unnamespaced predicate would resolve
- * differently on each run and mint a duplicate node every time ΓÇö the failure the
+ * differently on each run and mint a duplicate node every time — the failure the
  * closed vocabulary exists to prevent.
  *
  * The result is `requirement.<free text>` when nothing better is available, which
@@ -283,7 +295,7 @@ function readValue(
   }
 
   // `string` and `enum`: the cue phrase is the value. Canonicalisation of an enum
-  // is the predicate table's job, not the extractor's ΓÇö guessing a permitted value
+  // is the predicate table's job, not the extractor's — guessing a permitted value
   // here would be inventing data.
   const trimmed = window.trim();
   return trimmed.length > 0 && trimmed.length <= 60 ? trimmed : undefined;
@@ -307,7 +319,11 @@ const CLAUSE_END = /[.!?\n;]/;
 
 /** The clause containing a cue, expanded a little either side so the premise reads
  *  as a sentence rather than as a fragment. */
-function readClause(text: string, at: number, phraseLength: number): { text: string; start: number; end: number } {
+function readClause(
+  text: string,
+  at: number,
+  phraseLength: number,
+): { text: string; start: number; end: number } {
   let start = at;
   while (start > 0 && !CLAUSE_END.test(text[start - 1] ?? "")) start -= 1;
 
@@ -331,7 +347,7 @@ function windowAround(text: string, at: number, chars: number): string {
 /**
  * Additive, inspectable, and deliberately capped below the decision rubric.
  *
- * Plan ┬º1.8: premises are always one tier lower than the decision they attach to,
+ * Plan §1.8: premises are always one tier lower than the decision they attach to,
  * reflecting the published precision gap. `confidence.ts` applies the tier demotion;
  * this score is the input to it.
  */
@@ -364,8 +380,14 @@ function scorePremise(
 
 function countByType(found: readonly RecoveredPremise[]): Readonly<Record<PremiseType, number>> {
   const out: Record<PremiseType, number> = {
-    scale: 0, team: 0, budget: 0, time: 0,
-    deployment: 0, capability: 0, requirement: 0, external: 0,
+    scale: 0,
+    team: 0,
+    budget: 0,
+    time: 0,
+    deployment: 0,
+    capability: 0,
+    requirement: 0,
+    external: 0,
   };
   for (const premise of found) out[premise.candidate.type] += 1;
   return out;
@@ -377,7 +399,7 @@ export function describeRecovery(recovery: PremiseRecovery): string {
     const count = recovery.byType[type];
     if (count > 0) parts.push(`${type} ${count}`);
   }
-  const summary = parts.length === 0 ? "no typed premises" : parts.join(" ┬╖ ");
+  const summary = parts.length === 0 ? "no typed premises" : parts.join(" · ");
   return `${recovery.premises.length} premise${recovery.premises.length === 1 ? "" : "s"} (${summary}), ${recovery.discarded.length} discarded`;
 }
 

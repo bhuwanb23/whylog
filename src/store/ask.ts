@@ -1,7 +1,7 @@
 /**
- * The Ask store ΓÇö Phase 3 ┬╖ sub-phase 3.10.
+ * The Ask store — Phase 3 · sub-phase 3.10.
  *
- * Plan: plan/phase-3-retrieval.md ┬º3.10
+ * Plan: plan/phase-3-retrieval.md §3.10
  *
  * ---------------------------------------------------------------------------
  * WHAT THIS STORE OWNS
@@ -9,7 +9,7 @@
  * Two things, and only two:
  *
  *   1. THE INDEX ARTIFACTS. Built once, reused for every question, rebuilt when the log or
- *      the engine changes. Nothing else in the app holds them ΓÇö `store/reasoning.ts` reads
+ *      the engine changes. Nothing else in the app holds them — `store/reasoning.ts` reads
  *      them from here to generate gate (b)'s candidates, so there is one index and one notion
  *      of staleness rather than two that can disagree.
  *   2. THE QUESTION AND ITS ANSWER. Including the run trace, which is part of the answer and
@@ -17,7 +17,7 @@
  *      audit, and a trail that is discarded after rendering is not a trail.
  *
  * ---------------------------------------------------------------------------
- * EVERY MUTATION IS append ΓåÆ fold ΓåÆ persist
+ * EVERY MUTATION IS append → fold → persist
  *
  * Building the index emits `IndexRebuilt` or `IndexStale` drafts. They are committed through
  * `recordBatch` exactly like every other state change, because the index is part of the log's
@@ -29,7 +29,7 @@
  * KEYLESS BY DEFAULT, AND IT SAYS SO
  *
  * `build({ skipDense: true })` produces L3/L4/L5 with no embeddings and no network. That is
- * not a degraded mode ΓÇö BM25 plus exact structural and premise matching is what makes the
+ * not a degraded mode — BM25 plus exact structural and premise matching is what makes the
  * system usable with no key at all, and the levels that ran are reported on every answer.
  * With dense available, L1 and L2 join the fusion; without it, they drop out and the answer
  * says which levels carried it.
@@ -150,7 +150,7 @@ export const useAsk = create<AskState>()((set, get) => ({
 
     set({ artifacts: report.artifacts, build: report });
 
-    /* append ΓåÆ fold ΓåÆ persist. The index is part of the log's history, and `IndexRebuilt` is
+    /* append → fold → persist. The index is part of the log's history, and `IndexRebuilt` is
      * one of the state-changing events that requires a non-empty reason: an index whose
      * rebuild cannot be explained is an index whose answers cannot be trusted later. */
     if (report.drafts.length > 0) {
@@ -307,7 +307,7 @@ export const useAsk = create<AskState>()((set, get) => ({
 export const HISTORY_LIMIT = 20;
 
 /* -------------------------------------------------------------------------- */
-/* Reporting ΓÇö everything the Ask view's "how was this produced?" panel shows */
+/* Reporting — everything the Ask view's "how was this produced?" panel shows */
 /* -------------------------------------------------------------------------- */
 
 export function describeIndex(state: AskState): string {
@@ -322,7 +322,7 @@ export function describeIndex(state: AskState): string {
 
   return (
     "Index built by " + artifacts.engine + " at " + artifacts.computedAt +
-    (artifacts.stale ? " ΓÇö STALE: the engine or the log has changed since." : "") +
+    (artifacts.stale ? " — STALE: the engine or the log has changed since." : "") +
     "\nLog size: " + whylog.state.decisions.size + " decisions."
   );
 }
@@ -331,24 +331,24 @@ export function describeHowProduced(state: AskState, result: RetrievalResult | n
   const parts = [
     describePipeline(),
     "",
-    "ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ reranker ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ",
+    "──────── reranker ────────",
     describeWeights(),
     "",
-    "ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ evidence contract ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ",
+    "──────── evidence contract ────────",
     describeContract(),
     "",
-    "ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ groundedness ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ",
+    "──────── groundedness ────────",
     describeThresholds(),
     "",
-    "ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ contradiction classifier ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ",
+    "──────── contradiction classifier ────────",
     describeRules(),
     "",
-    "ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ gate (b) candidates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ",
+    "──────── gate (b) candidates ────────",
     describeCandidatePolicy(),
   ];
 
   if (result !== null) {
-    parts.push("", "ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ this question ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ", describeRetrieval(result));
+    parts.push("", "──────── this question ────────", describeRetrieval(result));
   }
 
   return parts.join("\n");
@@ -367,8 +367,8 @@ export function describePreemptionCoverage(state: GraphState): string {
 
   return [
     counts.eligible + " of " + counts.total + " recorded alternatives can pre-empt a repeat question.",
-    counts.missingReason > 0 ? "  " + counts.missingReason + " have no recorded reason ΓÇö pre-empting without a reason is nagging, so they are excluded." : "",
-    counts.unconfirmed > 0 ? "  " + counts.unconfirmed + " have a reason but were never confirmed by a human ΓÇö an inferred rejection is far more likely to be wrong than right, so they are excluded too." : "",
+    counts.missingReason > 0 ? "  " + counts.missingReason + " have no recorded reason — pre-empting without a reason is nagging, so they are excluded." : "",
+    counts.unconfirmed > 0 ? "  " + counts.unconfirmed + " have a reason but were never confirmed by a human — an inferred rejection is far more likely to be wrong than right, so they are excluded too." : "",
     "",
     "Confirm an alternative on the Review tab to make it eligible. A false pre-emption costs",
     "more trust than a missed one, so both conditions are required rather than one.",
@@ -381,7 +381,7 @@ export function describePreemptionCoverage(state: GraphState): string {
 export { renderExpansion, describeSource };
 export type { ExpandedCitationResult, RetrievalResult };
 
-/** Run retrieval without composing an answer ΓÇö used by the Ask view's "show me the ranking"
+/** Run retrieval without composing an answer — used by the Ask view's "show me the ranking"
  *  panel and by Phase 7's ablation, neither of which needs prose. Labels are derived here for
  *  the same reason they are derived in `ask`: they follow from the graph, so nothing stores
  *  them. */

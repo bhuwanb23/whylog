@@ -1,7 +1,7 @@
 /**
  * Engine configuration.
  *
- * Phase 0 ú sub-phase 0.9
+ * Phase 0 · sub-phase 0.9
  *
  * ---------------------------------------------------------------------------
  * WHERE THE KEY LIVES, AND WHERE IT NEVER GOES

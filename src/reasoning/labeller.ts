@@ -1,9 +1,9 @@
 /**
- * The JTMS labeller ΓÇö 2.2.
+ * The JTMS labeller — 2.2.
  *
- * Phase 2 ┬╖ sub-phase 2.2
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.2
- * Research: docs/02 ┬º2 (Doyle 1979), ┬º3 (validity + well-foundedness)
+ * Phase 2 · sub-phase 2.2
+ * Plan: plan/phase-2-truth-maintenance.md §2.2
+ * Research: docs/02 §2 (Doyle 1979), §3 (validity + well-foundedness)
  *
  * ---------------------------------------------------------------------------
  * THE RULE
@@ -20,9 +20,9 @@
  * ---------------------------------------------------------------------------
  * WHY WELL-FOUNDEDNESS IS CHECKED AND NOT ASSUMED
  *
- * Doyle's own words: it is "imprudentΓÇª nodes believed on tenuous circular bases lead
- * to ill-considered actions." A justification graph may legally contain G ΓçÆ H ΓçÆ G,
- * and a naive fixpoint labels both IN forever. An LLM extractor WILL produce this ΓÇö
+ * Doyle's own words: it is "imprudent… nodes believed on tenuous circular bases lead
+ * to ill-considered actions." A justification graph may legally contain G ⇒ H ⇒ G,
+ * and a naive fixpoint labels both IN forever. An LLM extractor WILL produce this —
  * it recovers "we chose X because Y" and "we chose Y because X" from the same
  * conversation without noticing.
  *
@@ -35,18 +35,18 @@
  * THIS MODULE IS PURE
  *
  * It reads a `GraphState` and returns a label map. It writes nothing and appends no
- * events ΓÇö `revise.ts` decides what to record. A labeller with side effects cannot
+ * events — `revise.ts` decides what to record. A labeller with side effects cannot
  * be iterated to a fixpoint, and cannot be run speculatively to answer "what would
  * happen if this premise died?", which is what the proposal preview needs.
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, JustificationId, PremiseId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
 import type { Justification } from "@/types/domain";
 
-export type NodeId = DecisionId | PremiseId;
+export type NodeId = DecisionId | PremiseId | JustificationId;
 
 /** A label plus the reason for it. The reason is not decoration: the review UI
  *  shows WHY a node is OUT, naming the specific premise that failed, because
@@ -71,14 +71,19 @@ export interface LabellingResult {
   /** Decisions whose label CHANGED against the state that was passed in. This is
    *  what `revise.ts` turns into `LabelChanged` events, and what makes the audit
    *  trail per-flip rather than per-run. */
-  readonly changed: readonly { readonly id: DecisionId; readonly from: DecisionLabel; readonly to: DecisionLabel; readonly reason: LabelReason }[];
+  readonly changed: readonly {
+    readonly id: DecisionId;
+    readonly from: DecisionLabel;
+    readonly to: DecisionLabel;
+    readonly reason: LabelReason;
+  }[];
   readonly iterations: number;
   readonly unfounded: readonly DecisionId[];
   readonly fixpointReached: boolean;
 }
 
-/** Hard ceiling on fixpoint iterations. The graph is shallow ΓÇö depth rarely exceeds
- *  4 ΓÇö so a label propagation that has not settled in this many passes is cycling,
+/** Hard ceiling on fixpoint iterations. The graph is shallow — depth rarely exceeds
+ *  4 — so a label propagation that has not settled in this many passes is cycling,
  *  and cycling is a bug worth surfacing rather than hiding behind a spin. */
 export const MAX_ITERATIONS = 64;
 
@@ -100,9 +105,10 @@ export function label(state: GraphState): LabellingResult {
     }
     labels.set(premise.id, {
       label: premise.label === "UNKNOWN" ? "UNKNOWN" : premise.label,
-      reason: premise.label === "UNKNOWN"
-        ? { kind: "unconfirmed-premise" }
-        : { kind: "asserted-premise" },
+      reason:
+        premise.label === "UNKNOWN"
+          ? { kind: "unconfirmed-premise" }
+          : { kind: "asserted-premise" },
     });
   }
 
@@ -117,9 +123,10 @@ export function label(state: GraphState): LabellingResult {
   for (const [id, problem] of founded.problems) {
     labels.set(id, {
       label: "UNFOUNDED",
-      reason: problem.kind === "circular"
-        ? { kind: "circular", cycle: problem.cycle }
-        : { kind: "unfounded", reachedOnly: problem.reachedOnly },
+      reason:
+        problem.kind === "circular"
+          ? { kind: "circular", cycle: problem.cycle }
+          : { kind: "unfounded", reachedOnly: problem.reachedOnly },
     });
   }
 
@@ -167,7 +174,7 @@ export function label(state: GraphState): LabellingResult {
 /* -------------------------------------------------------------------------- */
 
 function labelDecision(
-  id: DecisionId,
+  _id: DecisionId,
   justificationIds: readonly JustificationId[],
   state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,
@@ -186,16 +193,20 @@ function labelDecision(
     if (justification === undefined) continue;
 
     const verdict = validityOf(justification, labels);
-    if (verdict.valid) return { label: "IN", reason: { kind: "valid-justification", justificationId } };
+    if (verdict.valid)
+      return { label: "IN", reason: { kind: "valid-justification", justificationId } };
     if (firstFailure === null) firstFailure = verdict.failedNode;
   }
 
-  return { label: "OUT", reason: { kind: "all-justifications-invalid", failedPremiseId: firstFailure } };
+  return {
+    label: "OUT",
+    reason: { kind: "all-justifications-invalid", failedPremiseId: firstFailure },
+  };
 }
 
 export interface ValidityVerdict {
   readonly valid: boolean;
-  /** The specific node that broke it ΓÇö an IN-list member that is not IN, or an
+  /** The specific node that broke it — an IN-list member that is not IN, or an
    *  OUT-list member that IS. Naming it is what makes the failure actionable. */
   readonly failedNode: PremiseId | null;
   readonly failedClause: "in-list" | "out-list" | null;
@@ -233,12 +244,17 @@ export function validityOf(
         valid: false,
         failedNode: premiseId,
         failedClause: "out-list",
-        explanation: `${justification.id} excludes ${premiseId}, and it now holds. Nothing was contradicted ΓÇö the world moved.`,
+        explanation: `${justification.id} excludes ${premiseId}, and it now holds. Nothing was contradicted — the world moved.`,
       };
     }
   }
 
-  return { valid: true, failedNode: null, failedClause: null, explanation: `${justification.id} is valid.` };
+  return {
+    valid: true,
+    failedNode: null,
+    failedClause: null,
+    explanation: `${justification.id} is valid.`,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -311,7 +327,8 @@ function walk(
   if (grounded.has(node as DecisionId)) return { kind: "grounded" };
 
   const decision = state.decisions.get(node as DecisionId);
-  if (decision === undefined) return { kind: "problem", problem: { kind: "unfounded", reachedOnly: [...path] } };
+  if (decision === undefined)
+    return { kind: "problem", problem: { kind: "unfounded", reachedOnly: [...path] } };
   if (decision.justificationIds.length === 0) {
     // No justification and not a premise: nothing grounds it.
     return { kind: "problem", problem: { kind: "unfounded", reachedOnly: [...path, node] } };
@@ -355,10 +372,11 @@ function walk(
 /* -------------------------------------------------------------------------- */
 
 export const LABEL_MEANING: Readonly<Record<DecisionLabel, string>> = {
-  IN: "Sound ΓÇö at least one justification is valid and well-founded",
-  OUT: "Unsound ΓÇö every justification is invalid",
-  UNKNOWN: "Unverified ΓÇö nothing has confirmed or refuted the premises",
-  UNFOUNDED: "Unfounded ΓÇö the support chain is circular or never reaches a premise. A data-quality warning, not a truth claim",
+  IN: "Sound — at least one justification is valid and well-founded",
+  OUT: "Unsound — every justification is invalid",
+  UNKNOWN: "Unverified — nothing has confirmed or refuted the premises",
+  UNFOUNDED:
+    "Unfounded — the support chain is circular or never reaches a premise. A data-quality warning, not a truth claim",
 };
 
 export function describeReason(reason: LabelReason, state: GraphState): string {
@@ -368,11 +386,11 @@ export function describeReason(reason: LabelReason, state: GraphState): string {
     case "all-justifications-invalid":
       return reason.failedPremiseId === null
         ? "Every justification is invalid."
-        : `Every justification is invalid. The first to fail did so on ${reason.failedPremiseId} ΓÇö "${state.premises.get(reason.failedPremiseId)?.text ?? "unknown premise"}".`;
+        : `Every justification is invalid. The first to fail did so on ${reason.failedPremiseId} — "${state.premises.get(reason.failedPremiseId)?.text ?? "unknown premise"}".`;
     case "no-justification":
       return "No justification is attached, so nothing supports it and nothing refutes it.";
     case "circular":
-      return `Circular support: ${reason.cycle.join(" ΓåÆ ")}. Believed on an argument with no ground.`;
+      return `Circular support: ${reason.cycle.join(" → ")}. Believed on an argument with no ground.`;
     case "unfounded":
       return `The support chain never reaches a premise (reached: ${reason.reachedOnly.join(", ") || "nothing"}).`;
     case "asserted-premise":
@@ -389,13 +407,15 @@ export function describeLabelling(result: LabellingResult): string {
     `${result.labels.size} nodes labelled in ${result.iterations} iteration${result.iterations === 1 ? "" : "s"}`,
   ];
   if (!result.fixpointReached) {
-    parts.push(`DID NOT REACH A FIXPOINT within ${MAX_ITERATIONS} iterations ΓÇö this is a bug, not a graph property`);
+    parts.push(
+      `DID NOT REACH A FIXPOINT within ${MAX_ITERATIONS} iterations — this is a bug, not a graph property`,
+    );
   }
   if (result.changed.length > 0) {
     parts.push(`${result.changed.length} label${result.changed.length === 1 ? "" : "s"} changed`);
   }
   if (result.unfounded.length > 0) {
-    parts.push(`${result.unfounded.length} UNFOUNDED ΓÇö circular or groundless support`);
+    parts.push(`${result.unfounded.length} UNFOUNDED — circular or groundless support`);
   }
-  return parts.join(" ┬╖ ");
+  return parts.join(" · ");
 }

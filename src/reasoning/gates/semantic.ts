@@ -1,14 +1,14 @@
 /**
- * Gate (b) ΓÇö semantic contradiction. 2.4.
+ * Gate (b) — semantic contradiction. 2.4.
  *
- * Phase 2 ┬╖ sub-phase 2.4
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.4
- * Research: docs/03 ┬º4 (retrieve then classify), docs/05 ┬º3 (Kantara's M1/M2)
+ * Phase 2 · sub-phase 2.4
+ * Plan: plan/phase-2-truth-maintenance.md §2.4
+ * Research: docs/03 §4 (retrieve then classify), docs/05 §3 (Kantara's M1/M2)
  *
  * ---------------------------------------------------------------------------
- * RETRIEVE, THEN CLASSIFY ΓÇö NEVER COMPARE ALL PAIRS
+ * RETRIEVE, THEN CLASSIFY — NEVER COMPARE ALL PAIRS
  *
- * Invariant I3: retrieval PROPOSES, a classifier DISPOSES. An O(n┬▓) pairwise sweep
+ * Invariant I3: retrieval PROPOSES, a classifier DISPOSES. An O(n²) pairwise sweep
  * is not merely slow, it is wrong: it surfaces every topically similar pair and asks
  * the classifier to reject most of them, which is how a detector acquires a false
  * positive rate it cannot afford.
@@ -34,13 +34,13 @@
  * Borrowed from Kantara (arXiv:2506.11005), which found 29 similar and 396
  * contradictory pairs across the Linux kernel rationale graph:
  *
- *   M1 ΓÇö similar decisions, contradictory rationales ΓçÆ probable MISUNDERSTANDING
- *   M2 ΓÇö contradictory decisions, similar rationales ΓçÆ probable COPY-PASTE or
+ *   M1 — similar decisions, contradictory rationales ⇒ probable MISUNDERSTANDING
+ *   M2 — contradictory decisions, similar rationales ⇒ probable COPY-PASTE or
  *        extraction error
  *
  * They point at different fixes. M1 means two people meant different things by the
  * same words. M2 means the same reasoning was attached to two incompatible choices,
- * which is usually a bug in the record rather than in the project ΓÇö and telling the
+ * which is usually a bug in the record rather than in the project — and telling the
  * user "your extraction is wrong" is more useful than telling them "your decisions
  * conflict".
  * ---------------------------------------------------------------------------
@@ -81,7 +81,7 @@ export interface GateBResult {
  * Gate (b), which needs Phase 3's retrieval stack to propose candidates.
  *
  * @param retrieve a candidate-pair source. Injected rather than imported so this
- *                 module has no dependency on `src/retrieval/` before it exists ΓÇö
+ *                 module has no dependency on `src/retrieval/` before it exists —
  *                 and so Phase 7 can measure the gate against a fixture pair list
  *                 without standing up an index.
  */
@@ -163,8 +163,8 @@ function notNull<T>(value: T | null): value is T {
  * because the classifier was asked whether the decisions conflict and not why the
  * record looks the way it does.
  *
- *   high similarity + conflicting rationale ΓçÆ M1, a misunderstanding
- *   low similarity  + shared rationale      ΓçÆ M2, a copy-paste or extraction error
+ *   high similarity + conflicting rationale ⇒ M1, a misunderstanding
+ *   low similarity  + shared rationale      ⇒ M2, a copy-paste or extraction error
  *
  * Anything else returns null, and null is displayed as "unclassified" rather than
  * being quietly folded into one of the two. A diagnostic that always picks one is a
@@ -179,11 +179,11 @@ export function diagnose(pair: CandidatePair, verdict: ContradictionVerdict): "M
 }
 
 /** Above this, the decisions are near-duplicates and the conflict is in the
- *  reasoning ΓÇö two people who meant different things by the same words. */
+ *  reasoning — two people who meant different things by the same words. */
 export const M1_SIMILARITY_FLOOR = 0.75;
 
 /** Below this, with premises in common, the reasoning was reused across two
- *  incompatible choices ΓÇö usually a record-keeping error rather than a real one. */
+ *  incompatible choices — usually a record-keeping error rather than a real one. */
 export const M2_SIMILARITY_CEILING = 0.45;
 
 export const DIAGNOSTIC_MEANING: Readonly<Record<"M1" | "M2", string>> = {
@@ -229,7 +229,7 @@ function premiseSnapshot(state: GraphState, id: PremiseId): PremiseSnapshot | nu
 /* -------------------------------------------------------------------------- */
 
 export function describeResult(result: GateBResult): string {
-  if (!result.available) return `gate (b) unavailable ΓÇö ${result.unavailableReason}`;
+  if (!result.available) return `gate (b) unavailable — ${result.unavailableReason}`;
   if (result.hits.length === 0) {
     return `gate (b) considered ${result.pairsConsidered} candidate pair${result.pairsConsidered === 1 ? "" : "s"} and found no semantic conflict`;
   }
@@ -243,5 +243,5 @@ export function describeResult(result: GateBResult): string {
     unclassified > 0 ? `${unclassified} unclassified` : "",
   ]
     .filter((part) => part.length > 0)
-    .join(" ┬╖ ");
+    .join(" · ");
 }

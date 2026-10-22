@@ -1,7 +1,7 @@
 /**
  * The review queue's shapes.
  *
- * Phase 1 ┬╖ sub-phase 1.9
+ * Phase 1 · sub-phase 1.9
  *
  * ---------------------------------------------------------------------------
  * WHY THIS IS NOT IN `review/index.ts`
@@ -9,7 +9,7 @@
  * `review/actions.ts` needs `ReviewItem` to build a discard record, and
  * `review/index.ts` re-exports `actions.ts`. With the interface declared in
  * `index.ts` the two files import each other. `verbatimModuleSyntax` erases a
- * type-only import so nothing breaks at runtime ΓÇö which is exactly why it would
+ * type-only import so nothing breaks at runtime — which is exactly why it would
  * have survived: a cycle that works is a cycle nobody fixes, and it breaks the day
  * either module grows a top-level initialiser that reads the other.
  *
@@ -39,7 +39,7 @@ export interface ReviewItem {
   readonly tier: ConfidenceTier;
   readonly origin: string;
   readonly engine: string;
-  /** Expanded by default? Low tier is never expanded ΓÇö that is the whole point of
+  /** Expanded by default? Low tier is never expanded — that is the whole point of
    *  sorting for rejection. */
   readonly expanded: boolean;
   /** The ladder's answer, in words. "merges onto WLD-0003" is the difference

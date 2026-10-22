@@ -1,9 +1,9 @@
 /**
- * Gate (a) ΓÇö structural contradiction. 2.3.
+ * Gate (a) — structural contradiction. 2.3.
  *
- * Phase 2 ┬╖ sub-phase 2.3
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.3
- * Research: docs/03 ┬º4 (three-gate detector), docs/02 ┬º4
+ * Phase 2 · sub-phase 2.3
+ * Plan: plan/phase-2-truth-maintenance.md §2.3
+ * Research: docs/03 §4 (three-gate detector), docs/02 §4
  *
  * ---------------------------------------------------------------------------
  * THE CREDIBILITY ANCHOR
@@ -21,7 +21,7 @@
  *
  * "use Postgres" and "don't use Postgres" are ~0.9 cosine similar (docs/03). A
  * negation changes almost nothing in vector space, so embeddings CANNOT detect
- * contradiction ΓÇö they detect topical similarity. Gate (a) fires precisely where
+ * contradiction — they detect topical similarity. Gate (a) fires precisely where
  * retrieval is blind, which is why it runs first and never consults a vector.
  *
  * ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@
  *
  * Structural hits are high-precision and low-recall: they fire only when both
  * decisions resolved to the same ontology variable. NEVER widen this gate with fuzzy
- * matching to improve recall ΓÇö that is gate (b)'s job, and mixing them destroys the
+ * matching to improve recall — that is gate (b)'s job, and mixing them destroys the
  * one detector whose false-positive rate is provably zero. A user who learns that
  * "contradiction" sometimes means "these two seemed related" stops reading the
  * warnings, and then the real one is missed too.
@@ -64,8 +64,8 @@ export interface StructuralHit {
  *
  * Two rules, and a pair may satisfy both:
  *
- *   1. same variable, different canonical value ΓÇö two live answers to one question
- *   2. both values are a declared antonym pair ΓÇö the table says why they cannot
+ *   1. same variable, different canonical value — two live answers to one question
+ *   2. both values are a declared antonym pair — the table says why they cannot
  *      coexist, which is a better explanation than "they differ"
  *
  * Superseded and archived decisions are excluded. Reversing a decision is not
@@ -198,14 +198,14 @@ export function wouldContradict(
 /* -------------------------------------------------------------------------- */
 
 export function describeHits(hits: readonly StructuralHit[]): string {
-  if (hits.length === 0) return "no structural contradictions ΓÇö no two live decisions answer the same question differently";
+  if (hits.length === 0) return "no structural contradictions — no two live decisions answer the same question differently";
   const antonyms = hits.filter((hit) => hit.via === "antonym-pair").length;
   return [
     `${hits.length} structural contradiction${hits.length === 1 ? "" : "s"}`,
     antonyms > 0 ? `${antonyms} from the antonym table` : "none from the antonym table",
     `${hits.length - antonyms} from same-variable-different-value`,
     "detected with no model, no network and no threshold",
-  ].join(" ┬╖ ");
+  ].join(" · ");
 }
 
 /**
@@ -213,7 +213,7 @@ export function describeHits(hits: readonly StructuralHit[]): string {
  *
  * Shown in the health panel because a detector whose blind spots are invisible is a
  * detector that will be over-trusted. Gate (a) only fires when both decisions
- * resolved to the same ontology variable ΓÇö so a contradiction between a DATABASE
+ * resolved to the same ontology variable — so a contradiction between a DATABASE
  * decision and an ARCHITECTURE decision that implies it is gate (b)'s problem, and
  * until Phase 3 exists it is nobody's problem.
  */

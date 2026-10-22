@@ -1,63 +1,63 @@
 /**
- * The contradiction classifier ΓÇö 3.6.
+ * The contradiction classifier — 3.6.
  *
- * Phase 3 ┬╖ sub-phase 3.6
- * Plan: plan/phase-3-retrieval.md ┬º3.6
- * Verdict definitions: plan/phase-2-truth-maintenance.md ┬º2.4
+ * Phase 3 · sub-phase 3.6
+ * Plan: plan/phase-3-retrieval.md §3.6
+ * Verdict definitions: plan/phase-2-truth-maintenance.md §2.4
  *
  * ---------------------------------------------------------------------------
- * RETRIEVAL PROPOSES, THIS DISPOSES ΓÇö INVARIANT I3
+ * RETRIEVAL PROPOSES, THIS DISPOSES — INVARIANT I3
  *
  * "Use Postgres" and "don't use Postgres" are ~0.9 cosine similar. Embedding models encode
  * TOPIC, not POLARITY. Any code path where a similarity threshold decides a contradiction is
  * a bug, not a tuning problem.
  *
  * So the similarity score is used to SELECT candidates and is then THROWN AWAY. Nothing in
- * this file reads it. The verdict comes from variable, value, polarity and rationale ΓÇö all
+ * this file reads it. The verdict comes from variable, value, polarity and rationale — all
  * discrete, all inspectable, none of them a float that drifts when the model changes.
  *
  * That is why `classifyPair` takes two `DecisionSnapshot`s and not a score, and why there is
  * no threshold constant anywhere in this file to tune.
  *
  * ---------------------------------------------------------------------------
- * THE RULE ORDER, AND WHY IT DIFFERS FROM ┬º3.6 AS WRITTEN
+ * THE RULE ORDER, AND WHY IT DIFFERS FROM §3.6 AS WRITTEN
  *
- * ┬º3.6 lists five rules and says "in order":
+ * §3.6 lists five rules and says "in order":
  *
- *   1. shared variable + differing canonical value        ΓåÆ reversal
- *   2. negation cue in scope + same variable and value    ΓåÆ contradiction
- *   3. same variable and value + new rationale            ΓåÆ refinement
- *   4. antonym-pair members asserted on the same variable ΓåÆ contradiction
- *   5. otherwise                                          ΓåÆ neutral
+ *   1. shared variable + differing canonical value        → reversal
+ *   2. negation cue in scope + same variable and value    → contradiction
+ *   3. same variable and value + new rationale            → refinement
+ *   4. antonym-pair members asserted on the same variable → contradiction
+ *   5. otherwise                                          → neutral
  *
  * **Rule 4 is unreachable in that order.** An antonym pair IS a differing canonical value on
- * a shared variable, so rule 1 always fires first and rule 4 can never be reached. But ┬º3.6's
+ * a shared variable, so rule 1 always fires first and rule 4 can never be reached. But §3.6's
  * own acceptance criterion requires that "the classifier's five verdicts are individually
- * testable" ΓÇö and an unreachable rule is not testable.
+ * testable" — and an unreachable rule is not testable.
  *
  * So the antonym test moves to the front, which is also what the semantics want:
  *
- *   1. ANTONYM PAIR on the same variable                  ΓåÆ contradiction
+ *   1. ANTONYM PAIR on the same variable                  → contradiction
  *      Two declared-mutually-exclusive choices, both live. This is gate (a)'s territory and
  *      it is a genuine conflict, not a change of mind.
- *   2. negation cue in scope + same variable and value    ΓåÆ contradiction
- *      The values AGREE but one statement negates the other ΓÇö the reasoning conflicts even
+ *   2. negation cue in scope + same variable and value    → contradiction
+ *      The values AGREE but one statement negates the other — the reasoning conflicts even
  *      though the choice does not.
- *   3. shared variable + differing (non-antonym) value    ΓåÆ reversal
+ *   3. shared variable + differing (non-antonym) value    → reversal
  *      A change of direction: "sqlite" then "sqlite with WAL". Deliberate, superseded, both
  *      retained. Calling this a contradiction would put every refinement in the conflict
  *      queue, which is how the feature gets switched off.
- *   4. same variable and value + new or changed rationale ΓåÆ refinement
- *   5. otherwise                                          ΓåÆ neutral
+ *   4. same variable and value + new or changed rationale → refinement
+ *   5. otherwise                                          → neutral
  *
  * All five are now reachable and individually testable. The deviation is recorded here and in
- * STRUCTURE.md ┬º18.3 rather than silently "fixed", because a plan and an implementation that
+ * STRUCTURE.md §18.3 rather than silently "fixed", because a plan and an implementation that
  * disagree without a note is how the next person reintroduces the bug.
  *
  * ---------------------------------------------------------------------------
  * HYPOTHETICALS PRODUCE NO VERDICT AT ALL
  *
- * ┬º3.6's acceptance criterion. A `proposed` or `hypothetical` decision never became a belief,
+ * §3.6's acceptance criterion. A `proposed` or `hypothetical` decision never became a belief,
  * so it cannot contradict one. Classifying it would report a conflict between something the
  * user decided and something they were thinking aloud about.
  * ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ import { foldKey } from "@/ontology/canonicalize";
 import { negationBetween, type NegationScopeVerdict } from "./negation";
 
 /** Which rule fired. Carried on every verdict because the explanation has to name the rule
- *  that decided it ΓÇö a verdict without its rule is an assertion, not a diagnosis. */
+ *  that decided it — a verdict without its rule is an assertion, not a diagnosis. */
 export type ClassifierRule =
   | "antonym-pair"
   | "negation-scope"
@@ -157,7 +157,7 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
         explanation:
           'Both settle ' + a.variable + ' on "' + canonicalA + '" and agree. ' +
           (oneAdds
-            ? "One records a reason the other does not, so this is an elaboration ΓÇö merge them so the reason survives."
+            ? "One records a reason the other does not, so this is an elaboration — merge them so the reason survives."
             : "They give different reasons for the same choice. Both may be true; merge rather than supersede."),
         confidence: 0.55,
         negation: null,
@@ -168,7 +168,7 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
       verdict: "neutral",
       rule: "no-rule",
       explanation:
-        'Both settle ' + a.variable + ' on "' + canonicalA + '" with no distinguishing rationale. Nothing to revise ΓÇö this looks like one decision recorded twice.',
+        'Both settle ' + a.variable + ' on "' + canonicalA + '" with no distinguishing rationale. Nothing to revise — this looks like one decision recorded twice.',
       confidence: 0.45,
       negation: null,
     };
@@ -203,7 +203,7 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
 }
 
 /* -------------------------------------------------------------------------- */
-/* The hypothetical guard ΓÇö ┬º3.6's acceptance criterion                       */
+/* The hypothetical guard — §3.6's acceptance criterion                       */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -214,7 +214,7 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
  * and reporting a conflict with a belief the system no longer holds would put resolved
  * history back in the conflict queue.
  *
- * `contested` IS classifiable ΓÇö that is precisely the state where a conflict is live and
+ * `contested` IS classifiable — that is precisely the state where a conflict is live and
  * awaiting a human call, so it must keep being visible.
  *
  * This lives here rather than in `ai/local/classify.ts` because `DecisionSnapshot` carries no
@@ -248,9 +248,9 @@ export function explainNotClassifiable(status: DecisionStatus): string {
  * Borrowed from arXiv:2506.11005, and surfaced separately because they mean different
  * things and have different remedies.
  *
- *   M1 ΓÇö SIMILAR decisions, CONTRADICTORY rationales ΓåÆ probable misunderstanding.
+ *   M1 — SIMILAR decisions, CONTRADICTORY rationales → probable misunderstanding.
  *        The decision may be fine; the REASON is broken.
- *   M2 ΓÇö CONTRADICTORY decisions, SIMILAR rationales ΓåÆ probable copy-paste or an
+ *   M2 — CONTRADICTORY decisions, SIMILAR rationales → probable copy-paste or an
  *        extraction error. A DATA-QUALITY problem, not a reasoning problem.
  *
  * Both need a similarity judgement, which is the one thing invariant I3 forbids this file
@@ -271,8 +271,8 @@ export const M1_RATIONALE_CEILING = 0.35;
 export const M2_RATIONALE_FLOOR = 0.8;
 
 export const DIAGNOSTIC_MEANING: Readonly<Record<"M1" | "M2", string>> = {
-  M1: "Similar decisions with contradictory rationales ΓÇö probable misunderstanding. The decision may be fine; the reason is broken.",
-  M2: "Contradictory decisions with similar rationales ΓÇö probable copy-paste or an extraction error. A data-quality problem, not a reasoning problem.",
+  M1: "Similar decisions with contradictory rationales — probable misunderstanding. The decision may be fine; the reason is broken.",
+  M2: "Contradictory decisions with similar rationales — probable copy-paste or an extraction error. A data-quality problem, not a reasoning problem.",
 };
 
 /* -------------------------------------------------------------------------- */
@@ -283,7 +283,7 @@ export const DIAGNOSTIC_MEANING: Readonly<Record<"M1" | "M2", string>> = {
  * Classify every candidate pair retrieval produced.
  *
  * Pairs are de-duplicated by sorted id so a pair retrieved from both directions is judged
- * once, and only pairs where at least one side is `asserted` are judged at all ΓÇö a
+ * once, and only pairs where at least one side is `asserted` are judged at all — a
  * hypothetical cannot contradict a belief.
  */
 export function classifyPairs(
@@ -349,30 +349,30 @@ export function requestFor(
 export function describeVerdict(verdict: ContradictionVerdict): string {
   switch (verdict) {
     case "contradiction":
-      return "CONTRADICTION ΓÇö cannot both hold. Full revision cycle.";
+      return "CONTRADICTION — cannot both hold. Full revision cycle.";
     case "reversal":
-      return "REVERSAL ΓÇö the newer deliberately replaces the older on the same variable. Supersede; both retained.";
+      return "REVERSAL — the newer deliberately replaces the older on the same variable. Supersede; both retained.";
     case "refinement":
-      return "REFINEMENT ΓÇö same variable, same value, added or corrected rationale. Merge; corroboration +1; no label change. This is by far the most common relationship between related decisions, and flagging it as a conflict is how the feature gets switched off.";
+      return "REFINEMENT — same variable, same value, added or corrected rationale. Merge; corroboration +1; no label change. This is by far the most common relationship between related decisions, and flagging it as a conflict is how the feature gets switched off.";
     case "premise-invalidation":
-      return "PREMISE-INVALIDATION ΓÇö no conflict between the decisions; a shared premise became false. Gate (c) handles this.";
+      return "PREMISE-INVALIDATION — no conflict between the decisions; a shared premise became false. Gate (c) handles this.";
     case "neutral":
-      return "NEUTRAL ΓÇö topically related, logically compatible. A `related` edge for the graph view; nothing else.";
+      return "NEUTRAL — topically related, logically compatible. A `related` edge for the graph view; nothing else.";
   }
 }
 
 export function describeRule(rule: ClassifierRule): string {
   switch (rule) {
     case "antonym-pair":
-      return "rule 1 ΓÇö the ontology declares these two values mutually exclusive under this variable";
+      return "rule 1 — the ontology declares these two values mutually exclusive under this variable";
     case "negation-scope":
-      return "rule 2 ΓÇö the values agree but a negation cue falls within scope of the value";
+      return "rule 2 — the values agree but a negation cue falls within scope of the value";
     case "differing-value":
-      return "rule 3 ΓÇö same variable, different value, not a declared antonym pair";
+      return "rule 3 — same variable, different value, not a declared antonym pair";
     case "new-rationale":
-      return "rule 4 ΓÇö same variable and value, with a rationale one side has and the other does not";
+      return "rule 4 — same variable and value, with a rationale one side has and the other does not";
     case "no-rule":
-      return "rule 5 ΓÇö no rule applies; neutral by default, never by guess";
+      return "rule 5 — no rule applies; neutral by default, never by guess";
   }
 }
 
@@ -381,16 +381,16 @@ export function describeRule(rule: ClassifierRule): string {
 export function describeRules(): string {
   return [
     "The contradiction classifier applies five rules in this order and reads no similarity score:",
-    "  1. antonym pair on the same variable            ΓåÆ contradiction   (0.95)",
-    "  2. negation in scope + same variable and value  ΓåÆ contradiction   (0.60)",
-    "  3. same variable + differing value              ΓåÆ reversal        (0.70)",
-    "  4. same variable and value + new rationale      ΓåÆ refinement      (0.55)",
-    "  5. otherwise                                    ΓåÆ neutral         (0.40)",
+    "  1. antonym pair on the same variable            → contradiction   (0.95)",
+    "  2. negation in scope + same variable and value  → contradiction   (0.60)",
+    "  3. same variable + differing value              → reversal        (0.70)",
+    "  4. same variable and value + new rationale      → refinement      (0.55)",
+    "  5. otherwise                                    → neutral         (0.40)",
     "",
-    "┬º3.6 lists rule 4 (antonym pair) fourth, which makes it unreachable: an antonym pair is a",
-    "differing value, so rule 3 would always fire first. ┬º3.6 also requires all five verdicts to",
+    "§3.6 lists rule 4 (antonym pair) fourth, which makes it unreachable: an antonym pair is a",
+    "differing value, so rule 3 would always fire first. §3.6 also requires all five verdicts to",
     "be individually testable, so the antonym test is moved to the front. Recorded in",
-    "STRUCTURE.md ┬º18.3 rather than silently reconciled.",
+    "STRUCTURE.md §18.3 rather than silently reconciled.",
     "",
     "Invariant I3: similarity SELECTS candidates and is then discarded. Nothing here reads a",
     "score, and there is no threshold constant in this file to tune.",

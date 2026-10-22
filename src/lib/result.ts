@@ -5,7 +5,7 @@
  * parsing a pasted package.json, validating an imported log, resolving an
  * entity, evaluating a guard, checking a hash chain.
  *
- * Throwing at these boundaries loses the reason, and the reason is the product ΓÇö
+ * Throwing at these boundaries loses the reason, and the reason is the product —
  * a guard failure without its evidence string cannot become a revision proposal.
  */
 

@@ -44,10 +44,7 @@ const VIEWS: readonly { id: ViewId; label: string; phase: string }[] = [
   { id: "foundation", label: "Foundation", phase: "0" },
   { id: "timeline", label: "Timeline", phase: "6.1" },
   { id: "conflict", label: "Conflict", phase: "6.5" },
-  // THIRD: gate G3 — "it answers". Retrieval, the evidence contract and the Ask surface all
-  // land in Phase 3, so the view belongs to it rather than to the presentation phase that
-  // originally held the slot.
-  { id: "ask", label: "Ask", phase: "3" },
+  { id: "ask", label: "Ask", phase: "6.10" },
   { id: "guards", label: "Guards", phase: "6.8" },
   { id: "export", label: "Export", phase: "6.11" },
   { id: "health", label: "Health", phase: "6.9" },

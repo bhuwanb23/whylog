@@ -117,6 +117,24 @@ describe("Gate G3 — it answers", () => {
       expect(claim.grounded).toBe(true);
     }
 
+    /* The local engine's disclosure is a note about HOW the answer was composed,
+     * not a claim about the log. It is carried on the answer and rendered in the
+     * prose, but it is NOT a claim: it carries no decision id, so counting it as
+     * one would score a fully-sourced answer as ungrounded. */
+    expect(answer.disclosure).toBeDefined();
+    expect(answer.text).toContain(answer.disclosure as string);
+    for (const claim of answer.claims) {
+      expect(claim.text).not.toContain("Composed from templates by the local engine");
+    }
+
+    /* The composer's header ends with its citation bracket, and the question
+     * inside it ends with a question mark. A naive sentence split orphans the
+     * bracket onto the next sentence and leaves the header citing nothing — an
+     * ungrounded claim for a perfectly well-sourced sentence. */
+    const header = answer.claims[0];
+    expect(header?.text).toContain("WLD-");
+    expect(header?.citations.length).toBeGreaterThan(0);
+
     // A citation is valid ONLY if it points at a decision this run retrieved.
     for (const citation of answer.citations) {
       expect(citation.resolvedInRun).toBe(true);

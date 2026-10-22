@@ -1,7 +1,7 @@
 /**
- * The extraction pipeline ΓÇö the orchestrator.
+ * The extraction pipeline — the orchestrator.
  *
- * Phase 1 ┬╖ all sub-phases
+ * Phase 1 · all sub-phases
  * Plan: plan/phase-1-extraction-pipeline.md
  *
  * ---------------------------------------------------------------------------
@@ -9,18 +9,18 @@
  *
  * The stages, in order, and the telemetry between them:
  *
- *     normalise ΓåÆ segment ΓåÆ recognise ΓåÆ validate ΓåÆ score ΓåÆ resolve ΓåÆ review queue
+ *     normalise → segment → recognise → validate → score → resolve → review queue
  *
  * The recognisers live in `src/ai/local/` and `src/ai/llm/` behind one interface.
  * Everything else is here, because everything else is the same whichever engine
- * ran ΓÇö and a stage that is duplicated per engine is a stage whose two copies will
+ * ran — and a stage that is duplicated per engine is a stage whose two copies will
  * drift.
  *
  * ---------------------------------------------------------------------------
  * THE STAGE REPORTS ARE NOT DECORATION
  *
  * Extraction is the layer users trust least, so it reports what it DID rather than
- * only what it found. "4 turns unattributed, 2 episodes, 9 cues ΓåÆ 3 decisions,
+ * only what it found. "4 turns unattributed, 2 episodes, 9 cues → 3 decisions,
  * 5 premises, 2 discarded, 1 snippet failed validation" is a sentence a user can
  * argue with. "3 decisions" is not.
  * ---------------------------------------------------------------------------
@@ -152,7 +152,7 @@ export async function runExtraction(
     ),
   );
 
-  /* ---- 1.3ΓÇô1.6 recognise, through the engine seam ---- */
+  /* ---- 1.3–1.6 recognise, through the engine seam ---- */
   stageStart = nowMs();
   const request: ExtractionRequest = {
     transcriptId: input.transcriptId,

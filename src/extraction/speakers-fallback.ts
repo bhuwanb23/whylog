@@ -1,15 +1,15 @@
 /**
  * The two attribution paths that are NOT marker-based.
  *
- * Phase 1 ┬╖ sub-phase 1.1
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1
+ * Phase 1 · sub-phase 1.1
+ * Plan: plan/phase-1-extraction-pipeline.md §1.1
  *
  * Split out of `speakers.ts` because both are guesses of a different character
  * than the marker scan, and both need their own explanation:
  *
- *   `attributeJsonl`  ΓÇö a chat export. Role comes from the record, so this is a
+ *   `attributeJsonl`  — a chat export. Role comes from the record, so this is a
  *                       PARSE, not a guess, and is recorded as such.
- *   `attributeUnmarked` ΓÇö plain prose with no role markers at all. This IS a
+ *   `attributeUnmarked` — plain prose with no role markers at all. This IS a
  *                       guess, and it is deliberately conservative: acceptance
  *                       criterion 1.1 only asks that such a transcript "still
  *                       segments sensibly", not that it attributes correctly.
@@ -34,7 +34,7 @@ import {
 
 /**
  * Chat-export JSONL. Role comes from the record, so attribution is exact and
- * recorded as `jsonl-role` rather than `marker` ΓÇö the review UI shows the
+ * recorded as `jsonl-role` rather than `marker` — the review UI shows the
  * difference because one is a parse and the other is a guess.
  */
 export function attributeJsonl(raw: string): AttributionResult {
@@ -137,8 +137,8 @@ export function attributeUnmarked(raw: string, lines: readonly LineSpan[], shape
   };
 }
 
-/** First person and no second person ΓçÆ human. Second person ΓçÆ agent. Both or
- *  neither ΓçÆ unknown, which is the honest answer and the low-authority one. */
+/** First person and no second person ⇒ human. Second person ⇒ agent. Both or
+ *  neither ⇒ unknown, which is the honest answer and the low-authority one. */
 function guessVoice(text: string, index: number): "human" | "agent" | "unknown" {
   const first = FIRST_PERSON.test(text);
   const second = SECOND_PERSON.test(text);
@@ -153,7 +153,7 @@ function guessVoice(text: string, index: number): "human" | "agent" | "unknown" 
 
 function sentenceUnits(raw: string): readonly { start: number; end: number; bodyStart: number }[] {
   const units: { start: number; end: number; bodyStart: number }[] = [];
-  const pattern = /[^.!?ΓÇª\n]+[.!?ΓÇª]+[\s]*/g;
+  const pattern = /[^.!?…\n]+[.!?…]+[\s]*/g;
   let match: RegExpExecArray | null = pattern.exec(raw);
 
   while (match !== null) {

@@ -1,15 +1,15 @@
 /**
- * Rationale, accepted downside and `applies_to` ΓÇö 1.3, component 5.
+ * Rationale, accepted downside and `applies_to` — 1.3, component 5.
  *
- * Phase 1 ┬╖ sub-phase 1.3
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.3
+ * Phase 1 · sub-phase 1.3
+ * Plan: plan/phase-1-extraction-pipeline.md §1.3
  *
  * ---------------------------------------------------------------------------
  * WHY THE RATIONALE IS A SEPARATE FIELD AND NOT PART OF THE STATEMENT
  *
  * The statement is what the export ships as a rule; the rationale is why the rule
  * exists. Keeping them apart is what lets Phase 2 ask "is this rationale still
- * true?" ΓÇö a question that cannot be posed of a sentence where the two are fused.
+ * true?" — a question that cannot be posed of a sentence where the two are fused.
  *
  * ---------------------------------------------------------------------------
  * WHY `acceptedDownside` DESERVES EXTRACTION EFFORT
@@ -24,7 +24,7 @@
  * DIRECTION
  *
  * Rationale markers are sought BOTH after and before the cue. Dialogue puts the
- * reason first about as often as last ΓÇö "single-user and no deploy hassle is the
+ * reason first about as often as last — "single-user and no deploy hassle is the
  * whole argument" follows the decision, but "we can't afford a managed service, so
  * SQLite" precedes it. Searching only one direction halves recall for no gain.
  * ---------------------------------------------------------------------------
@@ -54,9 +54,9 @@ export interface ClauseFields {
   readonly rationale: RationaleCandidate | null;
   readonly downside: DownsideCandidate | null;
   readonly appliesTo: readonly string[];
-  /** What the decision is trying to achieve ΓÇö the `to achieve Γƒ¿qualityΓƒ⌐` slot. */
+  /** What the decision is trying to achieve — the `to achieve ⟨quality⟩` slot. */
   readonly quality: string | null;
-  /** What problem prompted it ΓÇö the `facing Γƒ¿concernΓƒ⌐` slot. */
+  /** What problem prompted it — the `facing ⟨concern⟩` slot. */
   readonly concern: string | null;
 }
 
@@ -128,7 +128,7 @@ const DOWNSIDE_MARKERS: readonly string[] = [
   "the price is",
 ];
 
-/** Quality attributes ΓÇö the `to achieve` slot's vocabulary. */
+/** Quality attributes — the `to achieve` slot's vocabulary. */
 const QUALITY_TERMS: readonly string[] = [
   "simplicity", "simple", "portability", "portable", "performance", "speed", "fast",
   "reliability", "reliable", "testability", "testable", "maintainability",
@@ -138,7 +138,7 @@ const QUALITY_TERMS: readonly string[] = [
   "developer experience", "dx", "velocity", "stability", "observability",
 ];
 
-/** Concern markers ΓÇö the `facing` slot. */
+/** Concern markers — the `facing` slot. */
 const CONCERN_MARKERS: readonly string[] = [
   "the problem is",
   "problem is",
@@ -210,7 +210,7 @@ function rationaleIn(text: string, at: number, direction: "after" | "before"): R
     if (body.text.trim().length < 8) continue;
 
     // Earlier in the table means a more explicit marker, so the first hit wins
-    // unless a later one is markedly longer ΓÇö a longer reason is a better reason.
+    // unless a later one is markedly longer — a longer reason is a better reason.
     const strength = 1 - m / (RATIONALE_MARKERS.length * 1.6);
     const candidate: RationaleCandidate = {
       text: body.text.trim(),
@@ -256,7 +256,7 @@ export function extractDownside(text: string, at: number): DownsideCandidate | n
  *
  * Sought in a wider window than the other fields because `applies_to` is often
  * stated a sentence or two away from the decision: "that's the rule for anything
- * under src/db". Feeds export ┬º5.3 and guard scoping ┬º4.2.
+ * under src/db". Feeds export §5.3 and guard scoping §4.2.
  */
 export function extractAppliesTo(text: string, at: number): readonly string[] {
   const start = Math.max(0, at - 300);
@@ -325,7 +325,7 @@ export function describeFields(fields: ClauseFields): string {
   parts.push(fields.quality === null ? "no quality term" : `quality: ${fields.quality}`);
   parts.push(fields.concern === null ? "no concern" : `concern: ${fields.concern.slice(0, 40)}`);
   if (fields.appliesTo.length > 0) parts.push(`applies to ${fields.appliesTo.join(", ")}`);
-  return parts.join(" ┬╖ ");
+  return parts.join(" · ");
 }
 
 export function markerCounts(): Readonly<Record<string, number>> {

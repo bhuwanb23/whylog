@@ -1,8 +1,8 @@
 /**
- * Citation expansion ΓÇö 3.9.
+ * Citation expansion — 3.9.
  *
- * Phase 3 ┬╖ sub-phase 3.9
- * Plan: plan/phase-3-retrieval.md ┬º3.9
+ * Phase 3 · sub-phase 3.9
+ * Plan: plan/phase-3-retrieval.md §3.9
  *
  * ---------------------------------------------------------------------------
  * A CITATION IS AN ARGUMENT, NOT A LINK
@@ -10,11 +10,11 @@
  * Every competitor can render "Source: ADR-0012, 3 Oct". That is a link. What WhyLog
  * renders is:
  *
- *   WLD-0007 ┬╖ Use SQLite, not Postgres ┬╖ IN
+ *   WLD-0007 · Use SQLite, not Postgres · IN
  *     rests on   P-0002 "single-user desktop app" (IN)
  *                P-0005 "no deployment budget" (IN)
  *     excludes   P-0009 "concurrent writers" (OUT)
- *     rejected   postgres ΓÇö "needs a server process we cannot run"
+ *     rejected   postgres — "needs a server process we cannot run"
  *     guards     1 of 2 passing
  *     provenance transcript T-0001, decided 2026-10-03, learned 2026-10-03, local engine
  *
@@ -28,7 +28,7 @@
  * The label shown next to each premise is the CURRENT labelled state, taken from the
  * labeller's map, not the value stored on the premise when it was extracted. A citation
  * expansion that showed a stale label would say "rests on P-0005 (IN)" for a premise the log
- * has since falsified ΓÇö which is precisely the sentence that must never be printed, because
+ * has since falsified — which is precisely the sentence that must never be printed, because
  * it is the sentence that makes the whole premise mechanism look decorative.
  *
  * Falling back to `premise.label` only when the labeller has no entry for that node keeps a
@@ -63,7 +63,7 @@ export interface ExpandedCitationResult extends ExpandedCitation {
 /**
  * Expand one citation into the full argument it stands for.
  *
- * Returns null when the decision does not exist in state ΓÇö which cannot happen for a
+ * Returns null when the decision does not exist in state — which cannot happen for a
  * citation that resolved in this run, and is checked anyway because a citation rendered
  * against a deleted node would be the one silent failure this file exists to prevent.
  */
@@ -86,7 +86,7 @@ export function expandCitation(
 
   /* Walk the decision's OWN justification ids rather than scanning every justification in
    * the log for one whose consequent matches. Same result, O(justifications of this
-   * decision) instead of O(all justifications) ΓÇö and citation expansion happens per hit per
+   * decision) instead of O(all justifications) — and citation expansion happens per hit per
    * answer, so this is on the hot path of the Ask view. */
   for (const justificationId of decision.justificationIds) {
     const justification = state.justifications.get(justificationId);
@@ -154,7 +154,7 @@ export function expandCitation(
 }
 
 /** Expand every citation in an answer, in claim order. Unresolvable ids are dropped here and
- *  counted by the caller ΓÇö the evidence contract already recorded them as unresolved. */
+ *  counted by the caller — the evidence contract already recorded them as unresolved. */
 export function expandAll(
   state: GraphState,
   labels: ReadonlyMap<NodeId, Labelled>,
@@ -185,19 +185,19 @@ export function expandAll(
  *
  * Order is deliberate: what was decided, what it rests on, what it excludes, what was
  * rejected, whether anything checks it, where it came from. A reader who stops after the
- * second line still has the decision and its premises ΓÇö the two things that matter most.
+ * second line still has the decision and its premises — the two things that matter most.
  */
 export function renderExpansion(expanded: ExpandedCitationResult): string {
   const lines: string[] = [];
   const decision = expanded.decision;
 
   lines.push(
-    decision.id + " ┬╖ " + decision.statement + " ┬╖ " + expanded.label +
-      (decision.status === "contested" ? " (CONTESTED ΓÇö a human call is pending)" : ""),
+    decision.id + " · " + decision.statement + " · " + expanded.label +
+      (decision.status === "contested" ? " (CONTESTED — a human call is pending)" : ""),
   );
 
   if (expanded.restsOn.length === 0) {
-    lines.push("  rests on   ΓÇö nothing recorded. This decision has no stated premises, so there is nothing to check it against.");
+    lines.push("  rests on   — nothing recorded. This decision has no stated premises, so there is nothing to check it against.");
   } else {
     lines.push("  rests on   " + expanded.restsOn.map((entry) => entry.premise.id + ' "' + entry.premise.text + '" (' + entry.label + ")").join("; "));
   }
@@ -211,7 +211,7 @@ export function renderExpansion(expanded: ExpandedCitationResult): string {
     lines.push(
       "  rejected   " +
         expanded.rejected
-          .map((entry) => entry.value + (entry.whyRejected === undefined ? " (no reason recorded)" : ' ΓÇö "' + entry.whyRejected + '"'))
+          .map((entry) => entry.value + (entry.whyRejected === undefined ? " (no reason recorded)" : ' — "' + entry.whyRejected + '"'))
           .join("; "),
     );
   }
@@ -234,21 +234,21 @@ export function renderExpansion(expanded: ExpandedCitationResult): string {
   if (expanded.labelsFromFallback > 0) {
     lines.push(
       "  note       " + expanded.labelsFromFallback +
-        " premise label(s) came from the stored value because the labeller had no entry for them ΓÇö treat those labels as possibly stale.",
+        " premise label(s) came from the stored value because the labeller had no entry for them — treat those labels as possibly stale.",
     );
   }
 
   return lines.join("\n");
 }
 
-/** One-line form for inline citation markers: "[WLD-0007 ┬╖ rests on P-0002 (IN), P-0005 (IN)]". */
+/** One-line form for inline citation markers: "[WLD-0007 · rests on P-0002 (IN), P-0005 (IN)]". */
 export function renderInline(expanded: ExpandedCitationResult): string {
   const premises =
     expanded.restsOn.length === 0
       ? "no premises recorded"
       : "rests on " + expanded.restsOn.map((entry) => entry.premise.id + " (" + entry.label + ")").join(", ");
 
-  return "[" + expanded.decision.id + " ┬╖ " + premises + "]";
+  return "[" + expanded.decision.id + " · " + premises + "]";
 }
 
 export type { Decision, Premise };

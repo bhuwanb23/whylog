@@ -1,7 +1,7 @@
 /**
  * Commit — 1.9's write path. THE ENFORCEMENT POINT.
  *
- * Phase 1 ú sub-phase 1.9
+ * Phase 1 · sub-phase 1.9
  * Plan: plan/phase-1-extraction-pipeline.md §1.9
  *
  * ---------------------------------------------------------------------------

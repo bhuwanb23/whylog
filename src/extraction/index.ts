@@ -1,15 +1,15 @@
 /**
  * The extraction pipeline's public surface.
  *
- * Phase 1 ┬╖ all sub-phases
- * Plan: plan/phase-1-extraction-pipeline.md ┬╖ STRUCTURE.md ┬º6
+ * Phase 1 · all sub-phases
+ * Plan: plan/phase-1-extraction-pipeline.md · STRUCTURE.md §6
  *
  * ---------------------------------------------------------------------------
  * WHAT CALLERS MAY USE
  *
  * Three things: the contracts (`types.ts`), the orchestrator (`runExtraction`), and
- * the review model (`review/`). Everything else is a stage ΓÇö normalisation,
- * segmentation, cue scanning, the recognisers ΓÇö and a caller that reaches for a
+ * the review model (`review/`). Everything else is a stage — normalisation,
+ * segmentation, cue scanning, the recognisers — and a caller that reaches for a
  * stage directly is a caller that has started to duplicate the pipeline's ordering
  * guarantees.
  *
@@ -33,7 +33,6 @@ export type {
   CandidateKind,
   CodeBlock,
   ConfidenceTier,
-  CueHit,
   EpisodeBoundaryReason,
   EpisodeWindow,
   ExtractionOptions,
@@ -44,9 +43,7 @@ export type {
   NormalizedTranscript,
   NormalizedTurn,
   NormalizationStats,
-  NormalizerOptions,
   OffsetAnchor,
-  OffsetMap,
   OriginEvidence,
   ResolutionOutcome,
   ResolvedCandidate,

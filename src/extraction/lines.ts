@@ -1,8 +1,8 @@
 /**
  * Line-level primitives for transcript attribution.
  *
- * Phase 1 ┬╖ sub-phase 1.1
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1 ┬╖ STRUCTURE.md ┬º6
+ * Phase 1 · sub-phase 1.1
+ * Plan: plan/phase-1-extraction-pipeline.md §1.1 · STRUCTURE.md §6
  *
  * ---------------------------------------------------------------------------
  * WHY THIS FILE EXISTS
@@ -10,7 +10,7 @@
  * `speakers.ts` and `speakers-fallback.ts` were importing from each other: the
  * fallback needed `linesWithOffsets`, and the main module needed the fallback's
  * `attributeJsonl`. ESM hoisting made it work, which is the worst possible outcome
- * ΓÇö a cycle that functions is a cycle nobody fixes, and it breaks the moment either
+ * — a cycle that functions is a cycle nobody fixes, and it breaks the moment either
  * module grows a top-level initialiser that reads the other.
  *
  * So the primitives both sides need live here: line splitting WITH raw offsets,
@@ -23,7 +23,7 @@
  * Every offset in this file is a RAW offset into the untouched input. No stage may
  * reconstruct an offset by summing line lengths, because `
 `, a stripped BOM and
- * collapsed noise regions all make that sum wrong ΓÇö and a wrong offset produces a
+ * collapsed noise regions all make that sum wrong — and a wrong offset produces a
  * snippet that quotes the right words from the wrong place, which is undetectable
  * by reading it.
  * ---------------------------------------------------------------------------
@@ -70,9 +70,9 @@ export interface MarkerRule {
  */
 export const MARKER_RULES: readonly MarkerRule[] = [
   /* ---- Claude Code terminal ---- */
-  { marker: "claude-glyph", speaker: "agent", pattern: /^ΓÅ║\s*/u },
-  { marker: "claude-glyph", speaker: "agent", pattern: /^ΓÄ┐\s*/u },
-  { marker: "claude-glyph", speaker: "agent", pattern: /^ΓùÅ\s*/u },
+  { marker: "claude-glyph", speaker: "agent", pattern: /^⏺\s*/u },
+  { marker: "claude-glyph", speaker: "agent", pattern: /^⎿\s*/u },
+  { marker: "claude-glyph", speaker: "agent", pattern: /^●\s*/u },
   { marker: "claude-glyph", speaker: "human", pattern: /^>\s*/ },
 
   /* ---- explicit role names, with the product-specific ones first ---- */
@@ -156,7 +156,7 @@ export function isAcceptanceOnly(text: string): boolean {
  * Does a turn OPEN with an acceptance?
  *
  * "yeah ok, and can you also add a guard" is not ONLY an acceptance, but it does
- * accept what came before it ΓÇö and that is what `provenance.ts` needs in order to
+ * accept what came before it — and that is what `provenance.ts` needs in order to
  * tell `agent_proposed_human_accepted` (0.8) from `agent_inferred` (0.4). Split
  * from `isAcceptanceOnly` so the two tests stay visibly different: one is "nothing
  * but yes", the other is "yes, and also".
@@ -179,7 +179,7 @@ export function detectShape(raw: string): InputShape {
   const sample = raw.slice(0, 8000);
 
   if (looksLikeJsonl(sample)) return "jsonl";
-  if (/^ΓÅ║|^ΓÄ┐|^ΓùÅ/mu.test(sample)) return "claude-code";
+  if (/^⏺|^⎿|^●/mu.test(sample)) return "claude-code";
   if (/^(copilot|github copilot)\s*:?$/imu.test(sample)) return "copilot-chat";
   if (/^(cursor|composer|agent)\s*:?$/imu.test(sample)) return "cursor-chat";
   if (/^\s*(codex|> codex)\b/imu.test(sample)) return "codex-cli";
@@ -233,9 +233,9 @@ export interface AttributionResult {
  * Find turn boundaries and attribute speakers.
  *
  * Three passes:
- *   1. marker scan ΓÇö every line that opens with a role marker starts a turn;
- *   2. inheritance ΓÇö a following line with no marker joins the current turn;
- *   3. fallback ΓÇö when NO marker was found anywhere, split on blank lines and
+ *   1. marker scan — every line that opens with a role marker starts a turn;
+ *   2. inheritance — a following line with no marker joins the current turn;
+ *   3. fallback — when NO marker was found anywhere, split on blank lines and
  *      attribute by first-person versus imperative voice, so that a transcript
  *      pasted as plain prose still segments sensibly (acceptance criterion 1.1).
  */

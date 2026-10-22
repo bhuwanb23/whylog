@@ -1,7 +1,7 @@
 /**
  * Assertion helpers.
  *
- * Used for INTERNAL invariants ΓÇö conditions that must hold if the code is
+ * Used for INTERNAL invariants — conditions that must hold if the code is
  * correct. Never for user input, which is validated with `Result` instead.
  *
  * The distinction matters: an invariant violation is a BUG and should throw
@@ -27,7 +27,7 @@ export function invariant(condition: unknown, message: string): asserts conditio
 }
 
 /** Non-null assertion that throws rather than silently producing undefined.
- *  Preferred over `!` everywhere ΓÇö `noUncheckedIndexedAccess` is on, and a
+ *  Preferred over `!` everywhere — `noUncheckedIndexedAccess` is on, and a
  *  missing map entry is a real bug worth naming. */
 export function mustExist<T>(value: T | null | undefined, message: string): T {
   if (value === null || value === undefined) {
@@ -49,7 +49,7 @@ export function mustGet<K, V>(map: ReadonlyMap<K, V>, key: K, label: string): V 
  * Development-only check. Returns the condition so it can be used inline.
  *
  * `import.meta.env.DEV` is a Vite compile-time constant, so the whole branch is
- * dead-code eliminated from a production build ΓÇö no console access, no `process`
+ * dead-code eliminated from a production build — no console access, no `process`
  * reference, and nothing for a bundler to polyfill.
  */
 export function devAssert(condition: boolean, message: string): boolean {

@@ -1,12 +1,12 @@
 /**
  * Text normalisation and tokenisation.
  *
- * Phase 1 ┬╖ sub-phase 1.1, and Phase 3 ┬╖ sub-phase 3.2
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1
- *       plan/phase-3-retrieval.md ┬º3.2
+ * Phase 1 · sub-phase 1.1, and Phase 3 · sub-phase 3.2
+ * Plan: plan/phase-1-extraction-pipeline.md §1.1
+ *       plan/phase-3-retrieval.md §3.2
  *
  * Everything here is deterministic and locale-independent. No Intl, no
- * localeCompare ΓÇö the same transcript must tokenise identically on every machine
+ * localeCompare — the same transcript must tokenise identically on every machine
  * or the hash chain and the golden tests both break.
  */
 
@@ -63,7 +63,7 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
 ]);
 
 /** Lowercase, strip punctuation, collapse whitespace. Never touches case
- *  inside code fences ΓÇö callers must strip those first. */
+ *  inside code fences — callers must strip those first. */
 export function normalise(input: string): string {
   return input
     .toLowerCase()
@@ -80,7 +80,7 @@ export function tokenise(input: string): readonly string[] {
   return normalised.length === 0 ? [] : normalised.split(" ");
 }
 
-/** Split and drop stopwords. Used for the sparse index only ΓÇö never for
+/** Split and drop stopwords. Used for the sparse index only — never for
  *  negation or polarity analysis, which need the full token stream. */
 export function contentTokens(input: string): readonly string[] {
   return tokenise(input).filter((t) => !STOPWORDS.has(t));
@@ -122,8 +122,8 @@ const HUMAN_MARKERS = [
 
 const AGENT_MARKERS = [
   /^(assistant|agent|claude|copilot|cursor|codex|ai|bot)\s*:/i,
-  /^ΓÅ║/,
-  /^ΓÄ┐/,
+  /^⏺/,
+  /^⎿/,
 ];
 
 /**
@@ -157,7 +157,7 @@ export function stripSpeakerMarker(line: string): { body: string; offset: number
  *
  * Hard rule on the LLM extraction path: any returned snippet that fails this
  * check is discarded and its item downgraded to low confidence. This one check
- * prevents the most common and most corrosive LLM extraction failure ΓÇö
+ * prevents the most common and most corrosive LLM extraction failure —
  * paraphrased citations that quietly rot the evidence contract.
  */
 export function isLiteralSubstring(snippet: string, source: string): boolean {
@@ -168,5 +168,5 @@ export function isLiteralSubstring(snippet: string, source: string): boolean {
 /** Collapse whitespace for display without changing offsets. */
 export function displayTrim(input: string, max = 240): string {
   const collapsed = input.replace(/\s+/g, " ").trim();
-  return collapsed.length <= max ? collapsed : `${collapsed.slice(0, max - 1)}ΓÇª`;
+  return collapsed.length <= max ? collapsed : `${collapsed.slice(0, max - 1)}…`;
 }

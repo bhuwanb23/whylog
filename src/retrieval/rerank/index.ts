@@ -1,14 +1,14 @@
 /**
- * Rerank dispatch ΓÇö 3.5.
+ * Rerank dispatch — 3.5.
  *
- * Phase 3 ┬╖ sub-phase 3.5
- * Plan: plan/phase-3-retrieval.md ┬º3.5
+ * Phase 3 · sub-phase 3.5
+ * Plan: plan/phase-3-retrieval.md §3.5
  *
  * ---------------------------------------------------------------------------
  * ONE RULE: USE THE BEST RERANKER AVAILABLE, AND SAY WHICH ONE WAS USED
  *
  * The engine declares whether it can rerank. If it can, the model reads query and candidate
- * jointly ΓÇö which is strictly more information than any weighted sum of independent signals
+ * jointly — which is strictly more information than any weighted sum of independent signals
  * can use. If it cannot, the five weighted components score instead, and they are not a
  * degraded guess at the same thing: they are a different, fully inspectable method whose
  * arithmetic a user can read and argue with.
@@ -59,7 +59,7 @@ export interface RerankInput {
   readonly topK: number;
   readonly now: number;
   readonly signal?: AbortSignal;
-  /** Force the weighted path even when a model is available ΓÇö used by Phase 7's ablation
+  /** Force the weighted path even when a model is available — used by Phase 7's ablation
    *  to measure what the reranker actually contributes. */
   readonly forceLocal?: boolean;
 }
@@ -143,7 +143,7 @@ export async function rerank(input: RerankInput): Promise<RerankResult> {
  *   1. promoted candidates, in the order L4/L5 produced them (value matches before
  *      variable matches, which is specificity order)
  *   2. the reranker's order, minus anything already promoted
- *   3. anything the reranker never returned at all ΓÇö a candidate truncated out of its
+ *   3. anything the reranker never returned at all — a candidate truncated out of its
  *      top-k. Dropping it would silently lose an exact structural hit, which is the one
  *      result this layer must never lose.
  */
@@ -188,15 +188,15 @@ function describeEngineId(engineId: { kind: string; model: string }): string {
   return engineId.model.length > 0 ? engineId.kind + ":" + engineId.model : engineId.kind;
 }
 
-/** Which method WOULD be used, before running anything ΓÇö for the UI to state its policy. */
+/** Which method WOULD be used, before running anything — for the UI to state its policy. */
 export function rerankMethodFor(engine: WhyLogEngine): RerankMethod {
   return canRerankWithModel(engine) ? "llm-listwise" : "local-weights";
 }
 
 export function describeMethod(method: RerankMethod): string {
   return method === "llm-listwise"
-    ? "LLM listwise ΓÇö the model read the query and every candidate JOINTLY and ordered them. A bi-encoder cannot represent the relationship between two texts it embedded separately; this can, which is why it sees negation and scope."
-    : "Local weighted ΓÇö five inspectable components: structural 0.35, lexical 0.30, dense 0.20, premise 0.10, recency 0.05. No model, no key, and every number below is one you can argue with.";
+    ? "LLM listwise — the model read the query and every candidate JOINTLY and ordered them. A bi-encoder cannot represent the relationship between two texts it embedded separately; this can, which is why it sees negation and scope."
+    : "Local weighted — five inspectable components: structural 0.35, lexical 0.30, dense 0.20, premise 0.10, recency 0.05. No model, no key, and every number below is one you can argue with.";
 }
 
 export { explainScore, rerankLocally, canRerankWithModel, rerankWithModel };

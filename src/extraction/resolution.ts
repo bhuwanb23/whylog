@@ -1,8 +1,8 @@
 /**
- * Entity resolution ΓÇö 1.7.
+ * Entity resolution — 1.7.
  *
- * Phase 1 ┬╖ sub-phase 1.7
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.7
+ * Phase 1 · sub-phase 1.7
+ * Plan: plan/phase-1-extraction-pipeline.md §1.7
  *
  * ---------------------------------------------------------------------------
  * WHY IT SITS BETWEEN EXTRACTION AND ASSERTION
@@ -17,21 +17,21 @@
  * So the ladder runs HERE, on candidates that have no ids yet, and its answer is
  * one of:
  *
- *   merge      ΓåÆ the commit re-asserts the EXISTING node, extending its evidence
+ *   merge      → the commit re-asserts the EXISTING node, extending its evidence
  *                and incrementing corroboration. No new node.
- *   candidate  ΓåÆ the ladder is not sure. The review UI shows both and asks.
- *   create     ΓåÆ a new node.
+ *   candidate  → the ladder is not sure. The review UI shows both and asks.
+ *   create     → a new node.
  *
  * ---------------------------------------------------------------------------
  * MERGE SEMANTICS, FROM THE PLAN
  *
- *   decision merge ΓåÆ corroboration +1, evidence extended, learned time updated,
- *                    VALID TIME UNCHANGED (the earliest wins ΓÇö a decision made in
+ *   decision merge → corroboration +1, evidence extended, learned time updated,
+ *                    VALID TIME UNCHANGED (the earliest wins — a decision made in
  *                    March and re-stated in October was made in March)
- *   premise merge  ΓåÆ corroboration +1, evidence extended. A premise asserted in
+ *   premise merge  → corroboration +1, evidence extended. A premise asserted in
  *                    two separate sessions is materially stronger than one
  *                    asserted once, and Phase 2's entrenchment must see that.
- *   conflict       ΓåÆ DO NOT MERGE. Same variable, different value. Emitted as a
+ *   conflict       → DO NOT MERGE. Same variable, different value. Emitted as a
  *                    contradiction candidate for Phase 2.
  *
  * The fold implements the first two; this module's job is to decide which of the
@@ -42,35 +42,35 @@
  *
  * Embeddings. Rungs 4 and 5 of the ladder are cosine thresholds, and the vectors
  * live in the disposable index (`src/substrate/index-artifacts.ts`). When the
- * index is stale or absent ΓÇö which is the normal state right after an engine
- * switch ΓÇö `vectors` is omitted and the ladder falls back to lexical similarity.
+ * index is stale or absent — which is the normal state right after an engine
+ * switch — `vectors` is omitted and the ladder falls back to lexical similarity.
  * It degrades; it does not fail, and it does not block extraction on an await.
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, EngineId, PremiseId } from "@/types/common";
-import type { Decision } from "@/types/domain";
 import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
+import { ONTOLOGY_CANONICALIZER, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import type { GraphState } from "@/substrate/graph-state";
 import {
+  type DecisionResolution,
+  type PremiseResolution,
   decisionPool,
   premiseFingerprint,
   premisePool,
   resolveDecision,
   resolvePremise,
-  type DecisionResolution,
-  type PremiseResolution,
 } from "@/substrate/identity";
-import { ONTOLOGY_CANONICALIZER, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
-import type { ResolvedCandidate, ResolutionOutcome } from "./types";
-import { tierOf } from "./types";
+import type { DecisionId, EngineId, PremiseId } from "@/types/common";
+import type { Decision } from "@/types/domain";
 import type { OriginClassification } from "./provenance";
+import type { ResolutionOutcome, ResolvedCandidate } from "./types";
+import { tierOf } from "./types";
 
 export interface ResolutionContext {
   readonly state: GraphState;
   readonly engine: EngineId;
-  /** id ΓåÆ vector, when the index is fresh. Omit and the ladder uses lexical
-   *  similarity, which is rung 4 with a weaker metric ΓÇö not a failure. */
+  /** id → vector, when the index is fresh. Omit and the ladder uses lexical
+   *  similarity, which is rung 4 with a weaker metric — not a failure. */
   readonly decisionVectors?: ReadonlyMap<DecisionId, Float32Array>;
   readonly premiseVectors?: ReadonlyMap<PremiseId, Float32Array>;
 }
@@ -111,6 +111,11 @@ export function resolveExtraction(
   context: ResolutionContext,
 ): ResolutionResult {
   const resolved: ResolvedCandidate[] = [];
+  /* The resolution of each DECISION, in the run's order. An alternative's
+   * `decisionRef` is an index into the run's decisions, so resolving an
+   * alternative needs to know what its parent decision became. Decisions are
+   * resolved first, which the loop order already guarantees. */
+  const decisionOutcomes: ResolutionOutcome[] = [];
   const byRung: Record<number, number> = {};
   let merged = 0;
   let candidates = 0;
@@ -143,11 +148,13 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 
   decisions.forEach((entry, index) => {
     const outcome = resolveOneDecision(entry.candidate, context);
+    decisionOutcomes[index] = outcome;
     bump(outcome.rung);
     merged += outcome.action === "merge" ? 1 : 0;
     candidates += outcome.action === "candidate" ? 1 : 0;
@@ -169,6 +176,7 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: entry.candidate.premiseRefs,
       outRefs: [],
+      action: null,
     });
   });
 
@@ -177,7 +185,7 @@ export function resolveExtraction(
     // rejected it, and two decisions can reject the same thing for different
     // reasons. Resolution here only decides whether the SAME decision already
     // rejected the SAME value, which is a duplicate rather than a merge.
-    const outcome = resolveOneAlternative(candidate, context);
+    const outcome = resolveOneAlternative(candidate, context, decisionOutcomes);
     bump(outcome.rung);
     created += outcome.action === "create" ? 1 : 0;
     merged += outcome.action === "merge" ? 1 : 0;
@@ -197,6 +205,7 @@ export function resolveExtraction(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      action: null,
     });
   });
 
@@ -219,7 +228,10 @@ export function resolveExtraction(
 /* Decisions                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function resolveOneDecision(candidate: DecisionCandidate, context: ResolutionContext): ResolutionOutcome {
+function resolveOneDecision(
+  candidate: DecisionCandidate,
+  context: ResolutionContext,
+): ResolutionOutcome {
   const pool = decisionPool(context.state.decisions, candidate.variable);
   const resolution: DecisionResolution = resolveDecision({
     variable: candidate.variable,
@@ -257,9 +269,14 @@ function resolveOneDecision(candidate: DecisionCandidate, context: ResolutionCon
  * and flagging every reversal as a conflict would put the whole supersession
  * mechanism in the conflict queue.
  */
-export function conflictingDecisions(candidate: DecisionCandidate, state: GraphState): readonly DecisionId[] {
+export function conflictingDecisions(
+  candidate: DecisionCandidate,
+  state: GraphState,
+): readonly DecisionId[] {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
 
   const ids = state.byVariable.get(candidate.variable) ?? [];
   const out: DecisionId[] = [];
@@ -280,7 +297,10 @@ export function conflictingDecisions(candidate: DecisionCandidate, state: GraphS
 /* Premises                                                                   */
 /* -------------------------------------------------------------------------- */
 
-function resolveOnePremise(candidate: PremiseCandidate, context: ResolutionContext): ResolutionOutcome {
+function resolveOnePremise(
+  candidate: PremiseCandidate,
+  context: ResolutionContext,
+): ResolutionOutcome {
   // The fast path: the fingerprint index is exact, so a premise whose type and
   // canonical predicate are already in the graph is a merge without running the
   // ladder at all. Double-importing a transcript takes this path for every premise,
@@ -295,7 +315,7 @@ function resolveOnePremise(candidate: PremiseCandidate, context: ResolutionConte
         rung: 1,
         matchedId: indexed,
         score: 1,
-        explanation: `${indexed} already carries ${candidate.predicate} ΓÇö this extends its evidence and increments corroboration`,
+        explanation: `${indexed} already carries ${candidate.predicate} — this extends its evidence and increments corroboration`,
         needsReview: false,
         conflictsWith: [],
       };
@@ -329,12 +349,18 @@ function resolveOnePremise(candidate: PremiseCandidate, context: ResolutionConte
 /* Alternatives                                                               */
 /* -------------------------------------------------------------------------- */
 
-function resolveOneAlternative(candidate: AlternativeCandidate, context: ResolutionContext): ResolutionOutcome {
+function resolveOneAlternative(
+  candidate: AlternativeCandidate,
+  context: ResolutionContext,
+  decisionOutcomes: readonly ResolutionOutcome[],
+): ResolutionOutcome {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
 
   for (const existing of context.state.alternatives.values()) {
-    if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, context)) continue;
+    if (existing.decisionId !== decisionIdForRef(candidate.decisionRef, decisionOutcomes)) continue;
     if (canonicalValueOf(existing.variable, existing.value) !== canonical) continue;
 
     return {
@@ -360,13 +386,20 @@ function resolveOneAlternative(candidate: AlternativeCandidate, context: Resolut
 }
 
 /**
- * The local `decisionRef` index cannot be resolved to a real id here ΓÇö the
+ * The local `decisionRef` index cannot be resolved to a real id here — the
  * decision may itself be a candidate that has not been committed yet. Returning
  * null makes the duplicate check conservative: an alternative whose decision is
  * not yet in the graph is never a duplicate of one that is.
  */
-function decisionIdForRef(_decisionRef: number, _context: ResolutionContext): DecisionId | null {
-  return null;
+function decisionIdForRef(
+  ref: number,
+  decisionOutcomes: readonly ResolutionOutcome[],
+): DecisionId | null {
+  const outcome = decisionOutcomes[ref];
+  if (outcome === undefined) return null;
+  if (outcome.action !== "merge") return null;
+  if (outcome.matchedId === null) return null;
+  return outcome.matchedId as DecisionId;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -381,13 +414,15 @@ export function describeResolution(report: ResolutionReport): string {
   ];
   const outcomes = [
     `${report.merged} merged onto existing nodes`,
-    `${report.candidates} uncertain ΓÇö the review will ask`,
+    `${report.candidates} uncertain — the review will ask`,
     `${report.created} new`,
   ];
   if (report.conflicts > 0) {
-    outcomes.push(`${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`);
+    outcomes.push(
+      `${report.conflicts} conflict${report.conflicts === 1 ? "" : "s"} with a live decision`,
+    );
   }
-  return `${parts.join(", ")} ΓåÆ ${outcomes.join(", ")}`;
+  return `${parts.join(", ")} → ${outcomes.join(", ")}`;
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
  * The local recogniser — the engine-side half of Phase 1.
  *
- * Phase 1 ú sub-phase 1.10 (the local path)
+ * Phase 1 · sub-phase 1.10 (the local path)
  * Plan: plan/phase-1-extraction-pipeline.md §1.10
  *
  * ---------------------------------------------------------------------------

@@ -1,9 +1,9 @@
 /**
- * Revision proposals ΓÇö 2.9.
+ * Revision proposals — 2.9.
  *
- * Phase 2 ┬╖ sub-phase 2.9
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.9
- * Docs: docs/02-truth-maintenance-theory.md ┬º4
+ * Phase 2 · sub-phase 2.9
+ * Plan: plan/phase-2-truth-maintenance.md §2.9
+ * Docs: docs/02-truth-maintenance-theory.md §4
  *
  * ---------------------------------------------------------------------------
  * SEVEN PARTS, EVERY TIME
@@ -11,14 +11,14 @@
  * A proposal that says "WLD-0001 may be invalid" is a notification. A proposal that
  * says what failed, what the evidence was, what cannot both hold, what else falls with
  * it, how costly it is to change, what you can do about it, and why the system did not
- * just do it ΓÇö is a diagnosis.
+ * just do it — is a diagnosis.
  *
  *   1. WHAT FAILED          the decision and the premise that broke under it
  *   2. THE EVIDENCE         the verbatim quote, its span, its source, its confidence
  *   3. THE NOGOOD           the conjunction that cannot hold
  *   4. THE CASCADE          what else became unsound, and what survived and why
  *   5. ENTRENCHMENT         the arithmetic, with the EE3 cap named
- *   6. ACTIONS              reverse / rejustify / contest ΓÇö always at least one
+ *   6. ACTIONS              reverse / rejustify / contest — always at least one
  *   7. WHY NOT AUTO-APPLIED the standing explanation of invariant I4
  *
  * Part 7 is not boilerplate padding. It is the answer to the question every user asks
@@ -28,7 +28,7 @@
  * decision. Saying so every time is cheaper than being wrong once.
  *
  * ---------------------------------------------------------------------------
- * INVARIANT I4 ΓÇö THE SYSTEM PROPOSES, THE HUMAN DISPOSES
+ * INVARIANT I4 — THE SYSTEM PROPOSES, THE HUMAN DISPOSES
  *
  * Nothing in this module produces an event. It produces a `RevisionProposal`, which is
  * a value. Applying one is a separate act with its own event type and its own reason
@@ -73,7 +73,7 @@ import type { GateFinding } from "./gates";
 export const WHY_NOT_AUTO_APPLIED = [
   "Not applied automatically.",
   "This conclusion came from extracted prose, not from a measurement you made.",
-  "Extraction is wrong often enough that acting on it silently would corrupt the log ΓÇö",
+  "Extraction is wrong often enough that acting on it silently would corrupt the log —",
   "and a log you cannot trust is worth less than no log.",
   "The proposal is recorded either way, so nothing is lost by waiting for you.",
 ].join(" ");
@@ -92,7 +92,7 @@ export interface ProposalInput {
   /** The evidence for the failure. When it came from a guard run or a human, the
    *  span is absent and `source` says where it came from instead. */
   readonly evidence: ProposalEvidence;
-  /** The event that records this proposal. Minted by the caller ΓÇö this module never
+  /** The event that records this proposal. Minted by the caller — this module never
    *  creates events. */
   readonly createdBy: EventId;
   readonly proposalNumber: number;
@@ -128,7 +128,7 @@ export function buildProposal(input: ProposalInput): RevisionProposal {
   const failedPremiseText =
     failedPremise?.text ??
     (failedPremiseId === null
-      ? "No single premise failed ΓÇö the conflict is between two decisions."
+      ? "No single premise failed — the conflict is between two decisions."
       : state.premises.get(failedPremiseId)?.text ?? failedPremiseId);
 
   return {
@@ -171,7 +171,7 @@ export function buildProposal(input: ProposalInput): RevisionProposal {
 /**
  * Which actions are actually available.
  *
- * Always at least one ΓÇö a proposal with no action is a dead end and reads as a bug.
+ * Always at least one — a proposal with no action is a dead end and reads as a bug.
  * `dismiss` is not listed because it is always available in the UI; listing it here
  * would imply the other three are sometimes not.
  */
@@ -181,16 +181,16 @@ export function actionsFor(
 ): readonly RevisionAction[] {
   const actions: RevisionAction[] = [];
 
-  /* REVERSE ΓÇö there is something to reverse: another decision, or this one. */
+  /* REVERSE — there is something to reverse: another decision, or this one. */
   if (finding.otherDecisionId !== null || finding.gate === "premise") actions.push("reverse");
 
-  /* REJUSTIFY ΓÇö the premise is intent-based (a requirement, a team shape) or the
+  /* REJUSTIFY — the premise is intent-based (a requirement, a team shape) or the
    * failure is a refinement rather than a reversal. The decision may still be right;
    * its stated reason is what is stale. */
   if (finding.gate === "semantic" || finding.verdict === "refinement") actions.push("rejustify");
   if (finding.gate === "premise" && !actions.includes("rejustify")) actions.push("rejustify");
 
-  /* CONTEST ΓÇö the adjudicator refused a newcomer, or a semantic finding is weak enough
+  /* CONTEST — the adjudicator refused a newcomer, or a semantic finding is weak enough
    * that two readings are defensible. */
   if (adjudication?.kind === "reject-newcomer") actions.push("contest");
   if (finding.gate === "semantic" && finding.diagnostic !== null) actions.push("contest");
@@ -216,7 +216,7 @@ function firstInListPremise(state: GraphState, decisionId: DecisionId): PremiseI
 /**
  * The quote that supports a proposal, taken from the log rather than composed.
  *
- * For a premise finding the evidence is the premise's own recorded evidence ΓÇö a span
+ * For a premise finding the evidence is the premise's own recorded evidence — a span
  * from a transcript, a guard result, or a human assertion. For a decision-pair finding
  * there is no single quote, so the evidence is the two decisions' snippets, and the
  * `source` is `transcript` because that is where both came from.
@@ -253,7 +253,7 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
       ? a?.provenance.snippet.text ?? finding.explanation
       : [a?.provenance.snippet.text ?? "", b.provenance.snippet.text ?? ""]
           .filter((part) => part.length > 0)
-          .join("\nΓÇö\n");
+          .join("\n—\n");
 
   return {
     quote,
@@ -271,14 +271,14 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
  * The proposal as the user reads it: all seven parts, in order, with headings.
  *
  * This is also the shape that goes into `DECISIONS.md` under a "Contested" section and
- * into the agent export as a warning block ΓÇö one renderer, three destinations, so the
+ * into the agent export as a warning block — one renderer, three destinations, so the
  * explanation cannot drift between them.
  */
 export function renderProposal(state: GraphState, proposal: RevisionProposal): string {
   const decision = state.decisions.get(proposal.unsoundDecisionId);
   const heading = decision === undefined
     ? proposal.unsoundDecisionId
-    : `${proposal.unsoundDecisionId} ΓÇö ${decision.statement}`;
+    : `${proposal.unsoundDecisionId} — ${decision.statement}`;
 
   const lines: string[] = [`## ${heading}`, ""];
 
@@ -287,10 +287,10 @@ export function renderProposal(state: GraphState, proposal: RevisionProposal): s
   lines.push(
     "### 2. The evidence",
     `> ${proposal.evidence.quote.replace(/\n/g, "\n> ")}`,
-    `Source: ${proposal.evidence.source} ┬╖ confidence ${proposal.evidence.confidence.toFixed(2)}`,
+    `Source: ${proposal.evidence.source} · confidence ${proposal.evidence.confidence.toFixed(2)}`,
     proposal.evidence.span === undefined
       ? ""
-      : `Span: ${proposal.evidence.span.transcriptId} @ ${proposal.evidence.span.start}ΓÇô${proposal.evidence.span.end}`,
+      : `Span: ${proposal.evidence.span.transcriptId} @ ${proposal.evidence.span.start}–${proposal.evidence.span.end}`,
     "",
   );
 
@@ -304,20 +304,20 @@ export function renderProposal(state: GraphState, proposal: RevisionProposal): s
 
   lines.push(
     "### 5. How costly is it to change",
-    `Entrenchment ${proposal.entrenchment.capped.toFixed(2)} ΓÇö ${proposal.entrenchmentBand}`,
+    `Entrenchment ${proposal.entrenchment.capped.toFixed(2)} — ${proposal.entrenchmentBand}`,
     proposal.entrenchment.ee3CapApplied
       ? `Capped by its weakest premise (${proposal.entrenchment.weakestPremiseId ?? "unnamed"}).`
       : "Not capped by any premise.",
     proposal.entrenchment.implementationCostUnknown
-      ? "Implementation cost UNKNOWN ΓÇö no guard exists yet, so nothing was measured."
-      : `Implementation cost ${proposal.entrenchment.components.implementationCost.toFixed(2)} ΓÇö measured from guards.`,
+      ? "Implementation cost UNKNOWN — no guard exists yet, so nothing was measured."
+      : `Implementation cost ${proposal.entrenchment.components.implementationCost.toFixed(2)} — measured from guards.`,
     "",
   );
 
   lines.push(
     "### 6. What you can do",
     ...proposal.availableActions.map((action) => `- ${describeAction(action)}`),
-    "- dismiss ΓÇö record that you considered it and disagreed",
+    "- dismiss — record that you considered it and disagreed",
     "",
   );
 
@@ -348,11 +348,11 @@ function describeCascadeOf(cascade: CascadeResult): string {
 export function describeAction(action: RevisionAction): string {
   switch (action) {
     case "reverse":
-      return "reverse ΓÇö retract this decision and record the replacement";
+      return "reverse — retract this decision and record the replacement";
     case "rejustify":
-      return "rejustify ΓÇö keep the decision, replace the reason it rests on";
+      return "rejustify — keep the decision, replace the reason it rests on";
     case "contest":
-      return "contest ΓÇö hold both, unresolved, and stop treating either as settled";
+      return "contest — hold both, unresolved, and stop treating either as settled";
   }
 }
 
@@ -369,7 +369,7 @@ export function openProposals(state: GraphState): readonly RevisionProposal[] {
   return out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
-/** Proposals whose band is HIGH ΓÇö the ones that will be hardest to accept, listed
+/** Proposals whose band is HIGH — the ones that will be hardest to accept, listed
  *  first because they are the ones most likely to be dismissed unread. */
 export function highEntrenchmentProposals(state: GraphState): readonly RevisionProposal[] {
   return openProposals(state).filter((proposal) => proposal.entrenchmentBand === "HIGH");

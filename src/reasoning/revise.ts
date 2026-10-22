@@ -1,9 +1,9 @@
 /**
- * REVISE(newInfo) ΓÇö the nine-step cycle. 2.1
+ * REVISE(newInfo) — the nine-step cycle. 2.1
  *
- * Phase 2 ┬╖ sub-phase 2.1
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.1
- * Docs: docs/02-truth-maintenance-theory.md ┬º5
+ * Phase 2 · sub-phase 2.1
+ * Plan: plan/phase-2-truth-maintenance.md §2.1
+ * Docs: docs/02-truth-maintenance-theory.md §5
  *
  * ---------------------------------------------------------------------------
  * THE ONLY ENTRY POINT
@@ -24,7 +24,7 @@
  *   4 DETECT      gates (a) structural, (b) semantic, (c) premise
  *   5 BACKTRACK   the MINIMAL set of assumptions responsible
  *   6 CASCADE     what else falls, stopping at independent support
- *   7 ADJUDICATE  Hansson screening ΓÇö the newcomer may be REFUSED
+ *   7 ADJUDICATE  Hansson screening — the newcomer may be REFUSED
  *   8 PROPOSE     seven parts, never auto-applied
  *   9 COMMIT      event drafts, appended by the store, not by us
  *
@@ -32,13 +32,13 @@
  * STEP 9 DOES NOT WRITE
  *
  * This module returns drafts. The store appends them, because appending is
- * `append ΓåÆ fold ΓåÆ persist` and only the store owns all three. A reasoning module that
+ * `append → fold → persist` and only the store owns all three. A reasoning module that
  * could write to the log could also write to it out of order, and the hash chain would
  * faithfully record a corrupted sequence.
  *
  * The drafts are ordered: `LabelChanged` first, then detections, then nogoods, then
  * cascades, then proposals. A proposal references the nogood that explains it, and a
- * nogood references the detection that produced it, so the order is not arbitrary ΓÇö it
+ * nogood references the detection that produced it, so the order is not arbitrary — it
  * is the order in which each event's referents come into existence.
  *
  * ---------------------------------------------------------------------------
@@ -51,12 +51,23 @@
  * not raised again.
  *
  * Without this the log fills with repeated identical warnings, and a queue the user
- * has already read looks permanently unread ΓÇö which is how a reasoning system gets
+ * has already read looks permanently unread — which is how a reasoning system gets
  * switched off.
  * ---------------------------------------------------------------------------
  */
 
-import type { Actor, DecisionId, EventId, NogoodId, PremiseId } from "@/types/common";
+import type { WhyLogEngine } from "@/ai/types";
+import { formatNogoodId } from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
+import type {
+  Actor,
+  DecisionId,
+  EventId,
+  ISODateString,
+  NogoodId,
+  PremiseId,
+} from "@/types/common";
+import type { Nogood } from "@/types/domain";
 import type { NewEvent } from "@/types/events";
 import type {
   AdjudicationOutcome,
@@ -64,33 +75,19 @@ import type {
   CascadeResult,
   RevisionProposal,
 } from "@/types/reasoning";
-import type { Nogood } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import {
-  label,
-  type Labelled,
-  type LabellingResult,
-  type NodeId,
-} from "./labeller";
-import { runGates, describeRun, type CandidatePair, type GateFinding, type GateRun } from "./gates";
+import { type Newcomer, adjudicate, findContradictors } from "./adjudication";
 import { backtrack, describeBacktrack, splitCulprits } from "./backtracking";
+import { MAX_CASCADE_DEPTH, cascade, describeCascade } from "./cascade";
+import { type GuardStatus, describeEntrenchment, entrenchmentOf } from "./entrenchment";
+import { type CandidatePair, type GateFinding, type GateRun, describeRun, runGates } from "./gates";
+import { type Labelled, type LabellingResult, type NodeId, label } from "./labeller";
+import { type NogoodDraft, blocksConjunction, isDuplicate, nogoodForFinding } from "./nogoods";
 import {
-  blocksConjunction,
-  isDuplicate,
-  nogoodForFinding,
-  type NogoodDraft,
-} from "./nogoods";
-import { cascade, describeCascade, MAX_CASCADE_DEPTH } from "./cascade";
-import { entrenchmentOf, describeEntrenchment, type GuardStatus } from "./entrenchment";
-import { adjudicate, findContradictors, type Newcomer } from "./adjudication";
-import {
+  WHY_NOT_AUTO_APPLIED,
   buildProposal,
   evidenceForFinding,
   renderProposal,
-  WHY_NOT_AUTO_APPLIED,
 } from "./proposals";
-import type { WhyLogEngine } from "@/ai/types";
-import { formatNogoodId } from "@/lib/ids";
 
 /** One label flip, as the labeller reports it. `revise` turns these into events. */
 export type LabelChange = LabellingResult["changed"][number];
@@ -103,7 +100,7 @@ export interface ReviseInput {
   readonly state: GraphState;
   readonly engine: WhyLogEngine;
   readonly actor: Actor;
-  readonly now: string;
+  readonly now: ISODateString;
   /** Step 1. Absent means "re-examine what is already in the log", which is what a
    *  boot-time run does: gates (a) and (c) can fire on a log nobody has touched. */
   readonly newcomer?: Newcomer;
@@ -130,11 +127,11 @@ export interface RevisionCase {
   /** Steps 5 and 6 in words. The diagnosis, not a rendering of the data. */
   readonly narrative: string;
   /**
-   * ┬º2.6 nogood REUSE: this revision would re-assert a conjunction the log has already
+   * §2.6 nogood REUSE: this revision would re-assert a conjunction the log has already
    * recorded as impossible. Null when it would not.
    *
    * Surfaced as a warning rather than a block, because the earlier nogood may itself
-   * have been wrong ΓÇö but a user who is about to re-assert something the system proved
+   * have been wrong — but a user who is about to re-assert something the system proved
    * impossible on a known date deserves to be told the date before they click.
    */
   readonly reassertsNogood: Nogood | null;
@@ -145,7 +142,9 @@ export interface ReviseResult {
   readonly labelChanges: readonly LabelChange[];
   readonly gates: GateRun;
   readonly cases: readonly RevisionCase[];
-  readonly adjudication: (AdjudicationOutcome & { readonly considered: readonly DecisionId[] }) | null;
+  readonly adjudication:
+    | (AdjudicationOutcome & { readonly considered: readonly DecisionId[] })
+    | null;
   /** Step 9. Ordered, ready for `appendBatch`. EMPTY on an unchanged log. */
   readonly eventDrafts: readonly EventDraftAny[];
   readonly durationMs: number;
@@ -166,7 +165,7 @@ export type EventDraftAny =
  *
  * `event-log.append` mints ids from its own monotonic counter, so any id this module
  * wrote into a payload would be wrong. The materialiser rewrites these placeholders to
- * the creating event on fold ΓÇö the same mechanism `commit.ts` uses for justification
+ * the creating event on fold — the same mechanism `commit.ts` uses for justification
  * informants, and the reason a payload can reference its own event without a cycle.
  */
 const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
@@ -182,7 +181,7 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
   /* ---- 1 EXTRACT + 2 RESOLVE ----
    * Both happened upstream: `extraction/commit.ts` resolved candidates against the
    * identity ladder and appended events before this ran. What is left of step 2 here is
-   * the only part that cannot be done at commit time ΓÇö finding which EXISTING decisions
+   * the only part that cannot be done at commit time — finding which EXISTING decisions
    * a newcomer contradicts, which needs the graph as it stands after the assert. */
   const resolvedAgainst =
     input.newcomer === undefined ? [] : findContradictors(state, input.newcomer);
@@ -237,7 +236,7 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
     /* ---- 5 BACKTRACK ---- */
     const backtrackResult = backtrack(state, labels, finding.decisionId);
 
-    /* ---- ┬º2.6 NOGOOD REUSE ----
+    /* ---- §2.6 NOGOOD REUSE ----
      * Checked BEFORE the proposal is built, so the warning is part of the proposal
      * rather than a footnote added after the user has already read it. */
     const reasserts = blocksConjunction(state, backtrackResult.culpritPremises);
@@ -259,7 +258,13 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
     const retracted = refused ? [] : backtrackResult.culpritPremises;
     const cascadeResult: CascadeResult =
       retracted.length === 0
-        ? { steps: [], flipped: [], survivors: [], truncated: false, potentiallyAffectedBeyondCap: 0 }
+        ? {
+            steps: [],
+            flipped: [],
+            survivors: [],
+            truncated: false,
+            potentiallyAffectedBeyondCap: 0,
+          }
         : cascade(state, labels, retracted);
 
     for (const step of cascadeResult.steps) {
@@ -348,7 +353,7 @@ function nextNogoodIdInRun(n: number): NogoodId {
  * Has this finding already been recorded?
  *
  * Compared against the log rather than against the in-memory run, because the question
- * is "does the log already say this?" ΓÇö and a run that has not been committed yet must
+ * is "does the log already say this?" — and a run that has not been committed yet must
  * not suppress a finding that a PREVIOUS committed run recorded.
  */
 function alreadyRecorded(state: GraphState, finding: GateFinding): boolean {
@@ -363,13 +368,10 @@ function alreadyRecorded(state: GraphState, finding: GateFinding): boolean {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Step 9 ΓÇö the drafts                                                        */
+/* Step 9 — the drafts                                                        */
 /* -------------------------------------------------------------------------- */
 
-function labelChangedDraft(
-  input: ReviseInput,
-  change: LabelChange,
-): NewEvent<"LabelChanged"> {
+function labelChangedDraft(input: ReviseInput, change: LabelChange): NewEvent<"LabelChanged"> {
   const trigger =
     change.reason.kind === "all-justifications-invalid" ? change.reason.failedPremiseId : null;
   const invalidJustificationId =
@@ -426,7 +428,10 @@ function detectionDraft(input: ReviseInput, finding: GateFinding): EventDraftAny
   };
 }
 
-function premiseInvalidatedDraft(input: ReviseInput, premiseId: PremiseId): NewEvent<"PremiseInvalidated"> {
+function premiseInvalidatedDraft(
+  input: ReviseInput,
+  premiseId: PremiseId,
+): NewEvent<"PremiseInvalidated"> {
   return {
     type: "PremiseInvalidated",
     payload: {
@@ -513,7 +518,7 @@ function proposalDraft(
 /**
  * Steps 5, 6 and the refusal, in prose.
  *
- * Not a rendering of the fields ΓÇö the UI renders those. This is the paragraph a user
+ * Not a rendering of the fields — the UI renders those. This is the paragraph a user
  * reads first, and it has to answer "what is wrong and what is the least I have to
  * give up?" before it answers anything else.
  */
@@ -532,8 +537,7 @@ function narrate(
    * combination needs to see that before they read anything else. */
   if (reasserts !== null) {
     parts.push(
-      `WARNING ΓÇö you are re-asserting a combination this log already found impossible on ${reasserts.recordedAt.slice(0, 10)} (${reasserts.id}). ` +
-        reasserts.explanation,
+      `WARNING — you are re-asserting a combination this log already found impossible on ${reasserts.recordedAt.slice(0, 10)} (${reasserts.id}). ${reasserts.explanation}`,
     );
   }
 
@@ -571,24 +575,26 @@ function summarise(
   drafts: readonly EventDraftAny[],
   contradictors: number,
 ): string {
-  const lines: string[] = [`REVISE ΓÇö ${describeRun(gates)}`];
+  const lines: string[] = [`REVISE — ${describeRun(gates)}`];
 
   if (input.newcomer !== undefined) {
     lines.push(
-      `Newcomer: "${input.newcomer.text}" (${input.newcomer.variable} ΓåÆ ${input.newcomer.value}), contradicting ${contradictors} recorded decision(s).`,
+      `Newcomer: "${input.newcomer.text}" (${input.newcomer.variable} → ${input.newcomer.value}), contradicting ${contradictors} recorded decision(s).`,
     );
   }
 
   if (adjudication !== null && adjudication.kind === "reject-newcomer") {
     lines.push(`Screening: REFUSED. ${adjudication.why}`);
   } else if (adjudication !== null && adjudication.kind === "apply") {
-    lines.push(`Screening: accepted, retracting weakest-first: ${adjudication.retract.join(", ")}.`);
+    lines.push(
+      `Screening: accepted, retracting weakest-first: ${adjudication.retract.join(", ")}.`,
+    );
   }
 
   lines.push(`${cases.length} case(s) worked through backtracking, cascade and entrenchment.`);
 
   if (drafts.length === 0) {
-    lines.push("No events to append ΓÇö this log has already been revised against these findings.");
+    lines.push("No events to append — this log has already been revised against these findings.");
   } else {
     lines.push(`${drafts.length} event(s) to append, in referent order.`);
   }

@@ -1,14 +1,14 @@
 /**
- * Candidate generation for gate (b) ΓÇö Phase 3 ┬╖ sub-phase 3.6.
+ * Candidate generation for gate (b) — Phase 3 · sub-phase 3.6.
  *
- * Plan: plan/phase-3-retrieval.md ┬º3.6
- *       plan/phase-2-truth-maintenance.md ┬º2.5 (gate b)
+ * Plan: plan/phase-3-retrieval.md §3.6
+ *       plan/phase-2-truth-maintenance.md §2.5 (gate b)
  *
  * ---------------------------------------------------------------------------
  * WHAT GATE (b) ASKS RETRIEVAL FOR
  *
  * Gate (b) is the semantic gate: find pairs of decisions that MIGHT contradict each other,
- * so the classifier can judge them. It cannot compare every pair ΓÇö that is O(n┬▓) over the
+ * so the classifier can judge them. It cannot compare every pair — that is O(n²) over the
  * whole log and almost all of it is wasted, since two decisions about different variables in
  * different months are not candidates for anything.
  *
@@ -18,7 +18,7 @@
  * ---------------------------------------------------------------------------
  * ZERO EMBEDDING CALLS
  *
- * The L1 vectors already exist in the index artifacts ΓÇö they were computed at extraction time
+ * The L1 vectors already exist in the index artifacts — they were computed at extraction time
  * and are exactly what a candidate generator needs. This reads them; it never calls
  * `engine.embed`. Gate (b) therefore runs keyless and offline, like the rest of the reasoning
  * layer, and its cost is a pairwise cosine over vectors already in memory.
@@ -29,14 +29,14 @@
  * `CandidatePair.similarity` is carried because the UI shows it and because a reviewer needs
  * to know how the pair was surfaced. It is NEVER a verdict. "Use Postgres" and "don't use
  * Postgres" are ~0.9 cosine similar, so a threshold on this number is a contradiction
- * detector that fires on agreement ΓÇö which is invariant I3's whole subject.
+ * detector that fires on agreement — which is invariant I3's whole subject.
  *
  * That is also why the pair list is seeded from THREE sources rather than similarity alone:
  *
  *   dense neighbours    pairs close in embedding space
- *   shared premises     pairs resting on the same assumption ΓÇö the gate (c) neighbourhood,
+ *   shared premises     pairs resting on the same assumption — the gate (c) neighbourhood,
  *                       which is where premise invalidation turns into a conflict
- *   same variable       pairs settling the same slot, whatever their wording ΓÇö the only
+ *   same variable       pairs settling the same slot, whatever their wording — the only
  *                       pairs that can be reversals or refinements at all
  *
  * A similarity-only candidate list would miss the third kind whenever the wording differs, and
@@ -48,7 +48,7 @@
  *
  * A `proposed` decision never became a belief and a `superseded` one has been withdrawn;
  * neither can contradict a live decision. Filtering here means the classifier's
- * `isClassifiable` guard is never the thing standing between a proposal and a false finding ΓÇö
+ * `isClassifiable` guard is never the thing standing between a proposal and a false finding —
  * it is a second line of defence, not the only one.
  * ---------------------------------------------------------------------------
  */
@@ -65,14 +65,14 @@ import { isClassifiable } from "./contradiction";
  *  Five neighbours per decision keeps a 200-decision log to a few hundred pairs. */
 export const NEIGHBOURS_PER_DECISION = 5;
 
-/** Below this cosine two decisions are not dense neighbours. Not a contradiction threshold ΓÇö
+/** Below this cosine two decisions are not dense neighbours. Not a contradiction threshold —
  *  a candidate threshold, and a deliberately loose one, because the classifier is what decides
  *  and it costs little to give it one more pair to reject. */
 export const NEIGHBOUR_FLOOR = 0.35;
 
 /** Hard ceiling on pairs returned, whatever the log size. Without it a large log produces a
  *  pair list long enough to make gate (b) the slowest thing in the app, and a slow gate gets
- *  skipped ΓÇö which is worse than a bounded one. */
+ *  skipped — which is worse than a bounded one. */
 export const MAX_CANDIDATE_PAIRS = 200;
 
 export interface CandidateOptions {
@@ -232,7 +232,7 @@ function liveDecisions(state: GraphState): readonly DecisionId[] {
 }
 
 /** Why a pair is a candidate at all. Printed next to the finding so a reviewer can see that
- *  the pair was surfaced by an exact relation rather than by a similarity score ΓÇö which
+ *  the pair was surfaced by an exact relation rather than by a similarity score — which
  *  matters, because the two have completely different trustworthiness. */
 export function describeSource(pair: CandidatePair, state: GraphState): string {
   const a = state.decisions.get(pair.a);
@@ -244,7 +244,7 @@ export function describeSource(pair: CandidatePair, state: GraphState): string {
   if (a.variable === b.variable) {
     reasons.push(
       "both settle " + a.variable +
-        (a.value === b.value ? ' on "' + a.value + '"' : ' ΓÇö one on "' + a.value + '", one on "' + b.value + '"'),
+        (a.value === b.value ? ' on "' + a.value + '"' : ' — one on "' + a.value + '", one on "' + b.value + '"'),
     );
   }
 
@@ -271,11 +271,11 @@ export function describeCandidatePolicy(): string {
     "Gate (b) candidates come from three sources, unioned and de-duplicated:",
     "",
     "  dense neighbours    cosine >= " + NEIGHBOUR_FLOOR + ", top " + NEIGHBOURS_PER_DECISION + " per decision, read from the",
-    "                      L1 vectors already in the index ΓÇö ZERO embedding calls",
+    "                      L1 vectors already in the index — ZERO embedding calls",
     "  shared premises     pairs resting on the same assumption, wherever similarity puts them",
     "  same variable       pairs settling the same slot, whatever their wording",
     "",
-    "Ceiling: " + MAX_CANDIDATE_PAIRS + " pairs. Only live decisions are candidates ΓÇö a proposal never became a",
+    "Ceiling: " + MAX_CANDIDATE_PAIRS + " pairs. Only live decisions are candidates — a proposal never became a",
     "belief and a superseded decision has been withdrawn, so neither can contradict one.",
     "",
     "The similarity carried on each pair SELECTS it and is then discarded. It is never a",

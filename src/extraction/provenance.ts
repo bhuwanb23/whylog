@@ -1,8 +1,8 @@
 /**
- * Provenance ΓÇö 1.6.
+ * Provenance — 1.6.
  *
- * Phase 1 ┬╖ sub-phase 1.6
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.6
+ * Phase 1 · sub-phase 1.6
+ * Plan: plan/phase-1-extraction-pipeline.md §1.6
  *
  * ---------------------------------------------------------------------------
  * WHAT PROVENANCE IS FOR
@@ -10,7 +10,7 @@
  * Four fields, four different consumers:
  *
  *   `snippet`      the review UI's left pane, and the export's evidence quote
- *   `charSpan`     highlighting ΓÇö it must resolve to the RAW input, not the
+ *   `charSpan`     highlighting — it must resolve to the RAW input, not the
  *                  normalised one
  *   `origin`       the `source_authority` term of entrenchment, AND the agency
  *                  ledger (Phase 6.4)
@@ -26,7 +26,7 @@
  *
  * Because `origin` is computed FROM it. A transcript whose turns cannot be
  * attributed produces `agent_inferred` (0.4) for everything, which is the correct
- * conservative answer ΓÇö but it also means entrenchment cannot distinguish the
+ * conservative answer — but it also means entrenchment cannot distinguish the
  * decisions the human made from the ones the agent suggested. That loss is silent
  * unless it is reported, so `describeProvenance()` says so out loud.
  * ---------------------------------------------------------------------------
@@ -213,9 +213,9 @@ function findReversal(episode: EpisodeWindow, from: number): number | null {
  */
 export function describeEngine(engine: EngineId): string {
   if (engine.kind === "local") {
-    return `local ┬╖ ${engine.model} ΓÇö deterministic, no key, reproducible byte for byte`;
+    return `local · ${engine.model} — deterministic, no key, reproducible byte for byte`;
   }
-  return `llm ┬╖ ${engine.model} ΓÇö higher recall, not reproducible across runs`;
+  return `llm · ${engine.model} — higher recall, not reproducible across runs`;
 }
 
 /** Is this item machine-made? Drives the agency ledger's numerator. */
@@ -265,13 +265,13 @@ export function describeProvenance(summary: ProvenanceSummary, total: number): s
 
   const parts: string[] = [];
   parts.push(
-    `${summary.humanStated} human-stated ┬╖ ${summary.agentAccepted} agent-proposed-and-accepted ┬╖ ${summary.agentInferred} agent-inferred ┬╖ ${summary.humanOverride} human override`,
+    `${summary.humanStated} human-stated · ${summary.agentAccepted} agent-proposed-and-accepted · ${summary.agentInferred} agent-inferred · ${summary.humanOverride} human override`,
   );
   parts.push(`mean source authority ${summary.meanAuthority.toFixed(2)}`);
 
   if (summary.unattributed > 0) {
     parts.push(
-      `${summary.unattributed} could not be attributed to a speaker and are recorded at 0.4 authority ΓÇö entrenchment will treat them as weakly held`,
+      `${summary.unattributed} could not be attributed to a speaker and are recorded at 0.4 authority — entrenchment will treat them as weakly held`,
     );
   }
   if (summary.humanStated === 0 && summary.agentInferred > 0) {

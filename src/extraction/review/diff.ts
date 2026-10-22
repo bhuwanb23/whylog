@@ -1,8 +1,8 @@
 /**
- * Commit preview ΓÇö 1.9's "what will this do?".
+ * Commit preview — 1.9's "what will this do?".
  *
- * Phase 1 ┬╖ sub-phase 1.9
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.9
+ * Phase 1 · sub-phase 1.9
+ * Plan: plan/phase-1-extraction-pipeline.md §1.9
  *
  * ---------------------------------------------------------------------------
  * WHY A PREVIEW EXISTS BEFORE A COMMIT
@@ -10,10 +10,10 @@
  * "The system proposes, the human disposes" (invariant I4) is only real if the
  * human can see the proposal. A commit button that appends nine events to a
  * hash-chained log without saying which nine is a button the user learns not to
- * press ΓÇö and then the review queue becomes a formality.
+ * press — and then the review queue becomes a formality.
  *
  * The preview is also where the idempotence claim becomes VISIBLE. Re-import the
- * same transcript and the preview reads "0 new nodes ┬╖ 9 merges onto existing
+ * same transcript and the preview reads "0 new nodes · 9 merges onto existing
  * nodes". That sentence is the acceptance criterion for sub-phase 1.7, shown to the
  * user rather than asserted in a test they will never read.
  *
@@ -27,10 +27,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
 import type { DiscardedCandidate } from "@/ai/types";
 import { isAccepted } from "@/extraction/types";
 import type { ResolvedCandidate, ReviewAction } from "@/extraction/types";
+import type { AlternativeId, DecisionId, PremiseId } from "@/types/common";
 
 export interface CommitPreview {
   readonly newDecisions: number;
@@ -45,7 +45,10 @@ export interface CommitPreview {
   readonly edited: number;
   readonly conflicts: readonly DecisionId[];
   /** Nodes the commit will merge onto, so the preview can name them. */
-  readonly mergeTargets: readonly { readonly id: DecisionId | PremiseId; readonly label: string }[];
+  readonly mergeTargets: readonly {
+    readonly id: DecisionId | PremiseId | AlternativeId;
+    readonly label: string;
+  }[];
   /** Events the commit will append. Shown as a count because the list is long and
    *  the number is what tells the user how big the act is. */
   readonly events: number;
@@ -75,7 +78,7 @@ export function previewCommit(
   discards: readonly DiscardedCandidate[] = [],
 ): CommitPreview {
   const actions: Record<ReviewAction["type"], number> = { ...NO_ACTIONS };
-  const mergeTargets: { id: DecisionId | PremiseId; label: string }[] = [];
+  const mergeTargets: { id: DecisionId | PremiseId | AlternativeId; label: string }[] = [];
   const conflicts = new Set<DecisionId>();
 
   let newDecisions = 0;
@@ -119,7 +122,7 @@ export function previewCommit(
       case "premise": {
         if (candidate.resolution.action === "merge") mergedPremises += 1;
         else newPremises += 1;
-        if (candidate.premise !== null && candidate.premise.text.includes("ΓÇö excluded by")) {
+        if (candidate.premise?.text.includes("— excluded by")) {
           derivedPremises += 1;
         }
         break;
@@ -158,7 +161,7 @@ export function previewCommit(
 
 function labelFor(candidate: ResolvedCandidate): string {
   if (candidate.kind === "decision" && candidate.decision !== null) {
-    return `${candidate.decision.variable} ΓåÆ ${candidate.decision.value}`;
+    return `${candidate.decision.variable} → ${candidate.decision.value}`;
   }
   if (candidate.kind === "premise" && candidate.premise !== null) {
     return `${candidate.premise.type}.${candidate.premise.predicate}`;
@@ -177,28 +180,33 @@ function labelFor(candidate: ResolvedCandidate): string {
  * The paragraph the confirm dialog shows.
  *
  * Ordered by consequence: what gets created, what merges, what is thrown away, and
- * last what conflicts ΓÇö because a conflict is the only line that should make the
+ * last what conflicts — because a conflict is the only line that should make the
  * user stop and read.
  */
 export function describeCommit(preview: CommitPreview, unreviewed: number): string {
   if (preview.events === 1) {
     return unreviewed > 0
-      ? `Nothing reviewed. Committing now would append one event recording that this extraction was reviewed and everything in it left undecided.`
-      : `Nothing to commit.`;
+      ? "Nothing reviewed. Committing now would append one event recording that this extraction was reviewed and everything in it left undecided."
+      : "Nothing to commit.";
   }
 
   const lines: string[] = [];
 
   const created: string[] = [];
-  if (preview.newDecisions > 0) created.push(`${preview.newDecisions} new decision${plural(preview.newDecisions)}`);
-  if (preview.newPremises > 0) created.push(`${preview.newPremises} new premise${plural(preview.newPremises)}`);
-  if (preview.newAlternatives > 0) created.push(`${preview.newAlternatives} rejected alternative${plural(preview.newAlternatives)}`);
+  if (preview.newDecisions > 0)
+    created.push(`${preview.newDecisions} new decision${plural(preview.newDecisions)}`);
+  if (preview.newPremises > 0)
+    created.push(`${preview.newPremises} new premise${plural(preview.newPremises)}`);
+  if (preview.newAlternatives > 0)
+    created.push(
+      `${preview.newAlternatives} rejected alternative${plural(preview.newAlternatives)}`,
+    );
   if (created.length > 0) lines.push(`Creates ${created.join(", ")}.`);
 
   const merged = preview.mergedDecisions + preview.mergedPremises;
   if (merged > 0) {
     lines.push(
-      `Merges ${merged} onto existing node${plural(merged)} ΓÇö corroboration increments, evidence extends, and no duplicate is created.`,
+      `Merges ${merged} onto existing node${plural(merged)} — corroboration increments, evidence extends, and no duplicate is created.`,
     );
   }
   if (preview.derivedPremises > 0) {
@@ -229,7 +237,7 @@ export function describeCommit(preview: CommitPreview, unreviewed: number): stri
   }
   if (preview.uncertainDecisions > 0) {
     lines.push(
-      `${preview.uncertainDecisions} decision${plural(preview.uncertainDecisions)} the identity ladder was unsure about ΓÇö committing creates them as new nodes flagged needsReview.`,
+      `${preview.uncertainDecisions} decision${plural(preview.uncertainDecisions)} the identity ladder was unsure about — committing creates them as new nodes flagged needsReview.`,
     );
   }
   if (preview.conflicts.length > 0) {
@@ -256,7 +264,7 @@ export function summariseCommit(preview: CommitPreview): string {
   }
   if (preview.discarded > 0) parts.push(`${preview.discarded} discarded`);
   if (parts.length === 0) return "nothing reviewed";
-  return `${parts.join(" ┬╖ ")} ΓåÆ ${preview.events} events`;
+  return `${parts.join(" · ")} → ${preview.events} events`;
 }
 
 function plural(count: number): string {

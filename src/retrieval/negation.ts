@@ -1,9 +1,9 @@
 /**
- * Negation and scope ΓÇö 3.6.
+ * Negation and scope — 3.6.
  *
- * Phase 3 ┬╖ sub-phase 3.6
- * Plan: plan/phase-3-retrieval.md ┬º3.6
- * Docs: docs/03-retrieval-and-contradiction.md ┬º4.4
+ * Phase 3 · sub-phase 3.6
+ * Plan: plan/phase-3-retrieval.md §3.6
+ * Docs: docs/03-retrieval-and-contradiction.md §4.4
  *
  * ---------------------------------------------------------------------------
  * WHY NEGATION NEEDS A SCOPE WINDOW
@@ -24,7 +24,7 @@
  * THIS MODULE DOES NOT REIMPLEMENT IT
  *
  * `ai/local/negation.ts` already has the cue inventory, the scope window, verb-pattern
- * polarity and the polarity evidence type ΓÇö built in Phase 1 because extraction needs it to
+ * polarity and the polarity evidence type — built in Phase 1 because extraction needs it to
  * decide modality. Reimplementing it here would create two notions of polarity that could
  * disagree, and a classifier whose polarity disagrees with the extractor's would flag a
  * decision as contradicting itself.
@@ -148,7 +148,7 @@ export function negationBetween(
  *  tokens the decision was made over, not just the verdict. */
 export function describeScope(verdict: NegationScopeVerdict): string {
   const window = verdict.window.length === 0 ? "(empty)" : verdict.window.join(" ");
-  return (verdict.negated ? "NEGATED" : "not negated") + " ΓÇö scope window: [" + window + "] ΓÇö " + verdict.reason;
+  return (verdict.negated ? "NEGATED" : "not negated") + " — scope window: [" + window + "] — " + verdict.reason;
 }
 
 /** Re-exported for the classifier: `negationScope` needs a CueHit, which retrieval does not

@@ -1,9 +1,9 @@
 /**
- * Cascade ΓÇö 2.7.
+ * Cascade — 2.7.
  *
- * Phase 2 ┬╖ sub-phase 2.7
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.7
- * Docs: docs/02-truth-maintenance-theory.md ┬º3
+ * Phase 2 · sub-phase 2.7
+ * Plan: plan/phase-2-truth-maintenance.md §2.7
+ * Docs: docs/02-truth-maintenance-theory.md §3
  *
  * ---------------------------------------------------------------------------
  * ONE PREMISE FALLS. WHAT ELSE BECOMES UNSOUND?
@@ -71,7 +71,7 @@ export function cascade(
   retractedPremises: readonly PremiseId[],
   depthCap: number = MAX_CASCADE_DEPTH,
 ): CascadeResult {
-  /* A cap of 0 would mean "do not propagate at all", which is a legitimate setting ΓÇö
+  /* A cap of 0 would mean "do not propagate at all", which is a legitimate setting —
    * but a NEGATIVE cap would make every step truncated and report the whole graph as
    * unexamined. Clamped, not trusted. */
   const cap = Math.max(0, Math.floor(Number.isFinite(depthCap) ? depthCap : MAX_CASCADE_DEPTH));
@@ -86,8 +86,8 @@ export function cascade(
   const index = indexGraph(state);
 
   /* Seed: every decision resting on a retracted premise, via the shared-premise index.
-   * This is the ONLY edge the cascade follows ΓÇö never `related`, never topical
-   * similarity. ┬º2.7: "Cascade follows shared-premise edges only." */
+   * This is the ONLY edge the cascade follows — never `related`, never topical
+   * similarity. §2.7: "Cascade follows shared-premise edges only." */
   const seeds: DecisionId[] = [];
   for (const premiseId of retractedSet) {
     for (const decisionId of decisionsRestingOn(index, premiseId)) {
@@ -142,10 +142,10 @@ export function cascade(
 
     /* ---- the second hop ----
      * This decision was contributing support to the premises it names. Anything ELSE
-     * resting on those premises is next in line ΓÇö but only if this decision was their
+     * resting on those premises is next in line — but only if this decision was their
      * last support, which `hasIndependentSupport` decides at the next level. Following
      * the shared premise is following a shared-premise edge; following `dependsOn` or
-     * `related` here would be exactly the over-retraction ┬º2.7 forbids. */
+     * `related` here would be exactly the over-retraction §2.7 forbids. */
     for (const premiseId of premisesNamedBy(index, decisionId)) {
       for (const dependent of decisionsRestingOn(index, premiseId)) {
         if (visited.has(dependent)) continue;
@@ -233,7 +233,7 @@ function firstRetractedPremiseOf(
 /**
  * The cascade as a sentence a user can act on.
  *
- * Leads with the count that matters ΓÇö decisions that changed ΓÇö and reports stops and
+ * Leads with the count that matters — decisions that changed — and reports stops and
  * truncation explicitly, because "we checked four and three were fine" is a different
  * message from "we checked one".
  */
@@ -265,13 +265,13 @@ export function describeCascade(state: GraphState, result: CascadeResult): strin
   return parts.join(" ");
 }
 
-/** The ordered walk, for the cascade view: `from ΓåÆ to (depth d) ΓÇö reason`. */
+/** The ordered walk, for the cascade view: `from → to (depth d) — reason`. */
 export function cascadeLines(state: GraphState, result: CascadeResult): readonly string[] {
   return result.steps.map((step) => {
     const fromName = nameOf(state, step.from);
     const toName = nameOf(state, step.to);
     const marker = step.stoppedAtIndependentSupport ? "STOPS" : `becomes ${step.became}`;
-    return `${"  ".repeat(step.depth)}${fromName} ΓåÆ ${toName} ΓÇö ${marker}. ${step.reason}`;
+    return `${"  ".repeat(step.depth)}${fromName} → ${toName} — ${marker}. ${step.reason}`;
   });
 }
 
@@ -285,12 +285,12 @@ function nameOf(state: GraphState, nodeId: DecisionId | PremiseId): string {
   return nodeId;
 }
 
-/** Depth actually reached ΓÇö used by Phase 7 to report whether the cap ever binds. */
+/** Depth actually reached — used by Phase 7 to report whether the cap ever binds. */
 export function deepestStep(result: CascadeResult): number {
   return result.steps.reduce((max, step) => (step.depth > max ? step.depth : max), 0);
 }
 
-/** The cap in force, for the health panel ΓÇö a truncated cascade is only interpretable
+/** The cap in force, for the health panel — a truncated cascade is only interpretable
  *  next to the number that truncated it. */
 export function describeCap(depthCap: number = MAX_CASCADE_DEPTH): string {
   return `cascade depth cap ${depthCap} (shared-premise edges only, never topical similarity)`;

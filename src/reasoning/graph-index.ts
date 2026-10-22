@@ -1,7 +1,7 @@
 /**
- * A one-pass index over the justification graph ΓÇö Phase 2.
+ * A one-pass index over the justification graph — Phase 2.
  *
- * Plan: plan/phase-2-truth-maintenance.md ┬º2.2 (the 500-node criterion)
+ * Plan: plan/phase-2-truth-maintenance.md §2.2 (the 500-node criterion)
  *
  * ---------------------------------------------------------------------------
  * THE SHAPE OF THIS GRAPH, WHICH IS NOT THE TEXTBOOK SHAPE
@@ -11,7 +11,7 @@
  * Decisions are supported by premises; premises are supported by nothing, because in
  * this formalism a premise IS an assumption.
  *
- * That has a consequence for ┬º2.6 that is easy to get wrong. Doyle's backtracking
+ * That has a consequence for §2.6 that is easy to get wrong. Doyle's backtracking
  * traces "antecedents of antecedents" and stops at nodes with no incoming arcs. Here
  * every premise has no incoming arcs, so backtracking through justifications reaches
  * bedrock in ONE hop. There is no derived-premise layer to walk through.
@@ -20,21 +20,21 @@
  * where "antecedents of antecedents" actually lives, and it is what backtracking and
  * the cascade walk when they need to go deeper than one hop.
  *
- * Phase 1 does create premises it calls "derived" ΓÇö the OUT-list exclusions produced by
+ * Phase 1 does create premises it calls "derived" — the OUT-list exclusions produced by
  * `ontology/data/exclusions.ts`. But they are derived in the EXTRACTION sense (their
  * text was composed from a rule) and stored as ordinary assumption nodes. They are
- * recognised by the text marker `"ΓÇö excluded by"`, never by a graph arc.
+ * recognised by the text marker `"— excluded by"`, never by a graph arc.
  *
  * ---------------------------------------------------------------------------
  * WHY AN INDEX AT ALL
  *
  * The naive implementation of every traversal here scans `state.justifications` per
- * decision, which is `O(D ├ù J)` per hop and `O(D┬▓ ├ù J)` for a cascade. Invisible at
- * demo scale; tens of millions of comparisons at the 500 nodes ┬º2.2 names. Both indexes
+ * decision, which is `O(D × J)` per hop and `O(D² × J)` for a cascade. Invisible at
+ * demo scale; tens of millions of comparisons at the 500 nodes §2.2 names. Both indexes
  * cost one pass and every later lookup is `O(1)`.
  *
- * NOT A CACHE. Built per run, thrown away. The graph changes between runs ΓÇö that is the
- * point of the cycle ΓÇö and invalidating a memoised index on every event is a correctness
+ * NOT A CACHE. Built per run, thrown away. The graph changes between runs — that is the
+ * point of the cycle — and invalidating a memoised index on every event is a correctness
  * risk bought for a saving that does not exist.
  * ---------------------------------------------------------------------------
  */
@@ -44,12 +44,12 @@ import type { Justification } from "@/types/domain";
 import type { GraphState } from "@/substrate/graph-state";
 
 export interface ReasoningIndex {
-  /** decision ΓåÆ its justifications, from `decision.justificationIds`. */
+  /** decision → its justifications, from `decision.justificationIds`. */
   readonly byConsequent: ReadonlyMap<DecisionId, readonly Justification[]>;
-  /** premise ΓåÆ the decisions that rest on it. Inverted from `state.premiseToDecisions`,
+  /** premise → the decisions that rest on it. Inverted from `state.premiseToDecisions`,
    *  which is the same relation and already maintained by the fold. */
   readonly decisionsOfPremise: ReadonlyMap<PremiseId, readonly DecisionId[]>;
-  /** decision ΓåÆ the premises named by its justifications. The cascade's second hop:
+  /** decision → the premises named by its justifications. The cascade's second hop:
    *  when a decision falls, these are the premises whose support it was contributing. */
   readonly premisesOfDecision: ReadonlyMap<DecisionId, readonly PremiseId[]>;
 }
@@ -84,7 +84,7 @@ export function indexGraph(state: GraphState): ReasoningIndex {
   };
 }
 
-/** The justifications holding a decision up. `[]` when it has none ΓÇö which is itself a
+/** The justifications holding a decision up. `[]` when it has none — which is itself a
  *  finding: a decision with no justification is an unsupported assertion. */
 export function justificationsFor(
   index: ReasoningIndex,
@@ -114,11 +114,11 @@ export function premisesNamedBy(
  * Is this premise one of Phase 1's derived OUT-list exclusions?
  *
  * Recognised by the TEXT MARKER, because that is how Phase 1 stores it and there is no
- * graph arc to follow ΓÇö a premise is never a consequent. Testing `hasExclusion(predicate)`
+ * graph arc to follow — a premise is never a consequent. Testing `hasExclusion(predicate)`
  * instead would not distinguish a supporting premise from the exclusion derived from it,
  * since both carry the same predicate.
  */
-export const DERIVED_PREMISE_MARKER = "ΓÇö excluded by";
+export const DERIVED_PREMISE_MARKER = "— excluded by";
 
 export function isDerivedPremiseText(text: string): boolean {
   return text.includes(DERIVED_PREMISE_MARKER);

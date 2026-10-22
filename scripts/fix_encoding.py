@@ -57,7 +57,7 @@ def repair(text: str) -> str:
                     return
                 if err.start == 0:
                     # Not a UTF-8 lead byte: keep the byte as it was.
-                    out.append(bytes([buf[0]]).decode("cp1252", errors="replace"))
+                    out.append(bytes([buf[0]]).decode("cp437", errors="replace"))
                     del buf[0]
                     continue
                 out.append(buf[: err.start].decode("utf-8"))

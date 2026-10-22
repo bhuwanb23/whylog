@@ -1,8 +1,8 @@
 /**
- * The retrieval pipeline ΓÇö Phase 3's entry point.
+ * The retrieval pipeline — Phase 3's entry point.
  *
- * Phase 3 ┬╖ sub-phases 3.1ΓÇô3.9
- * Plan: plan/phase-3-retrieval.md ┬º3.4, ┬º3.5, ┬º3.7
+ * Phase 3 · sub-phases 3.1–3.9
+ * Plan: plan/phase-3-retrieval.md §3.4, §3.5, §3.7
  * Docs: docs/03-retrieval-and-contradiction.md
  *
  * ---------------------------------------------------------------------------
@@ -12,8 +12,8 @@
  *   L1 dense                      statement embeddings
  *   L2 dense                      HyPE inverted questions, built at extraction time
  *   L3 sparse                     BM25 over all text fields, ontology-aliased terms
- *   L4 structural                 variable / value index ΓÇö PROMOTED, not fused
- *   L5 premise                    premise ΓåÆ dependents ΓÇö PROMOTED, not fused
+ *   L4 structural                 variable / value index — PROMOTED, not fused
+ *   L5 premise                    premise → dependents — PROMOTED, not fused
  *   RRF fusion at k = 60          score-agnostic, so it needs no calibration
  *   rerank                        two-stage; scores against the ORIGINAL query
  *   evidence contract             <= 3 searches, citations resolve in-run, groundedness
@@ -21,14 +21,14 @@
  * ---------------------------------------------------------------------------
  * WHY L4 AND L5 ARE PROMOTED RATHER THAN FUSED
  *
- * RRF fuses RANKS. An exact structural match ΓÇö the question names `DATABASE` and the log has
- * a decision settling `DATABASE` ΓÇö is not a rank, it is a fact. Averaging a fact into a
+ * RRF fuses RANKS. An exact structural match — the question names `DATABASE` and the log has
+ * a decision settling `DATABASE` — is not a rank, it is a fact. Averaging a fact into a
  * statistical consensus lets four levels of weak topical agreement outvote one level of exact
  * evidence, which is precisely backwards: exact evidence outranks statistical evidence.
  *
  * So L4 and L5 matches are held at the front of the candidate order and the reranker is not
  * allowed to demote them (`rerank/index.ts`, `orderWithPromotion`). They still APPEAR in the
- * fusion so their `contributedBy` and `matchedOn` are recorded honestly ΓÇö a promoted hit that
+ * fusion so their `contributedBy` and `matchedOn` are recorded honestly — a promoted hit that
  * also ranked well says so, and one that only matched structurally says that too.
  *
  * ---------------------------------------------------------------------------
@@ -45,8 +45,8 @@
  * DEGRADATION IS REPORTED, NEVER SILENT
  *
  * With no embeddings built, or after an engine change makes them stale, L1 and L2 return
- * nothing and L3/L4/L5 carry the run. That still works ΓÇö BM25 is what makes the keyless system
- * viable ΓÇö but the answer says which levels ran. A user who cannot see that two of five levels
+ * nothing and L3/L4/L5 carry the run. That still works — BM25 is what makes the keyless system
+ * viable — but the answer says which levels ran. A user who cannot see that two of five levels
  * were unavailable cannot tell a thin answer from a thin log.
  * ---------------------------------------------------------------------------
  */
@@ -99,13 +99,13 @@ export interface UnderstoodQuery {
 }
 
 /**
- * Read the question. No model, no embedding ΓÇö the variable and value are matched against the
+ * Read the question. No model, no embedding — the variable and value are matched against the
  * ontology's own vocabulary, which is the same vocabulary extraction used, so a question
  * phrased in the terms the log was built from resolves exactly.
  */
 export function understandQuery(state: GraphState, question: string): UnderstoodQuery {
   const folded = question.toLowerCase();
-  const terms = queryTerms(state, question);
+  const terms = queryTerms(question);
 
   let variable: DecisionVariable | null = null;
   let value: string | null = null;
@@ -220,14 +220,36 @@ export interface RetrievalResult {
 }
 
 /**
- * Retrieve and rank. This is the whole of ┬º3.1ΓÇô┬º3.5 in one call.
+ * Retrieve and rank. This is the whole of §3.1–§3.5 in one call.
  *
- * Retrieval PROPOSES. It never classifies a pair and never produces a verdict ΓÇö invariant I3.
+ * Retrieval PROPOSES. It never classifies a pair and never produces a verdict — invariant I3.
  * The scores it returns select candidates for `contradiction.ts`, which then discards them.
  */
+/**
+ * Merge the caller's options over the defaults.
+ *
+ * A plain spread is not enough: `QueryOptions` fields are optional, and
+ * spreading an optional over a required default yields `number | undefined` —
+ * so `options.topK` would be possibly-undefined at every use, even though a
+ * default always exists. Resolving each field explicitly keeps the resolved
+ * options total, which is what the rest of the retrieval stack assumes.
+ */
+function resolveQueryOptions(options: QueryOptions | undefined): Required<
+  Pick<QueryOptions, "topK" | "recallK" | "rrfK" | "useHyde" | "includeSuperseded">
+> & { readonly levels: readonly IndexLevel[] | undefined } {
+  return {
+    topK: options?.topK ?? DEFAULT_QUERY_OPTIONS.topK,
+    recallK: options?.recallK ?? DEFAULT_QUERY_OPTIONS.recallK,
+    rrfK: options?.rrfK ?? DEFAULT_QUERY_OPTIONS.rrfK,
+    useHyde: options?.useHyde ?? DEFAULT_QUERY_OPTIONS.useHyde,
+    includeSuperseded: options?.includeSuperseded ?? DEFAULT_QUERY_OPTIONS.includeSuperseded,
+    levels: options?.levels,
+  };
+}
+
 export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
   const started = Date.now();
-  const options: QueryOptions = { ...DEFAULT_QUERY_OPTIONS, ...(input.options ?? {}) };
+  const options = resolveQueryOptions(input.options);
   const understood = understandQuery(input.state, input.question);
   const levels = usableLevels(input.state);
   const lists: RankedList[] = [];
@@ -289,7 +311,7 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
     promoted: promotedIds.has(hit.decisionId),
   }));
 
-  /* Promoted candidates the fusion never surfaced ΓÇö an exact match with no lexical or dense
+  /* Promoted candidates the fusion never surfaced — an exact match with no lexical or dense
    * agreement at all. It still belongs in the order; losing it would lose the one result that
    * is certain. */
   for (const id of promotedIds) {
@@ -395,7 +417,7 @@ function rankOf(lists: readonly RankedList[], level: IndexLevel, id: DecisionId)
   return list?.hits.find((hit) => hit.decisionId === id)?.rank ?? 0;
 }
 
-/** L4/L5 matches carry no score of their own ΓÇö an exact match is not a graded one. They enter
+/** L4/L5 matches carry no score of their own — an exact match is not a graded one. They enter
  *  the fusion at rank order of specificity (value matches before variable matches, which the
  *  search functions already produce) and are promoted regardless of score. */
 function asRanked(level: IndexLevel, matches: readonly { decisionId: DecisionId }[]): readonly RankedHit[] {
@@ -417,7 +439,7 @@ function promotedLevelsOf(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Ask ΓÇö retrieval plus the evidence contract                                 */
+/* Ask — retrieval plus the evidence contract                                 */
 /* -------------------------------------------------------------------------- */
 
 export interface AskInput extends RetrieveInput {
@@ -430,11 +452,11 @@ export interface AskInput extends RetrieveInput {
  *
  * At most three searches, each with a distinct purpose, each recorded:
  *
- *   1. THE QUESTION as asked ΓÇö all five levels, fused and reranked.
- *   2. EXPANSION BY SHARED PREMISE ΓÇö only if search 1 was thin. Decisions resting on the same
+ *   1. THE QUESTION as asked — all five levels, fused and reranked.
+ *   2. EXPANSION BY SHARED PREMISE — only if search 1 was thin. Decisions resting on the same
  *      premises as search 1's hits answer many questions that the question's own vocabulary
  *      does not match, because they share the `given` rather than the wording.
- *   3. PREMISE QUESTIONS ΓÇö only if still thin. HyPE's inverted questions rephrased as the
+ *   3. PREMISE QUESTIONS — only if still thin. HyPE's inverted questions rephrased as the
  *      query, catching a decision recorded in different words from the ones asked.
  *
  * The budget is what makes refusal reachable. Without it, "not found" always means "have not
@@ -443,7 +465,7 @@ export interface AskInput extends RetrieveInput {
  */
 export async function ask(input: AskInput): Promise<Answer> {
   const trace = new SearchTrace();
-  const options: QueryOptions = { ...DEFAULT_QUERY_OPTIONS, ...(input.options ?? {}) };
+  const options = resolveQueryOptions(input.options);
   const answeredAt = nowISO();
 
   /* ---- search 1 ---- */
@@ -477,7 +499,7 @@ export async function ask(input: AskInput): Promise<Answer> {
         added.length,
         0,
         added.length === 0
-          ? "Search 1 was thin, so the run expanded along shared premises. Nothing new came back ΓÇö no other decision rests on the same assumptions as these."
+          ? "Search 1 was thin, so the run expanded along shared premises. Nothing new came back — no other decision rests on the same assumptions as these."
           : "Search 1 was thin, so the run expanded along shared premises: decisions resting on the same `given` often answer a question whose wording does not match.",
       ),
     );
@@ -491,7 +513,7 @@ export async function ask(input: AskInput): Promise<Answer> {
           decisionId,
           decision,
           /* Scored at the topicality floor rather than at a computed value. A shared-premise
-           * expansion is an EXACT relation ΓÇö same `given` ΓÇö so it is promoted, and giving it a
+           * expansion is an EXACT relation — same `given` — so it is promoted, and giving it a
            * fabricated numeric score would imply a ranking nobody computed. */
           finalScore: TOPICALITY_FLOOR,
           rrf: 0,
@@ -564,7 +586,7 @@ async function searchByPremiseQuestions(
     return [];
   }
 
-  const terms = queryTerms(input.state, questionText);
+  const terms = queryTerms(questionText);
   const l3 = searchL3(input.artifacts, terms, DEFAULT_QUERY_OPTIONS.recallK);
 
   const before = new Set(current.map((hit) => hit.decisionId));
@@ -595,7 +617,7 @@ async function searchByPremiseQuestions(
       added.length,
       added[0]?.finalScore ?? 0,
       added.length === 0
-        ? "Still thin, so the run re-queried with the premises' own vocabulary. Nothing further came back ΓÇö this is the last search the contract allows, and the answer will say so."
+        ? "Still thin, so the run re-queried with the premises' own vocabulary. Nothing further came back — this is the last search the contract allows, and the answer will say so."
         : "Still thin, so the run re-queried with the premises' own vocabulary rather than the question's wording.",
     ),
   );
@@ -603,7 +625,7 @@ async function searchByPremiseQuestions(
   return added;
 }
 
-/** One pass over the fold's own premise ΓåÆ decisions index, not a scan per hit. */
+/** One pass over the fold's own premise → decisions index, not a scan per hit. */
 function premisesOfHits(state: GraphState, hits: readonly RetrievedHit[]): readonly PremiseId[] {
   const wanted = new Set(hits.map((hit) => hit.decisionId));
   const out = new Set<PremiseId>();
@@ -653,9 +675,9 @@ export function describeRetrieval(result: RetrievalResult): string {
     "Levels available: " + result.levels.join(", ") +
       (result.levelsUnavailable.length > 0 ? "  (unavailable: " + result.levelsUnavailable.join(", ") + ")" : ""),
     "Query read as: " + result.understood.explanation,
-    "Fusion: RRF at k = " + RRF_K + " ΓÇö ranks only, so no score calibration between levels.",
+    "Fusion: RRF at k = " + RRF_K + " — ranks only, so no score calibration between levels.",
     "Rerank: " + result.method + ", scored against the ORIGINAL query.",
-    "Candidates: " + result.fused.length + " fused ΓåÆ " + result.hits.length + " returned.",
+    "Candidates: " + result.fused.length + " fused → " + result.hits.length + " returned.",
     "Took " + result.durationMs + " ms.",
   ];
 
@@ -666,13 +688,13 @@ export function describeRetrieval(result: RetrievalResult): string {
 
 export function describePipeline(): string {
   return [
-    "Retrieval pipeline ΓÇö five levels, fused, then reranked, then bound:",
+    "Retrieval pipeline — five levels, fused, then reranked, then bound:",
     "",
     "  L1 dense       statement embeddings",
     "  L2 dense       HyPE inverted questions, generated at extraction time, zero extra LLM calls",
-    "  L3 sparse      BM25 over all text fields, ontology-aliased terms ΓÇö carries the keyless system",
-    "  L4 structural  variable / value index ΓÇö PROMOTED, not fused",
-    "  L5 premise     premise ΓåÆ dependents ΓÇö PROMOTED, not fused",
+    "  L3 sparse      BM25 over all text fields, ontology-aliased terms — carries the keyless system",
+    "  L4 structural  variable / value index — PROMOTED, not fused",
+    "  L5 premise     premise → dependents — PROMOTED, not fused",
     "",
     "L4 and L5 are promoted rather than fused because an exact match is a FACT, not a rank.",
     "Averaging a fact into a statistical consensus lets four levels of weak topical agreement",
@@ -686,7 +708,7 @@ export function describePipeline(): string {
     "merely discouraged by a comment.",
     "",
     "Retrieval PROPOSES; it never classifies. Invariant I3: no score produced here decides a",
-    "contradiction ΓÇö the classifier in ./contradiction.ts reads no score at all.",
+    "contradiction — the classifier in ./contradiction.ts reads no score at all.",
   ].join("\n");
 }
 

@@ -1,28 +1,28 @@
 /**
- * L5 ΓÇö premise inverted index. 3.3
+ * L5 — premise inverted index. 3.3
  *
- * Phase 3 ┬╖ sub-phase 3.3
- * Plan: plan/phase-3-retrieval.md ┬º3.3
+ * Phase 3 · sub-phase 3.3
+ * Plan: plan/phase-3-retrieval.md §3.3
  *
  * ---------------------------------------------------------------------------
  * THE LEVEL NOBODY ELSE HAS, BECAUSE NOBODY ELSE STORES PREMISES
  *
- *   premiseIndex   premiseId ΓåÆ [decisionIds]     Phase 2 gate (c) and the cascade
+ *   premiseIndex   premiseId → [decisionIds]     Phase 2 gate (c) and the cascade
  *
  * Two consumers, and they want opposite things from the same index:
  *
- *   ┬╖ RETRIEVAL ΓÇö "what assumes a single user?" should return every decision resting on
+ *   · RETRIEVAL — "what assumes a single user?" should return every decision resting on
  *     that premise. This is a question shape the other four levels cannot answer at all:
  *     the premise text may not appear in any decision's statement, so L1 and L3 both miss
  *     it, and L4 only knows variables and values.
  *
- *   ┬╖ REASONING ΓÇö gate (c) and the cascade need premise ΓåÆ dependents in O(1). Before this
+ *   · REASONING — gate (c) and the cascade need premise → dependents in O(1). Before this
  *     index they scanned every justification, which is what made `reasoning/graph-index.ts`
  *     necessary as a per-run workaround. L5 is the same relation, maintained by the fold
  *     instead of rebuilt per run.
  *
  * ---------------------------------------------------------------------------
- * PROMOTED, NOT FUSED ΓÇö SAME RULE AS L4
+ * PROMOTED, NOT FUSED — SAME RULE AS L4
  *
  * A premise match is exact: either the decision's justification names that premise id or
  * it does not. There is no score to normalise and nothing to blend, so it promotes to the
@@ -48,7 +48,7 @@ export interface PremiseMatch {
  * Decisions resting on a named premise.
  *
  * `via` distinguishes a premise the QUERY named from one shared with an already-retrieved
- * decision. The second is graph expansion ΓÇö following one hop from a good hit ΓÇö and it is
+ * decision. The second is graph expansion — following one hop from a good hit — and it is
  * promoted more weakly, because it is one step removed from what was actually asked.
  */
 export function searchL5(
@@ -93,7 +93,7 @@ export function premisesOfDecision(
 /**
  * Premise overlap between two decisions, as a fraction.
  *
- * Jaccard over premise ids. Used by the local reranker at weight 0.10 ΓÇö deliberately the
+ * Jaccard over premise ids. Used by the local reranker at weight 0.10 — deliberately the
  * second-lowest component, because shared premises indicate graph proximity, not
  * relevance to the question. Two decisions can rest on the same premise and answer
  * completely different questions.
@@ -110,7 +110,7 @@ export function premiseOverlap(a: readonly PremiseId[], b: readonly PremiseId[])
 }
 
 /** One hop out from a set of decisions: every decision sharing a premise with any of them.
- *  This is the graph-expansion step, and it follows SHARED PREMISES only ΓÇö the same edge
+ *  This is the graph-expansion step, and it follows SHARED PREMISES only — the same edge
  *  the cascade is allowed to follow, and for the same reason. */
 export function expandBySharedPremise(
   artifacts: IndexArtifacts,
@@ -142,7 +142,7 @@ export function describeL5(artifacts: IndexArtifacts): string {
   const premises = artifacts.premises.premiseToDecisions.size;
   const decisions = artifacts.premises.decisionToPremises.size;
   return (
-    `L5 premise inverted ΓÇö ${premises} premise(s) indexed across ${decisions} decision(s). ` +
+    `L5 premise inverted — ${premises} premise(s) indexed across ${decisions} decision(s). ` +
     `Serves "what assumes X?" (a shape no other level can answer) and gives Phase 2 gate (c) ` +
     `and the cascade O(1) premise-to-dependents lookup. Promoted, not fused.`
   );

@@ -1,15 +1,15 @@
 /**
- * L1 ΓÇö statement embeddings. 3.1
+ * L1 — statement embeddings. 3.1
  *
- * Phase 3 ┬╖ sub-phase 3.1
- * Plan: plan/phase-3-retrieval.md ┬º3.1
+ * Phase 3 · sub-phase 3.1
+ * Plan: plan/phase-3-retrieval.md §3.1
  *
  * ---------------------------------------------------------------------------
  * THE BASELINE, AND WHY IT IS NEVER SUFFICIENT
  *
  * L1 embeds `statement + rationale`. It is necessary and it is the weakest of the five
  * levels, for a reason that is structural rather than a quality problem: **the documents
- * here are one sentence long.** Short-text embeddings are noisy ΓÇö there is not enough
+ * here are one sentence long.** Short-text embeddings are noisy — there is not enough
  * context for the vector to settle, so two unrelated one-line decisions can land close
  * together and two related ones far apart.
  *
@@ -26,8 +26,8 @@
  * already-assembled `IndexArtifacts` and returns a ranked list. Building is
  * `build-index.ts`'s job.
  *
- * If the index is stale ΓÇö the engine changed, so cosine across the two spaces would be
- * meaningless ΓÇö this returns an EMPTY list rather than a confident wrong one. An empty
+ * If the index is stale — the engine changed, so cosine across the two spaces would be
+ * meaningless — this returns an EMPTY list rather than a confident wrong one. An empty
  * L1 degrades the run to lexical and structural, which still works. A stale L1 that
  * scored anyway would silently corrupt every fusion it entered.
  * ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ export interface DenseQuery {
  *
  * L1 entries only. L2 is a separate level and is fused separately, because a decision
  * that matches on both its statement and its inverted questions should score higher than
- * one that matches on either ΓÇö and merging the two lists here would hide that agreement.
+ * one that matches on either — and merging the two lists here would hide that agreement.
  */
 export function searchL1(
   artifacts: IndexArtifacts,
@@ -81,10 +81,10 @@ export function l1Text(statement: string, rationale: string | undefined): string
 
 export function describeL1(artifacts: IndexArtifacts): string {
   if (artifacts.stale) {
-    return "L1 statement embeddings ΓÇö DISABLED. The stored vectors came from a different embedding space; cosine across spaces is meaningless, not noisy.";
+    return "L1 statement embeddings — DISABLED. The stored vectors came from a different embedding space; cosine across spaces is meaningless, not noisy.";
   }
   const count = l1Count(artifacts);
   return count === 0
-    ? "L1 statement embeddings ΓÇö none built. Lexical, structural and premise retrieval still work."
-    : "L1 statement embeddings ΓÇö " + count + " vector(s), " + artifacts.dimensions + "d. The baseline; necessary, never sufficient, because these documents are one sentence long.";
+    ? "L1 statement embeddings — none built. Lexical, structural and premise retrieval still work."
+    : "L1 statement embeddings — " + count + " vector(s), " + artifacts.dimensions + "d. The baseline; necessary, never sufficient, because these documents are one sentence long.";
 }

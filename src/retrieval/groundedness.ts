@@ -1,8 +1,8 @@
 /**
- * Groundedness ΓÇö 3.8.
+ * Groundedness — 3.8.
  *
- * Phase 3 ┬╖ sub-phase 3.8
- * Plan: plan/phase-3-retrieval.md ┬º3.8
+ * Phase 3 · sub-phase 3.8
+ * Plan: plan/phase-3-retrieval.md §3.8
  *
  * ---------------------------------------------------------------------------
  * ONE NUMBER, COMPUTED NOT ASSERTED
@@ -17,7 +17,7 @@
  * ---------------------------------------------------------------------------
  * THE ZERO-CLAIM CASE IS THE ONE THAT MATTERS
  *
- * 0 / 0 is not 1. An answer with no claims must NOT report GROUNDED by vacuous truth ΓÇö a
+ * 0 / 0 is not 1. An answer with no claims must NOT report GROUNDED by vacuous truth — a
  * system that scores an empty answer as perfectly grounded has made "say nothing" the
  * optimal strategy, and a model that learns that stops answering. Zero claims is
  * INSUFFICIENT_EVIDENCE, always, with the assessment saying so in words.
@@ -30,7 +30,7 @@
  *   <  0.50            INSUFFICIENT_EVIDENCE
  *
  * GROUNDED requires near-totality, not a majority. One ungrounded claim in six is enough to
- * make an answer PARTIAL, because the user cannot tell WHICH claim was the invented one ΓÇö
+ * make an answer PARTIAL, because the user cannot tell WHICH claim was the invented one —
  * a 5-in-6 accurate answer with no marking is worse than useless, since the reader has to
  * re-verify everything to find the one bad claim. PARTIAL exists so the answer can say
  * "this part I know and this part I inferred", and `ungroundedNotes` names the part.
@@ -58,7 +58,7 @@ export interface Groundedness {
 /**
  * Score a set of claims.
  *
- * `resolving` is the set of decision ids whose citations actually resolved IN THIS RUN ΓÇö not
+ * `resolving` is the set of decision ids whose citations actually resolved IN THIS RUN — not
  * the set of decisions that exist. A claim citing a decision the log contains but this
  * retrieval never surfaced is not grounded, because nothing in this run checked that the
  * citation supports the claim. See `evidence-contract.ts` for the resolution rule.
@@ -75,7 +75,7 @@ export function groundednessOf(
       groundedClaims: 0,
       notes: ["The answer makes no claims at all, so there is nothing to ground."],
       assessment:
-        "No claims were made. 0/0 is not treated as perfectly grounded ΓÇö that would make " +
+        "No claims were made. 0/0 is not treated as perfectly grounded — that would make " +
         "\"say nothing\" the optimal answer, and an empty answer reported as GROUNDED is the " +
         "single most misleading thing this layer could produce.",
     };
@@ -86,7 +86,7 @@ export function groundednessOf(
 
   for (const [index, claim] of claims.entries()) {
     /* A claim is grounded iff at least one of ITS citations resolved. Not "at least one
-     * citation in the answer resolved" ΓÇö grounding is per claim, because the reader
+     * citation in the answer resolved" — grounding is per claim, because the reader
      * consumes claims one at a time. */
     const resolves = claim.citations.some((id) => resolving.has(id));
 
@@ -102,7 +102,7 @@ export function groundednessOf(
           claim.citations.join(", ") +
           ", none of which resolved to a decision retrieved in this run";
 
-    notes.push("Claim " + (index + 1) + ' ΓÇö "' + truncate(claim.text) + '" ΓÇö is not grounded because ' + why + ".");
+    notes.push("Claim " + (index + 1) + ' — "' + truncate(claim.text) + '" — is not grounded because ' + why + ".");
   }
 
   const score = grounded / claims.length;
@@ -138,14 +138,14 @@ function assess(
     case "PARTIAL":
       return (
         fraction +
-        " resolve. The rest is inferred from the retrieved material rather than stated by it, and is marked below ΓÇö read the marked claims as a hypothesis, not as a record."
+        " resolve. The rest is inferred from the retrieved material rather than stated by it, and is marked below — read the marked claims as a hypothesis, not as a record."
       );
     case "INSUFFICIENT_EVIDENCE":
       return (
         fraction +
         " resolve, which is below the " +
         (PARTIAL_FLOOR * 100).toFixed(0) +
-        "% floor for answering at all. The honest response is to refuse, say what is missing, and offer the nearest related decisions ΓÇö not to answer confidently from a thin retrieval."
+        "% floor for answering at all. The honest response is to refuse, say what is missing, and offer the nearest related decisions — not to answer confidently from a thin retrieval."
       );
   }
 }
@@ -153,16 +153,16 @@ function assess(
 export function describeVerdict(verdict: GroundednessVerdict): string {
   switch (verdict) {
     case "GROUNDED":
-      return "GROUNDED (>= " + (GROUNDED_FLOOR * 100).toFixed(0) + "%) ΓÇö every claim maps to at least one retrieved decision and all citations resolve.";
+      return "GROUNDED (>= " + (GROUNDED_FLOOR * 100).toFixed(0) + "%) — every claim maps to at least one retrieved decision and all citations resolve.";
     case "PARTIAL":
       return (
         "PARTIAL (" + (PARTIAL_FLOOR * 100).toFixed(0) + "-" + (GROUNDED_FLOOR * 100).toFixed(0) +
-        "%) ΓÇö some claims grounded, some inferred. The inferred part is marked, because a reader cannot tell which claim was invented unless the answer says."
+        "%) — some claims grounded, some inferred. The inferred part is marked, because a reader cannot tell which claim was invented unless the answer says."
       );
     case "INSUFFICIENT_EVIDENCE":
       return (
         "INSUFFICIENT_EVIDENCE (< " + (PARTIAL_FLOOR * 100).toFixed(0) +
-        "%) ΓÇö refuse, state what is missing, then offer the nearest related decisions. \"I don\'t know\" is a first-class answer here, not a failure mode."
+        "%) — refuse, state what is missing, then offer the nearest related decisions. \"I don\'t know\" is a first-class answer here, not a failure mode."
       );
   }
 }

@@ -1,9 +1,9 @@
 /**
- * The evidence contract ΓÇö 3.7. Γÿà
+ * The evidence contract — 3.7. ★
  *
- * Phase 3 ┬╖ sub-phase 3.7
- * Plan: plan/phase-3-retrieval.md ┬º3.7
- * Source: github.com/sophiatheofanidou/RepoRationale ΓÇö the only prior art that binds an
+ * Phase 3 · sub-phase 3.7
+ * Plan: plan/phase-3-retrieval.md §3.7
+ * Source: github.com/sophiatheofanidou/RepoRationale — the only prior art that binds an
  *         answer to a search budget and a citation-resolution rule.
  *
  * ---------------------------------------------------------------------------
@@ -13,14 +13,14 @@
  * BM25 + vector + graph and RRF, and beating that number is not a hackathon project. What
  * almost nothing ships is a contract on the ANSWER:
  *
- *   1. A bounded number of searches ΓÇö at most three, each recorded.
+ *   1. A bounded number of searches — at most three, each recorded.
  *   2. A citation is valid ONLY if it points to a decision retrieved in THIS run.
  *   3. "Insufficient evidence" is a first-class answer, not an error and not a hedge.
  *   4. The run leaves a trace a reader can audit: what was searched, what came back, and
  *      why the search stopped.
  *
  * Together these make the answer FALSIFIABLE. Not "trust the model" and not "trust the
- * embedding" ΓÇö here are the three searches, here are the citations, here is which ones
+ * embedding" — here are the three searches, here are the citations, here is which ones
  * resolved, here is why it stopped. A reader who disagrees can point at the exact step.
  *
  * ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@
  *
  * Three searches is generous for a decision log of hundreds of entries; brute-force cosine
  * over that is sub-millisecond. The bound exists because an UNBOUNDED search converts "I
- * could not find it" into "I did not look hard enough yet" ΓÇö and a system that can always
+ * could not find it" into "I did not look hard enough yet" — and a system that can always
  * look again never has to say it does not know. The bound is what makes refusal reachable.
  *
  * `boundedOut` records the case where the budget ran out while the answer was still short of
@@ -45,7 +45,7 @@
  * one that happens to exist; neither has been checked against the claim it supports. Only
  * what this run actually retrieved has been read, scored and ranked, so only those ids count
  * as evidence. Anything else is rendered as an unresolved citation and reported in the
- * groundedness notes ΓÇö never silently dropped, and never silently counted.
+ * groundedness notes — never silently dropped, and never silently counted.
  * ---------------------------------------------------------------------------
  */
 
@@ -67,7 +67,7 @@ export class SearchTrace {
   private readonly seen = new Set<DecisionId>();
   private bounded = false;
 
-  /** Record one search. Returns false if the budget was already spent ΓÇö the caller must
+  /** Record one search. Returns false if the budget was already spent — the caller must
    *  then stop, which is the whole point of returning a value rather than throwing. */
   record(step: SearchStep): boolean {
     if (this.steps.length >= MAX_SEARCHES) {
@@ -134,7 +134,7 @@ export function searchStep(
 /**
  * Resolve citations against what THIS run retrieved.
  *
- * Every citation is kept ΓÇö resolved or not ΓÇö with `resolvedInRun` set. Dropping unresolved
+ * Every citation is kept — resolved or not — with `resolvedInRun` set. Dropping unresolved
  * ones would make the groundedness score look better than the answer is, and the reader
  * would never learn that a claim pointed at something nobody checked.
  */
@@ -168,7 +168,7 @@ export function groundClaims(claims: readonly Claim[], resolving: ReadonlySet<De
 }
 
 /** How many citations point at decisions this run never surfaced. A nonzero count is not an
- *  error to hide ΓÇö it is the number the UI shows as "n citation(s) could not be checked". */
+ *  error to hide — it is the number the UI shows as "n citation(s) could not be checked". */
 export function unresolvedCount(citations: readonly Citation[]): number {
   return citations.filter((citation) => !citation.resolvedInRun).length;
 }
@@ -217,7 +217,7 @@ export function assessSufficiency(
 
   switch (reason) {
     case "STOPPED_SUFFICIENT":
-      return budget + ", " + score + ". Stopped because enough evidence was found, not because the budget ran out ΓÇö a further search would have added candidates to rank, not changed the answer.";
+      return budget + ", " + score + ". Stopped because enough evidence was found, not because the budget ran out — a further search would have added candidates to rank, not changed the answer.";
     case "STOPPED_BOUNDED":
       return (
         budget + ", " + score + ". STOPPED BECAUSE THE BUDGET RAN OUT, not because the log was exhausted. " +
@@ -242,7 +242,7 @@ export function assessSufficiency(
  *  contract the user has not read is a contract they cannot hold the system to. */
 export function describeContract(): string {
   return [
-    "The evidence contract ΓÇö four rules this answer was produced under:",
+    "The evidence contract — four rules this answer was produced under:",
     "",
     "  1. AT MOST " + MAX_SEARCHES + " SEARCHES per question, each recorded in the trace below.",
     "     The bound is not a performance optimisation. An unbounded search turns \"I could",
@@ -252,7 +252,7 @@ export function describeContract(): string {
     "  2. A CITATION IS VALID ONLY IF IT POINTS TO A DECISION RETRIEVED IN THIS RUN.",
     "     Not \"exists in the log\". Only what this run retrieved has been read, scored and",
     "     ranked, so only those ids count as evidence. Anything else is shown as unresolved",
-    "     and reported in the groundedness notes ΓÇö never silently dropped, never counted.",
+    "     and reported in the groundedness notes — never silently dropped, never counted.",
     "",
     "  3. \"INSUFFICIENT EVIDENCE\" IS A FIRST-CLASS ANSWER. Below the partial floor the",
     "     system refuses, states what is missing, and offers the nearest related decisions.",

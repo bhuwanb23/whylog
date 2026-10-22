@@ -1,7 +1,7 @@
 /**
  * One HTTP client for every provider.
  *
- * Phase 1 ┬╖ sub-phase 1.10 (the LLM path)
+ * Phase 1 · sub-phase 1.10 (the LLM path)
  *
  * ---------------------------------------------------------------------------
  * WHY ONE FILE AND NOT THREE
@@ -10,7 +10,7 @@
  * array, `content` strings). Anthropic speaks a near-dialect (`/messages`, a
  * `system` field, content blocks). Three provider modules would be three copies of
  * the retry policy, three copies of the timeout, and three places where the API key
- * is read ΓÇö and the key handling is the part that must not have variants.
+ * is read — and the key handling is the part that must not have variants.
  *
  * So: one client, one request shape, two response adapters.
  *
@@ -24,8 +24,14 @@
  * ---------------------------------------------------------------------------
  */
 
-import { EngineError, fromResponse, malformedOutputError, networkError, retryPolicy } from "../errors";
 import type { ProviderId } from "../config";
+import {
+  EngineError,
+  fromResponse,
+  malformedOutputError,
+  networkError,
+  retryPolicy,
+} from "../errors";
 
 export interface ChatMessage {
   readonly role: "system" | "user" | "assistant";
@@ -70,7 +76,7 @@ const MAX_QUOTED_BODY = 400;
 /**
  * One chat completion, with retries.
  *
- * Retries only what `retryPolicy` says is retryable ΓÇö rate limit, timeout, network,
+ * Retries only what `retryPolicy` says is retryable — rate limit, timeout, network,
  * malformed output. A 401 is not retried: three failed attempts with a bad key is
  * three chances for the provider to lock the account.
  */
@@ -103,7 +109,9 @@ async function once(
   request: ChatRequest,
 ): Promise<ChatResponse> {
   if (request.signal?.aborted) {
-    throw new EngineError("cancelled", "Cancelled before the request was sent.", { engine: request.model });
+    throw new EngineError("cancelled", "Cancelled before the request was sent.", {
+      engine: request.model,
+    });
   }
 
   const url = ENDPOINTS[provider];
@@ -123,9 +131,12 @@ async function once(
     });
 
     const text = await response.text();
-    if (!response.ok) throw fromResponse(response.status, text.slice(0, MAX_QUOTED_BODY), request.model);
+    if (!response.ok)
+      throw fromResponse(response.status, text.slice(0, MAX_QUOTED_BODY), request.model);
 
-    return provider === "anthropic" ? readAnthropic(text, request.model) : readOpenAi(text, request.model);
+    return provider === "anthropic"
+      ? readAnthropic(text, request.model)
+      : readOpenAi(text, request.model);
   } catch (error) {
     if (error instanceof EngineError) throw error;
     if (controller.signal.aborted && request.signal?.aborted) {
@@ -158,7 +169,7 @@ function openaiBody(
     max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
   };
   if (request.json === true && provider === "openai") {
-    body.response_format = { type: "json_object" };
+    body["response_format"] = { type: "json_object" };
   }
   return body;
 }
@@ -196,7 +207,7 @@ function headers(
     return base;
   }
 
-  base.authorization = `Bearer ${apiKey}`;
+  base["authorization"] = `Bearer ${apiKey}`;
   if (provider === "openrouter") {
     base["http-referer"] = "https://github.com/whylog";
     base["x-title"] = "WhyLog";
@@ -211,7 +222,9 @@ function headers(
 
 function readOpenAi(raw: string, model: string): ChatResponse {
   const parsed = parseJson(raw, model);
-  const choice = Array.isArray(parsed["choices"]) ? (parsed["choices"][0] as Record<string, unknown>) : undefined;
+  const choice = Array.isArray(parsed["choices"])
+    ? (parsed["choices"][0] as Record<string, unknown>)
+    : undefined;
   const message = choice?.["message"] as Record<string, unknown> | undefined;
   const text = typeof message?.["content"] === "string" ? message["content"] : "";
 
@@ -228,7 +241,9 @@ function readOpenAi(raw: string, model: string): ChatResponse {
 
 function readAnthropic(raw: string, model: string): ChatResponse {
   const parsed = parseJson(raw, model);
-  const blocks = Array.isArray(parsed["content"]) ? (parsed["content"] as readonly Record<string, unknown>[]) : [];
+  const blocks = Array.isArray(parsed["content"])
+    ? (parsed["content"] as readonly Record<string, unknown>[])
+    : [];
   const text = blocks
     .filter((block) => block["type"] === "text" && typeof block["text"] === "string")
     .map((block) => block["text"] as string)
@@ -253,7 +268,11 @@ function parseJson(raw: string, model: string): Record<string, unknown> {
     }
     return parsed as Record<string, unknown>;
   } catch {
-    throw fromResponse(502, `Provider returned something that is not JSON: ${raw.slice(0, 120)}`, model);
+    throw fromResponse(
+      502,
+      `Provider returned something that is not JSON: ${raw.slice(0, 120)}`,
+      model,
+    );
   }
 }
 
@@ -271,7 +290,7 @@ function numberOf(value: unknown): number {
  * Models wrap JSON in ```json fences, in a sentence, or in both, whatever the
  * prompt says. Refusing to parse anything but a bare object would turn a correct
  * extraction into a `malformed-output` error, and the retry would probably produce
- * the same wrapping ΓÇö so the fence is stripped and the outermost braces are found.
+ * the same wrapping — so the fence is stripped and the outermost braces are found.
  */
 export function extractJson(text: string, model: string): Record<string, unknown> {
   const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(text);
@@ -288,7 +307,11 @@ export function extractJson(text: string, model: string): Record<string, unknown
     }
     return parsed as Record<string, unknown>;
   } catch (error) {
-    throw malformedOutputError(candidate.slice(start, Math.min(end + 1, start + MAX_QUOTED_BODY)), model, error);
+    throw malformedOutputError(
+      candidate.slice(start, Math.min(end + 1, start + MAX_QUOTED_BODY)),
+      model,
+      error,
+    );
   }
 }
 

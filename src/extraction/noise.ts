@@ -1,20 +1,20 @@
 /**
- * Tool-call, diff and stack-trace collapsing ΓÇö 1.1.
+ * Tool-call, diff and stack-trace collapsing — 1.1.
  *
- * Phase 1 ┬╖ sub-phase 1.1
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.1
+ * Phase 1 · sub-phase 1.1
+ * Plan: plan/phase-1-extraction-pipeline.md §1.1
  *
  * ---------------------------------------------------------------------------
  * COLLAPSED FOR EXTRACTION, RETAINED VERBATIM FOR SNIPPETS
  *
  * Those are two different requirements and the design has to satisfy both:
  *
- *   ΓÇó A 400-line `npm install` output between two turns is not decision text.
+ *   • A 400-line `npm install` output between two turns is not decision text.
  *     Left in, it dilutes every cue scan, inflates the chunk count, and gives the
  *     episode segmenter a 400-line "topic" to split on. It gets replaced by a
  *     placeholder in the text the recognisers read.
  *
- *   ΓÇó But a decision CAN cite it ΓÇö "we dropped the ORM because the migration
+ *   • But a decision CAN cite it — "we dropped the ORM because the migration
  *     output was 90 lines of ALTER TABLE" is a real rationale, and the evidence
  *     contract requires that quote to resolve. So the raw characters stay in
  *     `NormalizedTranscript.raw`, and `NoiseRegion.raw` keeps the verbatim text.
@@ -27,7 +27,7 @@
  * ---------------------------------------------------------------------------
  * WHY DETECTION IS CONSERVATIVE
  *
- * A false collapse destroys evidence permanently ΓÇö the recogniser never sees the
+ * A false collapse destroys evidence permanently — the recogniser never sees the
  * text. A missed collapse only costs precision. So every detector here requires
  * either a strong marker or a minimum run length, and anything ambiguous is left
  * alone. The stats are reported so a transcript that collapsed 80% of itself is
@@ -46,8 +46,8 @@ const MIN_RUN_LINES = 4;
 /** A diff or a file listing may be shorter if its marker density is perfect. */
 const MIN_DENSE_RUN_LINES = 3;
 
-const TOOL_OPEN = /^\s*(?:ΓÅ║|ΓùÅ)\s*[A-Za-z][\w.-]*\s*\(/u;
-const TOOL_CONTINUATION = /^\s*ΓÄ┐/u;
+const TOOL_OPEN = /^\s*(?:⏺|●)\s*[A-Za-z][\w.-]*\s*\(/u;
+const TOOL_CONTINUATION = /^\s*⎿/u;
 const TOOL_LABEL = /^\s*(?:Bash|Read|Write|Edit|Grep|Glob|LS|WebFetch|WebSearch|Task|TodoWrite|NotebookEdit|MultiEdit)\s*\(/;
 
 const DIFF_HEADER = /^(?:diff --git|index [0-9a-f]{7,}\.\.|---\s+a\/|\+\+\+\s+b\/|@@\s)/;
@@ -57,7 +57,7 @@ const TRACE_START = /^\s*(?:at\s+[\w$.<>/[\]-]+\s*\(|(?:[\w$.]+\.)?(?:Error|Exce
 const TRACE_FRAME = /^\s*(?:at\s+|File\s+"|Caused by:|\s+from\s+|\tat\s)/;
 const TRACE_PATH = /^\s*(?:node_modules|dist|build|src|\.\/|\.\.\/|\/)[\w./@-]+\.(?:ts|tsx|js|jsx|py|rb|go|rs|java|c|cpp|h)[:(]\d+/;
 
-const FILE_LINE = /^\s*(?:[-*ΓÇó]\s+)?[\w.@/-]+\.(?:ts|tsx|js|jsx|json|md|py|rb|go|rs|css|html|yml|yaml|toml|svg|sh)(?:\s+\(\d+\s+(?:lines?|bytes?)\))?\s*$/;
+const FILE_LINE = /^\s*(?:[-*•]\s+)?[\w.@/-]+\.(?:ts|tsx|js|jsx|json|md|py|rb|go|rs|css|html|yml|yaml|toml|svg|sh)(?:\s+\(\d+\s+(?:lines?|bytes?)\))?\s*$/;
 const FILE_HEADER = /^\s*(?:file listing|files changed|\d+ files? changed)/i;
 
 const INDENTED_OUTPUT = /^\s{2,}\S/;
@@ -89,7 +89,7 @@ interface Run {
 /* Scan                                                                       */
 /* -------------------------------------------------------------------------- */
 
-/** Find the noisy runs. Does not modify anything ΓÇö `collapseNoise` applies them. */
+/** Find the noisy runs. Does not modify anything — `collapseNoise` applies them. */
 export function scanNoise(raw: string): readonly Run[] {
   const lines = linesWithOffsets(raw);
   const runs: Run[] = [];
@@ -200,7 +200,7 @@ export function placeholderFor(kind: NoiseKind, lineCount: number): string {
     "long-output": "command output",
     "file-listing": "file listing",
   };
-  return `\n[${label[kind]} ┬╖ ${lineCount} lines collapsed]\n`;
+  return `\n[${label[kind]} · ${lineCount} lines collapsed]\n`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -322,7 +322,7 @@ function detectFileListing(lines: readonly LineSpan[], at: number): Run | null {
  *
  * The weakest detector, so it has the highest bar: 15 lines minimum, and it stops
  * immediately at anything that looks like a sentence. Command output is what this
- * catches ΓÇö the `npm install` wall, the test-runner summary, the `ls -R`.
+ * catches — the `npm install` wall, the test-runner summary, the `ls -R`.
  */
 function detectLongOutput(lines: readonly LineSpan[], at: number): Run | null {
   const line = lines[at];

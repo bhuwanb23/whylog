@@ -1,27 +1,27 @@
 /**
- * Three-run majority voting ΓÇö 1.8, the LLM path only.
+ * Three-run majority voting — 1.8, the LLM path only.
  *
- * Phase 1 ┬╖ sub-phase 1.8
- * Plan: plan/phase-1-extraction-pipeline.md ┬º1.8
+ * Phase 1 · sub-phase 1.8
+ * Plan: plan/phase-1-extraction-pipeline.md §1.8
  *
  * ---------------------------------------------------------------------------
  * WHY VOTE AT ALL
  *
- * ARGUS used exactly this because single-run consistency was imperfect: ╬▒ 0.64ΓÇô0.88
- * across components (docs/05 ┬º4). A model asked the same question three times at
+ * ARGUS used exactly this because single-run consistency was imperfect: α 0.64–0.88
+ * across components (docs/05 §4). A model asked the same question three times at
  * low temperature does not answer identically, and the components it drops are not
- * random ΓÇö they are the ones it was least sure about. So agreement is a usable
+ * random — they are the ones it was least sure about. So agreement is a usable
  * confidence signal, and disagreement is a usable doubt signal.
  *
- * It costs 3├ù tokens and buys a measurable precision gain. That trade is worth
- * making explicit and TOGGLEABLE, so a demo can run at 1├ù when latency matters and
- * Phase 7 can measure what the 3├ù actually bought.
+ * It costs 3× tokens and buys a measurable precision gain. That trade is worth
+ * making explicit and TOGGLEABLE, so a demo can run at 1× when latency matters and
+ * Phase 7 can measure what the 3× actually bought.
  *
  * ---------------------------------------------------------------------------
  * WHY THE LOCAL ENGINE DOES NOT VOTE
  *
  * It is deterministic. Three runs return three byte-identical results, so voting
- * would cost 3├ù the time and change nothing. `LOCAL_CAPABILITIES.voting` is false
+ * would cost 3× the time and change nothing. `LOCAL_CAPABILITIES.voting` is false
  * and `vote()` short-circuits on a single run, so a caller cannot get this wrong by
  * accident.
  *
@@ -37,17 +37,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Confidence } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import type {
   AlternativeCandidate,
   DecisionCandidate,
   ExtractionResult,
   PremiseCandidate,
 } from "@/ai/types";
-import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import { normalise } from "@/lib/text";
-import { tierOf, type ConfidenceTier } from "./types";
+import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
+import type { Confidence } from "@/types/common";
+import { asConfidence } from "@/types/common";
+import { type ConfidenceTier, tierOf } from "./types";
 
 /** How many runs must agree for full confidence. Two of three, per the plan. */
 export const MAJORITY_OF_THREE = 2;
@@ -56,7 +56,7 @@ export interface VotingOptions {
   /** 1 disables voting: the first run is returned unchanged. */
   readonly runs: 1 | 2 | 3;
   /** Below this temperature the runs stop disagreeing and the vote stops meaning
-   *  anything. Reported, not enforced ΓÇö the caller owns the request. */
+   *  anything. Reported, not enforced — the caller owns the request. */
   readonly temperature: number;
 }
 
@@ -67,7 +67,7 @@ export interface RunAgreement {
   readonly totalRuns: number;
   readonly majority: boolean;
   /** Multiplier applied to the item's own confidence. 1 for a majority, less for
-   *  a singleton ΓÇö and the reduction is enough to move it down a tier, which is
+   *  a singleton — and the reduction is enough to move it down a tier, which is
    *  what "collapsed" means in the review UI. */
   readonly factor: number;
 }
@@ -86,7 +86,7 @@ export interface VoteOutcome {
 }
 
 /** Confidence a singleton is multiplied by. 0.55 lands a 0.7 item at 0.385, which
- *  is below `TIER_MEDIUM_AT` ΓÇö so a singleton always collapses. */
+ *  is below `TIER_MEDIUM_AT` — so a singleton always collapses. */
 export const SINGLETON_FACTOR = 0.55;
 
 /* -------------------------------------------------------------------------- */
@@ -173,7 +173,9 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       if (decisionKeys[0]?.has(decisionKey(candidate))) continue;
       const agreement = agreementFor(decisionKey(candidate), decisionKeys, total);
       if (agreement.presentIn < MAJORITY_OF_THREE) continue;
-      decisions.push(applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })));
+      decisions.push(
+        applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })),
+      );
       decisionAgreement.push(agreement);
     }
 
@@ -182,7 +184,11 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       const agreement = agreementFor(premiseKey(candidate), premiseKeys, total);
       if (agreement.presentIn < MAJORITY_OF_THREE) continue;
       premises.push(
-        applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence, needsReview: true })),
+        applyFactor(candidate, agreement.factor, (c, confidence) => ({
+          ...c,
+          confidence,
+          needsReview: true,
+        })),
       );
       premiseAgreement.push(agreement);
     }
@@ -191,10 +197,14 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       if (alternativeKeys[0]?.has(alternativeKey(candidate))) continue;
       const agreement = agreementFor(alternativeKey(candidate), alternativeKeys, total);
       if (agreement.presentIn < MAJORITY_OF_THREE) continue;
-      alternatives.push(applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })));
+      alternatives.push(
+        applyFactor(candidate, agreement.factor, (c, confidence) => ({ ...c, confidence })),
+      );
       alternativeAgreement.push(agreement);
     }
   }
+
+  const usage = sumUsage(runs);
 
   return {
     result: {
@@ -207,7 +217,7 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       // every candidate any run produced.
       discarded: dedupeDiscards(runs),
       durationMs: runs.reduce((sum, run) => sum + run.durationMs, 0),
-      usage: sumUsage(runs),
+      ...(usage === undefined ? {} : { usage }),
     },
     runsUsed: total,
     decisionAgreement,
@@ -225,7 +235,9 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
 /** variable + canonical value. Stable across rephrasings, which is the point. */
 export function decisionKey(candidate: DecisionCandidate): string {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
   return `D\u0000${candidate.variable}\u0000${normalise(canonical)}`;
 }
 
@@ -238,7 +250,9 @@ export function premiseKey(candidate: PremiseCandidate): string {
 
 export function alternativeKey(candidate: AlternativeCandidate): string {
   const canonical =
-    candidate.variable === "OTHER" ? foldKey(candidate.value) : canonicalValueOf(candidate.variable, candidate.value);
+    candidate.variable === "OTHER"
+      ? foldKey(candidate.value)
+      : canonicalValueOf(candidate.variable, candidate.value);
   return `A\u0000${candidate.decisionRef}\u0000${candidate.variable}\u0000${normalise(canonical)}`;
 }
 
@@ -246,7 +260,11 @@ export function alternativeKey(candidate: AlternativeCandidate): string {
 /* Agreement                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function agreementFor(key: string, keySets: readonly (ReadonlySet<string> | undefined)[], total: number): RunAgreement {
+function agreementFor(
+  key: string,
+  keySets: readonly (ReadonlySet<string> | undefined)[],
+  total: number,
+): RunAgreement {
   let presentIn = 0;
   for (const set of keySets) {
     if (set?.has(key)) presentIn += 1;
@@ -310,7 +328,7 @@ function sumUsage(runs: readonly ExtractionResult[]): ExtractionResult["usage"] 
 
 export function describeVoting(outcome: VoteOutcome): string {
   if (outcome.runsUsed <= 1) {
-    return "voting off ΓÇö one run. Turn it on in Settings to trade 3├ù tokens for run-agreement confidence.";
+    return "voting off — one run. Turn it on in Settings to trade 3× tokens for run-agreement confidence.";
   }
 
   const percent = Math.round(outcome.agreementRate * 100);
@@ -320,18 +338,18 @@ export function describeVoting(outcome: VoteOutcome): string {
   ];
   if (outcome.singletons > 0) {
     parts.push(
-      `${outcome.singletons} appeared in only one run ΓÇö kept at ${SINGLETON_FACTOR} ├ù confidence, which collapses them`,
+      `${outcome.singletons} appeared in only one run — kept at ${SINGLETON_FACTOR} × confidence, which collapses them`,
     );
   }
-  return parts.join(" ┬╖ ");
+  return parts.join(" · ");
 }
 
 /** What a run-agreement record means, for the review UI's per-item explanation. */
 export function describeAgreement(agreement: RunAgreement): string {
   if (agreement.majority) {
-    return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs ΓÇö full confidence`;
+    return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs — full confidence`;
   }
-  return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs ΓÇö confidence ├ù ${SINGLETON_FACTOR}, collapsed by default`;
+  return `found in ${agreement.presentIn} of ${agreement.totalRuns} runs — confidence × ${SINGLETON_FACTOR}, collapsed by default`;
 }
 
 /** The tier a voted item lands in, so callers can check that a singleton really

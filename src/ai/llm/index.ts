@@ -1,7 +1,7 @@
 /**
  * The LLM engine — 1.10, the second path.
  *
- * Phase 1 ú sub-phase 1.10
+ * Phase 1 · sub-phase 1.10
  *
  * ---------------------------------------------------------------------------
  * IT IS NOT A FALLBACK
