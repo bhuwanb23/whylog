@@ -13,7 +13,7 @@
  * works, falling back to the lowest authority rather than guessing who spoke.
  */
 
-import { useMemo, type ReactElement } from "react";
+import { type ReactElement, useMemo } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* Import                                                                     */
@@ -66,7 +66,11 @@ export function ImportForm({
       />
 
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <button type="button" onClick={onImport} disabled={busy !== null || degraded || chars === 0}>
+        <button
+          type="button"
+          onClick={onImport}
+          disabled={busy !== null || degraded || chars === 0}
+        >
           {busy ?? "Extract"}
         </button>
         <span className="faint" style={{ fontSize: 12 }}>

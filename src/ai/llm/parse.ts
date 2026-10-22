@@ -171,6 +171,10 @@ function toDecision(
     .map((ref) => Number(ref))
     .filter((ref) => Number.isInteger(ref) && ref >= 0 && ref < premiseCount);
 
+  // The engine is not needed to build a decision candidate: the seam stamps it
+  // on the node. Kept in the signature so the three `to*` builders agree.
+  void engine;
+
   const alternativeRefs = arrayOf(decision["alternativeRefs"])
     .map((ref) => Number(ref))
     .filter((ref) => Number.isInteger(ref) && ref >= 0);
