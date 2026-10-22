@@ -11,8 +11,8 @@
  * unreviewed" only holds while the reason for a refusal is readable.
  */
 
-import type { CommitCounts, CommitFailure } from "./commit";
 import type { ReviewAction } from "./types";
+import type { CommitCounts, CommitFailure } from "./commit";
 
 /** What the commit wrote, ending with the number that matters most: how many
  *  justifications carry an OUT-list, because that is how many decisions from this
@@ -24,12 +24,9 @@ export function describeCounts(counts: CommitCounts): string {
     `${counts.justifications} justification${counts.justifications === 1 ? "" : "s"}`,
   ];
   if (counts.alternatives > 0) {
-    parts.push(
-      `${counts.alternatives} rejected alternative${counts.alternatives === 1 ? "" : "s"}`,
-    );
+    parts.push(`${counts.alternatives} rejected alternative${counts.alternatives === 1 ? "" : "s"}`);
   }
-  if (counts.discards > 0)
-    parts.push(`${counts.discards} discard${counts.discards === 1 ? "" : "s"}`);
+  if (counts.discards > 0) parts.push(`${counts.discards} discard${counts.discards === 1 ? "" : "s"}`);
 
   const tail =
     counts.nonMonotonic > 0
@@ -51,7 +48,7 @@ export function describeFailure(failure: CommitFailure): string {
     case "unreviewed":
       return [
         `${failure.keys.length} item${failure.keys.length === 1 ? "" : "s"} have no review action, and nothing enters the log unreviewed.`,
-        "Decide each one, or discard the unreviewed ones explicitly.",
+        `Decide each one, or discard the unreviewed ones explicitly.`,
         `${failure.keys.slice(0, 6).join(", ")}${failure.keys.length > 6 ? ", …" : ""}`,
       ].join(" ");
     case "empty":
@@ -75,10 +72,6 @@ export function describeActions(actions: readonly (ReviewAction | null)[]): stri
 /** The sentence shown while a commit is in flight. Committing appends a batch and
  *  re-folds, which at a few hundred events is imperceptible but not instant, and a
  *  spinner with no words reads as a hang. */
-export function describeInProgress(counts: {
-  decisions: number;
-  premises: number;
-  events: number;
-}): string {
+export function describeInProgress(counts: { decisions: number; premises: number; events: number }): string {
   return `Appending ${counts.events} events for ${counts.decisions} decisions and ${counts.premises} premises…`;
 }

@@ -36,7 +36,8 @@ assumptions still hold.
 | **Phase 0 — substrate** | ✅ Log · fold · bi-temporal · identity · hash chain · persistence · portability · ontology · engine seam · store · boot |
 | **Phase 1 — extraction** | ✅ Normalise · segment · cue scan · decisions · **premises and the OUT-list** · alternatives · provenance · snippet validation · identity resolution · confidence tiers · review queue · commit · both engines |
 | **Phase 2 — truth maintenance ★** | ✅ **133 source files, ~39.8k lines.** Assertion entry point (four input kinds, one function) · JTMS labeller with fixpoint and `UNFOUNDED` · **gate (a) structural** · **gate (b) semantic** · **gate (c) premise invalidation ★** · dependency-directed backtracking · nogoods · cascade with the independent-support stop · entrenchment with the EE3 cap · Hansson non-prioritized screening · seven-part proposals · audit trail on learned time · the nine-step REVISE cycle · the Reasoning view |
-| **Phase 3 — retrieval & the evidence contract ★** | ✅ **155 source files, ~45.8k lines.** Five index levels (L1 statements · **L2 HyPE inverted questions, built at extraction time with zero extra LLM calls** · L3 BM25 over the ontology alias table · L4 structural · L5 premises) · **RRF fusion at k = 60, deterministic and score-agnostic** · two-stage reranking with **all three engines present** (LLM listwise · local five-weight · the downloaded cross-encoder documented as unavailable rather than faked) · **the five-verdict contradiction classifier with invariant I3 enforced — similarity selects candidates and is then discarded** · **the evidence contract: ó3 bounded searches, citations valid only if they resolve in-run, "insufficient evidence" as a first-class answer** · groundedness computed as \|claims with ≥1 resolving citation\| / \|total claims\| · **citation expansion showing premises with live labels, excluded conditions, rejected alternatives, guards and provenance** · **rejected-alternative pre-emption** · gate (b) wired to a real retriever · the Ask view, keyless |
+| **Phase 3 — retrieval & the evidence contract ★** | ✅ **155 source files, ~45.8k lines.** Five index levels (L1 statements · **L2 HyPE inverted questions, built at extraction time with zero extra LLM calls** · L3 BM25 over the ontology alias table · L4 structural · L5 premises) · **RRF fusion at k = 60, deterministic and score-agnostic** · two-stage reranking with **all three engines present** (LLM listwise · local five-weight · the downloaded cross-encoder documented as unavailable rather than faked) · **the five-verdict contradiction classifier with invariant I3 enforced — similarity selects candidates and is then discarded** · **the evidence contract: ≤3 bounded searches, citations valid only if they resolve in-run, "insufficient evidence" as a first-class answer** · groundedness computed as \|claims with ≥1 resolving citation\| / \|total claims\| · **citation expansion showing premises with live labels, excluded conditions, rejected alternatives, guards and provenance** · **rejected-alternative pre-emption** · gate (b) wired to a real retriever · the Ask view, keyless |
+| **Phase 4 — executable decision guards ★** | ✅ **186 source files, ~54.3k lines.** Eight guard kinds ordered by determinism · **templates that COMPILE a decision into checks** — five variables specifically, all fifteen generically · guards **proposed, never auto-installed** · `unverifiable` as a visible state, never a silent skip · **the in-browser interpreter over a pasted virtual project** (no shell, no network, no filesystem) with word-boundary matching and glob scoping · **skips are never passes** · all five health metrics with the **baseline pattern and the ratchet** · **★ guards as evidence — a failure enters `REVISE()` through the same entry point a transcript uses, and `implementation_cost` becomes a measurement rather than a guess** · CI runner + workflow with the rich failure message · the Guards view, keyless |
 | Phases 3–7 | ⬜ Not started |
 | Tests | ⬜ Deliberately deferred — see [`notes/PHASE-0-NOTES.md`](notes/PHASE-0-NOTES.md) and [`notes/PHASE-1-NOTES.md`](notes/PHASE-1-NOTES.md) |
 
@@ -64,7 +65,7 @@ Nothing has been installed, built, typechecked or run in the authoring environme
 `npm install && npm run verify` locally and expect a first pass of type errors —
 [`notes/PHASE-1-NOTES.md` §6](notes/PHASE-1-NOTES.md) lists the seven known gaps.
 
-`npm run check:structure` passes: **155 source files, 45,818 lines**, imports resolve, every named
+`npm run check:structure` passes: **186 source files, 54,336 lines**, imports resolve, every named
 import and re-export exists, zero import cycles across 503 internal edges, brackets balance, and the
 event vocabulary agrees with the fold.
 
@@ -128,17 +129,17 @@ Non-negotiable across every phase. A module that violates one is wrong, not clev
 
 ```
 ┌─ L5  PRESENTATION ───────────────────────────────────────────────────────────┐
-³   Timeline · Ask · Health · Premise Lattice · Time Machine · Export          ³
+│   Timeline · Ask · Health · Premise Lattice · Time Machine · Export          │
 ├─ L4  SYNTHESIS ──────────────────────────────────────────────────────────────┤
-³   answers with evidence verdicts · export compiler · guard synthesis         ³
+│   answers with evidence verdicts · export compiler · guard synthesis         │
 ├─ L3  RETRIEVAL ──────────────────────────────────────────────────────────────┤
-³   4-level index → RRF → rerank → structural gate → evidence contract         ³
+│   4-level index → RRF → rerank → structural gate → evidence contract         │
 ├─ L2  REASONING   ← the differentiating layer ────────────────────────────────┤
-³   JTMS labeller · 3-gate detector · backtracking · cascade · entrenchment    ³
+│   JTMS labeller · 3-gate detector · backtracking · cascade · entrenchment    │
 ├─ L1  EXTRACTION ─────────────────────────────────────────────────────────────┤
-³   transcript → decisions + PREMISES + alternatives + provenance              ³
+│   transcript → decisions + PREMISES + alternatives + provenance              │
 ├─ L0  SUBSTRATE ──────────────────────────────────────────────────────────────┤
-³   append-only bi-temporal event log · hash chain · ontology · persistence    ³
+│   append-only bi-temporal event log · hash chain · ontology · persistence    │
 └──────────────────────────────────────────────────────────────────────────────┘
         THE AI SEAM (vertical): every L1–L4 operation has an LLM and a
         LOCAL implementation, selected at runtime, badged, never mixed silently

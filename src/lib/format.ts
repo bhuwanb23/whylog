@@ -28,17 +28,6 @@ export function parseISO(value: ISODateString | string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/**
- * A monotonic-ish millisecond clock, safe where `performance` is not.
- *
- * The engines time their own operations to report `durationMs`, and `performance`
- * does not exist in every environment a test may run in. Falling back to
- * `Date.now()` keeps the number meaningful rather than crashing the engine.
- */
-export function performanceSafeNow(): number {
-  return typeof performance !== "undefined" ? performance.now() : Date.now();
-}
-
 /** 2026-10-03 */
 export function formatDate(value: ISODateString | string): string {
   const d = parseISO(value);
@@ -153,7 +142,9 @@ export function heading(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): string {
 /** Join non-empty lines, dropping blanks — keeps exported files inside the
  *  ~200-line budget without accidental gaps. */
 export function joinLines(lines: readonly (string | null | undefined)[]): string {
-  return lines.filter((l): l is string => typeof l === "string" && l.trim().length > 0).join("\n");
+  return lines
+    .filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+    .join("\n");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -165,4 +156,25 @@ export function truncate(input: string, max: number): string {
   const cut = input.slice(0, max - 1);
   const lastSpace = cut.lastIndexOf(" ");
   return `${lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut}…`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Monotonic clock                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A millisecond clock for measuring durations, safe outside a browser.
+ *
+ * `performance.now()` where it exists, `Date.now()` otherwise. Duration measurements are used to
+ * report how long an embed, a rerank, a guard evaluation or a reasoning run took, and every one
+ * of those modules needs the same fallback — three private copies would eventually disagree, and
+ * a duration measured against two different clocks is a negative number.
+ *
+ * Monotonic rather than wall-clock on purpose: `Date.now()` can jump backwards if the system
+ * clock is corrected mid-run, which would report a negative duration for work that took time.
+ */
+export function monotonicNow(): number {
+  return typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
 }

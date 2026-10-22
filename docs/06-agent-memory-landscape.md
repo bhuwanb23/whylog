@@ -62,16 +62,16 @@ WhyLog should be explicitly **compatible** with every system in §1, and the pit
 
 ```
    ┌─────────────────────────────────────────────────────────────┐
-   ³  Your coding agent (Claude Code · Cursor · Codex · Copilot) ³
+   │  Your coding agent (Claude Code · Cursor · Codex · Copilot) │
    └─────────────────────────────────────────────────────────────┘
              ▲                                     ▲
-             ³ operational context                 ³ decision context
-             ³ (what happened)                     ³ (what is true)
+             │ operational context                 │ decision context
+             │ (what happened)                     │ (what is true)
    ┌─────────┴──────────┐              ┌───────────┴───────────┐
-   ³  agentmemory / Mem0³              ³       WhyLog          ³
-   ³  Letta / Zep       ³              ³  premises · cascade   ³
-   ³  hooks, decay,     ³              ³  guards · compiled    ³
-   ³  recall, injection ³              ³  agent-readable rules ³
+   │  agentmemory / Mem0│              │       WhyLog          │
+   │  Letta / Zep       │              │  premises · cascade   │
+   │  hooks, decay,     │              │  guards · compiled    │
+   │  recall, injection │              │  agent-readable rules │
    └────────────────────┘              └───────────────────────┘
 ```
 

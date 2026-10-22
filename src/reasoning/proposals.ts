@@ -37,9 +37,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import { formatProposalId } from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Confidence, DecisionId, EventId, PremiseId, SourceSpan } from "@/types/common";
+import type {
+  Confidence,
+  DecisionId,
+  EventId,
+  PremiseId,
+  SourceSpan,
+} from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { Decision, Premise } from "@/types/domain";
 import type {
@@ -51,6 +55,8 @@ import type {
   RevisionProposal,
 } from "@/types/reasoning";
 import { entrenchmentBand } from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import { formatProposalId } from "@/lib/ids";
 import type { GateFinding } from "./gates";
 
 /* -------------------------------------------------------------------------- */
@@ -114,7 +120,7 @@ export interface ProposalEvidence {
 export function buildProposal(input: ProposalInput): RevisionProposal {
   const { state, finding } = input;
 
-  const _decision: Decision | undefined = state.decisions.get(finding.decisionId);
+  const decision: Decision | undefined = state.decisions.get(finding.decisionId);
   const failedPremise: Premise | undefined =
     finding.premiseId === null ? undefined : state.premises.get(finding.premiseId);
 
@@ -123,7 +129,7 @@ export function buildProposal(input: ProposalInput): RevisionProposal {
     failedPremise?.text ??
     (failedPremiseId === null
       ? "No single premise failed — the conflict is between two decisions."
-      : (state.premises.get(failedPremiseId)?.text ?? failedPremiseId));
+      : state.premises.get(failedPremiseId)?.text ?? failedPremiseId);
 
   return {
     id: formatProposalId(input.proposalNumber),
@@ -240,12 +246,11 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   }
 
   const a = state.decisions.get(finding.decisionId);
-  const b =
-    finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
+  const b = finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
 
   const quote =
     b === undefined
-      ? (a?.provenance.snippet.text ?? finding.explanation)
+      ? a?.provenance.snippet.text ?? finding.explanation
       : [a?.provenance.snippet.text ?? "", b.provenance.snippet.text ?? ""]
           .filter((part) => part.length > 0)
           .join("\n—\n");
@@ -271,10 +276,9 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
  */
 export function renderProposal(state: GraphState, proposal: RevisionProposal): string {
   const decision = state.decisions.get(proposal.unsoundDecisionId);
-  const heading =
-    decision === undefined
-      ? proposal.unsoundDecisionId
-      : `${proposal.unsoundDecisionId} — ${decision.statement}`;
+  const heading = decision === undefined
+    ? proposal.unsoundDecisionId
+    : `${proposal.unsoundDecisionId} — ${decision.statement}`;
 
   const lines: string[] = [`## ${heading}`, ""];
 
@@ -333,7 +337,9 @@ function describeCascadeOf(cascade: CascadeResult): string {
     parts.push(`Kept independent support: ${cascade.survivors.join(", ")}.`);
   }
   if (cascade.truncated) {
-    parts.push(`Stopped at the depth cap with ${cascade.potentiallyAffectedBeyondCap} unexamined.`);
+    parts.push(
+      `Stopped at the depth cap with ${cascade.potentiallyAffectedBeyondCap} unexamined.`,
+    );
   }
   return parts.join(" ");
 }

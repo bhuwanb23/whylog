@@ -27,32 +27,18 @@
  * ---------------------------------------------------------------------------
  */
 
-import { performanceSafeNow } from "@/lib/format";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import type { ClassificationResult } from "@/types/retrieval";
-import {
-  DEFAULT_MODELS,
-  type EngineConfig,
-  LOCAL_DIMENSIONS,
-  type ProviderId,
-  readConfig,
-} from "../config";
+/* `ProposedGuard` is the shape a synthesis returns, and `validate` is the guard that stops a
+ * hallucinated spec reaching a guard record: it switches on `kind`, rebuilds the spec field by
+ * field, and returns null for anything that does not fit. Nothing is repaired, because a repaired
+ * spec is a check nobody proposed and could evaluate to `pass` — the most dangerous result a
+ * guard can give. */
+import type { ProposedGuard } from "@/types/guards";
+import { validate } from "@/guards/synth/llm";
 import { EngineError, unsupportedError } from "../errors";
-import { embedBatch } from "../local/embed";
 import {
-  type LlmAlternative,
-  type LlmDecision,
-  type LlmDiscard,
-  type LlmExtraction,
-  type LlmPremise,
-  SYSTEM_PROMPT,
-  needsChunking,
-  userPrompt,
-} from "../prompts/extraction";
-import { type ChatMessage, chat } from "../providers/openai-compatible";
-import { registerEngine } from "../registry";
-import {
+  llmCapabilities,
   type ClassificationRequest,
   type CompositionRequest,
   type CompositionResult,
@@ -65,9 +51,33 @@ import {
   type RerankRequest,
   type RerankResult,
   type WhyLogEngine,
-  llmCapabilities,
 } from "../types";
+import type { ClassificationResult } from "@/types/retrieval";
+import {
+  DEFAULT_MODELS,
+  LOCAL_DIMENSIONS,
+  readConfig,
+  type EngineConfig,
+  type ProviderId,
+} from "../config";
+import { registerEngine } from "../registry";
+/* `performanceSafeNow` was called in six places in this file but declared only in
+ * ../local/index.ts, where it is private — so none of those calls resolved. It now lives in
+ * lib/format.ts as `monotonicNow` and is aliased here to keep the call sites unchanged. */
+import { monotonicNow as performanceSafeNow } from "@/lib/format";
+import { embedBatch } from "../local/embed";
+import { chat, extractJson, type ChatMessage } from "../providers/openai-compatible";
+import {
+  EMPTY_LLM_EXTRACTION,
+  PROMPT_CHAR_BUDGET,
+  SYSTEM_PROMPT,
+  needsChunking,
+  userPrompt,
+  type LlmExtraction,
+} from "../prompts/extraction";
 import { readExtraction, splitForPrompt, toExtractionResult } from "./parse";
+import { chunkTurns } from "@/extraction/chunking";
+import { normaliseTranscript } from "@/extraction/normalizer";
 
 export interface LlmEngineOptions {
   readonly config: EngineConfig;
@@ -80,13 +90,9 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
   const requireKey = (): string => {
     if (config.apiKey === null || config.apiKey.length === 0) {
-      throw new EngineError(
-        "no-key",
-        "No API key is saved. Add one in Settings, or switch to the local engine.",
-        {
-          engine: id.model,
-        },
-      );
+      throw new EngineError("no-key", "No API key is saved. Add one in Settings, or switch to the local engine.", {
+        engine: id.model,
+      });
     }
     return config.apiKey;
   };
@@ -113,12 +119,12 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
       let promptTokens = 0;
       let completionTokens = 0;
-      // Mutable while merging: a transcript is split into chunks and each
-      // chunk's candidates are appended.
-      const decisions: LlmDecision[] = [];
-      const premises: LlmPremise[] = [];
-      const alternatives: LlmAlternative[] = [];
-      const discarded: LlmDiscard[] = [];
+      const merged: LlmExtraction = {
+        decisions: [],
+        premises: [],
+        alternatives: [],
+        discarded: [],
+      };
 
       for (const piece of pieces) {
         if (request.signal?.aborted) {
@@ -144,22 +150,13 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
         completionTokens += response.completionTokens;
 
         const parsed = readExtraction(response.text, id.model);
-        decisions.push(...parsed.decisions);
-        premises.push(...parsed.premises);
-        alternatives.push(...parsed.alternatives);
-        discarded.push(...parsed.discarded);
+        merged.decisions.push(...parsed.decisions);
+        merged.premises.push(...parsed.premises);
+        merged.alternatives.push(...parsed.alternatives);
+        merged.discarded.push(...parsed.discarded);
       }
 
-      const merged: LlmExtraction = { decisions, premises, alternatives, discarded };
-
-      return toExtractionResult(
-        merged,
-        request,
-        id,
-        performanceSafeNow() - started,
-        promptTokens,
-        completionTokens,
-      );
+      return toExtractionResult(merged, request, id, performanceSafeNow() - started, promptTokens, completionTokens);
     },
 
     /* ---------------- classification: Phase 2 ---------------- */
@@ -244,18 +241,151 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
     /* ---------------- guards: Phase 4 ---------------- */
 
+    /**
+     * Guard synthesis, for the decisions the templates miss.
+     *
+     * The model is asked for strict JSON and every proposal is validated before it is returned:
+     * unknown kind, empty package, empty glob or empty pattern is dropped rather than repaired.
+     * A repaired spec is a check nobody proposed, and a guard that silently evaluates something
+     * other than what was asked for can return `pass` — the most dangerous result it could give.
+     *
+     * Everything from here is marked `requiresReview` and capped in confidence by
+     * `guards/synth/llm.ts`. A model-proposed guard is never `blocking` until a human reads it,
+     * because blocking fails a build and a guess should not be able to do that.
+     */
     synthesizeGuards: async (request: GuardSynthesisRequest): Promise<GuardSynthesisResult> => {
-      void request;
+      /* No `started` clock here: `GuardSynthesisResult` carries no duration, and measuring one
+       * nothing reads would be a number with no consumer. */
+      const apiKey = requireKey();
+
+      const response = await chat(provider, apiKey, {
+        model: config.model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You compile an architectural decision into machine-checkable guards. Reply with ONLY a JSON array. Each element has: kind (one of dependency_present, dependency_absent, path_glob_exists, path_glob_absent, string_in_files, string_absent_in_files, command_exit_zero, llm_judge); the fields that kind needs (package, or glob, or pattern+glob, or command, or rubric+scopeGlobs); severity (blocking|warning); rationale (one sentence saying WHY this check verifies that decision, naming the decision id). Prefer deterministic kinds; use llm_judge only if nothing else can express the decision. Propose at most 3. If you cannot describe what a violation looks like, reply with [].",
+          },
+          { role: "user", content: guardSynthesisPrompt(request) },
+        ],
+        temperature: 0.1,
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+      });
+
+      const parsed = parseGuardProposals(response.text);
+
+      if (parsed.length === 0) {
+        return {
+          guards: [],
+          // Stated rather than omitted: a decision with no synthesizable guard is
+          // marked unverifiable and SHOWN, because a compliance score computed only
+          // over the decisions that happened to be checkable flatters itself.
+          unverifiableReason:
+            "The model proposed no check for " + request.variable + " = " + request.value +
+            ", which means it could not describe what a violation would look like. That is the literature's own test for an unverifiable decision, and it is reported rather than filled in with a guess.",
+          engine: id,
+        };
+      }
+
+      const guards: ProposedGuard[] = [];
+      for (const proposal of parsed) {
+        const validated = validate(proposal);
+        if (validated === null) continue;
+        guards.push({ ...validated, generatedBy: "llm", requiresReview: true });
+      }
+
       return {
-        guards: [],
-        // Stated rather than omitted: a decision with no synthesizable guard is
-        // marked unverifiable and SHOWN, because a compliance score computed only
-        // over the decisions that happened to be checkable flatters itself.
-        unverifiableReason: "LLM guard synthesis arrives in Phase 4.",
+        guards,
+        ...(guards.length > 0
+          ? {}
+          : {
+              unverifiableReason:
+                "The model proposed " + parsed.length + " guard(s) but none survived validation — each had an unknown kind or an empty package, glob or pattern. Nothing was repaired, because a repaired spec is a check nobody proposed.",
+            }),
         engine: id,
       };
     },
   };
+}
+
+function guardSynthesisPrompt(request: GuardSynthesisRequest): string {
+  const lines = [
+    "Decision " + request.decisionId + ": " + request.statement,
+    "Variable: " + request.variable,
+    "Chosen value: " + request.value,
+  ];
+
+  if (request.appliesTo.length > 0) lines.push("Governs these paths: " + request.appliesTo.join(", "));
+
+  if (request.premises.length > 0) {
+    lines.push("Rests on:");
+    for (const premise of request.premises) lines.push("  - " + premise.id + " " + premise.text);
+  }
+
+  const rejected = request.rejected ?? [];
+  if (rejected.length > 0) {
+    lines.push("Rejected alternatives (each is a guard waiting to happen — the thing turned down should be absent):");
+    for (const entry of rejected) {
+      lines.push("  - " + entry.value + (entry.whyRejected === undefined ? "" : ' — "' + entry.whyRejected + '"'));
+    }
+  }
+
+  lines.push("", "Reply with the JSON array only.");
+  return lines.join("\n");
+}
+
+/**
+ * Pull a JSON array of proposals out of a model response.
+ *
+ * Tolerates the three shapes models actually return: bare JSON, JSON in a ```json fence, and
+ * JSON with prose around it. Anything that cannot be parsed yields an empty list, which the
+ * caller turns into an `unverifiableReason` — a parse failure is reported, never papered over
+ * with a plausible-looking guard.
+ */
+function parseGuardProposals(text: string): readonly ProposedGuard[] {
+  const candidates: string[] = [];
+
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
+  if (fenced?.[1] !== undefined) candidates.push(fenced[1]);
+  candidates.push(text);
+
+  const bracketed = /\[[\s\S]*\]/.exec(text);
+  if (bracketed?.[0] !== undefined) candidates.push(bracketed[0]);
+
+  for (const candidate of candidates) {
+    let value: unknown;
+    try {
+      value = JSON.parse(candidate.trim());
+    } catch {
+      continue;
+    }
+
+    if (!Array.isArray(value)) continue;
+
+    const out: ProposedGuard[] = [];
+    for (const entry of value) {
+      if (entry === null || typeof entry !== "object") continue;
+      const record = entry as Record<string, unknown>;
+      if (typeof record.kind !== "string") continue;
+
+      /* The whole record is passed through as the spec, because which fields a spec has depends
+       * on `kind` and this function does not know the kind yet. `validate` is what narrows it:
+       * it switches on `kind`, rebuilds the spec field by field with the right type, and returns
+       * null for anything that does not fit. Nothing reaches a guard unvalidated. */
+      out.push({
+        spec: record as unknown as ProposedGuard["spec"],
+        rationale: typeof record.rationale === "string" ? record.rationale : "",
+        severity: record.severity === "blocking" ? "blocking" : "warning",
+        generatedBy: "llm",
+        confidence: asConfidence(typeof record.confidence === "number" ? record.confidence : 0.4),
+        requiresReview: true,
+      });
+    }
+
+    if (out.length > 0) return out;
+  }
+
+  return [];
 }
 
 function compositionPrompt(request: CompositionRequest): string {
@@ -265,19 +395,14 @@ function compositionPrompt(request: CompositionRequest): string {
   const material = request.material
     .map((fact) => {
       const premises = fact.premises.length > 0 ? ` [given: ${fact.premises.join("; ")}]` : "";
-      const rationale =
-        fact.rationale !== undefined && fact.rationale.length > 0
-          ? ` — because ${fact.rationale}`
-          : "";
+      const rationale = fact.rationale !== undefined && fact.rationale.length > 0 ? ` — because ${fact.rationale}` : "";
       return `- ${fact.decisionId} (${fact.label}): ${fact.statement}${premises}${rationale}`;
     })
     .join("\n");
 
   return [
     `Write the "${request.kind}" section.`,
-    request.question !== undefined && request.question.length > 0
-      ? `Question: ${request.question}`
-      : "",
+    request.question !== undefined && request.question.length > 0 ? `Question: ${request.question}` : "",
     request.maxLengthChars !== undefined ? `At most ${request.maxLengthChars} characters.` : "",
     "",
     "MATERIAL:",

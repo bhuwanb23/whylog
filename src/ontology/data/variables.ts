@@ -109,14 +109,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
       "local-only",
     ],
     typicalPremises: ["deployment", "budget", "scale", "external"],
-    typicalGlobs: [
-      "vercel.json",
-      "netlify.toml",
-      "wrangler.toml",
-      "fly.toml",
-      "Dockerfile",
-      ".github/workflows/**",
-    ],
+    typicalGlobs: ["vercel.json", "netlify.toml", "wrangler.toml", "fly.toml", "Dockerfile", ".github/workflows/**"],
     verifiableByTemplate: true,
   },
 
@@ -149,17 +142,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     variable: "LANGUAGE",
     label: "Language",
     description: "Implementation language, dialect and version floor.",
-    commonValues: [
-      "typescript",
-      "javascript",
-      "python",
-      "go",
-      "rust",
-      "ruby",
-      "java",
-      "kotlin",
-      "swift",
-    ],
+    commonValues: ["typescript", "javascript", "python", "go", "rust", "ruby", "java", "kotlin", "swift"],
     typicalPremises: ["team", "capability", "requirement"],
     typicalGlobs: ["tsconfig*.json", "package.json", "pyproject.toml", "go.mod", "Cargo.toml"],
     verifiableByTemplate: true,
@@ -169,17 +152,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     variable: "STORAGE",
     label: "Blob & file storage",
     description: "Where files and large objects live — distinct from the database.",
-    commonValues: [
-      "s3",
-      "r2",
-      "gcs",
-      "azure-blob",
-      "local-fs",
-      "indexeddb",
-      "localstorage",
-      "uploadthing",
-      "none",
-    ],
+    commonValues: ["s3", "r2", "gcs", "azure-blob", "local-fs", "indexeddb", "localstorage", "uploadthing", "none"],
     typicalPremises: ["budget", "scale", "deployment", "external"],
     typicalGlobs: ["src/storage/**", "src/**/uploads/**", "src/lib/storage*"],
     verifiableByTemplate: true,
@@ -189,17 +162,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     variable: "API_STYLE",
     label: "API style",
     description: "The contract between client and server.",
-    commonValues: [
-      "rest",
-      "graphql",
-      "trpc",
-      "grpc",
-      "rpc",
-      "websocket",
-      "sse",
-      "file-based",
-      "none",
-    ],
+    commonValues: ["rest", "graphql", "trpc", "grpc", "rpc", "websocket", "sse", "file-based", "none"],
     typicalPremises: ["team", "capability", "requirement", "scale"],
     typicalGlobs: ["src/api/**", "src/routes/**", "src/server/**", "src/trpc/**", "openapi.*"],
     verifiableByTemplate: false,
@@ -209,18 +172,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     variable: "STATE",
     label: "Client state",
     description: "How client-side state is held and synced.",
-    commonValues: [
-      "zustand",
-      "redux",
-      "jotai",
-      "recoil",
-      "mobx",
-      "valtio",
-      "context",
-      "signals",
-      "url",
-      "local-component",
-    ],
+    commonValues: ["zustand", "redux", "jotai", "recoil", "mobx", "valtio", "context", "signals", "url", "local-component"],
     typicalPremises: ["capability", "team", "requirement"],
     typicalGlobs: ["src/store/**", "src/stores/**", "src/state/**", "src/hooks/**"],
     verifiableByTemplate: true,
@@ -232,13 +184,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     description: "Test runner, and what is worth testing at all.",
     commonValues: ["vitest", "jest", "playwright", "cypress", "mocha", "pytest", "go-test", "none"],
     typicalPremises: ["time", "team", "requirement"],
-    typicalGlobs: [
-      "tests/**",
-      "**/*.test.*",
-      "**/*.spec.*",
-      "playwright.config.*",
-      "vitest.config.*",
-    ],
+    typicalGlobs: ["tests/**", "**/*.test.*", "**/*.spec.*", "playwright.config.*", "vitest.config.*"],
     verifiableByTemplate: true,
   },
 
@@ -261,13 +207,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
       "none",
     ],
     typicalPremises: ["time", "capability", "requirement"],
-    typicalGlobs: [
-      "src/components/**",
-      "src/ui/**",
-      "src/styles/**",
-      "tailwind.config.*",
-      "src/index.css",
-    ],
+    typicalGlobs: ["src/components/**", "src/ui/**", "src/styles/**", "tailwind.config.*", "src/index.css"],
     verifiableByTemplate: true,
   },
 
@@ -275,16 +215,7 @@ export const VARIABLE_META: Readonly<Record<DecisionVariable, VariableMeta>> = {
     variable: "PAYMENTS",
     label: "Payments",
     description: "Billing provider, or the decision not to charge.",
-    commonValues: [
-      "stripe",
-      "paddle",
-      "lemonsqueezy",
-      "gumroad",
-      "braintree",
-      "paypal",
-      "crypto",
-      "none",
-    ],
+    commonValues: ["stripe", "paddle", "lemonsqueezy", "gumroad", "braintree", "paypal", "crypto", "none"],
     typicalPremises: ["external", "budget", "requirement", "team"],
     typicalGlobs: ["src/billing/**", "src/payments/**", "src/**/stripe*", "app/api/webhooks/**"],
     verifiableByTemplate: true,
@@ -398,9 +329,8 @@ export const TYPED_VARIABLE_COUNT = TYPED_VARIABLES.length;
 
 /** Slots whose decisions can usually be checked mechanically. Drives the
  *  verifiable-coverage metric and the honest "unverifiable" badge. */
-export const TEMPLATE_VERIFIABLE_VARIABLES: readonly DecisionVariable[] = VARIABLE_ORDER.filter(
-  (v) => VARIABLE_META[v].verifiableByTemplate,
-);
+export const TEMPLATE_VERIFIABLE_VARIABLES: readonly DecisionVariable[] =
+  VARIABLE_ORDER.filter((v) => VARIABLE_META[v].verifiableByTemplate);
 
 export function variableMeta(variable: DecisionVariable): VariableMeta {
   return VARIABLE_META[variable];

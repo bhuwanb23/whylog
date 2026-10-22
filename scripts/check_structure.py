@@ -204,14 +204,10 @@ def value_expected(src: str, i: int, prev: str) -> bool:
 
 
 def rel(path: pathlib.Path) -> str:
-    # POSIX separators, always. The allowlists below name files with forward
-    # slashes ("src/ai/config.ts"), and on Windows `str(relative_to(...))` gives
-    # backslashes — so every allowlist entry silently fails to match and every
-    # exempted file gets reported as a violation.
     try:
-        return path.relative_to(ROOT).as_posix()
+        return str(path.relative_to(ROOT))
     except ValueError:
-        return path.as_posix()
+        return str(path)
 
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:
@@ -272,8 +268,65 @@ IMPORT_BLOCK = re.compile(r"import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+\"([^\"]+)
 
 
 def _strip_comments(src: str) -> str:
-    """Drop block comments so prose mentioning `from "@/x"` is not read as an edge."""
-    return re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    r"""Drop line and block comments, WITHOUT touching string literals.
+
+    A regex substitution cannot do this. Real source contains ``"postgres://"`` and globs like
+    ``"**/*serverless.yml"``, and a naive ``/\*.*?\*/`` strip treats the ``/*`` inside that glob
+    as the start of a block comment and eats everything up to the next ``*/`` — silently
+    deleting the ``export function`` declaration that followed it. The checker then reports a
+    missing export that is plainly there, which is worse than reporting nothing: it sends you
+    looking for a bug in the source instead of in the checker.
+
+    So this is a character scanner that tracks whether it is inside a string. Template literals
+    are handled without parsing ``${}`` interpolation, because an interpolation cannot contain
+    an ``export`` and the scanner only has to avoid mistaking string contents for code.
+    """
+    out: list[str] = []
+    i = 0
+    n = len(src)
+    quote: str | None = None
+
+    while i < n:
+        ch = src[i]
+
+        # --- inside a string: consume until the matching close, honouring escapes ---
+        if quote is not None:
+            out.append(ch)
+            if ch == "\\" and i + 1 < n:
+                out.append(src[i + 1])
+                i += 2
+                continue
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+
+        # --- entering a string ---
+        if ch in "\"'`":
+            quote = ch
+            out.append(ch)
+            i += 1
+            continue
+
+        # --- line comment ---
+        if ch == "/" and i + 1 < n and src[i + 1] == "/":
+            while i < n and src[i] != "\n":
+                i += 1
+            continue
+
+        # --- block comment: replaced by a space so adjacent tokens do not join ---
+        if ch == "/" and i + 1 < n and src[i + 1] == "*":
+            i += 2
+            while i + 1 < n and not (src[i] == "*" and src[i + 1] == "/"):
+                i += 1
+            i = min(n, i + 2)
+            out.append(" ")
+            continue
+
+        out.append(ch)
+        i += 1
+
+    return "".join(out)
 
 
 def declared_exports(path: pathlib.Path, seen: set | None = None) -> set:

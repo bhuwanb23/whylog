@@ -188,7 +188,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `backtracking.ts` | Dependency-directed backtracking to assumption nodes; depth bound | 2.6 |
 | `nogoods.ts` | Nogood recording, display text, and re-assertion blocking | 2.6 |
 | `cascade.ts` | Forward propagation; **stop at independent support**; depth cap | 2.7 |
-| `entrenchment.ts` | Five-term score + **EE3 cap** (`E(d) ó min premise E`) | 2.8 |
+| `entrenchment.ts` | Five-term score + **EE3 cap** (`E(d) ≤ min premise E`) | 2.8 |
 | `adjudication.ts` | Weakest-first ordering; **non-prioritized screening**; contested queue | 2.8 |
 | `proposals.ts` | The **seven-part revision proposal**; three actions incl. *keep & re-justify* | 2.9 |
 | `audit.ts` | Reason-carrying trail; per-flip explainability | 2.10 |
@@ -221,7 +221,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 9. `src/guards/` — Phase 4 · L2↔L4
+## 9. `src/guards/` — Phase 4 · L2↔L4 ✅ built
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -229,11 +229,13 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `types.ts` | `GuardKind` (8), `GuardSpec`, `GuardSeverity`, `GuardResult` | 4.1 |
 | `project.ts` | The **virtual project** built from pasted `package.json` / file listing / contents | 4.3 |
 | `taxonomy.ts` | Kind metadata: determinism, browser-runnable, default severity | 4.1 |
-| `templates/index.ts` | Template dispatch by decision variable | 4.2 |
+| `templates/index.ts` | Template dispatch by decision variable; de-duplication and cap ranking | 4.2 |
+| `templates/storage.ts` | STORAGE templates — artifact present, competing backend absent, forbidden endpoints | 4.2 |
 | `templates/database.ts` · `framework.ts` · `hosting.ts` · `auth.ts` · `generic.ts` | Per-variable guard templates (~80% coverage) | 4.2 |
 | `synth/index.ts` | Synthesis pipeline; **proposed, never auto-installed** | 4.2 |
 | `synth/llm.ts` | LLM synthesis for decisions templates miss; flagged `requiresReview` | 4.2 |
-| `eval/index.ts` | Interpreter dispatch | 4.3 |
+| `eval/index.ts` | Interpreter dispatch; lifecycle and label gates | 4.3 |
+| `eval/types.ts` | The evaluator's return shape, and the four shared SKIP reasons | 4.3 |
 | `eval/dependency.ts` | `dependency_present` / `dependency_absent` | 4.3 |
 | `eval/string.ts` | `string_in_files` / `string_absent_in_files` — **word-boundary matching** | 4.3 |
 | `eval/path.ts` | `path_glob_exists` / `path_glob_absent` | 4.3 |
@@ -562,7 +564,7 @@ disagree without a note is how the next person reintroduces the bug.
 | 🟠 3 | §3.6 places the hypothetical guard in the classifier | Guard lives in `contradiction.isClassifiable`, applied by the **pipeline** | `DecisionSnapshot` carries no lifecycle status — that is the only field saying whether a decision is settled. An engine told "don't classify this" must invent a verdict to return; never being asked does not. |
 | 🟡 4 | §8 lists 18 files in `src/retrieval/` | **19** — `candidates.ts` added | Gate (b) needed a candidate generator and `gates/semantic.ts` takes one as an injected function. It belongs in the retrieval layer (retrieval proposes, the gate disposes) and reads the L1 vectors already in the index, so gate (b) runs keyless with zero embedding calls. |
 | 🟡 5 | Phase 0 left `templateCompose` inline in `ai/local/index.ts` with a note that Phase 3 would replace it | Extracted to **`ai/local/compose.ts`**, all five `CompositionKind`s | The Phase 0 comment named the file. Templates emit every sentence with its decision id inline, which is what lets `answer.ts` attribute claims to citations by the **same rule** it applies to an LLM's prose — so groundedness is measured identically on both paths instead of the local path being granted 1.0 for having a composer that cannot lie. |
-| 🟡 6 | §3.7 specifies ó3 bounded searches but not what they search for | Three searches with **distinct purposes**: the question as asked → expansion by shared premise → re-query in the premises' vocabulary | A budget of three identical searches is just a retry loop. Search 2 exists because decisions sharing a `given` often answer a question whose wording does not match; search 3 because the question's vocabulary may not be the log's. |
+| 🟡 6 | §3.7 specifies ≤3 bounded searches but not what they search for | Three searches with **distinct purposes**: the question as asked → expansion by shared premise → re-query in the premises' vocabulary | A budget of three identical searches is just a retry loop. Search 2 exists because decisions sharing a `given` often answer a question whose wording does not match; search 3 because the question's vocabulary may not be the log's. |
 | 🟡 7 | §3.10 requires pre-emption on alternatives with a `whyRejected` AND human confirmation | Both conditions enforced (`preemption.ts`), plus `countPreemptions` reporting the gap | The second condition was nearly missed. At Phase 1's measured 15.4% alternative precision, an unconfirmed inferred rejection is more likely wrong than right, and a false pre-emption costs more trust than every correct one earns back. |
 | 🟡 8 | §3.5's weights are fixed constants | `RERANK_WEIGHTS` is `Object.freeze`d but the reranker also accepts `forceLocal` | Phase 7's ablation has to measure what the reranker actually contributes, and an ablation that requires editing source is an ablation that does not get run. |
 
@@ -573,4 +575,40 @@ disagree without a note is how the next person reintroduces the bug.
 - `store/ask.ts` initially called `recordBatch(drafts, actor, now)` with three positional arguments; the real signature is `recordBatch(drafts, { reason, actor, occurredAt })`, and `IndexRebuilt` is one of the 19 state-changing events that requires a non-empty `reason`.
 - `understandQuery` initially iterated `VARIABLES` expecting `VariableMeta[]`; it is `readonly DecisionVariable[]`. Switched to `variableKeywords()` + `variableMeta()` + `VARIABLE_ORDER` from `ontology/data/variables`.
 - `expandBySharedPremise` takes and returns `DecisionId[]`, not premise matches.
+
+### 18.4 Phase 4 deviations
+
+| # | Plan says | Built | Why |
+|---|---|---|---|
+| 🟠 1 | §9 listed 27 files in `src/guards/` | **29** — `templates/storage.ts` and `eval/types.ts` added | The plan's own synthesis diagram names STORAGE as a fifth variable with its own rule ("STORAGE → artifact present"); folding it into `generic.ts` would bury a real rule inside the catch-all. `eval/types.ts` holds the evaluator's return shape and the four shared SKIP reasons, which six evaluator files import — defining it in `eval/index.ts` would make every evaluator import from the module that imports them. |
+| 🟠 2 | §4.2 says templates cover ~80% | Templates cover **five variables specifically and all fifteen generically** | The ≥80% claim does not come from writing more per-variable templates. It comes from `generic.ts`'s three variable-agnostic strategies, especially `generic-rejected`: whatever the variable, a rejected alternative should not have appeared in the tree since. That one rule needs no knowledge of the variable at all, and it is the reason coverage is not five slots deep. |
+| 🟡 3 | §4.7 says the user can "edit" a guard | Editing is **delete + re-synthesise**, two events | The closed 36-type vocabulary has no `GuardEdited`, and adding one would let a spec change without a record of the spec it replaced. A guard quietly weakened after it started failing would be indistinguishable from one that was fixed. The replacement is marked `generatedBy: "user"` and is PROPOSED again — an edit does not inherit acceptance, because that would activate a check nobody reviewed. |
+| 🟡 4 | §4.4's baseline pattern | Baselined failures still emit `GuardFailed`, but produce **no revision proposal** | Recording and asserting are different acts. The event belongs in the log either way; firing a proposal for a violation that predates the guard would fill the queue with things the user already knows about, on the first run — the wall of red the baseline exists to prevent, arriving by another route. |
+| 🟡 5 | §4.5's `falsifiesPremiseId` | Attributed only when **exactly one** premise matches | Vocabulary overlap is a weak instrument and is treated as one. Zero matches → gate (a) as structural drift. Several → reported as ambiguous and handled by gate (a), because guessing produces precisely the "confident, spectacular, entirely wrong cascade" §2.5 warns about. |
+| 🟡 6 | §4.1 lists guard record fields | `disabledByDecisionLabel` is maintained by the **fold**, on `LabelChanged` | `materialize.ts` set the field at `GuardSynthesised` and never touched it again, so it went stale the first time a decision's label changed. The interpreter also checks the live label, so a stale field could not make a disabled guard RUN — but it could make an exported CI guard wrong, which is why both exist. |
+| 🟡 7 | §4.6 CI export | `command_exit_zero` IS exported; `llm_judge` is not | CI has a shell, which the browser does not, so a command guard is exactly at home there. A judged guard cannot fail a build reproducibly, so exporting it would put a non-deterministic verdict in the exit code. |
+
+**Pre-existing bugs found by a string-aware scan for undeclared identifiers, and fixed:**
+
+The structural checker verifies that imports RESOLVE and that named exports EXIST. It cannot see
+that an identifier is used without being declared — which is a hard compile error. Scanning all
+186 source files with comments and strings stripped found four, three of them pre-dating Phase 4:
+
+- `store/reasoning.ts` used `NewEvent<EventType>` with **neither** name imported. Present since Phase 2.
+- `ai/llm/index.ts` called `performanceSafeNow()` in six places; it was declared only in
+  `ai/local/index.ts`, where it is private. Present since Phase 1. Now `monotonicNow` in
+  `lib/format.ts`, shared by all three modules that measure durations.
+- `ai/llm/index.ts` used `ProposedGuard` and `validate` with no import (introduced during this
+  phase by a patch whose target string did not match, so it silently no-op'd).
+- `guards/index.ts` called `describeTaxonomy()` while only re-exporting it. **A re-export does
+  not bind the name in the exporting module** — the same trap as `export * as ns` not flattening.
+
+**Checker hardened.** `_strip_comments` was a regex `/\*.*?\*/` substitution, which is not
+string-aware. `templates/hosting.ts` contains the glob `"**/*serverless.yml"` and
+`templates/database.ts` contains `"postgres://"`; the stripper treated the `/*` inside the glob
+as a block comment opening and ate everything to the next `*/`, deleting the `export function`
+declaration that followed. The checker then reported a missing export that was plainly there —
+worse than reporting nothing, because it sends you looking for a bug in the source instead of in
+the checker. It is now a character scanner that tracks string state, and strips line comments too.
+Globs like `**/*` are common in this codebase, so this would have recurred constantly.
 

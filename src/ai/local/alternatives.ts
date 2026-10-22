@@ -10,9 +10,9 @@
  * a rejected technology.
  */
 
+import type { DecisionVariable } from "@/types/domain";
 import { canonicalValueOf, foldKey } from "@/ontology/canonicalize";
 import { NONE_VALUES } from "@/ontology/data/aliases";
-import type { DecisionVariable } from "@/types/domain";
 import { isTechShaped, knownValuesIn, variablesFor } from "./value-phrase";
 
 export interface AlternativeValue {
@@ -106,9 +106,7 @@ function shapedTokens(window: string): readonly string[] {
  * `handleClick`" is exactly the false pre-emption that gets the feature switched
  * off.
  */
-export function preemptionEligible(
-  values: readonly AlternativeValue[],
-): readonly AlternativeValue[] {
+export function preemptionEligible(values: readonly AlternativeValue[]): readonly AlternativeValue[] {
   return values.filter((value) => value.strength === "known");
 }
 

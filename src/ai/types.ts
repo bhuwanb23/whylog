@@ -43,9 +43,14 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type { DecisionOrigin, DecisionVariable, Modality, PremiseType } from "@/types/domain";
-import type { ProposedGuard } from "@/types/guards";
+import type {
+  DecisionOrigin,
+  DecisionVariable,
+  Modality,
+  PremiseType,
+} from "@/types/domain";
 import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { ProposedGuard } from "@/types/guards";
 
 /* -------------------------------------------------------------------------- */
 /* Capabilities                                                               */
@@ -300,12 +305,6 @@ export interface CompositionResult {
   /** The decision ids the text actually cites. Compared against `material` to
    *  detect a citation that does not resolve. */
   readonly citedDecisionIds: readonly DecisionId[];
-  /** A note about HOW this was composed — a provenance disclosure, not a claim about
-   *  the log. It is returned separately so the claim attribution never has to guess
-   *  whether a sentence is a claim: a disclosure carries no decision id, so if it
-   *  were part of `text` it would be scored as an ungrounded claim and would drag a
-   *  perfectly well-sourced answer below the GROUNDED threshold. */
-  readonly disclosure?: string;
   readonly engine: EngineId;
   readonly durationMs: number;
 }
@@ -321,6 +320,16 @@ export interface GuardSynthesisRequest {
   readonly statement: string;
   readonly appliesTo: readonly string[];
   readonly premises: readonly PremiseSnapshot[];
+  /**
+   * Rejected alternatives, with the reason where one was recorded.
+   *
+   * Added in Phase 4 because "we chose X, not Y" is the most verifiable shape a decision has:
+   * whatever the variable, the thing you turned down should not have appeared in the dependency
+   * tree since. Without this field a synthesiser can check that the chosen value is present but
+   * cannot check that the rejected one is absent — which is the check that catches the most
+   * common drift there is, and the one that needs no knowledge of the variable at all.
+   */
+  readonly rejected?: readonly { readonly value: string; readonly whyRejected?: string }[];
   readonly signal?: AbortSignal;
 }
 

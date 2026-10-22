@@ -8,7 +8,7 @@
  * ---------------------------------------------------------------------------
  * WHY RRF AND NOT SCORE FUSION
  *
- *   RRF(d) = ä over retrievers r of  1 / (k + rank_r(d))        k = 60
+ *   RRF(d) = Σ over retrievers r of  1 / (k + rank_r(d))        k = 60
  *
  * RRF is **score-agnostic**: it needs ranks, not scores. That is the entire reason it
  * is used here rather than a weighted sum of similarities.
@@ -27,7 +27,7 @@
  * stacks. It is a named constant, not a magic number, and it is NOT tuned here.
  *
  * What it does: it damps the difference between high ranks. At k=60, rank 1 scores
- * 1/61 ÷ 0.0164 and rank 2 scores 1/62 ÷ 0.0161 — nearly identical. A small k would
+ * 1/61 ≈ 0.0164 and rank 2 scores 1/62 ≈ 0.0161 — nearly identical. A small k would
  * make the top of each list dominate the fusion; a large k flattens it. 60 is the
  * conventional middle, and deviating from it would need a metric to justify it, which
  * is Phase 7's job.
@@ -77,14 +77,12 @@ export function rank(
     b.score === a.score ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : b.score - a.score,
   );
 
-  return sorted.map(
-    (entry, index): RankedHit => ({
-      decisionId: entry.id,
-      rank: index + 1,
-      score: entry.score,
-      source: level,
-    }),
-  );
+  return sorted.map((entry, index): RankedHit => ({
+    decisionId: entry.id,
+    rank: index + 1,
+    score: entry.score,
+    source: level,
+  }));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -99,7 +97,10 @@ export function rank(
  * @param k the damping constant. Defaults to `RRF_K`; overridable so Phase 7 can ablate
  *   it without editing this file.
  */
-export function fuse(lists: readonly RankedList[], k: number = RRF_K): readonly FusedHit[] {
+export function fuse(
+  lists: readonly RankedList[],
+  k: number = RRF_K,
+): readonly FusedHit[] {
   const accumulator = new Map<
     DecisionId,
     { rrf: number; contributedBy: Set<IndexLevel>; bestRank: number }
@@ -140,13 +141,7 @@ export function fuse(lists: readonly RankedList[], k: number = RRF_K): readonly 
 
   /* Deterministic: score descending, then id ascending. */
   fused.sort((a, b) =>
-    b.rrf === a.rrf
-      ? a.decisionId < b.decisionId
-        ? -1
-        : a.decisionId > b.decisionId
-          ? 1
-          : 0
-      : b.rrf - a.rrf,
+    b.rrf === a.rrf ? (a.decisionId < b.decisionId ? -1 : a.decisionId > b.decisionId ? 1 : 0) : b.rrf - a.rrf,
   );
 
   return fused;
@@ -178,13 +173,10 @@ export function explainFusion(
   for (const list of lists) {
     const hit = list.hits.find((entry) => entry.decisionId === fused.decisionId);
     if (hit === undefined) continue;
-    terms.push(
-      `${list.level} rank ${hit.rank} → 1/(${k}+${hit.rank}) = ${rrfContribution(hit.rank, k).toFixed(5)}`,
-    );
+    terms.push(`${list.level} rank ${hit.rank} → 1/(${k}+${hit.rank}) = ${rrfContribution(hit.rank, k).toFixed(5)}`);
   }
 
-  if (terms.length === 0)
-    return `${fused.decisionId}: no level contributed (score ${fused.rrf.toFixed(5)}).`;
+  if (terms.length === 0) return `${fused.decisionId}: no level contributed (score ${fused.rrf.toFixed(5)}).`;
 
   return [
     `${fused.decisionId} — RRF ${fused.rrf.toFixed(5)} from ${terms.length} level(s):`,

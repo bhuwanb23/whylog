@@ -19,50 +19,50 @@
 
 ```
   RAW TRANSCRIPT
-        ³
+        │
         ▼
   ┌───────────────┐
-  ³ 1.1 NORMALISE ³  speaker turns, timestamps, tool noise, code blocks, de-duplication
+  │ 1.1 NORMALISE │  speaker turns, timestamps, tool noise, code blocks, de-duplication
   └───────┬───────┘
           ▼
   ┌───────────────┐
-  ³ 1.2 SEGMENT   ³  candidate spans — NOT one-sentence (see §1.2)
+  │ 1.2 SEGMENT   │  candidate spans — NOT one-sentence (see §1.2)
   └───────┬───────┘
           ▼
   ┌───────────────────────────────────────────────────────────────┐
-  ³ 1.3 DECISION RECOVERY                                         ³
-  ³     cue detection → variable/value → polarity → modality      ³
-  ³     → rationale → Y-statement formation                       ³
+  │ 1.3 DECISION RECOVERY                                         │
+  │     cue detection → variable/value → polarity → modality      │
+  │     → rationale → Y-statement formation                       │
   └───────┬───────────────────────────────────────────────────────┘
-          ³                    ┌──────────────────────────────────┐
-          ├───────────────────►³ 1.4 PREMISE RECOVERY  ★ THE CORE ³
-          ³                    ³     closed set of 8 types         ³
-          ³                    ³     typed predicates              ³
-          ³                    └───────┬──────────────────────────┘
-          ³                    ┌───────┴──────────────────────────┐
-          ├───────────────────►³ 1.5 ALTERNATIVE RECOVERY         ³
-          ³                    ³     hardest component (15.4%)     ³
-          ³                    └───────┬──────────────────────────┘
-          ³                    ┌───────┴──────────────────────────┐
-          └───────────────────►³ 1.6 PROVENANCE                   ³
-                               ³     snippet, span, origin, engine ³
+          │                    ┌──────────────────────────────────┐
+          ├───────────────────►│ 1.4 PREMISE RECOVERY  ★ THE CORE │
+          │                    │     closed set of 8 types         │
+          │                    │     typed predicates              │
+          │                    └───────┬──────────────────────────┘
+          │                    ┌───────┴──────────────────────────┐
+          ├───────────────────►│ 1.5 ALTERNATIVE RECOVERY         │
+          │                    │     hardest component (15.4%)     │
+          │                    └───────┬──────────────────────────┘
+          │                    ┌───────┴──────────────────────────┐
+          └───────────────────►│ 1.6 PROVENANCE                   │
+                               │     snippet, span, origin, engine │
                                └───────┬──────────────────────────┘
                                        ▼
                           ┌────────────────────────┐
-                          ³ 1.7 ENTITY RESOLUTION  ³  merge onto existing nodes
+                          │ 1.7 ENTITY RESOLUTION  │  merge onto existing nodes
                           └────────────┬───────────┘
                                        ▼
                           ┌────────────────────────┐
-                          ³ 1.8 CONFIDENCE         ³  cue strength + slot + rationale
-                          ³                        ³  + 3-run majority vote (LLM path)
+                          │ 1.8 CONFIDENCE         │  cue strength + slot + rationale
+                          │                        │  + 3-run majority vote (LLM path)
                           └────────────┬───────────┘
                                        ▼
                           ┌────────────────────────┐
-                          ³ 1.9 REVIEW GATE  ★     ³  human approves before commit
+                          │ 1.9 REVIEW GATE  ★     │  human approves before commit
                           └────────────┬───────────┘
                                        ▼
                           ┌────────────────────────┐
-                          ³ 1.10 COMMIT            ³  events appended, graph updated
+                          │ 1.10 COMMIT            │  events appended, graph updated
                           └────────────────────────┘
 ```
 
@@ -127,7 +127,7 @@ Four turns, one decision, and the premise appears **before** the decision it sup
 |---|---|---|
 | 1 | **Cue detection** | Pattern inventory: `decided to`, `let's use`, `we'll go with`, `going with`, `switch(ing)? to`, `instead of`, `rather than`, `sticking with`, `dropp(ed\|ing)`, `no longer`, `skip(ping)?`, `avoid`, `ruled out`, `revert`, `for now`, `deal`, `ok we'll` |
 | 2 | **Variable + value** | Match against the ontology's alias table (Phase 0.7). Unmatched values become `variable: OTHER` with a free-text slot |
-| 3 | **Polarity** | Verb-pattern polarity: `switch to X` / `go with X` / `adopt X` = **+X**; `drop X` / `stop using X` / `revert X` = **−X**. Negation scope window ó6 tokens or to clause boundary |
+| 3 | **Polarity** | Verb-pattern polarity: `switch to X` / `go with X` / `adopt X` = **+X**; `drop X` / `stop using X` / `revert X` = **−X**. Negation scope window ≤6 tokens or to clause boundary |
 | 4 | **Modality** | `asserted` · `proposed` · `hypothetical` · `reported`. **Only `asserted` creates an IN-labelled node.** "what if we used Redis?" and "you could consider Redis" must never become decisions — this single field prevents most extraction-driven false contradictions |
 | 5 | **Rationale** | Trailing clause after `because`, `since`, `so that`, `to avoid`, `due to`, `as`, `the whole argument is` |
 | 6 | **Statement formation** | Emit in **Y-statement** form: *"In the context of ⟨premises⟩, facing ⟨concern⟩, we decided for ⟨value⟩ to achieve ⟨quality⟩, accepting ⟨downside⟩."* Named slots are extractable, and the output is self-justifying in the export without prose bloat |
@@ -151,23 +151,23 @@ Four turns, one decision, and the premise appears **before** the decision it sup
 
 ```
    episode text
-        ³
+        │
         ▼
    cue-phrase scan against the 8 premise types (Phase 0.7 table B)
-        ³
+        │
         ▼
    typed candidate:  { type, predicate, value, text, evidenceSpan }
-        ³
+        │
         ▼
    LINK to the decision(s) in the same episode:
-        ³
+        │
         ├── positive support  → add to the decision's justification IN-list
         └── excluded condition → add to the OUT-list
                 ("no concurrent writers" → OUT-list, non-monotonic)
-        ³
+        │
         ▼
    RESOLVE against existing premise nodes (Phase 0.4 ladder)
-        ³
+        │
         ▼
    SHARED NODE — one premise, many dependent decisions
 ```
@@ -313,13 +313,13 @@ Premises and alternatives score on their own rubrics and are **always one tier l
 **Commit sequence.**
 ```
   approved items
-       ³
+       │
        ├─► PremiseAsserted        (premises first — decisions depend on them)
        ├─► DecisionProposed
        ├─► AlternativeRejected
        ├─► JustificationAttached  (IN-list, OUT-list, informant)
        └─► DecisionApproved
-       ³
+       │
        ▼
   materialisation recomputes labels → Phase 2's REVISE() is invoked
 ```
@@ -359,13 +359,13 @@ Order matters: premises must exist before the justification that references them
    EPISODE-BASED (what WhyLog does)
    ────────────────────────────────────────────────────────
    ┌─ EPISODE E-003 ── topic: DATABASE ────────────────────┐
-   ³  all four turns analysed as one negotiation window    ³
-   ³  → decision  WLD-0007  DATABASE = sqlite   (+postgres)³
-   ³  → premise   P-0002    scale.max_users = 1     IN-list³
-   ³  → premise   P-0005    deployment = none       IN-list³
-   ³  → premise   P-0011    concurrent_writers      OUT-list³
-   ³  → alternatives [postgres: deploy complexity,          ³
-   ³                  supabase: hosted dependency]          ³
+   │  all four turns analysed as one negotiation window    │
+   │  → decision  WLD-0007  DATABASE = sqlite   (+postgres)│
+   │  → premise   P-0002    scale.max_users = 1     IN-list│
+   │  → premise   P-0005    deployment = none       IN-list│
+   │  → premise   P-0011    concurrent_writers      OUT-list│
+   │  → alternatives [postgres: deploy complexity,          │
+   │                  supabase: hosted dependency]          │
    └────────────────────────────────────────────────────────┘
 ```
 
@@ -373,10 +373,10 @@ Order matters: premises must exist before the justification that references them
 
 ```
    extraction output
-        ³
+        │
         ├── confidence ≥ 0.75 ──► EXPANDED ──┐
         ├── 0.45 – 0.75      ──► NORMAL   ──┼──► human actions
-        └── < 0.45           ──► COLLAPSED ─┘      ³
+        └── < 0.45           ──► COLLAPSED ─┘      │
                                                     ├─ approve ──► commit events
    alternatives ──► separate stricter section ──────┤─ edit    ──► commit + DecisionEdited
    premises     ──► shown attached to their decision├─ discard ──► ExtractionDiscarded

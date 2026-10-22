@@ -41,14 +41,14 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
     neon: "postgres",
     "neon db": "postgres",
 
-    sqlite3: "sqlite",
+    "sqlite3": "sqlite",
     "sql lite": "sqlite",
     "better sqlite3": "better-sqlite3",
     "better-sqlite 3": "better-sqlite3",
     bsql: "better-sqlite3",
     "wa sql": "wa-sqlite",
     "sql.js": "sql-js",
-    libsql: "turso",
+    "libsql": "turso",
     "turso db": "turso",
 
     mongo: "mongodb",
@@ -59,7 +59,7 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
 
     mysql: "mysql",
     mariadb: "mysql",
-    planetscale: "mysql",
+    "planetscale": "mysql",
     tidb: "mysql",
 
     redis: "redis",
@@ -74,22 +74,22 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
 
     dynamo: "dynamodb",
     dynamodb: "dynamodb",
-    ddb: "dynamodb",
+    "ddb": "dynamodb",
 
     "no database": "none",
     "no db": "none",
-    nothing: "none",
+    "nothing": "none",
     "in memory": "memory",
     "in-memory": "memory",
-    localstorage: "memory",
+    "localstorage": "memory",
   },
 
   AUTH: {
     "no auth": "none",
-    none: "none",
-    nothing: "none",
-    open: "none",
-    public: "none",
+    "none": "none",
+    "nothing": "none",
+    "open": "none",
+    "public": "none",
     "no authentication": "none",
     "no login": "none",
     "skip auth": "none",
@@ -97,13 +97,13 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
     "clerk dev": "clerk",
     "clerk.com": "clerk",
 
-    auth0: "auth0",
-    okta: "auth0",
+    "auth0": "auth0",
+    "okta": "auth0",
 
     "next auth": "nextauth",
     "next-auth": "nextauth",
     "auth js": "nextauth",
-    authjs: "nextauth",
+    "authjs": "nextauth",
 
     "supabase auth": "supabase-auth",
     "supabase auth js": "supabase-auth",
@@ -117,7 +117,7 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
     "magic link": "magic-link",
     magiclink: "magic-link",
     "email link": "magic-link",
-    passwordless: "magic-link",
+    "passwordless": "magic-link",
 
     "username password": "password",
     "email password": "password",
@@ -324,7 +324,7 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
 
     indexeddb: "indexeddb",
     idb: "indexeddb",
-    dexie: "indexeddb",
+    "dexie": "indexeddb",
 
     localstorage: "localstorage",
     "local storage": "localstorage",
@@ -340,7 +340,7 @@ export const ALIASES: Readonly<Record<DecisionVariable, AliasTable>> = {
   API_STYLE: {
     rest: "rest",
     "rest api": "rest",
-    restful: "rest",
+    "restful": "rest",
     http: "rest",
     "json api": "rest",
 

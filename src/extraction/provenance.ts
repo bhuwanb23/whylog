@@ -33,10 +33,10 @@
  */
 
 import type { EngineId } from "@/types/common";
-import { type DecisionOrigin, type Modality, ORIGIN_AUTHORITY } from "@/types/domain";
-import { locateInEpisode } from "./episode-position";
-import { accepts, reverses } from "./speakers";
+import { ORIGIN_AUTHORITY, type DecisionOrigin, type Modality } from "@/types/domain";
 import type { EpisodeWindow } from "./types";
+import { accepts, reverses } from "./speakers";
+import { locateInEpisode } from "./episode-position";
 
 export interface OriginClassification {
   readonly origin: DecisionOrigin;
@@ -97,8 +97,7 @@ export function classifyOrigin(
 
   const cueTurn = located.turn;
   const reversedIn = findReversal(episode, located.turnPosition);
-  const acceptedIn =
-    cueTurn.speaker === "agent" ? findAcceptance(episode, located.turnPosition) : null;
+  const acceptedIn = cueTurn.speaker === "agent" ? findAcceptance(episode, located.turnPosition) : null;
 
   /* ---- a human reversing an agent proposal outranks everything ---- */
   if (reversedIn !== null) {
@@ -106,8 +105,7 @@ export function classifyOrigin(
       origin: "human_override",
       authority: ORIGIN_AUTHORITY.human_override,
       via: "human-override",
-      explanation:
-        "A human turn reverses what was proposed here, so the decision is theirs even though the words came from the agent.",
+      explanation: `A human turn reverses what was proposed here, so the decision is theirs even though the words came from the agent.`,
       acceptedInTurn: acceptedIn,
       reversedInTurn: reversedIn,
     };
@@ -241,7 +239,9 @@ export interface ProvenanceSummary {
 export function summariseOrigins(origins: readonly OriginClassification[]): ProvenanceSummary {
   const count = (rule: OriginRule): number => origins.filter((o) => o.via === rule).length;
   const mean =
-    origins.length === 0 ? 0 : origins.reduce((sum, o) => sum + o.authority, 0) / origins.length;
+    origins.length === 0
+      ? 0
+      : origins.reduce((sum, o) => sum + o.authority, 0) / origins.length;
 
   return {
     humanStated: count("human-stated"),

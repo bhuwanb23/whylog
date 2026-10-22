@@ -5,15 +5,7 @@
  * touches localStorage, the hash chain, or the fold.
  */
 
-export {
-  useWhyLog,
-  bootOnce,
-  isBooted,
-  persistenceAvailable,
-  type BootStatus,
-  type Notice,
-  type WhyLogState,
-} from "./whylog";
+export { useWhyLog, bootOnce, isBooted, persistenceAvailable, type BootStatus, type Notice, type WhyLogState } from "./whylog";
 export * as selectors from "./selectors";
 export {
   DEFAULT_CASCADE_DEPTH_CAP,
@@ -60,3 +52,41 @@ export {
   type ReasoningStatus,
   type RunOptions,
 } from "./reasoning";
+
+/**
+ * Phase 3 — retrieval and the evidence contract.
+ *
+ * Owns the index artifacts and the question. Gate (b) reads the artifacts from here rather than
+ * building its own, so there is one index and one notion of staleness rather than two that can
+ * disagree.
+ */
+export {
+  useAsk,
+  describeIndex,
+  describeHowProduced,
+  describePreemptionCoverage,
+  retrieveOnly,
+  renderExpansion,
+  HISTORY_LIMIT,
+  type AskState,
+  type AskStatus,
+  type AskHistoryEntry,
+  type ExpandedCitationResult,
+  type RetrievalResult,
+} from "./ask";
+
+/**
+ * Phase 4 — executable decision guards.
+ *
+ * Owns the virtual project and the baseline, both persisted: the project is a paste rather than a
+ * derivation, and losing it on reload would mean re-pasting a file listing every session, which
+ * is enough friction that the compliance score stops getting looked at.
+ */
+export {
+  useGuards,
+  describeGuardStore,
+  overCapDecisions,
+  GUARDS_STORAGE_KEY,
+  type GuardState,
+  type GuardStoreStatus,
+} from "./guards";

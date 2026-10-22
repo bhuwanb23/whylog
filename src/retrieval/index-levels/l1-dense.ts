@@ -33,9 +33,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import { cosine } from "@/lib/cosine";
 import type { DecisionId } from "@/types/common";
 import type { IndexArtifacts, RankedHit } from "@/types/retrieval";
+import { cosine } from "@/lib/cosine";
 import { rank } from "../rrf";
 
 export interface DenseQuery {
@@ -50,7 +50,10 @@ export interface DenseQuery {
  * that matches on both its statement and its inverted questions should score higher than
  * one that matches on either — and merging the two lists here would hide that agreement.
  */
-export function searchL1(artifacts: IndexArtifacts, query: DenseQuery): readonly RankedHit[] {
+export function searchL1(
+  artifacts: IndexArtifacts,
+  query: DenseQuery,
+): readonly RankedHit[] {
   if (artifacts.stale) return [];
 
   const scored: { id: DecisionId; score: number }[] = [];
@@ -73,7 +76,7 @@ export function l1Count(artifacts: IndexArtifacts): number {
 export function l1Text(statement: string, rationale: string | undefined): string {
   return rationale === undefined || rationale.length === 0
     ? statement
-    : `${statement}. ${rationale}`;
+    : statement + ". " + rationale;
 }
 
 export function describeL1(artifacts: IndexArtifacts): string {
@@ -83,5 +86,5 @@ export function describeL1(artifacts: IndexArtifacts): string {
   const count = l1Count(artifacts);
   return count === 0
     ? "L1 statement embeddings — none built. Lexical, structural and premise retrieval still work."
-    : `L1 statement embeddings — ${count} vector(s), ${artifacts.dimensions}d. The baseline; necessary, never sufficient, because these documents are one sentence long.`;
+    : "L1 statement embeddings — " + count + " vector(s), " + artifacts.dimensions + "d. The baseline; necessary, never sufficient, because these documents are one sentence long.";
 }

@@ -28,19 +28,19 @@ Every level is computed **once, at extraction time**, and stored on the node. No
 
 ```
                             ┌──────────────────────────────────────┐
-                            ³           DECISION  WLD-0007         ³
-                            ³  "Use SQLite, not Postgres"          ³
+                            │           DECISION  WLD-0007         │
+                            │  "Use SQLite, not Postgres"          │
                             └──────────────────────────────────────┘
-                                            ³
+                                            │
       ┌──────────────────┬──────────────────┼──────────────────┬─────────────────┐
       ▼                  ▼                  ▼                  ▼                 ▼
 ┌───────────┐    ┌──────────────┐   ┌──────────────┐   ┌──────────────┐  ┌──────────────┐
-³    L1     ³    ³      L2      ³   ³      L3      ³   ³      L4      ³  ³      L5      ³
-³ STATEMENT ³    ³  INVERTED    ³   ³    SPARSE    ³   ³  STRUCTURAL  ³  ³  PREMISE     ³
-³ embedding ³    ³  QUESTIONS   ³   ³   keywords   ³   ³  var → val   ³  ³  premise ids ³
-³  512-d    ³    ³ 3–5 per dec. ³   ³  BM25-style  ³   ³  + premises  ³  ³  → dependents³
-³  cosine   ³    ³  embedded    ³   ³  over all    ³   ³  exact match ³  ³  inverted    ³
-³           ³    ³              ³   ³  text fields ³   ³  O(1)        ³  ³  index O(1)  ³
+│    L1     │    │      L2      │   │      L3      │   │      L4      │  │      L5      │
+│ STATEMENT │    │  INVERTED    │   │    SPARSE    │   │  STRUCTURAL  │  │  PREMISE     │
+│ embedding │    │  QUESTIONS   │   │   keywords   │   │  var → val   │  │  premise ids │
+│  512-d    │    │ 3–5 per dec. │   │  BM25-style  │   │  + premises  │  │  → dependents│
+│  cosine   │    │  embedded    │   │  over all    │   │  exact match │  │  inverted    │
+│           │    │              │   │  text fields │   │  O(1)        │  │  index O(1)  │
 └───────────┘    └──────────────┘   └──────────────┘   └──────────────┘  └──────────────┘
    semantic         style-matched       lexical            deterministic     graph
    recall           recall              recall             gate              traversal
@@ -90,7 +90,7 @@ Keyword index over `statement + rationale + alternatives + variable + value + ta
 Combine the ranked lists from L1+L2 (dense) and L3 (sparse):
 
 ```
-RRF(d) = ä over retrievers r  of   1 / (k + rank_r(d))          with k = 60
+RRF(d) = Σ over retrievers r  of   1 / (k + rank_r(d))          with k = 60
 ```
 
 `k = 60` is the standard value from the original RRF work and is used unchanged by Graphiti and most hybrid stacks. RRF is **score-agnostic** — it only needs ranks — which means it fuses a cosine score and a BM25 score without normalising either. That property is what makes it the right choice when the two retrievers have incomparable scales.
@@ -101,16 +101,16 @@ L4 and L5 are **not fused**. They are exact gates consulted separately: if the s
 
 ```
    query
-     ³
+     │
      ├──► dense (L1 + L2)  ──┐
      ├──► sparse (L3)      ──┼──► RRF fusion ──► top-20 candidates
      ├──► structural (L4)  ──┘         ▲
      └──► premise (L5)  ─── promote ───┘
-                                       ³
+                                       │
                                        ▼
                         CROSS-ENCODER / NLI RERANK
                         score (query, candidate) jointly
-                                       ³
+                                       │
                                        ▼
                                   top-5 ──► answer synthesis
 ```
@@ -142,22 +142,22 @@ Retrieval proposes; a classifier disposes.
 
 ```
                         new assertion A
-                              ³
+                              │
         ┌─────────────────────┼─────────────────────┐
         ▼                     ▼                     ▼
 ┌───────────────┐    ┌────────────────┐    ┌────────────────┐
-³  GATE (a)     ³    ³   GATE (b)     ³    ³   GATE (c)     ³
-³  STRUCTURAL   ³    ³   SEMANTIC     ³    ³   PREMISE      ³
+│  GATE (a)     │    │   GATE (b)     │    │   GATE (c)     │
+│  STRUCTURAL   │    │   SEMANTIC     │    │   PREMISE      │
 ├───────────────┤    ├────────────────┤    ├────────────────┤
-³ same variable ³    ³ retrieve top-k ³    ³ A falsifies a  ³
-³ different     ³    ³ via §3 stack,  ³    ³ premise in     ³
-³ value, both IN³    ³ then CLASSIFY  ³    ³ some d's       ³
-³               ³    ³ each pair:     ³    ³ IN-list, OR    ³
-³ deterministic ³    ³ entailment /   ³    ³ satisfies one  ³
-³ O(1) lookup   ³    ³ contradiction /³    ³ in some d's    ³
-³               ³    ³ neutral        ³    ³ OUT-list       ³
-³ precision ↑↑  ³    ³ recall ↑↑      ³    ³ non-monotonic  ³
-³ recall ↓      ³    ³                ³    ³ the novel gate ³
+│ same variable │    │ retrieve top-k │    │ A falsifies a  │
+│ different     │    │ via §3 stack,  │    │ premise in     │
+│ value, both IN│    │ then CLASSIFY  │    │ some d's       │
+│               │    │ each pair:     │    │ IN-list, OR    │
+│ deterministic │    │ entailment /   │    │ satisfies one  │
+│ O(1) lookup   │    │ contradiction /│    │ in some d's    │
+│               │    │ neutral        │    │ OUT-list       │
+│ precision ↑↑  │    │ recall ↑↑      │    │ non-monotonic  │
+│ recall ↓      │    │                │    │ the novel gate │
 └───────┬───────┘    └───────┬────────┘    └───────┬────────┘
         └─────────────────────┼─────────────────────┘
                               ▼
@@ -192,7 +192,7 @@ Getting **refinement** right matters disproportionately: it is by far the most c
 Without a model, polarity must come from linguistics rather than geometry:
 
 1. **Negation cue inventory** — `not, no, never, avoid, don't, doesn't, won't, instead of, rather than, drop, dropped, dropping, skip, skipping, rule out, ruled out, no longer, without, against`.
-2. **Scope window** — a cue governs a bounded span after it (typically ó6 tokens, or to the next clause boundary). "Don't use Postgres **for the primary store**" scopes the negation to a role, not to Postgres universally. Getting scope wrong produces confident nonsense.
+2. **Scope window** — a cue governs a bounded span after it (typically ≤6 tokens, or to the next clause boundary). "Don't use Postgres **for the primary store**" scopes the negation to a role, not to Postgres universally. Getting scope wrong produces confident nonsense.
 3. **Verb-pattern polarity** — `switch(ing)? to X`, `move to X`, `go with X`, `adopt X` = **+X**; `drop X`, `remove X`, `stop using X`, `revert X` = **−X**; `considering X`, `maybe X`, `could use X` = **modal, not asserted** — must never create a decision node, only a candidate.
 4. **Antonym lexicon** over decision values — pairs that are mutually exclusive within a variable: `(sqlite, postgres)`, `(sql, nosql)`, `(ssr, csr)`, `(monolith, microservices)`, `(hosted, self-hosted)`, `(auth, no-auth)`. Two decisions asserting opposite members of a pair on the same variable is a structural contradiction with no model required.
 5. **Modality is a first-class field.** `asserted | proposed | hypothetical | reported`. Only `asserted` creates an IN-labelled node. This single field prevents most extraction-driven false contradictions, and it is the thing ARGUS-style pipelines lose when they treat every sentence as a claim.
@@ -255,19 +255,19 @@ Everything above must work with **no model, no network, no download**. This is n
 
 ```
    text
-    ³
+    │
     ├─ normalise: lowercase, strip punctuation, collapse whitespace
     ├─ strip stopwords (small closed list)
     ├─ tokens            ─┐
     ├─ character 3-grams ─┼──► feature stream
-    └─ lexicon synonyms  ─┘        ³
+    └─ lexicon synonyms  ─┘        │
                                    ▼
                      h(feature) mod 512  → bucket index
                      h₂(feature) mod 2   → sign  (+1 / −1)
-                                   ³
+                                   │
                                    ▼
                      accumulate TF weight × sign into bucket
-                                   ³
+                                   │
                                    ▼
                           L2-normalise → 512-d vector
 ```
@@ -309,10 +309,10 @@ Measured at **|D| = 500 decisions, dim = 512**:
 | Operation | Cost |
 |---|---|
 | Full dense scan | 256,000 multiply-adds → **< 1 ms** in JS |
-| RRF fusion over 3 lists | `O(n log n)` on ó 60 items → negligible |
+| RRF fusion over 3 lists | `O(n log n)` on ≤ 60 items → negligible |
 | Local rerank of top-20 | 20 × 5 component scores → negligible |
 | Index build per decision | 4 levels; L2 requires the generation step (free if folded into extraction) |
-| Total index size | 500 × 512 × 4 bytes ÷ **1 MB** as float32; ~250 KB rounded to 8-bit |
+| Total index size | 500 × 512 × 4 bytes ≈ **1 MB** as float32; ~250 KB rounded to 8-bit |
 
 **Conclusion to state plainly:** a vector database would add a network hop, a dependency, and an approximation error, in exchange for speeding up an operation that already completes in under a millisecond. Brute force is not a compromise here; it is the correct engineering choice, and the interface boundary around it (`topK(query, k)`) is where a real ANN index would slot in if the corpus ever grew by three orders of magnitude.
 

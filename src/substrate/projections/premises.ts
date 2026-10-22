@@ -18,12 +18,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import { compare, byValidDesc, byIdAsc, isOpen } from "../bi-temporal";
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
-import { type Decision, type Premise, type PremiseType, isWorldObservable } from "@/types/domain";
-import { byIdAsc, byTemporalValidDesc, compare, isOpen } from "../bi-temporal";
+import { isWorldObservable, type Decision, type Premise, type PremiseType } from "@/types/domain";
 import type { GraphState } from "../graph-state";
 
-const BY_VALID_TIME = compare(byTemporalValidDesc, byIdAsc);
+const BY_VALID_TIME = compare(byValidDesc, byIdAsc);
 
 export function getPremise(state: GraphState, id: PremiseId): Premise | null {
   return state.premises.get(id) ?? null;
@@ -111,7 +111,10 @@ export function dependentsOf(state: GraphState, premiseId: PremiseId): readonly 
   return state.premiseToDecisions.get(premiseId) ?? [];
 }
 
-export function dependentDecisions(state: GraphState, premiseId: PremiseId): readonly Decision[] {
+export function dependentDecisions(
+  state: GraphState,
+  premiseId: PremiseId,
+): readonly Decision[] {
   const out: Decision[] = [];
   for (const id of dependentsOf(state, premiseId)) {
     const decision = state.decisions.get(id);

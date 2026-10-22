@@ -32,14 +32,14 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { WhyLogEngine } from "@/ai/types";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
+import type { GraphState } from "@/substrate/graph-state";
 import type { ContradictionGate, ContradictionVerdict } from "@/types/retrieval";
+import type { WhyLogEngine } from "@/ai/types";
+import { detectStructural, type StructuralHit } from "./structural";
+import { detectPremiseInvalidation, type PremiseInvalidation } from "./premise";
+import { detectSemantic, type CandidatePair, type GateBResult, type SemanticHit } from "./semantic";
 import type { Labelled, NodeId } from "../labeller";
-import { type PremiseInvalidation, detectPremiseInvalidation } from "./premise";
-import { type CandidatePair, type GateBResult, type SemanticHit, detectSemantic } from "./semantic";
-import { type StructuralHit, detectStructural } from "./structural";
 
 /** One finding, whichever gate produced it. The cycle downstream
  *  (`backtracking`, `cascade`, `adjudication`, `proposals`) reads this shape and
@@ -96,9 +96,7 @@ export async function runGates(
   /* ---- (b) semantic: retrieval + classification, when available ---- */
   const semantic =
     options.skipSemantic === true
-      ? unavailable(
-          "Skipped for this run. Gates (a) and (c) still ran; nothing was compared semantically.",
-        )
+      ? unavailable("Skipped for this run. Gates (a) and (c) still ran; nothing was compared semantically.")
       : await detectSemantic(state, options.engine, options.retrieve);
 
   const findings: GateFinding[] = [
