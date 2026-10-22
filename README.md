@@ -18,8 +18,12 @@ WhyLog stores the premises. When one breaks, it tells you which decisions just b
 
 ## Current status
 
-**Phase 0 (Foundation & Substrate) and Phase 1 (Extraction Pipeline) are written.
-Gate G1 — the walking skeleton — is code-complete but has never been executed.**
+**Phases 0, 1 and 2 are written. Gates G1 (the walking skeleton) and G2 (it reasons) are
+code-complete but have never been executed.**
+
+Phase 2 is the critical gate and the one nothing else in this space has: a truth-maintenance
+layer that treats a decision as a belief held under assumptions, and asks whether the
+assumptions still hold.
 
 | Area | State |
 |---|---|
@@ -30,14 +34,25 @@ Gate G1 — the walking skeleton — is code-complete but has never been execute
 | Type contracts | ✅ 8 files in [`src/types/`](src/types/) — the closed 36-type event vocabulary and every domain shape |
 | Demo fixtures | ✅ [`fixtures/demo-transcript.txt`](fixtures/demo-transcript.txt) (October: the SQLite decision and its premises) · [`fixtures/demo-transcript-2.txt`](fixtures/demo-transcript-2.txt) (November: the same premises, falsified by the world) |
 | **Phase 0 — substrate** | ✅ Log · fold · bi-temporal · identity · hash chain · persistence · portability · ontology · engine seam · store · boot |
-| **Phase 1 — extraction** | ✅ **109 source files, ~31.4k lines.** Normalise · segment · cue scan · decisions · **premises and the OUT-list** · alternatives · provenance · snippet validation · identity resolution · confidence tiers · review queue · commit · both engines |
-| Phases 2–7 | ⬜ Not started |
+| **Phase 1 — extraction** | ✅ Normalise · segment · cue scan · decisions · **premises and the OUT-list** · alternatives · provenance · snippet validation · identity resolution · confidence tiers · review queue · commit · both engines |
+| **Phase 2 — truth maintenance ★** | ✅ **132 source files, ~38.8k lines.** Assertion entry point (four input kinds, one function) · JTMS labeller with fixpoint and `UNFOUNDED` · **gate (a) structural** · **gate (b) semantic** · **gate (c) premise invalidation ★** · dependency-directed backtracking · nogoods · cascade with the independent-support stop · entrenchment with the EE3 cap · Hansson non-prioritized screening · seven-part proposals · audit trail on learned time · the nine-step REVISE cycle · the Reasoning view |
+| Phases 3–7 | ⬜ Not started |
 | Tests | ⬜ Deliberately deferred — see [`notes/PHASE-0-NOTES.md`](notes/PHASE-0-NOTES.md) and [`notes/PHASE-1-NOTES.md`](notes/PHASE-1-NOTES.md) |
 
 Paste a transcript into the **Import & review** view — the default screen — and the local engine,
 with no API key, returns decisions with their Y-statements, the premises each one rests on, the
 conditions each one *excludes*, and the alternatives that were turned down. Nothing enters the log
 until a human decides each item; `commit.ts` refuses an item with no review action.
+
+Then open **Reasoning** and click a premise about the world — `single-user`, say — and state what
+you observed instead. The cycle labels the graph, fires all three gates, backtracks to the *minimal*
+set of assumptions responsible, cascades (stopping wherever a decision has independent support),
+weighs what it would cost to change, and produces a seven-part proposal. It applies nothing: the
+system proposes, you dispose, and every action requires a reason that goes into the log.
+
+Gates (a) and (c), backtracking, the cascade, entrenchment and adjudication are all **deterministic
+and engine-independent** — the whole of G2 runs keyless. The LLM improves gate (b)'s recall and the
+proposal's phrasing. It is not load-bearing for correctness.
 
 Fixture 2 exists to demo the thing nobody else does: six weeks later the app has four users and is
 deployed, so `scale.single_user` and `deployment.local_only` are false. Nobody contradicts the

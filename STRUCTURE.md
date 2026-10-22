@@ -476,6 +476,30 @@ cannot be read as an assertion), and the conclusion of a Socratic exchange ("the
 no ", "is pure cost"). The fixture audit that found the gap is in
 `notes/PHASE-1-PLAN.md`.
 
+### 18.2 Phase 2 deviations
+
+§7 lists the reasoning layer file-for-file and every one of them exists as named. Four
+deviations, all deliberate:
+
+| §7 / §5 said | Built instead | Why |
+|---|---|---|
+| `gates/index.ts` — "any-fired **short-circuit**" | **No short-circuit.** All three gates run; results are unioned and de-duplicated by `(gate, decision, otherDecision, premise)`. | A structural contradiction would hide a premise invalidation on the same decision, and the two have **different remedies**: "you disagree with yourself" vs "the world moved". A user told only the first fixes the wrong thing. The plan's own diagram asks "any gate fired?" *after* the three, not between them. |
+| `revise.ts` — "single entry point for transcripts, user decisions, guard results and repo scans" | **Split in two.** `assert.ts` is the four-kind entry point (the `switch` on `source` lives there and nowhere else); `revise.ts` is the nine-step cycle and never sees the source. | §2.1's acceptance criterion is that all four kinds produce a cycle "with no branching in the reasoning code". One file doing both would put the branch inside the reasoner. Splitting it makes the criterion structural rather than a promise. Also: ASSERT must be committed and folded **before** the labeller runs, so the two are separate batches by necessity — see `notes/PHASE-2-NOTES.md` §2.8. |
+| §5 dropped `ai/local/classify.ts` (recorded in §18.1) | **Added back**, at `src/ai/local/classify.ts`. | §2.11 specifies NLI-style rules for the local engine's gate (b), and `ai/local/index.ts` carried an explicit `Phase 2 adds the classifier here` stub. Four rules, no model. A fifth rule — negation across *different* variables — was written and **removed**: it fires on "no auth needed" beside "use SQLite", which is risk R3. The rejection is recorded in the file. |
+| §11 / §13 did not list them | **`store/reasoning.ts`** (681 L) and **`views/ReasoningView.tsx`** (1004 L). | The store is the only place in Phase 2 that can write to the log, which is invariant I4 mechanically enforced rather than by convention. The view is the G2 demonstration surface; without it the phase is not demoable. `App.tsx` now routes `reasoning` second, after `review`. |
+
+**Ordering deviation inside the cycle:** ADJUDICATE runs **before** BACKTRACK and CASCADE, not
+after as §2.1's diagram draws it. A *refused* newcomer produces no backtracking and no cascade,
+because nothing is retracted — screening first is what stops a passing remark from triggering a
+retraction run. The diagram shows the data flow for an *accepted* newcomer.
+
+**Contracts reused, not re-derived:** `types/reasoning.ts` already fixed `BacktrackResult`,
+`CascadeResult`, `CascadeStep`, `NogoodRecord`, `AdjudicationOutcome`, `RevisionProposal`,
+`EntrenchmentBreakdown`, `ENTRENCHMENT_WEIGHTS`, `RECENCY_HALF_LIFE_DAYS`,
+`UNKNOWN_IMPLEMENTATION_COST` and `entrenchmentBand`. Phase 2 imported all of them verbatim.
+
+---
+
 ## 19. Counts
 
 | Area | Directories | Files |
