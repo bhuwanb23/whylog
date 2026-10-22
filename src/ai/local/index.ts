@@ -23,28 +23,31 @@
  * output stays valid across runs.
  *
  * ---------------------------------------------------------------------------
- * PHASE 0 STATE
+ * WHAT IS COMPLETE AND WHAT IS NOT
  *
- * The embedding path below is COMPLETE — it is the 0.8 deliverable and the index
- * is real. `extract`, `classify`, `compose` and `synthesizeGuards` are wired to
- * their Phase 1/2/4/5 modules, which do not exist yet; until they do, they return
- * an empty result stamped with this engine rather than throwing. An empty result is
- * the honest answer for an unimplemented stage, and it lets the app boot, render
- * and be clicked through with no key — the 0.9 and 0.10 acceptance criteria.
+ *   embed      COMPLETE since Phase 0 — the 0.8 deliverable, and the index is real
+ *   extract    COMPLETE since Phase 1 — cue-driven, episode-based, keyless. This is
+ *              the walking skeleton: a messy transcript becomes reviewed,
+ *              structured, persisted decisions WITH PREMISES.
+ *   compose    template implementation, replaced in Phase 3
+ *   classify   structural verdict only; the semantic classifier is Phase 2
+ *   synthesizeGuards  empty, with an `unverifiableReason`. Phase 4.
+ *
+ * An unimplemented stage returns an empty result stamped with this engine rather
+ * than throwing. Empty is the honest answer, and it lets the app boot, render and
+ * be clicked through with no key.
  * ---------------------------------------------------------------------------
  */
 
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { ClassificationResult } from "@/types/retrieval";
-import { LOCAL_DIMENSIONS } from "../config";
-import { EngineError, unsupportedError } from "../errors";
-import { registerEngine } from "../registry";
 import type {
   CompositionRequest,
   CompositionResult,
   EmbeddingResult,
   EngineCapabilities,
+  ExtractionRequest,
   ExtractionResult,
   GuardSynthesisRequest,
   GuardSynthesisResult,
@@ -53,12 +56,20 @@ import type {
   WhyLogEngine,
 } from "../types";
 import { LOCAL_CAPABILITIES } from "../types";
+import { EngineError, unsupportedError } from "../errors";
+import { registerEngine } from "../registry";
+import { LOCAL_DIMENSIONS } from "../config";
 import {
-  LOCAL_EMBEDDING_MODEL,
   LOCAL_ENGINE_ID,
+  LOCAL_EMBEDDING_MODEL,
   embedBatch,
   dimensions as embeddingDimensions,
 } from "./embed";
+import { extractLocal } from "./extract";
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { segmentEpisodes } from "@/extraction/segmentation";
+import type { ISODateString } from "@/types/common";
+import { nowISO } from "@/lib/format";
 
 const ENGINE: EngineId = { kind: "local", model: "cue-extractor-v1" };
 
@@ -75,10 +86,10 @@ export function createLocalEngine(): WhyLogEngine {
 
     capabilities: (): EngineCapabilities => ({
       ...LOCAL_CAPABILITIES,
-      // Honest about the Phase 0 state: the seam exists and the embedding path is
-      // complete, the rest arrives in Phase 1. Reporting `extraction: true`
-      // before the cue extractor exists would light up a button that returns
-      // nothing, which is worse than a disabled one.
+      // `extraction: true` and `voting: false` are both load-bearing. Extraction
+      // is real, so the Import control must be live. Voting is NOT, because the
+      // local engine is deterministic: three runs would return three identical
+      // results, so the toggle is hidden rather than offered and ignored.
       notes: LOCAL_CAPABILITIES.notes,
     }),
 
@@ -88,10 +99,7 @@ export function createLocalEngine(): WhyLogEngine {
       const started = performanceSafeNow();
       if (signal?.aborted) throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
 
-      const vectors = embedBatch(texts, {
-        dimensions: embeddingDimensions(),
-        namespace: "decision",
-      });
+      const vectors = embedBatch(texts, { dimensions: embeddingDimensions(), namespace: "decision" });
 
       return {
         vectors,
@@ -104,26 +112,35 @@ export function createLocalEngine(): WhyLogEngine {
       };
     },
 
-    /* ---------------- extraction: Phase 1 ---------------- */
+    /* ---------------- extraction: COMPLETE ---------------- */
 
+    /**
+     * normalise → segment → recognise → score → stamp.
+     *
+     * Snippet spans come from the offset map BY CONSTRUCTION, so the local path
+     * cannot produce a paraphrased citation. `snippet-validation.ts` still checks
+     * it, because a check that only applies to one engine is a check the next
+     * engine will skip.
+     */
     extract: async (request): Promise<ExtractionResult> => {
       const started = performanceSafeNow();
       if (request.signal?.aborted) {
         throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
       }
 
-      // Phase 1 replaces this body with: normalise -> segment -> cue match ->
-      // ontology resolve -> confidence score. The shape of the return value does
-      // not change, which is the point of fixing the seam first.
-      return {
-        decisions: [],
-        premises: [],
-        alternatives: [],
-        episodes: [],
-        discarded: [],
-        engine: id,
-        durationMs: performanceSafeNow() - started,
-      };
+      const normalized = normaliseTranscript(request.text, {
+        transcriptId: request.transcriptId,
+        ...(request.occurredAt === undefined ? {} : { occurredAt: request.occurredAt }),
+      });
+
+      const { episodes } = segmentEpisodes(normalized);
+      const extraction = extractLocal(request, { normalized, episodes, engine: id });
+
+      if (request.signal?.aborted) {
+        throw new EngineError("cancelled", "Cancelled after extraction.", { engine: id.model });
+      }
+
+      return extraction.result;
     },
 
     /* ---------------- classification: Phase 2 ---------------- */
@@ -176,7 +193,9 @@ export function createLocalEngine(): WhyLogEngine {
 
     /* ---------------- guard synthesis: Phase 4 ---------------- */
 
-    synthesizeGuards: async (request: GuardSynthesisRequest): Promise<GuardSynthesisResult> => {
+    synthesizeGuards: async (
+      request: GuardSynthesisRequest,
+    ): Promise<GuardSynthesisResult> => {
       // Phase 4 fills this from src/guards/templates. The honest Phase 0 answer is
       // "no guard, and here is why", which marks the decision `unverifiable`
       // rather than silently skipping it.
@@ -207,7 +226,8 @@ function templateCompose(request: CompositionRequest): string {
           `- ${fact.statement} (${fact.decisionId}, ${fact.label}, valid from ${fact.validFrom.slice(0, 10)})`,
       );
       const premises = [...new Set(facts.flatMap((f) => f.premises))];
-      const premiseLine = premises.length > 0 ? `\nThese rest on: ${premises.join("; ")}.` : "";
+      const premiseLine =
+        premises.length > 0 ? `\nThese rest on: ${premises.join("; ")}.` : "";
       return `On ${question}, the log records ${facts.length} decision${facts.length === 1 ? "" : "s"}:\n${lines.join("\n")}${premiseLine}`;
     }
 
@@ -226,9 +246,7 @@ function templateCompose(request: CompositionRequest): string {
 
     case "premise-summary":
       return facts
-        .map(
-          (fact) => `${fact.decisionId} assumes ${fact.premises.join(", ") || "nothing recorded"}`,
-        )
+        .map((fact) => `${fact.decisionId} assumes ${fact.premises.join(", ") || "nothing recorded"}`)
         .join("; ");
 
     case "cascade-explanation":
