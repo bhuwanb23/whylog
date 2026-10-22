@@ -253,7 +253,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 10. `src/export/` — Phase 5 · L4 ✅ built
+## 10. `src/export/` — Phase 5 · L4
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -264,8 +264,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `budget.ts` | Two-tier emission; ~200-line target; live line/token indicator | 5.4 |
 | `consistency-gate.ts` | **Pre-export check** — block on conflict, exclude `OUT`, annotate contested premises and failing guards | 5.6 |
 | `record.ts` | The agent-optimized record: ID · MUST/MUST NOT · `applies_to` · Because (premise IDs) · Rejected · Verify · Status | 5.3 |
-| `emitters/claude.ts` · `agents.ts` · `cursorrules.ts` · `decisions-md.ts` · `index.ts` | Four document targets from one CIF | 5.2 |
-| `emitters/shared.ts` | **The record renderer all three agent targets share** — so a record cannot read differently in CLAUDE.md than in AGENTS.md | 5.3 |
+| `emitters/claude.ts` · `agents.ts` · `cursorrules.ts` · `decisions-md.ts` · `index.ts` | Five targets from one CIF | 5.2 |
 | `rejected-block.ts` | **"Rejected — do not re-propose"** with premise status | 5.3 |
 | `verify-command.ts` | Guard → one-line runnable command | 5.3 |
 | `stamp/index.ts` | Integrity stamp assembly | 5.5 |
@@ -612,36 +611,4 @@ declaration that followed. The checker then reported a missing export that was p
 worse than reporting nothing, because it sends you looking for a bug in the source instead of in
 the checker. It is now a character scanner that tracks string state, and strips line comments too.
 Globs like `**/*` are common in this codebase, so this would have recurred constantly.
-
-### 18.5 Phase 5 deviations
-
-| # | Plan says | Built | Why |
-|---|---|---|---|
-| 🟠 1 | §10 listed 21 files in `src/export/` | **22** — `emitters/shared.ts` added | Three agent targets all want the same record; only the FILE differs. Rendering the record three times would mean a record that reads differently in `CLAUDE.md` than in `AGENTS.md` — two agents following the same log would disagree about the same decision. This pushes the intermediate form's guarantee one level down: not only does no emitter read the graph, no emitter renders a record either. |
-| 🟠 2 | §5.1 describes one CIF | **Two**, from one graph in one pass | DECISIONS.md must carry superseded and OUT decisions (§5.3: "nothing is emitted for SUPERSEDED decisions except in DECISIONS.md"), and must not obey a token budget — a human document is not read into a context window. One CIF cannot be both filtered and unfiltered. Both are built from the same snapshot in the same call, so the single-pass guarantee holds; what changed is that emitters are pure functions of *a* CIF, not of *the* CIF. |
-| 🟠 3 | §5.2 lists `.cursorrules` / `.cursor/rules/*.md` | `.cursorrules` only | The per-rule-file layout is a directory of files with front-matter globs, not a single artifact — a different output shape and a different download flow. Recorded in the emitter's header as a v2 target rather than half-implemented, because a partial version would emit files Cursor does not read. |
-| 🟡 4 | §5.5's stamp carries a content digest | The digest covers the artifact **body, excluding the stamp** | A digest cannot cover the stamp that contains it — that is circular. `renderStamp` digests the body; `verifyStamp` strips the stamp before digesting on the way back in, so the two agree. Digesting a placeholder instead would produce a stamp that fails verification the moment anyone checks it, which is worse than no digest. |
-| 🟡 5 | §5.7 says DECISIONS.md and the JSON export are both re-importable | Both, with **different fidelity, stated** | The JSON path is exact — it is the event log itself, and `substrate/portability.ts` already replays it with chain verification. DECISIONS.md is lossy by nature: it never carried snippets, spans, confidence or learned times, so they cannot come back. `round-trip.ts` says so in the merge plan rather than implying a faithful round trip. Claiming exactness for Markdown would be the same category of error as faking a cross-encoder result. |
-| 🟡 6 | §5.3's verify command | Two shapes, chosen by guard kind | All-dependency guards get a self-contained `node -e` one-liner that runs anywhere with Node and installs nothing. Anything needing glob or word-boundary matching delegates to the exported runner, because reimplementing `lib/glob.ts` semantics inside a string literal would be a second copy that could drift — the exact risk §5.1's single-pass rule exists to remove. |
-| 🟡 7 | — | `guards/ci-export.ts` runner gained `--decision <id>` | The exported verify commands invoke that flag. Without support the runner would ignore it and evaluate every guard, so a check on one decision would pass or fail on the strength of the others — and exiting 0 for a decision it never filtered to is the dangerous direction. Added to Phase 4's runner rather than a second runner, because two runners would drift. |
-
-**Bugs found and fixed during the build:**
-
-- `store/guards.ts` (Phase 4) stamped the CI export with `whylog.log.head?.hash`. `EventLog` has no
-  `head` object — the field is `headHash`. The optional chain made it silently `undefined`, so
-  **every CI export was stamped `"unknown"`**: a runner whose provenance is unknown cannot be tied
-  back to the log that produced it, which is the entire reason it carries a head hash.
-- `emitters/shared.ts` called `renderStatus` without importing it — the same checker blind spot as
-  the four Phase 4 cases. Found by the string-aware undeclared-identifier scan.
-- `round-trip.ts` first used a **module-level mutable array** to collect rejected-alternative rows.
-  Parsing two files in one session would attribute the first file's rejections to the second file's
-  decisions, invisibly, because each parse would look individually plausible. Now local to the call.
-- `round-trip.ts` took the source head hash from `verification.found`, which is **inverted**: a
-  successful verification reports no `found` hash, because nothing was wrong. `MergePlan` now
-  carries `sourceHeadHash` from the parsed stamp.
-- `compiler.ts` had `formatExportId(state.counters.exports ?? 0 + 1)` — operator precedence makes
-  that `?? 1`, so every export in a session would have taken id `X-0001`.
-- `ci/index.ts` first fabricated a stamp full of zeros for the CI artifacts. It now receives the
-  same `IntegrityStamp` the documents carry: a second opinion about the log's counts would disagree
-  with the first the moment either was computed after a mutation.
 
