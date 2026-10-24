@@ -26,10 +26,12 @@
  */
 
 import { createLocalEngine, localEngineId } from "@/ai/local";
+import { synthesiseDecision } from "@/guards";
 import { nowISO } from "@/lib/format";
 import { type EventLog, appendBatch, emptyLog, fold } from "@/substrate";
 import type { GraphState } from "@/substrate/graph-state";
-import type { EngineId, ISODateString } from "@/types/common";
+import { type EngineId, type ISODateString, asISO } from "@/types/common";
+import type { EventType, NewEvent } from "@/types/events";
 import { STORAGE_KEYS } from "./keys";
 
 /** The storage keys a reset must clear. Listed here rather than scattered, because a reset that misses
@@ -111,9 +113,55 @@ export async function buildSeed(): Promise<SeedResult> {
       );
   }
 
+  /* Guards are synthesised, never auto-accepted. The harness only reads `guardStatusMap` and never
+   * writes guard events, so without this step the seed would show beat 7 an empty list. Templates
+   * keep the seed deterministic; letter suffixes match `formatGuardId` (`G-0007a`). */
+  const actor = { kind: "system" } as const;
+  const guardDrafts: NewEvent<EventType>[] = [];
+  const baseLog = rebuildLog(run);
+
+  /* Learned time is monotonic: take the max of wall-clock and the rebuilt log's lastAt so the
+   * guard events cannot be stamped earlier than the chain they append to. */
+  const lastAtMs = baseLog.lastAt === null ? 0 : Date.parse(baseLog.lastAt);
+  const at = asISO(new Date(Math.max(Date.parse(nowISO()), lastAtMs + 1)).toISOString());
+
+  for (const decision of run.state.decisions.values()) {
+    if (decision.status === "superseded" || decision.status === "archived") continue;
+    const result = await synthesiseDecision({
+      state: run.state,
+      decisionId: decision.id,
+      templatesOnly: true,
+      actor,
+      at,
+    });
+    guardDrafts.push(...result.drafts);
+  }
+
+  let log = baseLog;
+  if (guardDrafts.length > 0) {
+    const appended = appendBatch(
+      log,
+      guardDrafts.map((draft) => ({
+        draft,
+        context: { now: at, actor, reason: draft.reason ?? "guard synthesis" },
+      })),
+    );
+    if (appended.ok) {
+      log = appended.log;
+    } else {
+      const detail =
+        appended.validation.ok === false
+          ? appended.validation.message
+          : "unknown validation failure";
+      warnings.push(
+        `guard synthesis events failed to append (draft ${appended.failedAt}): ${detail}`,
+      );
+    }
+  }
+
   return {
-    log: rebuildLog(run),
-    state: run.state,
+    log,
+    state: fold(log.events, { engine: engineId, now: at }),
     engineId,
     builtAt: nowISO(),
     decisions: run.state.decisions.size,

@@ -36,12 +36,14 @@
 import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
 import type { WhyLogEngine } from "@/ai/types";
 import { runExtraction } from "@/extraction/pipeline";
+import { isDerivedPremise } from "@/extraction/review";
 import { DEFAULT_VOTING } from "@/extraction/voting";
 import { guardStatusMap } from "@/guards/feedback";
 import { monotonicNow, nowISO } from "@/lib/format";
 import {
   formatAlternativeId,
   formatDecisionId,
+  formatJustificationId,
   formatPremiseId,
   formatTranscriptId,
 } from "@/lib/ids";
@@ -61,11 +63,13 @@ import type {
   DecisionId,
   EngineId,
   EpisodeId,
+  EventId,
   ISODateString,
+  JustificationId,
   PremiseId,
   TranscriptId,
 } from "@/types/common";
-import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
+import type { Decision, Justification, Premise, RejectedAlternative } from "@/types/domain";
 import type { AnyEvent, EventType, NewEvent } from "@/types/events";
 import type { Guard } from "@/types/guards";
 import type { Answer } from "@/types/retrieval";
@@ -145,6 +149,16 @@ export interface RunResult {
 }
 
 const ACTOR: Actor = { kind: "system" };
+
+/**
+ * The eventId on an extraction informant before the fold rewrites it.
+ *
+ * Every extraction informant carries the id of the event that produced it; a draft cannot know that
+ * id, because the log mints it at append time. The commit path uses this same sentinel, and the
+ * `JustificationAttached` fold case rewrites it to the real event id, so it never survives into a
+ * folded graph.
+ */
+const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
 
 /**
  * Commit a revision pass and re-fold.
@@ -295,11 +309,26 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
     const alternativeIds: AlternativeId[] = [];
 
     let decisionSeq = 0;
+    let justificationSeq = state.counters.justifications;
     for (const candidate of run.decisions) {
       decisionSeq += 1;
       const id = formatDecisionId(state.counters.decisions + decisionSeq) as DecisionId;
       decisionIds.push(id);
       decisionIdByIndex.set(indexOfDecision(run.decisions, candidate), id);
+
+      const inList: PremiseId[] = [];
+      const outList: PremiseId[] = [];
+      for (const ref of candidate.premiseRefs) {
+        const premiseId = premiseIdByIndex.get(ref);
+        if (premiseId === undefined) continue;
+        const premise = run.premises[ref];
+        if (premise !== undefined && isDerivedPremise(premise.predicate, premise.text)) {
+          outList.push(premiseId);
+        } else {
+          inList.push(premiseId);
+        }
+      }
+
       drafts.push(
         decisionProposed(id, transcriptId, candidate, config.engineId, {
           premiseIds: candidate.premiseRefs
@@ -307,6 +336,27 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
             .filter(isDefined),
         }),
       );
+
+      /* The justification is emitted immediately after its decision — the same ordering
+       * `commit.ts` enforces, and for the same reason: `DecisionProposed` alone records the
+       * premises but no justification, so a decision would rest on nothing and the fold's
+       * `JustificationAttached` case would never create the justification that the label and
+       * the L2 invalidation check read. The IN/OUT split is recovered exactly as
+       * `resolvePremiseRefs` recovers it: an OUT-list entry is the one whose text carries the
+       * marker `premise-linker.ts` writes. */
+      if (inList.length > 0 || outList.length > 0) {
+        justificationSeq += 1;
+        drafts.push(
+          justificationAttached(
+            id,
+            inList,
+            outList,
+            config.engineId,
+            formatJustificationId(justificationSeq),
+            asISO(transcript.occurredAt),
+          ),
+        );
+      }
     }
 
     let alternativeSeq = 0;
@@ -639,6 +689,34 @@ function premiseProposed(
   } as NewEvent<EventType>;
 }
 
+function justificationAttached(
+  consequent: DecisionId,
+  inList: readonly PremiseId[],
+  outList: readonly PremiseId[],
+  engine: EngineId,
+  justificationId: JustificationId,
+  createdAt: ISODateString,
+): NewEvent<EventType> {
+  const justification: Justification = {
+    id: justificationId,
+    consequent,
+    inList,
+    outList,
+    informant: { kind: "extraction", engine, eventId: PLACEHOLDER_EVENT_ID },
+    createdAt,
+  };
+
+  return {
+    type: "JustificationAttached",
+    actor: ACTOR,
+    // A STATE_CHANGING event, so `reason` is mandatory. It states what the
+    // justification rests on, which is the sentence a user reads when gate (c)
+    // fires six months later.
+    reason: justificationReason(justification),
+    payload: { justificationId, consequent, justification },
+  } as NewEvent<EventType>;
+}
+
 function alternativeRejected(
   id: AlternativeId,
   decisionId: DecisionId,
@@ -660,6 +738,19 @@ function alternativeRejected(
       snippet: candidate.snippet,
     },
   } as NewEvent<EventType>;
+}
+
+/** Mirrors `commit.ts`'s reason: it states what the justification rests on. */
+function justificationReason(justification: Justification): string {
+  const parts = [
+    `${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`,
+  ];
+  if (justification.outList.length > 0) {
+    parts.push(
+      `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} — non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
+    );
+  }
+  return `Attaching a justification for ${justification.consequent}: ${parts.join(", ")}.`;
 }
 
 /* -------------------------------------------------------------------------- */

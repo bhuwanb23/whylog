@@ -29,7 +29,7 @@ These were not cosmetic. Each one meant a documented command did not work.
 **1. `npm run guards:ci` pointed at a file that did not exist.**
 
 `package.json` said `tsx scripts/export_guards.ts`; `scripts/` contained only `check_structure.py`. The CI
-`guards` job ran it, and every verify command Phase 5 exports — `node scripts/whylog-guards.mjs --decision
+`guards` job ran it, and every verify command Phase 5 exports — `node scripts/whylog-guards.cjs --decision
 WLD-0007` — names a runner this script was supposed to generate. So the entire Phase 4.6 → Phase 5 CI path
 was documented, wired and **never executable**.
 
@@ -113,6 +113,22 @@ oversight:
   reader can check in seconds.
 
 ---
+
+## The demo harness now emits justifications (beats 1 &amp; 5)
+
+`demo:verify` first failed two checks — `seed-has-premises` and `l2-unsound` — because the eval harness
+never emitted a `JustificationAttached` event. The fold's `DecisionProposed` case only records an
+`OUT`-list into `pendingPremises`; nothing links a decision to its premises into a justification until a
+`JustificationAttached` event arrives, so every extracted decision rested on nothing. Beats 1 and 5 both
+read justifications, so both failed.
+
+The fix in `src/eval/harness.ts` emits one `JustificationAttached` per decision, immediately after its
+`DecisionProposed`, mirroring `src/extraction/commit.ts`: an `EXTRACTION` informant with the placeholder
+`eventId`, a `reason` that names what the justification rests on, and the same `IN`/`OUT`-list split
+`resolvePremiseRefs` recovers (a premise is `OUT` iff its text carries the "— excluded by" marker).
+`src/eval/demo/kit.ts` also brands the guard-synthesis clock as `ISODateString` so the batch it appends
+typechecks. After the fix: 7 verified / 2 manual / 0 failed, deterministic across three consecutive runs,
+30 justifications in the graph.
 
 ## The one gap that cannot be closed here
 
