@@ -98,17 +98,22 @@ export function verifyDemo(seed: SeedResult): VerificationReport {
 
 function checkSeedHasSqlite(seed: SeedResult): CheckResult {
   const hit = [...seed.state.decisions.values()].find(
-    (decision) => decision.variable === "DATABASE" && /sqlite/i.test(decision.value + " " + decision.statement),
+    (decision) =>
+      decision.variable === "DATABASE" && /sqlite/i.test(`${decision.value} ${decision.statement}`),
   );
 
   return hit === undefined
-    ? failed("seed-has-sqlite-decision", "No SQLite decision in the seed. Beat 1 has nothing to show and every later beat depends on it.")
-    : verified("seed-has-sqlite-decision", hit.id + " · " + hit.statement);
+    ? failed(
+        "seed-has-sqlite-decision",
+        "No SQLite decision in the seed. Beat 1 has nothing to show and every later beat depends on it.",
+      )
+    : verified("seed-has-sqlite-decision", `${hit.id} · ${hit.statement}`);
 }
 
 function checkSeedHasPremises(seed: SeedResult): CheckResult {
   const sqlite = [...seed.state.decisions.values()].find(
-    (decision) => decision.variable === "DATABASE" && /sqlite/i.test(decision.value + " " + decision.statement),
+    (decision) =>
+      decision.variable === "DATABASE" && /sqlite/i.test(`${decision.value} ${decision.statement}`),
   );
 
   if (sqlite === undefined) {
@@ -129,7 +134,7 @@ function checkSeedHasPremises(seed: SeedResult): CheckResult {
   if (premiseIds.size === 0) {
     return failed(
       "seed-has-premises",
-      sqlite.id + " has no justification linking it to any premise. Beat 1's whole point — 'notice what is underneath it' — cannot be shown.",
+      `${sqlite.id} has no justification linking it to any premise. Beat 1's whole point — 'notice what is underneath it' — cannot be shown.`,
     );
   }
 
@@ -140,7 +145,7 @@ function checkSeedHasPremises(seed: SeedResult): CheckResult {
 
   return verified(
     "seed-has-premises",
-    premiseIds.size + " premise(s) linked: " + (names.length > 0 ? names.join(", ") : "ids resolved but predicates unreadable"),
+    `${premiseIds.size} premise(s) linked: ${names.length > 0 ? names.join(", ") : "ids resolved but predicates unreadable"}`,
   );
 }
 
@@ -150,13 +155,16 @@ function checkReversalDetected(seed: SeedResult): CheckResult {
   );
 
   if (records.length === 0) {
-    return failed("reversal-detected", "No contradiction or reversal record in the seed. Beat 3 would show an empty panel.");
+    return failed(
+      "reversal-detected",
+      "No contradiction or reversal record in the seed. Beat 3 would show an empty panel.",
+    );
   }
 
   const structural = records.filter((record) => record.gate === "structural").length;
   return verified(
     "reversal-detected",
-    records.length + " record(s): " + structural + " structural, " + (records.length - structural) + " other gate(s).",
+    `${records.length} record(s): ${structural} structural, ${records.length - structural} other gate(s).`,
   );
 }
 
@@ -164,29 +172,30 @@ function checkL2Unsound(seed: SeedResult): CheckResult {
   /* The headline beat. The October SQLite decision must be OUT or UNFOUNDED after the November transcript
    * is imported, without the November transcript mentioning databases. */
   const sqlite = [...seed.state.decisions.values()].filter(
-    (decision) => decision.variable === "DATABASE" && /sqlite/i.test(decision.value + " " + decision.statement),
+    (decision) =>
+      decision.variable === "DATABASE" && /sqlite/i.test(`${decision.value} ${decision.statement}`),
   );
 
   if (sqlite.length === 0) return failed("l2-unsound", "No SQLite decision in the seed.");
 
-  const unsound = sqlite.filter((decision) => decision.label === "OUT" || decision.label === "UNFOUNDED");
+  const unsound = sqlite.filter(
+    (decision) => decision.label === "OUT" || decision.label === "UNFOUNDED",
+  );
 
   if (unsound.length === 0) {
     return failed(
       "l2-unsound",
-      "DEMO-KILLER: the SQLite decision is still " + sqlite.map((decision) => decision.label).join("/") +
-      " after the November transcript. Beat 5 is the peak of the demo and it does not land. " +
-      "Fall back to driving the falsification by hand from the Reasoning view and say so out loud.",
+      `DEMO-KILLER: the SQLite decision is still ${sqlite.map((decision) => decision.label).join("/")} after the November transcript. Beat 5 is the peak of the demo and it does not land. Fall back to driving the falsification by hand from the Reasoning view and say so out loud.`,
     );
   }
 
   let outListTotal = 0;
-  for (const justification of seed.state.justifications.values()) outListTotal += justification.outList.length;
+  for (const justification of seed.state.justifications.values())
+    outListTotal += justification.outList.length;
 
   return verified(
     "l2-unsound",
-    unsound.map((decision) => decision.id).join(", ") + " went unsound. " + outListTotal +
-    " OUT-list entry/entries in the graph, which is what makes the retraction non-monotonic rather than a supersede.",
+    `${unsound.map((decision) => decision.id).join(", ")} went unsound. ${outListTotal} OUT-list entry/entries in the graph, which is what makes the retraction non-monotonic rather than a supersede.`,
   );
 }
 
@@ -201,9 +210,11 @@ function checkNoHypotheticalNodes(seed: SeedResult): CheckResult {
     ? verified("no-hypothetical-nodes", "No hypothetical-modality decision carries an IN label.")
     : failed(
         "no-hypothetical-nodes",
-        "DEMO-KILLER: " + hypothetical.length + " hypothetical decision(s) are labelled IN: " +
-        hypothetical.map((decision) => decision.id + " (" + decision.statement.slice(0, 40) + ")").join("; ") +
-        ". Beat 6 shows the graph, and a judge who reads one of these aloud ends the demo.",
+        `DEMO-KILLER: ${hypothetical.length} hypothetical decision(s) are labelled IN: ${hypothetical
+          .map((decision) => `${decision.id} (${decision.statement.slice(0, 40)})`)
+          .join(
+            "; ",
+          )}. Beat 6 shows the graph, and a judge who reads one of these aloud ends the demo.`,
       );
 }
 
@@ -211,7 +222,10 @@ function checkGuardsProposed(seed: SeedResult): CheckResult {
   const guards = [...seed.state.guards.values()];
 
   if (guards.length === 0) {
-    return failed("guards-proposed-not-failing", "No guards synthesised. Beat 7 has nothing to show.");
+    return failed(
+      "guards-proposed-not-failing",
+      "No guards synthesised. Beat 7 has nothing to show.",
+    );
   }
 
   /* Day-one failures are the killer: a guard that has already FAILED before the user wrote any code
@@ -222,21 +236,18 @@ function checkGuardsProposed(seed: SeedResult): CheckResult {
   if (accepted.length > 0) {
     return failed(
       "guards-proposed-not-failing",
-      "DEMO-KILLER: " + accepted.length + " guard(s) reached `accepted` with no human in the loop. Invariant I4 says the system proposes and the human disposes.",
+      `DEMO-KILLER: ${accepted.length} guard(s) reached \`accepted\` with no human in the loop. Invariant I4 says the system proposes and the human disposes.`,
     );
   }
 
   return {
     check: "guards-proposed-not-failing",
     status: failing.length === 0 ? "verified" : "manual",
-    evidence:
-      guards.length + " guard(s) synthesised, all in `proposed` or `suppressed` lifecycle. " +
-      failing.length + " currently failing against the empty virtual project.",
+    evidence: `${guards.length} guard(s) synthesised, all in \`proposed\` or \`suppressed\` lifecycle. ${failing.length} currently failing against the empty virtual project.`,
     manualStep:
       failing.length === 0
         ? ""
-        : failing.length + " guard(s) fail against an empty project. Paste a real package.json into the " +
-          "project panel before beat 7, or show the proposal list instead of the run list.",
+        : `${failing.length} guard(s) fail against an empty project. Paste a real package.json into the project panel before beat 7, or show the proposal list instead of the run list.`,
   };
 }
 
@@ -247,7 +258,7 @@ function checkExportContainsDecision(seed: SeedResult): CheckResult {
   return {
     check: "export-contains-decision",
     status: "manual",
-    evidence: seed.state.decisions.size + " decision(s) available to export; " + seed.state.exports.size + " export record(s) already in the log.",
+    evidence: `${seed.state.decisions.size} decision(s) available to export; ${seed.state.exports.size} export record(s) already in the log.`,
     manualStep:
       "In the Export view, compile CLAUDE.md and confirm three things: (1) the Postgres decision appears " +
       "as an imperative MUST scoped to a glob, (2) the rejected-alternatives block names SQLite, (3) the " +
@@ -257,11 +268,12 @@ function checkExportContainsDecision(seed: SeedResult): CheckResult {
   };
 }
 
-function checkAnswerIsGrounded(seed: SeedResult): CheckResult {
+function checkAnswerIsGrounded(_seed: SeedResult): CheckResult {
   return {
     check: "answer-is-grounded",
     status: "manual",
-    evidence: "Asking a question runs the retrieval pipeline over the seeded index, which is built in the browser.",
+    evidence:
+      "Asking a question runs the retrieval pipeline over the seeded index, which is built in the browser.",
     manualStep:
       "In the Ask view, ask 'Why did we choose SQLite over Postgres?' and confirm the answer carries a " +
       "GROUNDED verdict with at least one citation that resolves to a real decision. Then ask a question " +
@@ -278,8 +290,14 @@ function checkGraphRenders(seed: SeedResult): CheckResult {
   const premises = seed.state.premises.size;
 
   return decisions > 0 && premises > 0
-    ? verified("graph-renders", decisions + " decision(s) and " + premises + " premise(s): both sides of the bipartition are populated.")
-    : failed("graph-renders", decisions + " decision(s), " + premises + " premise(s). An empty side produces an empty diagram.");
+    ? verified(
+        "graph-renders",
+        `${decisions} decision(s) and ${premises} premise(s): both sides of the bipartition are populated.`,
+      )
+    : failed(
+        "graph-renders",
+        `${decisions} decision(s), ${premises} premise(s). An empty side produces an empty diagram.`,
+      );
 }
 
 function verified(check: CheckId, evidence: string): CheckResult {
@@ -298,21 +316,26 @@ export function renderVerification(report: VerificationReport): string {
   const lines: string[] = [];
 
   lines.push("KEYLESS DEMO VERIFICATION");
-  lines.push(report.verified + " verified · " + report.manual + " manual · " + report.failed + " FAILED");
+  lines.push(`${report.verified} verified · ${report.manual} manual · ${report.failed} FAILED`);
   lines.push(report.demoable ? "DEMOABLE." : "NOT DEMOABLE — a beat will visibly not work.");
   lines.push("");
 
-  lines.push("Beat".padEnd(6) + "View".padEnd(14) + "Check".padEnd(32) + "Status");
+  lines.push(`${"Beat".padEnd(6) + "View".padEnd(14) + "Check".padEnd(32)}Status`);
   lines.push("-".repeat(70));
   for (const entry of report.byBeat) {
-    lines.push(String(entry.beat).padEnd(6) + entry.view.padEnd(14) + entry.check.padEnd(32) + entry.status.toUpperCase());
+    lines.push(
+      String(entry.beat).padEnd(6) +
+        entry.view.padEnd(14) +
+        entry.check.padEnd(32) +
+        entry.status.toUpperCase(),
+    );
   }
   lines.push("");
 
   for (const result of report.results) {
-    lines.push("[" + result.status.toUpperCase() + "] " + result.check);
-    lines.push("  " + result.evidence);
-    if (result.manualStep.length > 0) lines.push("  HUMAN: " + result.manualStep);
+    lines.push(`[${result.status.toUpperCase()}] ${result.check}`);
+    lines.push(`  ${result.evidence}`);
+    if (result.manualStep.length > 0) lines.push(`  HUMAN: ${result.manualStep}`);
     lines.push("");
   }
 

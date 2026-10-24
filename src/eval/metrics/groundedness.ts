@@ -40,7 +40,7 @@
 import type { EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, type MetricResult } from "./types";
+import { COMPARATORS, METRIC_NAMES, type MetricResult, describeEngineId } from "./types";
 
 export interface GroundednessOutcome {
   readonly metric: MetricResult;
@@ -64,13 +64,18 @@ export interface GroundednessOutcome {
 
 export const MAX_SEARCHES = 3;
 
-export function scoreGroundedness(corpus: ResolvedCorpus, run: RunResult, engine: EngineId): GroundednessOutcome {
+export function scoreGroundedness(
+  _corpus: ResolvedCorpus,
+  run: RunResult,
+  engine: EngineId,
+): GroundednessOutcome {
   const perQuestion = run.questions.map((entry) => {
     const answer = entry.answer;
     const unanswerable = entry.question.relevant.length === 0;
 
     const claims = answer === null ? 0 : answer.claims.length;
-    const groundedClaims = answer === null ? 0 : answer.claims.filter((claim) => claim.grounded).length;
+    const groundedClaims =
+      answer === null ? 0 : answer.claims.filter((claim) => claim.grounded).length;
 
     /* 0/0 is not 1. An answer with no claims has demonstrated nothing; scoring it as perfectly
      * grounded would reward silence, and silence is what a system produces when it is broken. */
@@ -129,22 +134,8 @@ export function scoreGroundedness(corpus: ResolvedCorpus, run: RunResult, engine
       n: perQuestion.length,
       perEngine: [{ engine: describeEngineId(engine), value, n: perQuestion.length, detail: null }],
       comparator: COMPARATORS["answer-groundedness"] ?? null,
-      gloss:
-        correctVerdicts + " of " + perQuestion.length + " answer(s) carried the verdict the corpus expected. Mean " +
-        "groundedness " + meanGroundedness.toFixed(3) + " (" +
-        perQuestion.reduce((sum, entry) => sum + entry.groundedClaims, 0) + " grounded claim(s) of " +
-        perQuestion.reduce((sum, entry) => sum + entry.claims, 0) + "). " +
-        searchBudgetViolations + " answer(s) exceeded the " + MAX_SEARCHES + "-search budget. Refusals: " +
-        refusalsCorrect + " of " + refusalsExpected + " correct.",
-      honestNote:
-        "The headline is VERDICT ACCURACY, not mean groundedness, because groundedness measures whether an answer's claims " +
-        "cite things that exist — and a confidently wrong answer can score 1.0 on it. RepoRationale specifies the contract " +
-        "but publishes no quantity, so there is nothing to beat and the three clauses are CHECKED instead: search budget, " +
-        "citation resolution, refusal. n=" + perQuestion.length + " questions, of which " + refusalsExpected +
-        " is deliberately unanswerable and scores as a HIT when the system refuses — the only place in this suite where " +
-        "producing no output earns the point. An answer with zero claims is scored 0, not 1: 0/0 would reward silence. " +
-        emptyAnswers + " empty answer(s) were produced, which should be read against the refusal count before concluding " +
-        "anything about restraint.",
+      gloss: `${correctVerdicts} of ${perQuestion.length} answer(s) carried the verdict the corpus expected. Mean groundedness ${meanGroundedness.toFixed(3)} (${perQuestion.reduce((sum, entry) => sum + entry.groundedClaims, 0)} grounded claim(s) of ${perQuestion.reduce((sum, entry) => sum + entry.claims, 0)}). ${searchBudgetViolations} answer(s) exceeded the ${MAX_SEARCHES}-search budget. Refusals: ${refusalsCorrect} of ${refusalsExpected} correct.`,
+      honestNote: `The headline is VERDICT ACCURACY, not mean groundedness, because groundedness measures whether an answer's claims cite things that exist — and a confidently wrong answer can score 1.0 on it. RepoRationale specifies the contract but publishes no quantity, so there is nothing to beat and the three clauses are CHECKED instead: search budget, citation resolution, refusal. n=${perQuestion.length} questions, of which ${refusalsExpected} is deliberately unanswerable and scores as a HIT when the system refuses — the only place in this suite where producing no output earns the point. An answer with zero claims is scored 0, not 1: 0/0 would reward silence. ${emptyAnswers} empty answer(s) were produced, which should be read against the refusal count before concluding anything about restraint.`,
     },
   };
 }

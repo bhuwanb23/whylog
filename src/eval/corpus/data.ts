@@ -44,7 +44,8 @@ export const corpus: Corpus = {
       id: "c01",
       tier: "clean",
       file: "fixtures/eval/c01-clean-storage.txt",
-      purpose: "The canonical storage decision with two premises, one exclusion and one rejected alternative. Also one half of the L1 planted pair.",
+      purpose:
+        "The canonical storage decision with two premises, one exclusion and one rejected alternative. Also one half of the L1 planted pair.",
       occurredAt: "2026-10-03T14:22:00+05:30",
       plants: ["L1-sqlite", "L3-shared-premise"],
       decisions: [
@@ -107,7 +108,8 @@ export const corpus: Corpus = {
       id: "c02",
       tier: "clean",
       file: "fixtures/eval/c02-clean-frontend.txt",
-      purpose: "Two decisions in one transcript, with a rejected alternative each. Tests episode segmentation and multi-decision extraction.",
+      purpose:
+        "Two decisions in one transcript, with a rejected alternative each. Tests episode segmentation and multi-decision extraction.",
       occurredAt: "2026-10-04T10:05:00+05:30",
       plants: [],
       decisions: [
@@ -177,7 +179,8 @@ export const corpus: Corpus = {
       id: "c03",
       tier: "clean",
       file: "fixtures/eval/c03-clean-auth.txt",
-      purpose: "A decision with two premises and two rejected alternatives, later reversed by a02. Tests supersession across transcripts.",
+      purpose:
+        "A decision with two premises and two rejected alternatives, later reversed by a02. Tests supersession across transcripts.",
       occurredAt: "2026-10-06T16:40:00+05:30",
       plants: ["reversal-clerk"],
       decisions: [
@@ -233,7 +236,8 @@ export const corpus: Corpus = {
       id: "m01",
       tier: "messy",
       file: "fixtures/eval/m01-messy-tooloutput.txt",
-      purpose: "No speaker markers on some turns, shell output and code blocks interleaved, decisions stated colloquially. Tests noise filtering.",
+      purpose:
+        "No speaker markers on some turns, shell output and code blocks interleaved, decisions stated colloquially. Tests noise filtering.",
       occurredAt: "2026-10-08T09:14:00+05:30",
       plants: [],
       decisions: [
@@ -304,7 +308,8 @@ export const corpus: Corpus = {
       id: "m02",
       tier: "messy",
       file: "fixtures/eval/m02-messy-negotiated.txt",
-      purpose: "A decision negotiated across many turns with no cue phrase at the point of agreement. Tests multi-turn attribution.",
+      purpose:
+        "A decision negotiated across many turns with no cue phrase at the point of agreement. Tests multi-turn attribution.",
       occurredAt: "2026-10-11T15:30:00+05:30",
       plants: [],
       decisions: [
@@ -363,7 +368,8 @@ export const corpus: Corpus = {
       id: "m03",
       tier: "messy",
       file: "fixtures/eval/m03-messy-interrupted.txt",
-      purpose: "Interrupted turns, a false start, and a conditional future decision that must NOT become a node.",
+      purpose:
+        "Interrupted turns, a false start, and a conditional future decision that must NOT become a node.",
       occurredAt: "2026-10-14T11:02:00+05:30",
       plants: ["conditional-not-a-node"],
       decisions: [
@@ -416,7 +422,8 @@ export const corpus: Corpus = {
       id: "a01",
       tier: "adversarial",
       file: "fixtures/eval/a01-adv-hypotheticals.txt",
-      purpose: "Four hypotheticals naming technologies that are NOT chosen. Zero should produce nodes. This is the modality-precision test.",
+      purpose:
+        "Four hypotheticals naming technologies that are NOT chosen. Zero should produce nodes. This is the modality-precision test.",
       occurredAt: "2026-10-17T14:20:00+05:30",
       plants: ["hypotheticals-no-nodes"],
       decisions: [
@@ -487,7 +494,8 @@ export const corpus: Corpus = {
       id: "a02",
       tier: "adversarial",
       file: "fixtures/eval/a02-adv-sarcasm-reversal.txt",
-      purpose: "Sarcasm, an agent proposal the human explicitly refuses, and a real reversal. Three different things that a naive extractor treats identically.",
+      purpose:
+        "Sarcasm, an agent proposal the human explicitly refuses, and a real reversal. Three different things that a naive extractor treats identically.",
       occurredAt: "2026-10-19T10:44:00+05:30",
       plants: ["reversal-clerk", "unaccepted-proposal"],
       decisions: [
@@ -558,7 +566,8 @@ export const corpus: Corpus = {
         {
           key: "a1",
           value: "clerk",
-          whyRejected: "the demo doesn't need it and every hour on auth is an hour off the reasoning layer",
+          whyRejected:
+            "the demo doesn't need it and every hour on auth is an hour off the reasoning layer",
           rejectedBy: "d2",
           quote: "actually scrap that. we're not doing auth at all for the demo",
           expectConfirmed: true,
@@ -571,7 +580,8 @@ export const corpus: Corpus = {
       id: "a03",
       tier: "adversarial",
       file: "fixtures/eval/a03-adv-duplicates.txt",
-      purpose: "Three decisions restated verbatim-in-substance across a recap. All three must resolve to EXISTING nodes, not create duplicates.",
+      purpose:
+        "Three decisions restated verbatim-in-substance across a recap. All three must resolve to EXISTING nodes, not create duplicates.",
       occurredAt: "2026-10-21T09:00:00+05:30",
       plants: ["duplicate-restatement"],
       decisions: [
@@ -627,7 +637,8 @@ export const corpus: Corpus = {
       id: "l03",
       tier: "clean",
       file: "fixtures/eval/l03-cascade-shared.txt",
-      purpose: "Three decisions with deliberately different support structures, so falsifying one premise flips two and spares one. The cascade stop-condition test.",
+      purpose:
+        "Three decisions with deliberately different support structures, so falsifying one premise flips two and spares one. The cascade stop-condition test.",
       occurredAt: "2026-10-22T13:15:00+05:30",
       plants: ["L3-shared-premise"],
       decisions: [
@@ -712,7 +723,8 @@ export const corpus: Corpus = {
       id: "demo1",
       tier: "clean",
       file: "fixtures/demo-transcript.txt",
-      purpose: "The shipping demo fixture: six extractable decisions including the Postgres trap that the live quick-log reversal is designed to catch. The other half of the L1 planted pair. Note: its concurrent-writers exclusion is DERIVED by the ontology's exclusion rules rather than stated in the transcript, so it is deliberately not labelled — see the note on d1.",
+      purpose:
+        "The shipping demo fixture: six extractable decisions including the Postgres trap that the live quick-log reversal is designed to catch. The other half of the L1 planted pair. Note: its concurrent-writers exclusion is DERIVED by the ontology's exclusion rules rather than stated in the transcript, so it is deliberately not labelled — see the note on d1.",
       occurredAt: "2026-10-03T14:22:00+05:30",
       plants: ["L1-sqlite", "L2-premise-falsified"],
       decisions: [
@@ -764,7 +776,8 @@ export const corpus: Corpus = {
       id: "demo2",
       tier: "messy",
       file: "fixtures/demo-transcript-2.txt",
-      purpose: "The L2 planted case: six weeks later the world has changed and the premise is falsified. The transcript is about concurrency, not about databases.",
+      purpose:
+        "The L2 planted case: six weeks later the world has changed and the premise is falsified. The transcript is about concurrency, not about databases.",
       occurredAt: "2026-11-18T09:41:00+05:30",
       plants: ["L2-premise-falsified"],
       decisions: [
@@ -843,7 +856,8 @@ export const corpus: Corpus = {
         {
           transcript: "l03",
           predicate: "scale.max_users",
-          reason: "Eval intervention: the app now has four concurrent users, falsifying single-user.",
+          reason:
+            "Eval intervention: the app now has four concurrent users, falsifying single-user.",
         },
       ],
     },

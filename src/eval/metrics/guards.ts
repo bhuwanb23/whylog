@@ -42,7 +42,7 @@ import type { EngineId } from "@/types/common";
 import type { Guard } from "@/types/guards";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, type MetricResult } from "./types";
+import { COMPARATORS, METRIC_NAMES, type MetricResult, describeEngineId } from "./types";
 
 export interface GuardOutcome {
   readonly metric: MetricResult;
@@ -60,7 +60,11 @@ export interface GuardOutcome {
   readonly byKind: Readonly<Record<string, number>>;
 }
 
-export function scoreGuards(corpus: ResolvedCorpus, run: RunResult, engine: EngineId): GuardOutcome {
+export function scoreGuards(
+  _corpus: ResolvedCorpus,
+  run: RunResult,
+  engine: EngineId,
+): GuardOutcome {
   const guards: Guard[] = [...run.state.guards.values()];
   const decisionsTotal = run.state.decisions.size;
 
@@ -95,7 +99,9 @@ export function scoreGuards(corpus: ResolvedCorpus, run: RunResult, engine: Engi
     const decision = run.state.decisions.get(guard.decisionId);
     if (decision === undefined) return false;
     const shouldBeDisabled =
-      decision.label === "OUT" || decision.label === "UNFOUNDED" || decision.status === "superseded";
+      decision.label === "OUT" ||
+      decision.label === "UNFOUNDED" ||
+      decision.status === "superseded";
     return shouldBeDisabled !== guard.disabledByDecisionLabel;
   }).length;
 
@@ -124,13 +130,7 @@ export function scoreGuards(corpus: ResolvedCorpus, run: RunResult, engine: Engi
       n: 0,
       perEngine: [{ engine: describeEngineId(engine), value: 0, n: 0, detail: null }],
       comparator: COMPARATORS["guard-precision"] ?? null,
-      gloss:
-        "NOT MEASURED — n=0. This corpus is twelve transcripts with no repository state, so no violation could be seeded " +
-        "and no guard had anything to fail against. Measured instead: synthesis rate " + (synthesisRate * 100).toFixed(0) +
-        "% (" + decisionsWithGuard + " of " + decisionsTotal + " decisions got a proposed guard), determinism share " +
-        (determinismShare * 100).toFixed(0) + "% (" + deterministic + " deterministic, " + judged + " llm_judge), " +
-        skippedCountedAsPass + " skip(s) counted as a pass, " + autoAccepted + " guard(s) auto-accepted without a human, " +
-        staleDisabled + " guard(s) whose disabled flag disagrees with their decision's label.",
+      gloss: `NOT MEASURED — n=0. This corpus is twelve transcripts with no repository state, so no violation could be seeded and no guard had anything to fail against. Measured instead: synthesis rate ${(synthesisRate * 100).toFixed(0)}% (${decisionsWithGuard} of ${decisionsTotal} decisions got a proposed guard), determinism share ${(determinismShare * 100).toFixed(0)}% (${deterministic} deterministic, ${judged} llm_judge), ${skippedCountedAsPass} skip(s) counted as a pass, ${autoAccepted} guard(s) auto-accepted without a human, ${staleDisabled} guard(s) whose disabled flag disagrees with their decision's label.`,
       honestNote:
         "NOT MEASURED, AND THIS IS A LIMITATION OF THE BENCHMARK RATHER THAN A RESULT ABOUT THE SYSTEM. Guard precision " +
         "requires seeded violations — a repository state that breaks a decision, labelled with which guard should catch it " +

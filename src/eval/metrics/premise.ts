@@ -36,8 +36,14 @@ import type { EngineId, PremiseId } from "@/types/common";
 import type { Premise } from "@/types/domain";
 import type { ResolvedCorpus, ResolvedPremise } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { align, MATCH_RULE, type Alignment } from "./match";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, precisionRecall, type MetricResult } from "./types";
+import { type Alignment, MATCH_RULE, align } from "./match";
+import {
+  COMPARATORS,
+  METRIC_NAMES,
+  type MetricResult,
+  describeEngineId,
+  precisionRecall,
+} from "./types";
 
 export interface PremiseOutcome {
   readonly metric: MetricResult;
@@ -46,7 +52,11 @@ export interface PremiseOutcome {
   readonly typeErrors: readonly { label: ResolvedPremise; node: Premise }[];
 }
 
-export function scorePremiseExtraction(corpus: ResolvedCorpus, run: RunResult, engine: EngineId): PremiseOutcome {
+export function scorePremiseExtraction(
+  corpus: ResolvedCorpus,
+  run: RunResult,
+  engine: EngineId,
+): PremiseOutcome {
   const labels: ResolvedPremise[] = [];
   for (const transcript of corpus.transcripts) {
     for (const premise of transcript.premises) {
@@ -68,7 +78,8 @@ export function scorePremiseExtraction(corpus: ResolvedCorpus, run: RunResult, e
    * which is correct: it was not extracted from this corpus. */
   const spanOf = (premise: Premise): { start: number; end: number } | null => {
     for (const evidence of premise.evidence) {
-      if (evidence.span !== undefined) return { start: evidence.span.start, end: evidence.span.end };
+      if (evidence.span !== undefined)
+        return { start: evidence.span.start, end: evidence.span.end };
     }
     return null;
   };
@@ -107,25 +118,20 @@ export function scorePremiseExtraction(corpus: ResolvedCorpus, run: RunResult, e
       detail,
       n: labels.length,
       perEngine: [{ engine: describeEngineId(engine), value: detail.f1, n: labels.length, detail }],
-      comparator: null, /* deliberately null: see COMPARATORS, whose entry states that none exists */
-      gloss:
-        detail.truePositives + " of " + labels.length + " labelled premises became shared nodes; " +
-        predicateErrors.length + " matched on span but were given the wrong predicate; " +
-        unspanned + " node(s) carried no extraction span at all.",
-      honestNote:
-        "NO PUBLISHED COMPARATOR EXISTS for this metric — see " + (COMPARATORS["premise-extraction"]?.source ?? "none") +
-        ". The absence is reported rather than filled with a borrowed number from a different task. " +
-        "Matched by " + MATCH_RULE + ", additionally requiring premise TYPE to agree, because the substrate forbids " +
-        "merging across types and a metric that scored across them would measure something the system may not do. " +
-        "n=" + labels.length + " premises, hand-labelled by the system's author. Premise extraction is the weakest link " +
-        "in the architecture (risk R1) and this is the metric that would show it.",
+      comparator:
+        null /* deliberately null: see COMPARATORS, whose entry states that none exists */,
+      gloss: `${detail.truePositives} of ${labels.length} labelled premises became shared nodes; ${predicateErrors.length} matched on span but were given the wrong predicate; ${unspanned} node(s) carried no extraction span at all.`,
+      honestNote: `NO PUBLISHED COMPARATOR EXISTS for this metric — see ${COMPARATORS["premise-extraction"]?.source ?? "none"}. The absence is reported rather than filled with a borrowed number from a different task. Matched by ${MATCH_RULE}, additionally requiring premise TYPE to agree, because the substrate forbids merging across types and a metric that scored across them would measure something the system may not do. n=${labels.length} premises, hand-labelled by the system's author. Premise extraction is the weakest link in the architecture (risk R1) and this is the metric that would show it.`,
     },
   };
 }
 
 /** Spans that overlap but whose types disagree. Excluded from `align` by the eligibility predicate, so
  *  they surface here instead — otherwise a type error would look identical to a total miss. */
-function findTypeErrors(labels: readonly ResolvedPremise[], nodes: readonly Premise[]): { label: ResolvedPremise; node: Premise }[] {
+function findTypeErrors(
+  labels: readonly ResolvedPremise[],
+  nodes: readonly Premise[],
+): { label: ResolvedPremise; node: Premise }[] {
   const out: { label: ResolvedPremise; node: Premise }[] = [];
 
   for (const label of labels) {

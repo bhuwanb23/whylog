@@ -40,8 +40,14 @@
 import type { DecisionId, EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { plantIsTestable, runtimeTranscriptId, type Resolver } from "./resolve";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, precisionRecall, type MetricResult } from "./types";
+import { type Resolver, plantIsTestable, runtimeTranscriptId } from "./resolve";
+import {
+  COMPARATORS,
+  METRIC_NAMES,
+  type MetricResult,
+  describeEngineId,
+  precisionRecall,
+} from "./types";
 
 export interface ContradictionOutcome {
   readonly metric: MetricResult;
@@ -61,7 +67,7 @@ export interface ContradictionOutcome {
 export function scoreContradictionRecall(
   corpus: ResolvedCorpus,
   run: RunResult,
-  resolver: Resolver,
+  _resolver: Resolver,
   engine: EngineId,
 ): ContradictionOutcome {
   const plants = corpus.plants.filter(
@@ -100,7 +106,10 @@ export function scoreContradictionRecall(
       testable,
       expected,
       found: testable ? found : 0,
-      records: owned.map((record) => record.gate + "/" + record.verdict + (record.diagnostic ? "/" + record.diagnostic : "")),
+      records: owned.map(
+        (record) =>
+          `${record.gate}/${record.verdict}${record.diagnostic ? `/${record.diagnostic}` : ""}`,
+      ),
     };
   });
 
@@ -132,19 +141,12 @@ export function scoreContradictionRecall(
       value: detail.recall,
       detail,
       n: perPlant.length,
-      perEngine: [{ engine: describeEngineId(engine), value: detail.recall, n: perPlant.length, detail }],
+      perEngine: [
+        { engine: describeEngineId(engine), value: detail.recall, n: perPlant.length, detail },
+      ],
       comparator: COMPARATORS["contradiction-recall-l1"] ?? null,
-      gloss:
-        detail.truePositives + " of " + perPlant.length + " planted L1 cases produced the expected verdict. " +
-        "By gate: " + byGate.structural + " structural, " + byGate.semantic + " semantic, " + byGate.premise +
-        " premise. Kantara diagnostics: " + m1 + " M1, " + m2 + " M2.",
-      honestNote:
-        "n=" + perPlant.length + " plants, which is a count of CASES, not of contradiction pairs — Kantara's 396 is a count " +
-        "of pairs found in the Linux kernel with no planted denominator, so the two numbers are not rates over the same kind " +
-        "of thing and must not be divided into each other. Recall here is over planted cases the corpus says must fire, plus " +
-        "one case (duplicate-restatement) that says must NOT fire; an untestable plant — one whose transcript failed to " +
-        "import — counts as a miss, because an unmeasured case is not a passed case. L1 is the CONTROL: every surveyed " +
-        "system does some version of it, and a failure here invalidates the rest of the table.",
+      gloss: `${detail.truePositives} of ${perPlant.length} planted L1 cases produced the expected verdict. By gate: ${byGate.structural} structural, ${byGate.semantic} semantic, ${byGate.premise} premise. Kantara diagnostics: ${m1} M1, ${m2} M2.`,
+      honestNote: `n=${perPlant.length} plants, which is a count of CASES, not of contradiction pairs — Kantara's 396 is a count of pairs found in the Linux kernel with no planted denominator, so the two numbers are not rates over the same kind of thing and must not be divided into each other. Recall here is over planted cases the corpus says must fire, plus one case (duplicate-restatement) that says must NOT fire; an untestable plant — one whose transcript failed to import — counts as a miss, because an unmeasured case is not a passed case. L1 is the CONTROL: every surveyed system does some version of it, and a failure here invalidates the rest of the table.`,
     },
   };
 }
@@ -153,6 +155,8 @@ function transcriptOfDecision(run: RunResult, id: DecisionId): string | null {
   const decision = run.state.decisions.get(id);
   if (decision === undefined) return null;
 
-  const entry = run.transcripts.find((candidate) => candidate.runtimeId === decision.provenance.transcriptId);
+  const entry = run.transcripts.find(
+    (candidate) => candidate.runtimeId === decision.provenance.transcriptId,
+  );
   return entry === undefined ? null : entry.runtimeId;
 }

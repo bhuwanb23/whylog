@@ -29,19 +29,19 @@
 import type { EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { scoreAlternativeExtraction, type AlternativeOutcome } from "./alternative";
-import { scoreCascade, type CascadeOutcome } from "./cascade";
-import { scoreContradictionRecall, type ContradictionOutcome } from "./contradiction";
-import { scoreDecisionExtraction, type ExtractionOutcome } from "./extraction";
-import { scoreFalsePositives, type FalsePositiveOutcome } from "./false-positive";
-import { scoreGroundedness, type GroundednessOutcome } from "./groundedness";
-import { scoreGuards, type GuardOutcome } from "./guards";
-import { scoreInvalidationRecall, type InvalidationOutcome } from "./invalidation";
-import { scoreModalityPrecision, type ModalityOutcome } from "./modality";
-import { scorePremiseExtraction, type PremiseOutcome } from "./premise";
-import { scoreRetrieval, type RetrievalOutcome } from "./retrieval";
-import { buildResolver, type Resolver } from "./resolve";
-import { METRIC_NAMES, UNUSUAL_METRICS, type MetricId, type MetricResult } from "./types";
+import { type AlternativeOutcome, scoreAlternativeExtraction } from "./alternative";
+import { type CascadeOutcome, scoreCascade } from "./cascade";
+import { type ContradictionOutcome, scoreContradictionRecall } from "./contradiction";
+import { type ExtractionOutcome, scoreDecisionExtraction } from "./extraction";
+import { type FalsePositiveOutcome, scoreFalsePositives } from "./false-positive";
+import { type GroundednessOutcome, scoreGroundedness } from "./groundedness";
+import { type GuardOutcome, scoreGuards } from "./guards";
+import { type InvalidationOutcome, scoreInvalidationRecall } from "./invalidation";
+import { type ModalityOutcome, scoreModalityPrecision } from "./modality";
+import { type PremiseOutcome, scorePremiseExtraction } from "./premise";
+import { type Resolver, buildResolver } from "./resolve";
+import { type RetrievalOutcome, scoreRetrieval } from "./retrieval";
+import { METRIC_NAMES, type MetricId, type MetricResult, UNUSUAL_METRICS } from "./types";
 
 export interface ScoredRun {
   readonly run: RunResult;
@@ -133,7 +133,9 @@ export function scoreAll(corpus: ResolvedCorpus, run: RunResult, engine: EngineI
 /** The two metrics §7.2 flags as unusual, pulled to the front of a report section. They are the ones
  *  no competitor can produce at any quality, because no competitor has the components they measure. */
 export function unusualMetrics(scored: ScoredRun): readonly MetricResult[] {
-  return scored.metrics.filter((metric) => (UNUSUAL_METRICS as readonly string[]).includes(metric.id));
+  return scored.metrics.filter((metric) =>
+    (UNUSUAL_METRICS as readonly string[]).includes(metric.id),
+  );
 }
 
 /** Metrics with no published comparator. Not a gap in the work — the claim that this is new territory,
@@ -151,24 +153,25 @@ export function metricById(scored: ScoredRun, id: MetricId): MetricResult | null
 export function renderSuite(scored: ScoredRun): string {
   const lines: string[] = [];
 
-  lines.push("Metric".padEnd(46) + "Value".padStart(9) + "n".padStart(7) + "  Comparator");
+  lines.push(`${"Metric".padEnd(46) + "Value".padStart(9) + "n".padStart(7)}  Comparator`);
   lines.push("-".repeat(100));
 
   for (const metric of scored.metrics) {
-    const comparator =
-      metric.comparator === null ? "NONE PUBLISHED" : metric.comparator.source;
-    const value = metric.id === "false-positive-rate"
-      ? metric.value.toFixed(1) + "/100"
-      : metric.value.toFixed(3);
+    const comparator = metric.comparator === null ? "NONE PUBLISHED" : metric.comparator.source;
+    const value =
+      metric.id === "false-positive-rate"
+        ? `${metric.value.toFixed(1)}/100`
+        : metric.value.toFixed(3);
 
-    lines.push(metric.name.padEnd(46) + value.padStart(9) + String(metric.n).padStart(7) + "  " + comparator);
+    lines.push(
+      `${metric.name.padEnd(46) + value.padStart(9) + String(metric.n).padStart(7)}  ${comparator}`,
+    );
   }
 
   lines.push("");
   lines.push("Lower is better for: false-positive rate. Higher is better for everything else.");
   lines.push(
-    metricsWithoutComparator(scored).length + " of " + scored.metrics.length +
-    " metrics have NO published comparator — that is the new-territory claim, stated as a count.",
+    `${metricsWithoutComparator(scored).length} of ${scored.metrics.length} metrics have NO published comparator — that is the new-territory claim, stated as a count.`,
   );
 
   return lines.join("\n");

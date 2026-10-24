@@ -7,7 +7,19 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": ["dist", "coverage", "node_modules"]
+    "ignore": [
+      "dist",
+      "coverage",
+      "node_modules",
+      "scripts/whylog-guards.cjs",
+      "scripts/whylog-guards.mjs"
+    ]
+  },
+  "json": {
+    "parser": {
+      "allowComments": true,
+      "allowTrailingCommas": true
+    }
   },
   "formatter": {
     "enabled": true,
@@ -23,7 +35,9 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn"
+        "noExcessiveCognitiveComplexity": "warn",
+        "useLiteralKeys": "off",
+        "useOptionalChain": "off"
       },
       "correctness": {
         "noUnusedImports": "error",
@@ -31,7 +45,8 @@
         "useExhaustiveDependencies": "warn"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "noParameterAssign": "off"
       },
       "suspicious": {
         "noExplicitAny": "error",

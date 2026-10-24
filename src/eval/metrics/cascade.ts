@@ -43,8 +43,8 @@
 import type { DecisionId, EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { plantIsTestable, type Resolver } from "./resolve";
-import { METRIC_NAMES, describeEngineId, type MetricResult } from "./types";
+import { type Resolver, plantIsTestable } from "./resolve";
+import { METRIC_NAMES, type MetricResult, describeEngineId } from "./types";
 
 export interface PlantOutcome {
   readonly plant: string;
@@ -77,7 +77,9 @@ export function scoreCascade(
   resolver: Resolver,
   engine: EngineId,
 ): CascadeOutcome {
-  const plants = corpus.plants.filter((plant) => plant.kind === "L3-cascade" || plant.kind === "L2-premise");
+  const plants = corpus.plants.filter(
+    (plant) => plant.kind === "L3-cascade" || plant.kind === "L2-premise",
+  );
 
   const perPlant: PlantOutcome[] = plants.map((plant) => {
     const testable = plantIsTestable(run, plant.transcripts);
@@ -88,7 +90,10 @@ export function scoreCascade(
     const interventionApplied =
       plant.falsify === undefined ||
       plant.falsify.every((step) =>
-        run.interventions.some((outcome) => outcome.plant === plant.id && outcome.predicate === step.predicate && outcome.applied),
+        run.interventions.some(
+          (outcome) =>
+            outcome.plant === plant.id && outcome.predicate === step.predicate && outcome.applied,
+        ),
       );
 
     const flipped: string[] = [];
@@ -142,7 +147,10 @@ export function scoreCascade(
     };
   });
 
-  const survivorsExpected = perPlant.reduce((sum, entry) => sum + entry.expectedSurvivors.length, 0);
+  const survivorsExpected = perPlant.reduce(
+    (sum, entry) => sum + entry.expectedSurvivors.length,
+    0,
+  );
   const survivorsKept = perPlant.reduce((sum, entry) => sum + entry.survived.length, 0);
   const overRetractions = perPlant.reduce((sum, entry) => sum + entry.overRetracted.length, 0);
 
@@ -163,18 +171,17 @@ export function scoreCascade(
       value: correctnessValue,
       detail: null,
       n: perPlant.length,
-      perEngine: [{ engine: describeEngineId(engine), value: correctnessValue, n: perPlant.length, detail: null }],
+      perEngine: [
+        {
+          engine: describeEngineId(engine),
+          value: correctnessValue,
+          n: perPlant.length,
+          detail: null,
+        },
+      ],
       comparator: null,
-      gloss:
-        correctPlants + " of " + perPlant.length + " plant(s) were FULLY correct — every expected flip happened and no " +
-        "survivor was retracted. " + overRetractions + " over-retraction(s) across " + survivorsExpected + " expected survivor(s).",
-      honestNote:
-        "Scored as a strict conjunction per plant: a cascade that flips the right nodes AND retracts a survivor scores 0, " +
-        "not partial credit, because over-retraction is the failure that destroys trust and partial credit would hide it. " +
-        "n=" + perPlant.length + " plants — small enough that this metric is a PASS/FAIL over named cases rather than a " +
-        "statistical rate, and it should be quoted as such. A plant whose intervention could not be applied, or whose " +
-        "survivor was never extracted, is scored as FAILED rather than skipped: skipping would make the number improve as " +
-        "extraction worsens. No published comparator exists, because no surveyed system propagates a retraction at all.",
+      gloss: `${correctPlants} of ${perPlant.length} plant(s) were FULLY correct — every expected flip happened and no survivor was retracted. ${overRetractions} over-retraction(s) across ${survivorsExpected} expected survivor(s).`,
+      honestNote: `Scored as a strict conjunction per plant: a cascade that flips the right nodes AND retracts a survivor scores 0, not partial credit, because over-retraction is the failure that destroys trust and partial credit would hide it. n=${perPlant.length} plants — small enough that this metric is a PASS/FAIL over named cases rather than a statistical rate, and it should be quoted as such. A plant whose intervention could not be applied, or whose survivor was never extracted, is scored as FAILED rather than skipped: skipping would make the number improve as extraction worsens. No published comparator exists, because no surveyed system propagates a retraction at all.`,
     },
     survivorship: {
       id: "survivor-preservation",
@@ -182,19 +189,20 @@ export function scoreCascade(
       value: survivorValue,
       detail: null,
       n: survivorsExpected,
-      perEngine: [{ engine: describeEngineId(engine), value: survivorValue, n: survivorsExpected, detail: null }],
+      perEngine: [
+        {
+          engine: describeEngineId(engine),
+          value: survivorValue,
+          n: survivorsExpected,
+          detail: null,
+        },
+      ],
       comparator: null,
       gloss:
         survivorsExpected === 0
           ? "VACUOUS: the corpus expected no survivors in the plants that ran, so 1.0 here means nothing was tested."
-          : survivorsKept + " of " + survivorsExpected + " decision(s) that shared no falsified premise kept their label. " +
-            overRetractions + " were retracted anyway.",
-      honestNote:
-        "One of the two metrics §7.2 calls unusual, and the one that predicts whether the product survives a real project. " +
-        "1.0 is VACUOUS when n=0 and the gloss says so rather than printing a perfect score for an untested property — a " +
-        "benchmark that reports 100% because it measured nothing is worse than one that reports 40%. n=" + survivorsExpected +
-        " survivors, all from the single l03 plant, so this is a check that a specific mechanism does not over-fire, not an " +
-        "estimate of an over-retraction RATE. Nobody publishes a comparator because nobody cascades.",
+          : `${survivorsKept} of ${survivorsExpected} decision(s) that shared no falsified premise kept their label. ${overRetractions} were retracted anyway.`,
+      honestNote: `One of the two metrics §7.2 calls unusual, and the one that predicts whether the product survives a real project. 1.0 is VACUOUS when n=0 and the gloss says so rather than printing a perfect score for an untested property — a benchmark that reports 100% because it measured nothing is worse than one that reports 40%. n=${survivorsExpected} survivors, all from the single l03 plant, so this is a check that a specific mechanism does not over-fire, not an estimate of an over-retraction RATE. Nobody publishes a comparator because nobody cascades.`,
     },
   };
 }

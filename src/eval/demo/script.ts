@@ -30,8 +30,17 @@
 import type { DemoKiller } from "../hardening";
 
 export type ViewId =
-  | "foundation" | "review" | "reasoning" | "ask" | "guards" | "export"
-  | "graph" | "timeline" | "health" | "time-machine" | "settings";
+  | "foundation"
+  | "review"
+  | "reasoning"
+  | "ask"
+  | "guards"
+  | "export"
+  | "graph"
+  | "timeline"
+  | "health"
+  | "time-machine"
+  | "settings";
 
 export interface Beat {
   readonly n: number;
@@ -72,7 +81,8 @@ export const SCRIPT: readonly Beat[] = [
     seconds: 30,
     view: "foundation",
     action: "Load the seed and show the SQLite decision with its premises expanded.",
-    expect: "A decision card reading 'Use SQLite, not Postgres' with two premises beneath it: single-user, and no deploy infrastructure.",
+    expect:
+      "A decision card reading 'Use SQLite, not Postgres' with two premises beneath it: single-user, and no deploy infrastructure.",
     say:
       "This is a decision an AI agent helped me make in October. Every tool that stores this stores the " +
       "decision. Notice what is underneath it — the assumptions it is true GIVEN. Nobody stores those.",
@@ -84,7 +94,8 @@ export const SCRIPT: readonly Beat[] = [
     seconds: 30,
     view: "graph",
     action: "Open the graph view and highlight the SQLite decision and its premise column.",
-    expect: "A bipartite lattice: premises in one column, decisions in another, edges from the SQLite decision to both of its premises.",
+    expect:
+      "A bipartite lattice: premises in one column, decisions in another, edges from the SQLite decision to both of its premises.",
     say:
       "The graph is bipartite on purpose. Decisions on one side, assumptions on the other. The layout is " +
       "deterministic — same graph, same picture, every time — because a diagram that moves between runs " +
@@ -96,8 +107,10 @@ export const SCRIPT: readonly Beat[] = [
     n: 3,
     seconds: 40,
     view: "reasoning",
-    action: "Quick-log the reversal: 'actually let's switch to Postgres, we need concurrent writes'.",
-    expect: "A contradiction is raised between the new Postgres decision and the October SQLite decision, and the older one moves to superseded.",
+    action:
+      "Quick-log the reversal: 'actually let's switch to Postgres, we need concurrent writes'.",
+    expect:
+      "A contradiction is raised between the new Postgres decision and the October SQLite decision, and the older one moves to superseded.",
     say:
       "Now I contradict myself. This is the part every tool can do — you said SQLite, now you said " +
       "Postgres, here is a red badge. It is worth about thirty seconds of your attention, because it is " +
@@ -109,8 +122,10 @@ export const SCRIPT: readonly Beat[] = [
     n: 4,
     seconds: 45,
     view: "foundation",
-    action: "Import the second fixture — the November transcript — and show that it never mentions databases.",
-    expect: "The transcript is imported and its decisions appear. None of them is about a database. Scroll the text to prove it: the word appears nowhere.",
+    action:
+      "Import the second fixture — the November transcript — and show that it never mentions databases.",
+    expect:
+      "The transcript is imported and its decisions appear. None of them is about a database. Scroll the text to prove it: the word appears nowhere.",
     say:
       "Here is a transcript from a month later. Read it. There is no database decision in it. There is no " +
       "argument about storage. The word Postgres does not appear. What it says is that there are now four " +
@@ -122,8 +137,10 @@ export const SCRIPT: readonly Beat[] = [
     n: 5,
     seconds: 60,
     view: "reasoning",
-    action: "Show the SQLite decision's label change to unsound, with the reason naming the falsified premise.",
-    expect: "The October SQLite decision is marked OUT, and the reason names the concurrent-writers exclusion — a premise that was in the OUT-list of its justification.",
+    action:
+      "Show the SQLite decision's label change to unsound, with the reason naming the falsified premise.",
+    expect:
+      "The October SQLite decision is marked OUT, and the reason names the concurrent-writers exclusion — a premise that was in the OUT-list of its justification.",
     say:
       "Nothing contradicted me. I never said the word database. The world moved, and the log noticed — " +
       "because the decision was stored with the assumption it rests on, and the assumption stopped " +
@@ -136,8 +153,10 @@ export const SCRIPT: readonly Beat[] = [
     n: 6,
     seconds: 35,
     view: "graph",
-    action: "Replay the cascade and show that decisions sharing no premise with the falsified one keep their labels.",
-    expect: "The cascade animation flips the SQLite decision and leaves unrelated decisions untouched. The survivors are visibly still IN.",
+    action:
+      "Replay the cascade and show that decisions sharing no premise with the falsified one keep their labels.",
+    expect:
+      "The cascade animation flips the SQLite decision and leaves unrelated decisions untouched. The survivors are visibly still IN.",
     say:
       "A cascade that retracts everything reachable is worse than no cascade. Watch what does NOT change: " +
       "these decisions rest on other assumptions, so they keep their labels. Over-retraction is the " +
@@ -149,7 +168,8 @@ export const SCRIPT: readonly Beat[] = [
     n: 7,
     seconds: 30,
     view: "guards",
-    action: "Show the guards proposed for the Postgres decision, and the verify command compiled from them.",
+    action:
+      "Show the guards proposed for the Postgres decision, and the verify command compiled from them.",
     expect: "A list of PROPOSED guards — not installed — with a copyable verify command.",
     say:
       "Every decision gets a check generated from it. Proposed, never auto-installed — the system proposes " +
@@ -162,8 +182,10 @@ export const SCRIPT: readonly Beat[] = [
     n: 8,
     seconds: 30,
     view: "export",
-    action: "Export to CLAUDE.md and show the rejected-alternatives block and the consistency stamp.",
-    expect: "A CLAUDE.md with imperative MUST/MUST NOT rules scoped to globs, a rejected block, and a stamp whose digest covers the body.",
+    action:
+      "Export to CLAUDE.md and show the rejected-alternatives block and the consistency stamp.",
+    expect:
+      "A CLAUDE.md with imperative MUST/MUST NOT rules scoped to globs, a rejected block, and a stamp whose digest covers the body.",
     say:
       "And it exports to what your agent actually reads — CLAUDE.md, AGENTS.md, .cursorrules — with the " +
       "rejected alternatives in there too, so the agent does not re-propose Postgres in three weeks. " +
@@ -186,17 +208,23 @@ export function cuttableBeats(script: readonly Beat[] = SCRIPT): readonly Beat[]
 export function renderScript(script: readonly Beat[] = SCRIPT): string {
   const lines: string[] = [];
 
-  lines.push("DEMO SCRIPT — " + script.length + " beats, " + totalSeconds(script) + "s (" +
-    (totalSeconds(script) / 60).toFixed(1) + " min)");
-  lines.push("Cuttable if running long: " + cuttableBeats(script).map((beat) => "beat " + beat.n).join(", "));
+  lines.push(
+    `DEMO SCRIPT — ${script.length} beats, ${totalSeconds(script)}s (${(totalSeconds(script) / 60).toFixed(1)} min)`,
+  );
+  lines.push(
+    `Cuttable if running long: ${cuttableBeats(script)
+      .map((beat) => `beat ${beat.n}`)
+      .join(", ")}`,
+  );
   lines.push("");
 
   for (const beat of script) {
-    lines.push("BEAT " + beat.n + " · " + beat.seconds + "s · " + beat.view + " · check: " + beat.check +
-      (beat.killer === "none" ? "" : " · exposes: " + beat.killer));
-    lines.push("  DO:     " + beat.action);
-    lines.push("  SEE:    " + beat.expect);
-    lines.push("  SAY:    " + beat.say);
+    lines.push(
+      `BEAT ${beat.n} · ${beat.seconds}s · ${beat.view} · check: ${beat.check}${beat.killer === "none" ? "" : ` · exposes: ${beat.killer}`}`,
+    );
+    lines.push(`  DO:     ${beat.action}`);
+    lines.push(`  SEE:    ${beat.expect}`);
+    lines.push(`  SAY:    ${beat.say}`);
     lines.push("");
   }
 

@@ -33,27 +33,31 @@
  * ---------------------------------------------------------------------------
  */
 
-import type {
-  AlternativeCandidate,
-  DecisionCandidate,
-  PremiseCandidate,
-} from "@/ai/types";
+import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
+import type { WhyLogEngine } from "@/ai/types";
 import { runExtraction } from "@/extraction/pipeline";
 import { DEFAULT_VOTING } from "@/extraction/voting";
-import { formatAlternativeId, formatDecisionId, formatPremiseId, formatTranscriptId } from "@/lib/ids";
+import { guardStatusMap } from "@/guards/feedback";
 import { monotonicNow, nowISO } from "@/lib/format";
-import { revise, type ReviseResult } from "@/reasoning/revise";
+import {
+  formatAlternativeId,
+  formatDecisionId,
+  formatPremiseId,
+  formatTranscriptId,
+} from "@/lib/ids";
 import { label } from "@/reasoning/labeller";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { type ReviseResult, revise } from "@/reasoning/revise";
 import { ask } from "@/retrieval";
 import { buildIndex } from "@/retrieval/build-index";
 import { appendBatch, emptyLog, fold } from "@/substrate";
 import type { EventLog } from "@/substrate/event-log";
 import { validationMessage } from "@/substrate/event-validation";
+import type { GraphState } from "@/substrate/graph-state";
 import { asISO } from "@/types/common";
 import type {
   Actor,
   AlternativeId,
-  Confidence,
   DecisionId,
   EngineId,
   EpisodeId,
@@ -61,16 +65,12 @@ import type {
   PremiseId,
   TranscriptId,
 } from "@/types/common";
-import type { AnyEvent, EventType, NewEvent } from "@/types/events";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { Answer } from "@/types/retrieval";
 import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import type { WhyLogEngine } from "@/ai/types";
+import type { AnyEvent, EventType, NewEvent } from "@/types/events";
 import type { Guard } from "@/types/guards";
-import { guardStatusMap } from "@/guards/feedback";
-import type { LabelledQuestion, ResolvedCorpus, ResolvedTranscript } from "./corpus/labels";
+import type { Answer } from "@/types/retrieval";
 import type { AblationConfig, SweptParams } from "./ablation/toggles";
+import type { LabelledQuestion, ResolvedCorpus, ResolvedTranscript } from "./corpus/labels";
 
 /* -------------------------------------------------------------------------- */
 /* Shapes                                                                     */
@@ -186,7 +186,10 @@ function commitRevision(
   );
 
   if (!committed.ok) {
-    return { ...unchanged, failure: "revision-rejected: " + validationMessage(committed.validation) };
+    return {
+      ...unchanged,
+      failure: `revision-rejected: ${validationMessage(committed.validation)}`,
+    };
   }
 
   return {
@@ -299,7 +302,9 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       decisionIdByIndex.set(indexOfDecision(run.decisions, candidate), id);
       drafts.push(
         decisionProposed(id, transcriptId, candidate, config.engineId, {
-          premiseIds: candidate.premiseRefs.map((ref) => premiseIdByIndex.get(ref)).filter(isDefined),
+          premiseIds: candidate.premiseRefs
+            .map((ref) => premiseIdByIndex.get(ref))
+            .filter(isDefined),
         }),
       );
     }
@@ -332,7 +337,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         context: {
           now: clock.next(),
           actor: ACTOR,
-          reason: "Eval harness importing " + transcript.id,
+          reason: `Eval harness importing ${transcript.id}`,
           occurredAt: asISO(transcript.occurredAt),
         },
       })),
@@ -343,7 +348,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         transcript,
         runtimeId: transcriptId,
         ok: false,
-        failure: "append-rejected: " + validationMessage(appended.validation),
+        failure: `append-rejected: ${validationMessage(appended.validation)}`,
         durationMs: monotonicNow() - tStart,
         decisionIds,
         premiseIds,
@@ -365,7 +370,9 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       actor: ACTOR,
       now: clock.next(),
       guards: guardStatusMap(state),
-      ...(config.params.cascadeDepthCap === null ? {} : { cascadeDepthCap: config.params.cascadeDepthCap }),
+      ...(config.params.cascadeDepthCap === null
+        ? {}
+        : { cascadeDepthCap: config.params.cascadeDepthCap }),
       ...(config.toggles.semanticContradiction ? {} : { skipSemantic: true }),
     });
 
@@ -374,7 +381,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       revised,
       clock,
       config.engineId,
-      "Eval harness revision pass after importing " + transcript.id,
+      `Eval harness revision pass after importing ${transcript.id}`,
     );
     log = afterImport.log;
     state = afterImport.state;
@@ -407,13 +414,20 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
     for (const step of plant.falsify ?? []) {
       const owner = transcripts.find((entry) => entry.transcript.id === step.transcript);
       if (owner === undefined) {
-        interventions.push({ plant: plant.id, predicate: step.predicate, applied: false, premiseId: null, reason: "transcript not imported" });
+        interventions.push({
+          plant: plant.id,
+          predicate: step.predicate,
+          applied: false,
+          premiseId: null,
+          reason: "transcript not imported",
+        });
         continue;
       }
 
-      const target = [...state.premises.values()].find((premise) =>
-        premise.predicate === step.predicate &&
-        premise.evidence.some((evidence) => evidence.span?.transcriptId === owner.runtimeId),
+      const target = [...state.premises.values()].find(
+        (premise) =>
+          premise.predicate === step.predicate &&
+          premise.evidence.some((evidence) => evidence.span?.transcriptId === owner.runtimeId),
       );
 
       if (target === undefined) {
@@ -422,7 +436,8 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
           predicate: step.predicate,
           applied: false,
           premiseId: null,
-          reason: "no extracted premise with that predicate in that transcript — the cascade is UNTESTED, not passed",
+          reason:
+            "no extracted premise with that predicate in that transcript — the cascade is UNTESTED, not passed",
         });
         continue;
       }
@@ -443,7 +458,13 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       ]);
 
       if (!falsified.ok) {
-        interventions.push({ plant: plant.id, predicate: step.predicate, applied: false, premiseId: target.id, reason: "append rejected: " + validationMessage(falsified.validation) });
+        interventions.push({
+          plant: plant.id,
+          predicate: step.predicate,
+          applied: false,
+          premiseId: target.id,
+          reason: `append rejected: ${validationMessage(falsified.validation)}`,
+        });
         continue;
       }
 
@@ -456,21 +477,29 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         actor: ACTOR,
         now: clock.next(),
         guards: guardStatusMap(state),
-        ...(config.params.cascadeDepthCap === null ? {} : { cascadeDepthCap: config.params.cascadeDepthCap }),
+        ...(config.params.cascadeDepthCap === null
+          ? {}
+          : { cascadeDepthCap: config.params.cascadeDepthCap }),
       });
       const afterIntervention = commitRevision(
         log,
         afterFalsify,
         clock,
         config.engineId,
-        "Eval harness revision pass after falsifying " + step.predicate,
+        `Eval harness revision pass after falsifying ${step.predicate}`,
       );
       log = afterIntervention.log;
       state = afterIntervention.state;
       proposalsRaised += afterIntervention.proposals;
       if (afterIntervention.failure !== null) revisionFailures.push(afterIntervention.failure);
 
-      interventions.push({ plant: plant.id, predicate: step.predicate, applied: true, premiseId: target.id, reason: step.reason });
+      interventions.push({
+        plant: plant.id,
+        predicate: step.predicate,
+        applied: true,
+        premiseId: target.id,
+        reason: step.reason,
+      });
     }
   }
 
@@ -540,7 +569,7 @@ function transcriptImported(
   return {
     type: "TranscriptImported",
     actor: ACTOR,
-    reason: "Eval harness importing " + transcript.id,
+    reason: `Eval harness importing ${transcript.id}`,
     payload: {
       transcriptId,
       rawChars: transcript.raw.length,
@@ -561,7 +590,7 @@ function decisionProposed(
   return {
     type: "DecisionProposed",
     actor: ACTOR,
-    reason: "Extracted from transcript " + transcriptId,
+    reason: `Extracted from transcript ${transcriptId}`,
     payload: {
       decisionId: id,
       transcriptId,
@@ -570,7 +599,9 @@ function decisionProposed(
       value: candidate.value,
       statement: candidate.statement,
       ...(candidate.rationale === undefined ? {} : { rationale: candidate.rationale }),
-      ...(candidate.acceptedDownside === undefined ? {} : { acceptedDownside: candidate.acceptedDownside }),
+      ...(candidate.acceptedDownside === undefined
+        ? {}
+        : { acceptedDownside: candidate.acceptedDownside }),
       origin: candidate.origin,
       modality: candidate.modality,
       confidence: candidate.confidence,
@@ -593,7 +624,7 @@ function premiseProposed(
   return {
     type: "PremiseAsserted",
     actor: ACTOR,
-    reason: "Extracted from transcript " + transcriptId,
+    reason: `Extracted from transcript ${transcriptId}`,
     payload: {
       premiseId: id,
       transcriptId,
@@ -617,7 +648,7 @@ function alternativeRejected(
   return {
     type: "AlternativeRejected",
     actor: ACTOR,
-    reason: "Extracted alongside decision " + decisionId,
+    reason: `Extracted alongside decision ${decisionId}`,
     payload: {
       alternativeId: id,
       decisionId,
@@ -644,15 +675,20 @@ function alternativeRejected(
  * graph needs, without inventing a counter that would disagree with the pipeline's own.
  */
 function formatEpisodeId(transcriptId: TranscriptId, offset: number): string {
-  return transcriptId + "#e" + offset;
+  return `${transcriptId}#e${offset}`;
 }
 
 function indexOfDecision(all: readonly DecisionCandidate[], one: DecisionCandidate): number {
-  return all.findIndex((candidate) => candidate.snippet.start === one.snippet.start && candidate.value === one.value);
+  return all.findIndex(
+    (candidate) => candidate.snippet.start === one.snippet.start && candidate.value === one.value,
+  );
 }
 
 function indexOfPremise(all: readonly PremiseCandidate[], one: PremiseCandidate): number {
-  return all.findIndex((candidate) => candidate.snippet.start === one.snippet.start && candidate.predicate === one.predicate);
+  return all.findIndex(
+    (candidate) =>
+      candidate.snippet.start === one.snippet.start && candidate.predicate === one.predicate,
+  );
 }
 
 function isDefined<T>(value: T | undefined): value is T {
@@ -716,13 +752,15 @@ export function eventsOf(run: RunResult): readonly AnyEvent[] {
  *  actually a crash. */
 export function describeFailures(run: RunResult): string {
   const failed = run.transcripts.filter((entry) => !entry.ok);
-  if (failed.length === 0) return "All " + run.transcripts.length + " transcripts imported without failure.";
+  if (failed.length === 0)
+    return `All ${run.transcripts.length} transcripts imported without failure.`;
 
   const lines = [
-    failed.length + " of " + run.transcripts.length + " transcript(s) FAILED to import.",
+    `${failed.length} of ${run.transcripts.length} transcript(s) FAILED to import.`,
     "Metrics below are computed over what survived. A failure is scored as producing nothing,",
     "which is a real result, but it is not the same result as low recall:",
   ];
-  for (const entry of failed) lines.push("  " + entry.transcript.id + " · " + (entry.failure ?? "unknown"));
+  for (const entry of failed)
+    lines.push(`  ${entry.transcript.id} · ${entry.failure ?? "unknown"}`);
   return lines.join("\n");
 }

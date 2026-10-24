@@ -9,8 +9,8 @@
  */
 
 import { banner, blank, heading, line, prepare, readArgs, write } from "../cli";
-import { renderSuite, type ScoredRun } from "../metrics";
-import { describeStudy, runAblation, type AblationStudy } from "./run";
+import { type ScoredRun, renderSuite } from "../metrics";
+import { type AblationStudy, describeStudy, runAblation } from "./run";
 import { renderAblationTable, renderPredictionAudit } from "./table";
 import { describePlan, fullPlan } from "./toggles";
 
@@ -20,11 +20,15 @@ async function main(): Promise<void> {
 
   const plan = fullPlan();
 
-  banner("Ablation study — " + plan.length + " configurations");
+  banner(`Ablation study — ${plan.length} configurations`);
   line(describePlan(plan));
   blank();
-  line("This runs the full corpus once per configuration, sequentially. Configurations are NOT run");
-  line("concurrently: the harness mints ids from a counter and stamps learned time from a clock that");
+  line(
+    "This runs the full corpus once per configuration, sequentially. Configurations are NOT run",
+  );
+  line(
+    "concurrently: the harness mints ids from a counter and stamps learned time from a clock that",
+  );
   line("advances per call, and interleaving them would make deltas unattributable to the toggles.");
 
   const study = await runAblation(resolved, { engineId });
@@ -47,15 +51,16 @@ async function main(): Promise<void> {
   }
 
   blank();
-  line("A delta is only meaningful against the baseline row. If the baseline threw, nothing below it means anything.");
+  line(
+    "A delta is only meaningful against the baseline row. If the baseline threw, nothing below it means anything.",
+  );
 }
 
 function renderAblationMarkdown(study: AblationStudy, baseline: ScoredRun | null): string {
   const parts = [
     "# Ablation study",
     "",
-    "Corpus " + study.corpusVersion + " · engine " + study.engine.kind +
-      (study.engine.model.length > 0 ? "/" + study.engine.model : "") + " · ran " + study.ranAt,
+    `Corpus ${study.corpusVersion} · engine ${study.engine.kind}${study.engine.model.length > 0 ? `/${study.engine.model}` : ""} · ran ${study.ranAt}`,
     "",
     "Every number below is (ablated − baseline), sign-flipped for false-positive rate so that a positive",
     "delta always means the full system is better. Thresholds were declared in `toggles.ts` before any",
@@ -79,6 +84,8 @@ function renderAblationMarkdown(study: AblationStudy, baseline: ScoredRun | null
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write("\n" + (error instanceof Error ? error.stack ?? error.message : String(error)) + "\n");
+  process.stderr.write(
+    `\n${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+  );
   process.exitCode = 1;
 });

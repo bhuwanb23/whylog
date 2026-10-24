@@ -28,8 +28,14 @@ import type { DecisionId, EngineId, TranscriptId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { ResolvedCorpus, ResolvedDecision } from "../corpus/labels";
 import type { RunResult, TranscriptRun } from "../harness";
-import { align, MATCH_RULE, type Alignment } from "./match";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, precisionRecall, type MetricResult } from "./types";
+import { type Alignment, MATCH_RULE, align } from "./match";
+import {
+  COMPARATORS,
+  METRIC_NAMES,
+  type MetricResult,
+  describeEngineId,
+  precisionRecall,
+} from "./types";
 
 export interface ExtractionOutcome {
   readonly metric: MetricResult;
@@ -40,7 +46,11 @@ export interface ExtractionOutcome {
   readonly perTranscript: readonly { transcript: string; tp: number; fp: number; fn: number }[];
 }
 
-export function scoreDecisionExtraction(corpus: ResolvedCorpus, run: RunResult, engine: EngineId): ExtractionOutcome {
+export function scoreDecisionExtraction(
+  corpus: ResolvedCorpus,
+  run: RunResult,
+  engine: EngineId,
+): ExtractionOutcome {
   const labels: ResolvedDecision[] = [];
   const nodes: Decision[] = [];
   const transcriptOf = new Map<DecisionId, TranscriptId>();
@@ -82,16 +92,26 @@ export function scoreDecisionExtraction(corpus: ResolvedCorpus, run: RunResult, 
     .map((pair) => ({ label: pair.label, node: pair.node }));
 
   const perTranscript = corpus.transcripts.map((transcript) => {
-    const owned = alignment.pairs.filter((pair) => transcriptOf.get(pair.node.id) === transcriptIdOf(run, transcript.id));
+    const owned = alignment.pairs.filter(
+      (pair) => transcriptOf.get(pair.node.id) === transcriptIdOf(run, transcript.id),
+    );
     return {
       transcript: transcript.id,
       tp: owned.length,
-      fp: alignment.spurious.filter((node) => transcriptOf.get(node.id) === transcriptIdOf(run, transcript.id)).length,
-      fn: transcript.decisions.filter((label) => label.expectNode && !owned.some((pair) => pair.label === label)).length,
+      fp: alignment.spurious.filter(
+        (node) => transcriptOf.get(node.id) === transcriptIdOf(run, transcript.id),
+      ).length,
+      fn: transcript.decisions.filter(
+        (label) => label.expectNode && !owned.some((pair) => pair.label === label),
+      ).length,
     };
   });
 
-  const detail = precisionRecall(alignment.truePositives, alignment.falsePositives, alignment.falseNegatives);
+  const detail = precisionRecall(
+    alignment.truePositives,
+    alignment.falsePositives,
+    alignment.falseNegatives,
+  );
 
   return {
     alignment,
@@ -105,15 +125,8 @@ export function scoreDecisionExtraction(corpus: ResolvedCorpus, run: RunResult, 
       n: labels.length,
       perEngine: [{ engine: describeEngineId(engine), value: detail.f1, n: labels.length, detail }],
       comparator: COMPARATORS["decision-extraction"] ?? null,
-      gloss:
-        detail.truePositives + " of " + labels.length + " labelled decisions became graph nodes; " +
-        detail.falsePositives + " node(s) had no label behind them.",
-      honestNote:
-        "Matched by " + MATCH_RULE + ". Labels marked expectNode:false are excluded here and scored by modality precision, " +
-        "because counting a correctly declined hypothetical as a miss would punish the right behaviour. " +
-        "n=" + labels.length + " across " + corpus.transcripts.length + " transcripts hand-labelled by the author of the system, " +
-        "which is the largest methodological weakness in this benchmark: the labels were written by the person being scored. " +
-        "The comparator is a different genre (commit messages, not agent dialogue) and is cited as the nearest published number, not as a like-for-like baseline.",
+      gloss: `${detail.truePositives} of ${labels.length} labelled decisions became graph nodes; ${detail.falsePositives} node(s) had no label behind them.`,
+      honestNote: `Matched by ${MATCH_RULE}. Labels marked expectNode:false are excluded here and scored by modality precision, because counting a correctly declined hypothetical as a miss would punish the right behaviour. n=${labels.length} across ${corpus.transcripts.length} transcripts hand-labelled by the author of the system, which is the largest methodological weakness in this benchmark: the labels were written by the person being scored. The comparator is a different genre (commit messages, not agent dialogue) and is cited as the nearest published number, not as a like-for-like baseline.`,
     },
   };
 }
@@ -147,4 +160,3 @@ function sameTranscript(
 
   return entry.transcript.decisions.some((candidate) => candidate === label);
 }
-

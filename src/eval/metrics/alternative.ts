@@ -33,8 +33,14 @@ import type { AlternativeId, EngineId, TranscriptId } from "@/types/common";
 import type { RejectedAlternative } from "@/types/domain";
 import type { ResolvedAlternative, ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { align, MATCH_RULE, type Alignment } from "./match";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, precisionRecall, type MetricResult } from "./types";
+import { type Alignment, MATCH_RULE, align } from "./match";
+import {
+  COMPARATORS,
+  METRIC_NAMES,
+  type MetricResult,
+  describeEngineId,
+  precisionRecall,
+} from "./types";
 
 export interface AlternativeOutcome {
   readonly metric: MetricResult;
@@ -45,7 +51,11 @@ export interface AlternativeOutcome {
   readonly preemptionEligible: number;
 }
 
-export function scoreAlternativeExtraction(corpus: ResolvedCorpus, run: RunResult, engine: EngineId): AlternativeOutcome {
+export function scoreAlternativeExtraction(
+  corpus: ResolvedCorpus,
+  run: RunResult,
+  engine: EngineId,
+): AlternativeOutcome {
   const labels: ResolvedAlternative[] = [];
   for (const transcript of corpus.transcripts) {
     for (const alternative of transcript.alternatives) {
@@ -84,15 +94,18 @@ export function scoreAlternativeExtraction(corpus: ResolvedCorpus, run: RunResul
     },
   );
 
-  const detail = precisionRecall(alignment.truePositives, alignment.falsePositives, alignment.falseNegatives);
+  const detail = precisionRecall(
+    alignment.truePositives,
+    alignment.falsePositives,
+    alignment.falseNegatives,
+  );
 
   /* ARGUS's ratio, restated. Reported as a string because 13:1 is how the literature writes it and a
    * decimal would invite a comparison with a different quantity. */
   const fpToFnRatio =
     detail.falseNegatives === 0
-      ? detail.falsePositives + ":0 (no misses to compare against)"
-      : detail.falsePositives + ":" + detail.falseNegatives +
-        " (" + (detail.falsePositives / detail.falseNegatives).toFixed(1) + " FP per FN)";
+      ? `${detail.falsePositives}:0 (no misses to compare against)`
+      : `${detail.falsePositives}:${detail.falseNegatives} (${(detail.falsePositives / detail.falseNegatives).toFixed(1)} FP per FN)`;
 
   /* Pre-emption eligibility: an alternative only enters the pre-emption index with an explicit
    * whyRejected AND human confirmation. Counting precision over just those answers the question a user
@@ -113,18 +126,12 @@ export function scoreAlternativeExtraction(corpus: ResolvedCorpus, run: RunResul
       value: detail.precision,
       detail,
       n: labels.length,
-      perEngine: [{ engine: describeEngineId(engine), value: detail.precision, n: labels.length, detail }],
+      perEngine: [
+        { engine: describeEngineId(engine), value: detail.precision, n: labels.length, detail },
+      ],
       comparator: COMPARATORS["alternative-precision"] ?? null,
-      gloss:
-        detail.precision.toFixed(3) + " precision against ARGUS's 0.154; FP:FN " + fpToFnRatio +
-        " against ARGUS's 13:1. " + eligible.length + " alternative(s) carry a stated rejection reason and " +
-        (preemptionPrecision * 100).toFixed(0) + "% of those are correct — the subset the system would act on.",
-      honestNote:
-        "Precision is the headline because ARGUS's finding is a PRECISION finding; F1 would blend a bad precision with a " +
-        "good recall into a number that looks acceptable. Matched by " + MATCH_RULE + ", requiring the variable to agree. " +
-        "n=" + labels.length + " labelled alternatives, of which " + eligibleLabels.length + " state a rejection reason. " +
-        "The corpus is small enough that a single spurious alternative moves precision by several points, so the count is " +
-        "reported beside the ratio and neither should be quoted without it.",
+      gloss: `${detail.precision.toFixed(3)} precision against ARGUS's 0.154; FP:FN ${fpToFnRatio} against ARGUS's 13:1. ${eligible.length} alternative(s) carry a stated rejection reason and ${(preemptionPrecision * 100).toFixed(0)}% of those are correct — the subset the system would act on.`,
+      honestNote: `Precision is the headline because ARGUS's finding is a PRECISION finding; F1 would blend a bad precision with a good recall into a number that looks acceptable. Matched by ${MATCH_RULE}, requiring the variable to agree. n=${labels.length} labelled alternatives, of which ${eligibleLabels.length} state a rejection reason. The corpus is small enough that a single spurious alternative moves precision by several points, so the count is reported beside the ratio and neither should be quoted without it.`,
     },
   };
 }

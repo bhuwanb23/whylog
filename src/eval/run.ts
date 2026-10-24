@@ -8,12 +8,12 @@
  * under a minute, the numbers in the pitch are not verifiable and the pitch is an advertisement.
  */
 
-import { describeFailures, runConfig } from "./harness";
-import { FULL, DEFAULT_PARAMS } from "./ablation/toggles";
-import { renderSuite, scoreAll } from "./metrics";
+import { DEFAULT_PARAMS, FULL } from "./ablation/toggles";
 import { banner, blank, heading, line, prepare, readArgs, write } from "./cli";
-import { renderFullReport } from "./report";
 import { harden, renderHardening } from "./hardening";
+import { describeFailures, runConfig } from "./harness";
+import { renderSuite, scoreAll } from "./metrics";
+import { renderFullReport } from "./report";
 
 async function main(): Promise<void> {
   const args = readArgs(process.argv.slice(2));
@@ -32,11 +32,11 @@ async function main(): Promise<void> {
   heading("Import");
   line(describeFailures(run));
   line(
-    run.state.decisions.size + " decisions · " + run.state.premises.size + " premises · " +
-    run.state.alternatives.size + " alternatives · " + run.state.guards.size + " guards · " +
-    run.state.contradictions.length + " contradiction record(s)",
+    `${run.state.decisions.size} decisions · ${run.state.premises.size} premises · ${run.state.alternatives.size} alternatives · ${run.state.guards.size} guards · ${run.state.contradictions.length} contradiction record(s)`,
   );
-  line("Wall time " + (run.durationMs / 1000).toFixed(1) + "s · " + run.proposalsRaised + " revision proposal(s) raised");
+  line(
+    `Wall time ${(run.durationMs / 1000).toFixed(1)}s · ${run.proposalsRaised} revision proposal(s) raised`,
+  );
 
   /* A revision the log refused means the reasoner emitted a draft that failed validation, so the
    * graph scored below is the PRE-revision graph for that pass. Printed rather than swallowed:
@@ -44,16 +44,18 @@ async function main(): Promise<void> {
    * to change". */
   if (run.revisionFailures.length > 0) {
     blank();
-    line("Revision passes the log REFUSED (" + run.revisionFailures.length + "):");
-    for (const failure of run.revisionFailures) line("  " + failure);
+    line(`Revision passes the log REFUSED (${run.revisionFailures.length}):`);
+    for (const failure of run.revisionFailures) line(`  ${failure}`);
   }
 
   if (run.interventions.length > 0) {
     blank();
     line("Planted interventions:");
     for (const intervention of run.interventions) {
-      line("  " + (intervention.applied ? "APPLIED  " : "UNAPPLIED") + " " + intervention.plant + " · " + intervention.predicate);
-      line("           " + intervention.reason);
+      line(
+        `  ${intervention.applied ? "APPLIED  " : "UNAPPLIED"} ${intervention.plant} · ${intervention.predicate}`,
+      );
+      line(`           ${intervention.reason}`);
     }
   }
 
@@ -69,13 +71,14 @@ async function main(): Promise<void> {
 
   heading("What each number does not establish");
   for (const metric of scored.metrics) {
-    line("· " + metric.name);
-    line("  " + metric.gloss);
-    line("  honest note: " + metric.honestNote);
+    line(`· ${metric.name}`);
+    line(`  ${metric.gloss}`);
+    line(`  honest note: ${metric.honestNote}`);
     blank();
   }
 
-  if (args.has("out")) write(args.get("out") ?? "eval-report.md", renderFullReport(resolved, scored, null, hardened));
+  if (args.has("out"))
+    write(args.get("out") ?? "eval-report.md", renderFullReport(resolved, scored, null, hardened));
   if (args.has("json")) {
     write(
       args.get("json") ?? "eval-report.json",
@@ -100,6 +103,8 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write("\n" + (error instanceof Error ? error.stack ?? error.message : String(error)) + "\n");
+  process.stderr.write(
+    `\n${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+  );
   process.exitCode = 1;
 });

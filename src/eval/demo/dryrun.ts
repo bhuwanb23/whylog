@@ -31,7 +31,7 @@
 
 import type { SeedResult } from "./kit";
 import { buildSeed } from "./kit";
-import { verifyDemo, type VerificationReport } from "./verify";
+import { type VerificationReport, verifyDemo } from "./verify";
 
 export const REQUIRED_DRY_RUNS = 3;
 
@@ -108,10 +108,10 @@ export async function runDryRuns(count: number = REQUIRED_DRY_RUNS): Promise<Dry
     runs,
     divergences,
     deterministic: divergences.length === 0,
-    allDemoable: runs.every((run) => run.verification !== null && run.verification.demoable),
+    allDemoable: runs.every((run) => run.verification?.demoable),
     /* Passing requires determinism AND demoability across all three. A demo that works differently each
      * time is not a demo that can be relied on, even if each individual run looked fine. */
-    passed: divergences.length === 0 && runs.every((run) => run.verification !== null && run.verification.demoable),
+    passed: divergences.length === 0 && runs.every((run) => run.verification?.demoable),
   };
 }
 
@@ -126,15 +126,22 @@ function fingerprintOf(seed: SeedResult, durationMs: number): DryRunFingerprint 
     contradictions: seed.state.contradictions.length,
     justifications: seed.state.justifications.size,
     decisionIds: decisions.map((decision) => String(decision.id)).sort(),
-    labels: decisions.map((decision) => decision.id + "=" + decision.label).sort(),
+    labels: decisions.map((decision) => `${decision.id}=${decision.label}`).sort(),
     durationMs,
   };
 }
 
 function emptyFingerprint(durationMs: number): DryRunFingerprint {
   return {
-    decisions: 0, premises: 0, alternatives: 0, guards: 0, contradictions: 0, justifications: 0,
-    decisionIds: [], labels: [], durationMs,
+    decisions: 0,
+    premises: 0,
+    alternatives: 0,
+    guards: 0,
+    contradictions: 0,
+    justifications: 0,
+    decisionIds: [],
+    labels: [],
+    durationMs,
   };
 }
 
@@ -145,34 +152,41 @@ function compare(runs: readonly DryRun[]): readonly string[] {
 
   for (const run of runs.slice(1)) {
     if (run.error !== null) {
-      out.push("run " + run.n + " threw: " + run.error);
+      out.push(`run ${run.n} threw: ${run.error}`);
       continue;
     }
     if (first.error !== null) continue;
 
     const fields: (keyof DryRunFingerprint)[] = [
-      "decisions", "premises", "alternatives", "guards", "contradictions", "justifications",
+      "decisions",
+      "premises",
+      "alternatives",
+      "guards",
+      "contradictions",
+      "justifications",
     ];
 
     for (const field of fields) {
       const a = first.fingerprint[field];
       const b = run.fingerprint[field];
       if (typeof a === "number" && typeof b === "number" && a !== b) {
-        out.push(field + ": run 1 had " + a + ", run " + run.n + " had " + b);
+        out.push(`${field}: run 1 had ${a}, run ${run.n} had ${b}`);
       }
     }
 
     if (first.fingerprint.labels.join("|") !== run.fingerprint.labels.join("|")) {
-      const differing = run.fingerprint.labels.filter((entry) => !first.fingerprint.labels.includes(entry));
+      const differing = run.fingerprint.labels.filter(
+        (entry) => !first.fingerprint.labels.includes(entry),
+      );
       out.push(
-        "LABELS DIVERGED between run 1 and run " + run.n + " — the same input produced different " +
-        "epistemic states. Counts alone would not have caught this. Differing: " +
-        (differing.length === 0 ? "(reordered only)" : differing.slice(0, 6).join(", ")),
+        `LABELS DIVERGED between run 1 and run ${run.n} — the same input produced different epistemic states. Counts alone would not have caught this. Differing: ${differing.length === 0 ? "(reordered only)" : differing.slice(0, 6).join(", ")}`,
       );
     }
 
     if (first.fingerprint.decisionIds.join("|") !== run.fingerprint.decisionIds.join("|")) {
-      out.push("IDS DIVERGED between run 1 and run " + run.n + " — a counter depends on something other than the input.");
+      out.push(
+        `IDS DIVERGED between run 1 and run ${run.n} — a counter depends on something other than the input.`,
+      );
     }
   }
 
@@ -182,49 +196,69 @@ function compare(runs: readonly DryRun[]): readonly string[] {
 export function renderDryRuns(report: DryRunReport): string {
   const lines: string[] = [];
 
-  lines.push("DRY RUNS — " + report.runs.length + " consecutive, no reset between them");
+  lines.push(`DRY RUNS — ${report.runs.length} consecutive, no reset between them`);
   lines.push(report.passed ? "PASSED: deterministic and demoable across all runs." : "NOT PASSED.");
   lines.push("");
 
-  lines.push("Run".padEnd(5) + "dec".padStart(5) + "prem".padStart(6) + "alt".padStart(5) +
-    "grd".padStart(5) + "contra".padStart(8) + "just".padStart(6) + "  verified/manual/failed".padEnd(26) + "secs");
+  lines.push(
+    `${
+      "Run".padEnd(5) +
+      "dec".padStart(5) +
+      "prem".padStart(6) +
+      "alt".padStart(5) +
+      "grd".padStart(5) +
+      "contra".padStart(8) +
+      "just".padStart(6) +
+      "  verified/manual/failed".padEnd(26)
+    }secs`,
+  );
   lines.push("-".repeat(78));
 
   for (const run of report.runs) {
     const f = run.fingerprint;
     const v = run.verification;
     if (v === null) {
-      lines.push(String(run.n).padEnd(5) + "  THREW — " + (run.error ?? "unknown"));
+      lines.push(`${String(run.n).padEnd(5)}  THREW — ${run.error ?? "unknown"}`);
       continue;
     }
     lines.push(
       String(run.n).padEnd(5) +
-      String(f.decisions).padStart(5) + String(f.premises).padStart(6) + String(f.alternatives).padStart(5) +
-      String(f.guards).padStart(5) + String(f.contradictions).padStart(8) + String(f.justifications).padStart(6) +
-      ("  " + v.verified + "/" + v.manual + "/" + v.failed).padEnd(26) +
-      (f.durationMs / 1000).toFixed(1),
+        String(f.decisions).padStart(5) +
+        String(f.premises).padStart(6) +
+        String(f.alternatives).padStart(5) +
+        String(f.guards).padStart(5) +
+        String(f.contradictions).padStart(8) +
+        String(f.justifications).padStart(6) +
+        `  ${v.verified}/${v.manual}/${v.failed}`.padEnd(26) +
+        (f.durationMs / 1000).toFixed(1),
     );
   }
 
   lines.push("");
-  lines.push("Timings are shown but NOT compared: they vary with machine load, and treating a slow run as");
+  lines.push(
+    "Timings are shown but NOT compared: they vary with machine load, and treating a slow run as",
+  );
   lines.push("non-determinism teaches the presenter to ignore this report.");
 
   if (report.divergences.length > 0) {
     lines.push("");
-    lines.push("DIVERGENCES (" + report.divergences.length + "):");
-    for (const divergence of report.divergences) lines.push("  " + divergence);
+    lines.push(`DIVERGENCES (${report.divergences.length}):`);
+    for (const divergence of report.divergences) lines.push(`  ${divergence}`);
   } else {
     lines.push("");
-    lines.push("No divergences. Runs 2 and 3 started from whatever run 1 left in storage and produced");
+    lines.push(
+      "No divergences. Runs 2 and 3 started from whatever run 1 left in storage and produced",
+    );
     lines.push("identical node counts, identical labels and identical ids.");
   }
 
-  const warnings = report.runs.flatMap((run) => run.warnings.map((warning) => "run " + run.n + ": " + warning));
+  const warnings = report.runs.flatMap((run) =>
+    run.warnings.map((warning) => `run ${run.n}: ${warning}`),
+  );
   if (warnings.length > 0) {
     lines.push("");
     lines.push("WARNINGS:");
-    for (const warning of [...new Set(warnings)]) lines.push("  " + warning);
+    for (const warning of [...new Set(warnings)]) lines.push(`  ${warning}`);
   }
 
   return lines.join("\n");
