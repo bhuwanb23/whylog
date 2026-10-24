@@ -30,5 +30,6 @@
 
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src", "tests"],
+  "exclude": ["src/eval"]
 }

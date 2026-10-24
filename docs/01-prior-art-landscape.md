@@ -129,7 +129,7 @@ Dhaouadi, Oakes & Famelis (2025). *Automated Extraction and Analysis of Develope
 - Instantiates **Kantara**, an existing high-level rationale extraction and management architecture, using pre-trained models + LLMs.
 - Builds a **Rationale and Decision Graph**: decision nodes linked to rationale nodes; edges between decision nodes labelled **Similar** or **Contradicts**.
 - Includes **structure-based mechanisms to detect reasoning conflicts** that could cause design erosion over time.
-- Results on the Linux kernel OOM-Killer module: **29 similar pairs, 396 contradictory decision pairs, 86 inconsistencies**. Generalises to five other active OSS projects with **F1 ÷ 0.70–0.75**.
+- Results on the Linux kernel OOM-Killer module: **29 similar pairs, 396 contradictory decision pairs, 86 inconsistencies**. Generalises to five other active OSS projects with **F1 ≈ 0.70–0.75**.
 - Two named inconsistency mechanisms:
   - **M1** — decisions that are *similar* even though their *rationales are contradictory* → probable miscommunication or misunderstanding.
   - **M2** — decisions that are *contradictory* even though their *rationales are similar* → probable copy-paste, or a graph-construction error.
@@ -183,29 +183,29 @@ They then specify what an ADR must look like for a *machine* reader rather than 
 ```
                         REASONS ABOUT TRUTH
                                  ▲
-                                 ³
-        Veritas ●                ³              ●  ← WhyLog
-   (agent beliefs;               ³   (developer decisions, recovered from
-    programmatic assertion;      ³    dialogue; premised; cascading;
-    no extraction;               ³    entrenchment grounded in the code;
-    no code grounding;           ³    compiled into executable guards
-    no human gate)               ³    and agent-readable rules)
-                                 ³
-   Kantara / 2506.11005 ●        ³
-   (detects contradictions in    ³
-    commits via NLI; never       ³
-    revises; no premises;        ³
-    no verification)             ³
-                                 ³
+                                 │
+        Veritas ●                │              ●  ← WhyLog
+   (agent beliefs;               │   (developer decisions, recovered from
+    programmatic assertion;      │    dialogue; premised; cascading;
+    no extraction;               │    entrenchment grounded in the code;
+    no code grounding;           │    compiled into executable guards
+    no human gate)               │    and agent-readable rules)
+                                 │
+   Kantara / 2506.11005 ●        │
+   (detects contradictions in    │
+    commits via NLI; never       │
+    revises; no premises;        │
+    no verification)             │
+                                 │
 ─────────────────────────────────┼──────────────────────────────────────►
-   adr-staleness-check ●         ³                 EXTRACTS FROM
-   Repowise ●                    ³              NATURAL DIALOGUE
-   (hand-maintained maps;        ³
-    timestamp drift;             ³  ● ai-memory        ● agentmemory
-    no semantics)                ³  ● total-agent-memory
-                                 ³  ● Zep/Graphiti     ● Mem0 / Letta / cognee
-                                 ³  (store · index · retrieve · inject)
-                                 ³
+   adr-staleness-check ●         │                 EXTRACTS FROM
+   Repowise ●                    │              NATURAL DIALOGUE
+   (hand-maintained maps;        │
+    timestamp drift;             │  ● ai-memory        ● agentmemory
+    no semantics)                │  ● total-agent-memory
+                                 │  ● Zep/Graphiti     ● Mem0 / Letta / cognee
+                                 │  (store · index · retrieve · inject)
+                                 │
                         STORES & RETRIEVES
 ```
 
