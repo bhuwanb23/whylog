@@ -17,7 +17,7 @@
  * the verify commands that reference it.
  *
  * That guarantee is the point. A `CLAUDE.md` telling an agent to run
- * `node scripts/whylog-guards.mjs --decision WLD-0007` is only true if that file exists and
+ * `node scripts/whylog-guards.cjs --decision WLD-0007` is only true if that file exists and
  * honours that flag. Compiling both from one graph in one pass is what makes it true.
  * ---------------------------------------------------------------------------
  */

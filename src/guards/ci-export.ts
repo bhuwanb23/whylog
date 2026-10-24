@@ -588,7 +588,7 @@ export function describeExport(exported: CiExport): string {
   }
 
   lines.push("");
-  lines.push("Two files: `.whylog/guards.cjs` (standalone Node, standard library only) and");
+  lines.push(`Two files: \`${RUNNER_PATH}\` (standalone Node, standard library only) and`);
   lines.push("`.github/workflows/decision-guards.yml`. Blocking failures exit non-zero; warnings");
   lines.push("are printed as advice and do not block the build.");
 

@@ -1,6 +1,6 @@
 # Validation pass — whole-project audit
 
-Run after Phase 7. **274 source files, 72,870 lines.**
+Run after Phase 7. **278 source files, 77,946 lines.**
 
 Full detail in [`STRUCTURE.md` §18.8](../STRUCTURE.md). This is the short record.
 
@@ -46,17 +46,20 @@ found" that looks like a broken runner.
   run: npx vitest run tests/integration/keyless.test.ts
 ```
 
-`tests/` holds nine `.gitkeep` files. **The build was red on every push**, for an absence everybody already
-knew about. Replaced with an `eval` job that runs the real thing: baseline metrics, demo kit, ablation
-study, reports uploaded as artifacts. That is strictly stronger than the test it replaced — it drives the
-actual pipeline over the actual corpus with no doubles.
+`tests/` held nine `.gitkeep` files at the time of this pass. **The build was red on every push**, for an
+absence everybody already knew about. Replaced with an `eval` job that runs the real thing: baseline
+metrics, demo kit, ablation study, reports uploaded as artifacts. That is strictly stronger than the test
+it replaced — it drives the actual pipeline over the actual corpus with no doubles. *(Update: a real test
+suite has since been written — 17 files, 105 tests across `tests/unit`, `tests/integration`, `tests/e2e`,
+passing.)*
 
 **3. `npm run verify` could never pass.**
 
 `verify` = `typecheck && check && test`, and `vitest run` exits 1 when it finds no test files. Given the
-standing instruction not to write tests, `verify` was guaranteed to fail. Now `--passWithNoTests`, which is
-honest rather than red: it runs and reports there was nothing to run. `verify` also gained
-`check:structure`, and `verify:all` chains the eval suite behind it.
+standing instruction not to write tests, `verify` was guaranteed to fail. It was given `--passWithNoTests`
+to be honest rather than red. *(Update: a real suite has since been written — 17 files, 105 tests — so
+`--passWithNoTests` was dropped; `test` is plain `vitest run` again. `verify` also gained
+`check:structure`, and `verify:all` chains the eval suite behind it.)*
 
 ---
 
@@ -67,7 +70,7 @@ Four things, each verified to have **zero references** anywhere in `src/`:
 | Removed | Why it was dead |
 |---|---|
 | `src/ai/local/alternatives.ts` | **A second implementation of live rules.** `extraction/alternatives.ts` does recovery, `extraction/confidence.ts` owns `preemptionEligible`, `ontology/canonicalize.ts` owns `NONE_VALUES`. The copies had begun to drift. This is the same defect Phase 3 fixed by collapsing `ai/local/classify.ts` onto the single rule engine |
-| `src/lib/rng.ts` | `LATTICE_SEED` served a force-directed lattice. Phase 6 chose deterministic columns-by-type with decisions at the barycentre, because a cascade animation is illegible if nodes move between runs |
+| `src/lib/rng.ts` | `LATTICE_SEED` served a force-directed lattice. Phase 6 chose deterministic columns-by-type with decisions at the barycentre, because a cascade animation is illegible if nodes move between runs. *(Update: the file was later restored from the baseline tree by the substrate rollback; it remains in `src/` and is not currently imported.)* |
 | `src/lib/invariant.ts` | Superseded by a better idiom already in the code: `materialize.ts` uses `const unhandled: never = event`, which turns "someone added a 37th event type" into a **compile error naming the missing case** |
 | `src/components/conflict/` | The nav entry was retired in Phase 6 — `ReasoningView` *is* §6.5 |
 
@@ -102,8 +105,9 @@ oversight:
   Splitting would produce fifteen files used once each, with props threaded between components that only
   ever render together. The directories that *are* split — `common/`, `graph/`, `decision/`, `review/`,
   `time-machine/` — are split because those pieces are genuinely reused.
-- **`tests/` is empty by standing instruction.** §15 describes a suite never written. This is
-  `LIMITATIONS.md` §10 and the reason `EVALUATION.md` contains no numbers.
+- **`tests/` was empty by standing instruction.** §15 described a suite never written. *(Update: a real
+  suite has since been written — 17 files, 105 tests passing across `tests/unit`, `tests/integration`,
+  and `tests/e2e`, with the golden-file demo head pinned at `373bdbded207e8`.)*
 - **`fixtures/expected/` is empty.** Ground truth comes from verbatim quotes in the transcripts, which is
   stronger than golden files: a golden file records an output, a quote records a fact about the input that a
   reader can check in seconds.
@@ -112,11 +116,15 @@ oversight:
 
 ## The one gap that cannot be closed here
 
-**Nothing has been executed.** No installs, no builds, no commands — the governing constraint on this
-environment. Structural validation is not correctness validation, and the checker's own history proves the
-point: it cannot see an identifier used without being declared, which is how ten real compile errors survived
-Phases 2–6 before a string-aware scan found them. That scan is what section "What was checked" row 2 above
-now runs, and it found nothing this time — but "nothing this time" is not "impossible".
+**Nothing had been executed at the time of this pass.** No installs, no builds, no commands — the
+governing constraint on this environment. Structural validation is not correctness validation, and the
+checker's own history proves the point: it cannot see an identifier used without being declared, which is
+how ten real compile errors survived Phases 2–6 before a string-aware scan found them. That scan is what
+section "What was checked" row 2 above now runs, and it found nothing this time — but "nothing this time"
+is not "impossible".
+
+*(Update: the full battery has since been run and is green — `typecheck`, `build`, `check` (Biome 0
+errors), `test` (105 tests, 17 files), `check:structure`, `guards:ci` (17 guards), `demo:verify`.)*
 
 ```
 npm install

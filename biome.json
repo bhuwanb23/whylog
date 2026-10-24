@@ -7,13 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      "dist",
-      "coverage",
-      "node_modules",
-      "scripts/whylog-guards.cjs",
-      "scripts/whylog-guards.mjs"
-    ]
+    "ignore": ["dist", "coverage", "node_modules", "scripts/whylog-guards.cjs"]
   },
   "json": {
     "parser": {
