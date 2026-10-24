@@ -7,7 +7,7 @@
  * This file is what makes those lines true. It is compiled from the same graph in the same
  * pass, so a verify command cannot name a guard this runner does not have.
  *
- * Log head: 25c2b0a8d1ea22
+ * Log head: 26b1768e5c7e24
  * Guards:   17
  *
  * Re-export after any change to the log. Editing this file by hand is detected as a stamp
@@ -16,7 +16,7 @@
 /**
  * WhyLog decision guards — generated. Do not edit by hand.
  *
- * Log head: 25c2b0a8d1ea22
+ * Log head: 26b1768e5c7e24
  * Guards:   17
  *
  * Exits non-zero if any BLOCKING guard fails. Warning failures are printed
@@ -43,7 +43,7 @@ const GUARDS = [
       "package": "sqlite",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0004",
@@ -123,7 +123,7 @@ const GUARDS = [
       "package": "post",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0004",
@@ -203,7 +203,7 @@ const GUARDS = [
       "package": "postgres",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0004",
@@ -283,7 +283,7 @@ const GUARDS = [
       "package": "auth",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0005",
@@ -349,7 +349,7 @@ const GUARDS = [
       "package": "login",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0005",
@@ -414,7 +414,7 @@ const GUARDS = [
       "kind": "path_glob_exists",
       "glob": "machine?"
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0005",
@@ -480,7 +480,7 @@ const GUARDS = [
       "package": "single",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0017",
@@ -536,7 +536,7 @@ const GUARDS = [
       "package": "local",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0017",
@@ -591,7 +591,7 @@ const GUARDS = [
       "kind": "path_glob_exists",
       "glob": "presence?"
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0017",
@@ -647,7 +647,7 @@ const GUARDS = [
       "package": "tailwind",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0017",
@@ -711,7 +711,7 @@ const GUARDS = [
       "package": "next",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0017",
@@ -775,7 +775,7 @@ const GUARDS = [
       "package": "next.js",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0017",
@@ -839,7 +839,7 @@ const GUARDS = [
       "package": "embeddings",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0025",
@@ -881,7 +881,7 @@ const GUARDS = [
       "package": "200",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0025",
@@ -922,7 +922,7 @@ const GUARDS = [
       "kind": "path_glob_exists",
       "glob": "realistically?"
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0025",
@@ -964,7 +964,7 @@ const GUARDS = [
       "package": "golden-file",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0024",
@@ -1018,7 +1018,7 @@ const GUARDS = [
       "package": "ui",
       "includeDev": true
     },
-    "decidedAt": "2026-10-22",
+    "decidedAt": "2026-10-03",
     "restsOn": [
       {
         "id": "P-0024",

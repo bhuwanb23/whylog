@@ -40,7 +40,7 @@ import { resolve } from "node:path";
 import { createLocalEngine } from "@/ai/local";
 import { commitReview } from "@/extraction/commit";
 import { runExtraction } from "@/extraction/pipeline";
-import { applyAction, approve, discard } from "@/extraction/review/actions";
+import { applyAction, approve, discard, edit } from "@/extraction/review/actions";
 import { useWhyLog } from "@/store/whylog";
 import type { GraphState } from "@/substrate/graph-state";
 import { type DecisionId, type TranscriptId, asISO } from "@/types/common";
@@ -80,7 +80,10 @@ const KEEP: ReadonlySet<string> = new Set([
 export type ReviewMode = "curated" | "approve-all";
 
 /** Import the fixture, review it, commit it, and hand back the log. */
-export async function buildDemoLog(mode: ReviewMode = "curated"): Promise<GraphState> {
+export async function buildDemoLog(
+  mode: ReviewMode = "curated",
+  options?: { readonly editDownside?: boolean },
+): Promise<GraphState> {
   const raw = readFileSync(FIXTURE, "utf-8");
   const engine = createLocalEngine();
 
@@ -90,13 +93,27 @@ export async function buildDemoLog(mode: ReviewMode = "curated"): Promise<GraphS
   );
   if (!run.ok) throw new Error(`extraction failed: ${run.failure.kind}`);
 
+  let edited = false;
   const reviewed = run.outcome.queue.map((item) => {
     if (mode === "approve-all" || item.kind !== "decision" || item.decision === null) {
       return applyAction(item, approve(false));
     }
 
     const key = `${item.decision.variable}=${item.decision.value}`;
-    if (KEEP.has(key)) return applyAction(item, approve(false));
+    if (KEEP.has(key)) {
+      /* The local engine never extracts an accepted downside - the LLM path does, and the
+       * prompt asks for it - so the only way a keyless log carries one is if the human
+       * records it in review. That is the real flow, and it is what the decision card's
+       * "accepted downside" section is for. */
+      if (options?.editDownside === true && !edited) {
+        edited = true;
+        return applyAction(
+          item,
+          edit({ acceptedDownside: "single-writer only, until the schema grows" }),
+        );
+      }
+      return applyAction(item, approve(false));
+    }
 
     return applyAction(
       item,
