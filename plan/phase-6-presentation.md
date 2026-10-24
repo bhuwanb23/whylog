@@ -42,45 +42,45 @@
 
 ```
    ┌────────────────────────────────────────────────────────────────┐
-   ³ WLD-0007                                        ● SOUND  (IN)  ³
-   ³ Use SQLite, not Postgres                                       ³
-   ³                                                                ³
-   ³ In the context of a single-user local tool with no deployment  ³
-   ³ infrastructure, facing a storage choice, we decided for SQLite ³
-   ³ to avoid deploy overhead, accepting single-writer limits.      ³
-   ³                                                    [Y-statement]³
+   │ WLD-0007                                        ● SOUND  (IN)  │
+   │ Use SQLite, not Postgres                                       │
+   │                                                                │
+   │ In the context of a single-user local tool with no deployment  │
+   │ infrastructure, facing a storage choice, we decided for SQLite │
+   │ to avoid deploy overhead, accepting single-writer limits.      │
+   │                                                    [Y-statement]│
    ├────────────────────────────────────────────────────────────────┤
-   ³ RESTS ON                                                       ³
-   ³   ✓ P-0002  scale.max_users = 1          "one person, one      ³
-   ³   ✓ P-0005  deployment = none             machine, one log"    ³
-   ³ EXCLUDES                                                       ³
-   ³   ✗ P-0011  concurrent writers           OUT — must not hold   ³
+   │ RESTS ON                                                       │
+   │   ✓ P-0002  scale.max_users = 1          "one person, one      │
+   │   ✓ P-0005  deployment = none             machine, one log"    │
+   │ EXCLUDES                                                       │
+   │   ✗ P-0011  concurrent writers           OUT — must not hold   │
    ├────────────────────────────────────────────────────────────────┤
-   ³ REJECTED                                                       ³
-   ³   Postgres  — "deploy complexity"                              ³
-   ³   Supabase  — "hosted dependency"                              ³
-   ³ ACCEPTED DOWNSIDE                                              ³
-   ³   single-writer limit; migration needed if multi-user          ³
+   │ REJECTED                                                       │
+   │   Postgres  — "deploy complexity"                              │
+   │   Supabase  — "hosted dependency"                              │
+   │ ACCEPTED DOWNSIDE                                              │
+   │   single-writer limit; migration needed if multi-user          │
    ├────────────────────────────────────────────────────────────────┤
-   ³ GUARDS   2/2 passing                                           ³
-   ³   ✓ G-0007a dependency_present  better-sqlite3                 ³
-   ³   ✓ G-0007b dependency_absent   pg                             ³
+   │ GUARDS   2/2 passing                                           │
+   │   ✓ G-0007a dependency_present  better-sqlite3                 │
+   │   ✓ G-0007b dependency_absent   pg                             │
    ├────────────────────────────────────────────────────────────────┤
-   ³ ENTRENCHMENT  0.78  HIGH                          [breakdown]  ³
-   ³   authority 1.00 · implementation 1.00 · corroboration 0.31    ³
-   ³   confidence 0.90 · recency 0.62 · EE3 cap not binding         ³
+   │ ENTRENCHMENT  0.78  HIGH                          [breakdown]  │
+   │   authority 1.00 · implementation 1.00 · corroboration 0.31    │
+   │   confidence 0.90 · recency 0.62 · EE3 cap not binding         │
    ├────────────────────────────────────────────────────────────────┤
-   ³ PROVENANCE                                                     ³
-   ³   "yeah ok. going with SQLite, not Postgres. single-user and   ³
-   ³    no deploy hassle is the whole argument."                    ³
-   ³   transcript t₁ · chars 1204–1288 · human_stated               ³
-   ³   engine: local · confidence 0.90                              ³
-   ³   decided 2026-10-03 · learned 2026-10-21                      ³
+   │ PROVENANCE                                                     │
+   │   "yeah ok. going with SQLite, not Postgres. single-user and   │
+   │    no deploy hassle is the whole argument."                    │
+   │   transcript t₁ · chars 1204–1288 · human_stated               │
+   │   engine: local · confidence 0.90                              │
+   │   decided 2026-10-03 · learned 2026-10-21                      │
    ├────────────────────────────────────────────────────────────────┤
-   ³ RELATES TO   WLD-0011 depends-on · WLD-0019 shares-premise     ³
-   ³              WLD-0021 supersedes-none                          ³
+   │ RELATES TO   WLD-0011 depends-on · WLD-0019 shares-premise     │
+   │              WLD-0021 supersedes-none                          │
    ├────────────────────────────────────────────────────────────────┤
-   ³ [ Reverse ] [ Re-justify ] [ Contest premise ] [ Audit trail ] ³
+   │ [ Reverse ] [ Re-justify ] [ Contest premise ] [ Audit trail ] │
    └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -136,26 +136,26 @@
 
 ```
    ┌──────────────────────────────────────────────────────────────┐
-   ³ ⚠ UNSOUND   WLD-0007 — Use SQLite, not Postgres              ³
+   │ ⚠ UNSOUND   WLD-0007 — Use SQLite, not Postgres              │
    ├──────────────────────────────────────────────────────────────┤
-   ³ WHAT FAILED    Premise P-0011 "no concurrent writers"        ³
-   ³                                                              ³
-   ³ THE EVIDENCE   "the sync worker writes while the UI writes"  ³
-   ³                transcript t₂ · 2 minutes ago      [expand]   ³
-   ³                                                              ³
-   ³ THE NOGOOD     "single-user" and "needs concurrent writers"  ³
-   ³                cannot both hold                              ³
-   ³                                                              ³
-   ³ THE CASCADE    WLD-0011 Skip connection pooling   → UNSOUND  ³
-   ³                WLD-0019 No migration tooling      → SURVIVES ³
-   ³                                                              ³
-   ³ ENTRENCHMENT   0.78 HIGH                        [breakdown]  ³
-   ³                you stated it · it's implemented · 18 days old³
-   ³                                                              ³
-   ³ WHY NOT AUTO   the newcomer (0.85, single source) does not   ³
-   ³                outrank an entrenched, implemented decision   ³
+   │ WHAT FAILED    Premise P-0011 "no concurrent writers"        │
+   │                                                              │
+   │ THE EVIDENCE   "the sync worker writes while the UI writes"  │
+   │                transcript t₂ · 2 minutes ago      [expand]   │
+   │                                                              │
+   │ THE NOGOOD     "single-user" and "needs concurrent writers"  │
+   │                cannot both hold                              │
+   │                                                              │
+   │ THE CASCADE    WLD-0011 Skip connection pooling   → UNSOUND  │
+   │                WLD-0019 No migration tooling      → SURVIVES │
+   │                                                              │
+   │ ENTRENCHMENT   0.78 HIGH                        [breakdown]  │
+   │                you stated it · it's implemented · 18 days old│
+   │                                                              │
+   │ WHY NOT AUTO   the newcomer (0.85, single source) does not   │
+   │                outrank an entrenched, implemented decision   │
    ├──────────────────────────────────────────────────────────────┤
-   ³ [ Reverse → Postgres ] [ Keep & re-justify ] [ Contest ]     ³
+   │ [ Reverse → Postgres ] [ Keep & re-justify ] [ Contest ]     │
    └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -181,7 +181,7 @@
    ────────────────────────────         ──────────────────────────
 
    scale ────────┬── P-0002 single-user ═══╗
-                 ³                         ╠══► WLD-0007 SQLite
+                 │                         ╠══► WLD-0007 SQLite
    deployment ───┴── P-0005 no-deploy  ════╝         ║
                                                      ║ depends-on
    requirement ───── P-0011 concurrent ═══════► WLD-0011 skip pooling
@@ -212,7 +212,7 @@
 
 **Goal.** Bi-temporal replay — the payoff for Phase 0.3, and nearly free once events are append-only.
 
-**Mechanism.** Fold the event log over the prefix where `occurredAt ó T`. Because the fold is pure and total (Phase 0.2), this is a slider, not a feature.
+**Mechanism.** Fold the event log over the prefix where `occurredAt ≤ T`. Because the fold is pure and total (Phase 0.2), this is a slider, not a feature.
 
 **Two sliders, because two timelines.** Valid time (*"what was true then"*) and learned time (*"what did the system know then"*). They diverge constantly in WhyLog's real workflow — you paste a three-week-old transcript, so the system learns today about a decision made on the 3rd.
 
