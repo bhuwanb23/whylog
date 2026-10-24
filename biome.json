@@ -23,8 +23,7 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn",
-        "useLiteralKeys": "off"
+        "noExcessiveCognitiveComplexity": "warn"
       },
       "correctness": {
         "noUnusedImports": "error",
@@ -46,11 +45,6 @@
       "semicolons": "always",
       "trailingCommas": "all",
       "arrowParentheses": "always"
-    }
-  },
-  "json": {
-    "parser": {
-      "allowComments": true
     }
   }
 }

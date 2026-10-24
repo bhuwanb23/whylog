@@ -7,7 +7,7 @@ on:
 
 jobs:
   verify:
-    name: Typecheck, lint, test
+    name: Typecheck, lint, structure
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +27,58 @@ jobs:
       - name: Lint and format check
         run: npm run check
 
+      # 277 files: imports resolve, named exports exist, no cycles, brackets
+      # balance, the event vocabulary agrees with the fold.
+      - name: Structural check
+        run: npm run check:structure
+
+      # `tests/**` holds only .gitkeep files — the test suite is deliberately
+      # deferred (see notes/PHASE-0-NOTES.md and LIMITATIONS.md §10).
+      # --passWithNoTests keeps this step honest rather than red: it runs and
+      # reports that there was nothing to run, instead of failing the build for
+      # an absence everybody already knows about.
       - name: Unit and integration tests
         run: npm run test
 
-      - name: Keyless end-to-end path
-        run: npx vitest run tests/integration/keyless.test.ts
+  # The keyless end-to-end path. This replaces a step that used to run
+  # tests/integration/keyless.test.ts, a file that does not exist — the CI was
+  # red on every push for a test that was never written.
+  #
+  # What runs instead is stronger: the real pipeline over the real corpus, with
+  # no test doubles, on the local engine and no API key.
+  eval:
+    name: DecisionMemEval (keyless end-to-end)
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Baseline run — 13 metrics + hardening pass
+        run: npm run eval -- --out eval-report.md
+
+      - name: Demo kit — script, beat verification, three dry runs
+        run: npm run demo:verify -- --out demo-verification.md
+
+      # 15 configurations. Slowest step in the workflow and the one that turns
+      # "the system scores X" into "component Y is worth X-Z".
+      - name: Ablation study
+        run: npm run eval:ablation -- --out ablation-report.md
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decisionmemeval-reports
+          path: |
+            eval-report.md
+            demo-verification.md
+            ablation-report.md
+          if-no-files-found: warn
 
   guards:
     name: Decision guards (Phase 4.6)
@@ -45,8 +92,12 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # Emitted by `npm run guards:ci` from the materialised decision graph.
-      # Fails the build on any guard with severity "blocking".
+      # Emitted from the materialised decision graph. With no --log it builds the
+      # demo seed from fixtures/, so this job is green on a fresh clone. Point it
+      # at a real exported log to verify an actual project.
       # See docs/04-executable-decision-guards.md section 5.2.
-      - name: Run exported guard set
-        run: npm run guards:ci
+      - name: Export the guard runner
+        run: npm run guards:ci -- --include-proposed
+
+      - name: Run the exported guard set
+        run: node scripts/whylog-guards.mjs

@@ -135,7 +135,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `local/cues.ts` | Cue-pattern matching against the ontology |
 | `local/decisions.ts` | Local decision recovery: variable, value, polarity, modality, rationale |
 | `local/premises.ts` | Local premise recovery against the closed set of 8 |
-| `local/alternatives.ts` | Local rejected-alternative recovery |
+| ~~`local/alternatives.ts`~~ | **REMOVED** in the validation pass — duplicated live logic in `extraction/alternatives.ts`, `extraction/confidence.ts` and `ontology/canonicalize.ts`. See §18.8 |
 | `local/negation.ts` | Cue inventory + **scope window** + verb-pattern polarity |
 | `local/modality.ts` | `asserted` / `proposed` / `hypothetical` / `reported` |
 | `local/embed.ts` | **Hashed n-gram vectoriser**: tokens + char 3-grams, sign hash, 512-d, L2-normalised |
@@ -253,7 +253,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 10. `src/export/` — Phase 5 · L4
+## 10. `src/export/` — Phase 5 · L4 ✅ built
 
 | File | Purpose | Sub-phase |
 |---|---|---|
@@ -264,7 +264,8 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `budget.ts` | Two-tier emission; ~200-line target; live line/token indicator | 5.4 |
 | `consistency-gate.ts` | **Pre-export check** — block on conflict, exclude `OUT`, annotate contested premises and failing guards | 5.6 |
 | `record.ts` | The agent-optimized record: ID · MUST/MUST NOT · `applies_to` · Because (premise IDs) · Rejected · Verify · Status | 5.3 |
-| `emitters/claude.ts` · `agents.ts` · `cursorrules.ts` · `decisions-md.ts` · `index.ts` | Five targets from one CIF | 5.2 |
+| `emitters/claude.ts` · `agents.ts` · `cursorrules.ts` · `decisions-md.ts` · `index.ts` | Four document targets from one CIF | 5.2 |
+| `emitters/shared.ts` | **The record renderer all three agent targets share** — so a record cannot read differently in CLAUDE.md than in AGENTS.md | 5.3 |
 | `rejected-block.ts` | **"Rejected — do not re-propose"** with premise status | 5.3 |
 | `verify-command.ts` | Guard → one-line runnable command | 5.3 |
 | `stamp/index.ts` | Integrity stamp assembly | 5.5 |
@@ -296,9 +297,9 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 | `text.ts` | Normalisation, tokenisation, stopword list |
 | `glob.ts` | Glob matching for guards and `applies_to` |
 | `format.ts` | Markdown escaping, date formatting, number formatting |
-| `invariant.ts` | `unreachable()` / assertion helpers |
+| ~~`invariant.ts`~~ | **REMOVED** in the validation pass — superseded by `const unhandled: never = event`, which names the missing case. See §18.8 |
 | `result.ts` | `Result<T, E>` for fallible operations |
-| `rng.ts` | Deterministic RNG so tests reproduce |
+| ~~`rng.ts`~~ | **REMOVED** in the validation pass — `LATTICE_SEED` served a force-directed lattice that Phase 6 rejected. See §18.8 |
 
 ---
 
@@ -325,7 +326,7 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 `PasteModal` · `ReviewDiff` · `TranscriptPane` · `ExtractedPane` · `DecisionReviewCard` · `PremiseReviewRow` · `AlternativeReviewRow` · `BulkApproveBar` · `ReviewSummary`
 
-### `src/components/conflict/` — 6.5 ★
+### ~~`src/components/conflict/`~~ — 6.5 ★  **DIRECTORY REMOVED — see §18.8**
 
 `RevisionProposal` (the seven-part surface) · `WhatFailed` · `EvidenceQuote` · `NogoodStatement` · `CascadeTree` · `EntrenchmentBreakdown` · `ProposalActions` · `RejustifyComposer` · `ContestedQueue`
 
@@ -363,26 +364,49 @@ One interface, two implementations, selected at runtime, badged in the UI, never
 
 ---
 
-## 14. `src/eval/` — Phase 7
+## 14. `src/eval/` — Phase 7  ✅ 37 files
 
 | File | Purpose |
 |---|---|
-| `index.ts` · `run.ts` · `report.ts` | Harness entry, CLI, markdown/JSON/CSV reporting |
-| `metrics/types.ts` | `MetricResult` contract |
-| `metrics/extraction.ts` | Decision P/R/F1 (comparator: RecovAr 75/77) |
+| `index.ts` | Barrel. One import site for the corpus, harness, metrics, ablation, hardening and report |
+| `cli.ts` | Shared CLI plumbing — the only modules touching `process` and the filesystem are this and the four entry points |
+| `run.ts` | `npm run eval` — baseline run, thirteen metrics, hardening pass, every honest note printed |
+| `report.ts` | `npm run eval:report` — writes `docs/generated/EVAL-REPORT.md` |
+| `harness.ts` | **Drives the real pipeline** — `runExtraction` → `appendBatch` → `fold` → `revise` → `label` → `buildIndex` → `ask`. One merged graph, not one per transcript |
+| `hardening.ts` | **7.4** — the four demo-killers plus a registry of all 24 documented failure modes, each mechanical or argued |
+| `metrics/types.ts` | `MetricResult` — `comparator` and `honestNote` are **required**, not optional |
+| `metrics/match.ts` | **The matcher: the methodology.** One rule, one threshold, quoted in every honest note |
+| `metrics/resolve.ts` | Bridges corpus keys (`l03/d1`) to runtime ids (`WLD-0007`) via the extraction alignments |
+| `metrics/extraction.ts` | Decision P/R/F1 (comparator: RecovAr 75/77 — different genre) |
 | `metrics/premise.ts` | **Premise P/R/F1 — no published comparator** |
-| `metrics/alternative.ts` | Alternative precision (comparator: ARGUS 15.4%) |
-| `metrics/contradiction.ts` | L1 pairwise recall |
-| `metrics/invalidation.ts` | **L2 premise-invalidation recall** |
-| `metrics/cascade.ts` | **L3 cascade correctness + survivor preservation** |
-| `metrics/false-positive.ts` | Spurious contradictions per 100 decisions |
-| `metrics/groundedness.ts` | Answer groundedness |
-| `metrics/retrieval.ts` | precision@5 / MRR |
-| `metrics/guards.ts` | Guard precision on seeded violations |
-| `metrics/modality.ts` | Correctly-declined hypotheticals |
-| `ablation/toggles.ts` | The 11 switches |
-| `ablation/run.ts` · `ablation/table.ts` | Delta table generation |
-| `corpus/index.ts` · `labels.ts` · `loader.ts` | Corpus loading and ground-truth schema |
+| `metrics/alternative.ts` | Alternative precision + FP:FN ratio (comparator: ARGUS 15.4%, 13:1) |
+| `metrics/contradiction.ts` | L1 pairwise recall, plus Kantara's M1/M2 diagnostics |
+| `metrics/invalidation.ts` | **L2 premise-invalidation recall — no comparator, no intervention** |
+| `metrics/cascade.ts` | **L3 cascade correctness + survivor preservation**, strict conjunction |
+| `metrics/false-positive.ts` | Unexpected interruptions per 100 decisions (lower is better) |
+| `metrics/groundedness.ts` | Verdict accuracy, search-budget compliance, refusal correctness |
+| `metrics/retrieval.ts` | precision@5 with its achievable ceiling, and MRR |
+| `metrics/guards.ts` | **n = 0 — not measured**; four structural properties reported instead |
+| `metrics/modality.ts` | **Correctly-declined non-decisions, per tier** |
+| `metrics/index.ts` | The suite. Extraction runs first because its alignments build the resolver |
+| `corpus/data.ts` | 12 transcripts, 7 plants, 8 questions. **50/50 quotes resolve** |
+| `corpus/labels.ts` | Ground-truth schema + `FalsifyStep` interventions |
+| `corpus/loader.ts` | Resolves quotes to spans; **rejects** any quote that is not a literal substring |
+| `corpus/index.ts` | Barrel |
+| `ablation/toggles.ts` | **The 11 switches** + 3 parameter sweeps + `EXPECTED_DAMAGE` thresholds declared before any run |
+| `ablation/run.ts` | Sequential study runner. Failures are rows, not exceptions |
+| `ablation/table.ts` | Delta table + **the prediction audit**: confirmed / FALSIFIED / below-floor / untestable |
+| `ablation/cli.ts` | `npm run eval:ablation` |
+| `ablation/index.ts` | Barrel |
+| `demo/keys.ts` | The 7 storage keys, taken from literals in the source rather than from memory |
+| `demo/kit.ts` | **Seed built, not checked in** · reset as a wipe, not an undo |
+| `demo/script.ts` | **The 8-beat script as data** — the verifier walks the same list |
+| `demo/verify.ts` | Keyless beat verification: `verified` / `manual` / `failed`, never "skipped" |
+| `demo/dryrun.ts` | **Three consecutive dry runs**, no reset between them, compared on labels not just counts |
+| `demo/cli.ts` | `npm run demo:verify` |
+| `demo/index.ts` | Barrel |
+
+Plan §14 listed 20 files; 37 were written. Every addition is recorded in §18.7.
 
 ---
 
@@ -680,3 +704,150 @@ inlined is a config file containing a key.
   showing IN for a decision the replayed graph has already retracted.
 - `GraphView.tsx` had a `require_layout()` indirection wrapping a top-level import. Removed.
 
+---
+
+### 18.7 Phase 7 deviations
+
+Every departure from `plan/phase-7-evaluation.md` and from §14 above, with its reason.
+
+| # | Plan said | Built instead | Why |
+|---|---|---|---|
+| 1 | 20 files in `src/eval/` | **37** | §14's table predates the sub-phase breakdown. Additions: `match.ts` (the matcher is the methodology and cannot live inside a metric), `resolve.ts` (corpus-key → runtime-id bridge), `harness.ts`, `hardening.ts`, `cli.ts`, `metrics/index.ts`, `ablation/{cli,index}.ts`, `demo/` (7 files), `corpus/data.ts` |
+| 2 | **30 transcripts** (10 clean / 12 messy / 8 adversarial) | **12** (5 / 4 / 3) | A shortfall, not a design choice. Coverage of every planted case is complete; sample size is not. Recorded as `LIMITATIONS.md` §1 with its consequence: one label moves any rate by several points |
+| 3 | Labels as typed offsets | **Labels as verbatim quotes, resolved to offsets by the loader** | Strictly stronger. A quote that is not a literal substring is **rejected**, so a third party can verify the ground truth against the transcript in seconds. Same discipline Phase 1 imposes on LLM snippets |
+| 4 | Ten metrics | **Thirteen** | The ten from §7.2, plus survivor preservation and modality precision (§7.2's two "unusual" ones, which needed their own modules), plus retrieval MRR because precision@5 cannot distinguish "ranked fifth" from "never retrieved" |
+| 5 | Guard precision on seeded violations | **n = 0, not measured** | A transcript corpus contains no repository state, so no violation can be seeded and there is no denominator. Four structural properties reported instead and labelled as such. `LIMITATIONS.md` §3 |
+| 6 | 11 ablation toggles | **11 toggles + 3 parameter sweeps** | A toggle answers "does this component matter"; a parameter answers "is this value right". Mixing them in one table makes both harder to read, so `cascadeDepthCap` and `maxSearches` are swept separately |
+| 7 | Prose predictions | **`EXPECTED_DAMAGE` thresholds declared before any run** | §7.3 requires a falsified hypothesis reported honestly. A prose prediction cannot be falsified by a program; a threshold can. `NOISE_FLOOR = 0.05` separates "did not matter" from "too small to tell" |
+| 8 | One graph per transcript *(implied)* | **One merged graph** | A private graph per transcript lets retrieval win by construction — the distractors that make retrieval hard would be absent. Measuring the easy configuration and reporting it as the product would not survive a second question |
+| 9 | Vitest test files | **`tsx`-run harness modules; `tests/**` stays empty** | The governing constraint was no test files. Phase 7 ships as runnable harness modules rather than a test suite, which is also what §7.5's keyless verification needs |
+| 10 | Seed state checked in *(implied by "seed state")* | **Seed built at load time from the fixtures** | A committed dump is a snapshot of whatever extraction produced that day; the moment extraction changes, the demo shows a graph the product no longer builds. Costs two seconds, cannot drift |
+| 11 | `eval:ablation` → `ablation/run.ts` | **→ `ablation/cli.ts`** | `table.ts` imports `run.ts`. A module that starts a fifteen-configuration study on import would run the study every time anything read the table renderer. Side effects belong at the edge |
+| 12 | Demo script as a document | **Script as data in `demo/script.ts`** | A script in markdown rots: the clicks stop matching the UI and nobody notices until the rehearsal. Here the verifier walks the same list, so the rehearsed, checked and presented scripts are one artefact |
+| 13 | `STORAGE_KEYS` from memory | **Taken from literals in `substrate/persistence.ts`, `store/*`, `ai/config.ts`** | Caught two errors: an invented `whylog:demo:v1` and a missed real `whylog:integrity`. A reset that misses a key leaves the next demo starting from the previous one's graph |
+| 14 | Six documents | **Six documents, one containing no numbers** | `EVALUATION.md` describes the method and holds **zero figures**, because the suite has never been executed. Inventing plausible metrics would be the most damaging thing that document could do |
+| 15 | Metrics card with ten numbers | **Metrics card with placeholders** | Same reason. The one figure available without a run is a count: **5 of 13 metrics have no published comparator** |
+
+#### Bugs found while building Phase 7
+
+| Bug | Where | Consequence if missed |
+|---|---|---|
+| Event types written kebab-case (`"decision-proposed"`) | `harness.ts` | The closed vocabulary is **PascalCase** (`DecisionProposed`). `check_structure.py` validates imports and exports, **not string literals** — this passed the checker and would have failed at append. Exactly the blind spot documented in `notes/PHASE-2-NOTES.md` §0 |
+| `PremiseAssertedPayload` given a `supports` field | `harness.ts` | The field does not exist; falsification must use `PremiseInvalidated`. Would have compiled to an ignored property and silently recorded refutations as support |
+| `AlternativeRejected` emitted before decisions were minted | `harness.ts` | The payload **requires** `decisionId`. Ordering is forced by the payload, not chosen |
+| `monotonicNow()` used as a timestamp | `harness.ts` | It is a **duration** clock returning a number. Replaced by an `EvalClock` that advances 1 ms per call, which also makes learned time independent of machine speed |
+| `materialize(events, engineId, at)` | `harness.ts` | The function is `fold(events, { engine, now })` |
+| `buildIndex(state, labels)` | `harness.ts` | It is `async` and takes a `BuildOptions` object, returning `BuildReport.artifacts` |
+| Two corpus quotes did not resolve | `corpus/data.ts` | One said "it rests on" where the transcript says "That rests on". The other quoted an exclusion the demo fixture **never states in words** — Phase 1 derives it from `exclusions.ts`. The second was relabelled rather than forced, with the reason recorded on the label |
+| `L2-premise-falsified` had an empty `expectUnsound` | `corpus/data.ts` | The headline plant expected nothing, so it could never fail. Set to `["demo1/d1"]` |
+| `detail.falseNegativeS()` | `metrics/alternative.ts` | Typo in a template expression — a runtime `TypeError` inside the FP:FN ratio, i.e. inside the comparison with ARGUS |
+| `export type { COMPARATORS }` | `metrics/invalidation.ts` | `COMPARATORS` is a value, not a type |
+| Error path called a helper that throws | `demo/dryrun.ts` | A dry run that threw would throw **again** inside its own catch, so a failed run would produce no report at all. `verification` is now nullable and renders as `THREW` |
+
+#### Constraint reconciliation
+
+`tests/**` remains **empty by instruction**. Phase 7 is therefore not a test suite: it is a set of `tsx`-run
+harness modules whose entry points are npm scripts. That is a stronger fit for §7.5 anyway — keyless
+verification has to be runnable by a stranger with no test framework configured.
+
+The plan's own cut line — *"7.1 + 7.2 + 7.5 are the minimum. Cut 7.3 and 7.7 first; never cut 7.5"* — was
+**not exercised**. All seven sub-phases are present.
+
+---
+
+### 18.8 Validation pass — gaps found and closed
+
+A whole-project audit after Phase 7: structural checker, an undeclared-identifier scan (the blind spot
+documented in `notes/PHASE-2-NOTES.md` §0), an orphan-module scan, npm-script target resolution, markdown
+link resolution, view routing, and dependency-vs-import reconciliation.
+
+**Result: 274 files, 72,870 lines, checker clean · 0 broken links across 186 checked · all 11 views routed ·
+0 undeclared identifiers · 0 orphaned modules** (the 9 remaining orphans are 4 CLI entry points and 5
+validated barrels).
+
+#### Broken things that were fixed
+
+| Gap | Severity | Fix |
+|---|---|---|
+| `npm run guards:ci` → `scripts/export_guards.ts` **did not exist** | **HIGH** | Written (239 lines). The CI `guards` job and every verify command Phase 5 exported — `node scripts/whylog-guards.mjs` — pointed at a runner nothing ever generated |
+| `.github/workflows/ci.yml` ran `npx vitest run tests/integration/keyless.test.ts` — **a file that was never written** | **HIGH** | Step removed. Replaced with a real `eval` job: baseline run, demo kit, ablation study, artifacts uploaded. CI was red on every push |
+| `npm run verify` ran `vitest run` with **zero test files** → vitest exits 1 | **HIGH** | `--passWithNoTests`. Honest rather than red: it runs and reports there was nothing to run. `verify` also gained `check:structure`; added `verify:all` |
+| `npm run scaffold:regen` → `scripts/gen_scaffold.py` **did not exist** | LOW | Script entry removed. Scaffolding is complete; a regenerator would be dead code |
+| `tsconfig.node.json` includes `scripts/**/*.ts` but had **no DOM lib and no `@/*` path map** | MEDIUM | Added, plus the strictness flags the app config uses. The new script imports DOM-aware `src/` modules |
+| `vite.config.ts` chunked **`d3-force`, which is imported nowhere** | MEDIUM | `manualChunks` removed and the dependency dropped. Phase 6 chose a deterministic lattice precisely so node positions reproduce; a force library contradicts that and the config entry was dead |
+| `.env.example` cited `tests/integration/keyless.test.ts` as the keyless proof | LOW | Now cites `npm run eval` and `npm run demo:verify` — stronger, since they drive the real pipeline with no test doubles |
+
+#### Dead code removed
+
+| Module | Why it was dead |
+|---|---|
+| `src/ai/local/alternatives.ts` | **A second implementation of live rules.** `extraction/alternatives.ts` does the recovery, `extraction/confidence.ts` owns `preemptionEligible`, `ontology/canonicalize.ts` owns `NONE_VALUES`. Nothing imported this file, so the copies had already begun to drift. Same defect Phase 3 fixed by collapsing `ai/local/classify.ts` onto the single rule engine in `retrieval/contradiction.ts` |
+| `src/lib/rng.ts` | `LATTICE_SEED` existed for a force-directed lattice. Phase 6 chose deterministic columns-by-premise-type with decisions at the barycentre, because a cascade animation is illegible if nodes move between runs |
+| `src/lib/invariant.ts` | Superseded by a strictly better idiom already in the codebase: `materialize.ts` uses `const unhandled: never = event`, which makes adding a 37th event type a **compile error naming the missing case** |
+| `src/components/conflict/` | The `conflict` nav entry was retired in Phase 6 — `ReasoningView` *is* §6.5. An empty directory named after a retired view is a signpost to nowhere |
+
+#### Known divergences, recorded rather than "fixed"
+
+`src/components/{ask,guards,export,health,timeline}/` are **empty by decision**, and §6 lists ~35 components
+for them that do not exist as separate files. `AskView` (862 lines), `GuardsView` (1122), `ExportView` (757),
+`HealthView` (373) and `TimelineView` (526) are deliberately monolithic.
+
+Splitting was considered and rejected: each is one screen with one data source, and extraction would produce
+fifteen files used once each, with props threaded between components that only ever render together.
+`components/common/`, `graph/`, `decision/`, `review/` and `time-machine/` **are** split, because those
+pieces are genuinely reused across views.
+
+`src/components/common/` lists 12 in §6 and has 7. The five absent — `Modal`, `Drawer`, `Tooltip`,
+`Spinner`, `Toast` — are generic chrome the views inline or do not need. `ModeBadge` became `EngineBadge`;
+`SnippetHighlight` lives inside `ProvenanceBlock`.
+
+`tests/` holds nine `.gitkeep` files and no tests, **by standing instruction**. §15 describes a suite that
+was never written. This is `LIMITATIONS.md` §10, and it is why `EVALUATION.md` contains no numbers.
+
+`fixtures/expected/` is empty. The eval corpus resolves ground truth from **verbatim quotes in the
+transcripts** rather than golden files, which is strictly stronger: a golden file records an output, a quote
+records a fact about the input and can be checked by a reader in seconds.
+
+
+### 18.9 The typecheck pass — the project was compiled and run for the first time
+
+Everything above was written without a compiler. This pass installed TypeScript (and, transitively,
+`tsx`) and closed the gap. Full record in **`notes/TYPECHECK-PASS.md`**.
+
+**274 files, 73,191 lines · `tsc -b` reports 0 errors · `check_structure.py` exit 0.**
+
+`npm run eval` and `npm run demo:verify` both execute end to end for the first time. `eval` writes
+`docs/generated/EVAL-REPORT.md` and exits **1 by design** (`run.ts:99` — the hardening pass is NOT
+READY, 2 of 4 demo-killers passing). `demo:verify` stops at the same place independently.
+
+**Three build-breakers, none visible to `check_structure.py`:**
+
+| gap | effect |
+|---|---|
+| root `tsconfig.json` had no `paths` | `tsx` reads the *solution* file, not `tsconfig.app.json`, so **every** `tsx` script (`eval`, `eval:report`, `eval:ablation`, `demo:verify`, `guards:ci`) died with `ERR_MODULE_NOT_FOUND` |
+| 3 files did not parse | `ci-export.ts:468` had unescaped backticks **inside** the `RUNNER_BODY` template literal; `verify-command.ts:147` a trailing comma in `( expr )`; `l5-premises.ts:144` unescaped quotes inside a string |
+| `tsconfig.app.json` `types: ["vite/client"]` | correctly excludes node from the browser bundle — but `src/eval/` is a Node harness. Moved to `tsconfig.node.json` (verified: nothing in the app imports it) rather than weakening the boundary |
+
+**273 type errors → 0.** Roughly a third were mechanical (`noPropertyAccessFromIndexSignature`,
+`exactOptionalPropertyTypes`, branded `ISODateString`); the rest were wrong contracts. Fifteen were
+**real behavioural bugs** that would have been silent at runtime — the five that matter most:
+
+1. `engine.capabilities.X` where `capabilities` is a **method** → LLM judging and LLM guard synthesis
+   were always refused, on every engine.
+2. Five of six `commit.ts` event drafts had **no `reason`** → validation rule 2 rejects them all, so
+   the commit path could never record anything.
+3. `labels.get(justification.id)` — a justification is **not a node** (the graph is bipartite, I2), so
+   the lookup was always `undefined` and the filter skipped **every** justification: audit found
+   nothing and nogoods blocked nothing. Now uses `validityOf()`, Doyle's actual condition.
+4. The eval harness read `revised.state` off a `ReviseResult`, which returns **drafts** — so it never
+   appended or re-folded, and scored every gate against the pre-revision graph.
+5. `byValidDesc` was constrained on a top-level `valid`; nodes carry `temporal.valid`, so the
+   canonical timeline order never typechecked at all.
+
+**One deliberate non-change:** `EVALUATION.md` and `pitch/03-metrics-card.md` keep their `▢▢▢`
+placeholders. The baseline is a *diagnostic* (decision F1 0.083, retrieval 0.000, guard synthesis 0%,
+**0 non-empty OUT-lists**), and printing it as a result would be worse than printing nothing. Gate G6
+is met when the numbers are worth claiming, not when they exist.
+
+The counts in `notes/PHASE-7-NOTES.md` and `notes/VALIDATION-PASS.md` are left as they were: each
+records the size of the tree *at that pass*, and this one is recorded here.
