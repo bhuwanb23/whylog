@@ -207,6 +207,8 @@ Phase 5 was code-complete and **nothing had been executed**. This section record
 
 The 84 warnings are the intentional `noExcessiveCognitiveComplexity` ones (Phase 5 adds 18 of them), plus one deliberate `useExhaustiveDependencies` and one unused suppression. No errors.
 
+**After Phase 6 (current totals on `fix/verified-baseline`):** 105 tests across 17 files, 113 warnings, 241 source files / 69,773 lines, `guards:ci` 17 guards (8 pass, 9 fail, 0 blocking), `npm run build` 258 modules, `verify` exit 0. The 113 warnings replace the 84: the extra 29 are the complexity warnings Phase 6's views and components add, unchanged in kind. See `PHASE-6-NOTES.md` §10.
+
 ### 10.2 The tree did not compile
 
 Three syntax errors, in three different shapes, and each one is a mistake worth naming:
@@ -244,7 +246,7 @@ With it running, it immediately found a bug in itself: `_strip_comments` was a r
 
 The scanner now recurses: a template is scanned by a function that finds its real end, and an interpolation is scanned as code. **Positive control:** a file with a deliberate imbalance is still reported.
 
-### 10.5 Three real bugs in Phase 5's own code
+### 10.5 Five real bugs in Phase 5's own code
 
 **1. The G5 "a runnable verify command" predicate always passed.** The regex was `/^Verify:\s*(?!none)/m`. `\s*` can match ZERO characters, so the negative lookahead sees `" none — UNVERIFIABLE"` — which does not start with `none` — and the predicate succeeds. The gate reported a runnable verify command for a decision that had none, and G5 passed on a log where nothing was verified. Fixed to `/^Verify:(?!\s*none)/m`.
 
@@ -288,3 +290,41 @@ So the check now runs in three places:
 | A truncated file listing makes `path_glob_exists` fail and `path_glob_absent` pass | — | The second is the dangerous one: a false all-clear enters the compliance score. Mitigated by `warning` severity and by reporting every unparseable line. |
 | The `docs/` and `plan/` prose still carries residual mojibake | — | Cosmetic. `scripts/fix_encoding.py` undoes it. The code is clean. |
 | `src/` is longer than the 45,818-line figure | — | The reconciliation restored files from the pre-compaction baseline, so the compaction pass over them is undone. Verified cosmetic (trailing commas). |
+
+### 10.10 The consistency gate had learned to refuse nothing
+
+The pre-export consistency gate is the one gate that is allowed to stop an export. On arrival it
+reported **53 guards, 2 blocking**; after the re-verification pass it reports **17 guards, 0
+blocking, exit 0**. A gate with 53 findings that stops the build on 2 of them, and a gate with 17
+findings that stops the build on none, are both gates that cannot refuse — the second is just
+quieter about it.
+
+Three defects, and they compounded:
+
+**1. `wouldContradict` returned a sentinel the caller never unwrapped.** The function signalled
+"this contradicts" through a value that `detectStructural` did not recognise, so the contradiction
+never reached the blocking set. The fix is wiring, not logic: `detectStructural` is now the path
+that decides, and the sentinel is gone.
+
+**2. `blocking` was computed from all candidates, not from the emitted set.** Every structural
+finding on the log — including findings about decisions that are not in this export — counted
+toward the block. That is why the number was 53: it was not measuring the artifact, it was
+measuring the log. `GateInput.emitted` was added so the gate is answered about *this* export, and
+the count dropped to 17 with the blocking set correctly empty for a well-formed artifact.
+
+**3. The workflow runner pointed at a file that did not exist.** `decision-guards.yml` invoked a
+runner path that was never on disk, so the G4/G5 workflow jobs could not have run. Corrected to
+`scripts/whylog-guards.cjs` — the artifact `npm run guards:ci` actually generates.
+
+The test log matters as much as the code: `tests/helpers/demo-log.ts` grew a `KEEP` list so the
+gate is exercised against a **real, non-trivial** log (curated fixture, or `approve-all`) rather
+than an empty one that passes vacuously. An `editDownside` option was added so the accepted
+downside — which the LLM path can produce and the local path cannot — is present in the fixture
+without faking the card.
+
+**One consequence is deliberately user-visible.** Guard `decidedAt` regenerates from
+`decision.temporal.valid` — the transcript date — not from the append date, because §4's
+bi-temporality fix means a decision made in January and pasted in October is a January decision.
+The generated artifact's `decidedAt` moved from 2026-10-22 to **2026-10-03** and the log head
+changed. That is not a regression; it is the first guard to be correct about time, and it is
+recorded here because a future reader will see the diff and wonder.

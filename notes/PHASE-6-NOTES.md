@@ -1,13 +1,12 @@
 # Phase 6 notes — presentation and the visual language
 
-**Status: code-complete.** `python3 scripts/check_structure.py` → **240 source files,
-65,575 lines, exit 0**. `src/components/` is 28 files, 4,329 lines; `src/views/` is 10 views,
-6,813 lines.
+**Status: verified.** `node scripts/check-structure.mjs` → **241 source files, 69,773 lines,
+exit 0**. `npm run build` → 258 modules, 1.59 s. `npx vitest run` → **105 tests, 17 files,
+0 failures**; 43 of those are Phase 6's own. Every view in this phase has rendered in a DOM, and
+the bundle a browser would load compiles.
 
-**Never executed.** No install, no build, no render. Every claim below is about what the code says.
-React-specific failures — hook ordering, key collisions, an SVG that renders at zero height — are
-exactly what a structural linter and two identifier scans cannot see, and this phase is almost
-entirely React.
+The first version of this note said *"never executed. Every claim below is about what the code
+says."* That was true when written and it stopped being true. §10 records what execution found.
 
 ---
 
@@ -118,7 +117,7 @@ because presenting both as the same thing would be wrong about one of them.
 
 | Gap | Severity | Note |
 |---|---|---|
-| **Nothing has rendered** | 🔴 | This phase is almost entirely React. Hook ordering, key collisions, an SVG at zero height, a CSS variable that does not exist in light mode — none of it is visible to the checker. |
+| **No human has looked at it** | 🟠 | Every view renders in jsdom and the bundle builds, but jsdom does not lay out. An SVG at zero height or an illegible 20-decision lattice would not appear in any number in §10. |
 | **The 30 s and 60 s targets were never measured** | 🟠 | Both are stopwatch claims. The mechanisms exist; the timings do not. |
 | Lattice legibility "at 20 decisions" is unverified | 🟠 | The anti-hairball rules are implemented and `reportHairball` flags >90 edges, but nobody has looked at a 20-decision lattice. |
 | `components/ask/`, `components/guards/`, `components/conflict/`, `components/export/` are empty | 🟡 | Those views are monolithic. Deliberate — see §5. |
@@ -173,7 +172,118 @@ numbers: extraction F1 against the labelled fixture, retrieval R@k, the ablation
 the reranker and HyPE actually contribute, and the ≥80%-from-templates claim that Phase 4 computes
 but has never measured.
 
-**Before Phase 7: run the app.** Six phases and 65,575 lines have never been executed. Fourteen real
-bugs were found in the last three phases by scanning alone — eleven of them the kind that compiles
-to `undefined` rather than failing loudly. G1 through G5 are all built and none has been observed.
-The first `npm run dev` is worth more than any further phase.
+**Before Phase 7: look at it.** The suite runs and the bundle builds, but a human still has not
+clicked through it in a real browser. jsdom does not lay out, so an SVG at zero height, a 20-decision
+lattice that is illegible, or a control that is unreachable by keyboard will not show up in any
+number in §10. §10.5 lists exactly which DoD lines were reduced to a claim a machine can check,
+and which were left as stopwatch or eyes-on claims.
+
+---
+
+## 10. Verification pass (independent, executed)
+
+Phase 6 was code-complete and had never been executed. This section records what was run, what
+broke, and what was fixed. Every number below was measured on `fix/verified-baseline`. The
+arrival state (the seventh revert) is recorded in `PHASE-5-NOTES.md` §10.1; this table is the
+state now.
+
+### 10.1 The gates, as they stand
+
+| Gate | Result |
+|---|---|
+| `npm run typecheck` | **0 errors** (three-project split: `tsconfig.app` / `tsconfig.test` / `node`) |
+| `npx biome check .` | **0 errors, 113 warnings** |
+| `npx vitest run` | **105 passing, 17 files, 0 failing**, 2.6 s |
+| `npm run build` | **258 modules, 1.59 s** — 865 kB js (261 kB gz), 14 kB css |
+| `npm run check:structure` | exit 0 — 241 files, 69,773 lines |
+| `npm run guards:ci` | 17 guards: **8 pass, 9 fail, 0 blocking**, exit 0 |
+| `npm run verify` | **exit 0** |
+
+The 113 warnings are the intentional `noExcessiveCognitiveComplexity` ones, plus one
+`noNonNullAssertion` in `src/theme.ts` and one unused suppression in `src/lib/invariant.ts`.
+Biome's diagnostics exceed its own display cap, so a real error is found with
+`npx biome check . --reporter=json` rather than by reading the summary line.
+
+### 10.2 The 43 tests that are Phase 6's, and what each is evidence for
+
+| File | n | What it pins down |
+|---|---|---|
+| `unit/graph/lattice-layout.test.ts` | 5 | bipartite structure; determinism (same log → same pixels); column-per-type; no node overlaps; **reports a hairball rather than silently dropping edges to hit a number** |
+| `unit/graph/cascade-animation.test.ts` | 5 | animates exactly the nodes whose label changed; premises flip before the decisions on them; plays nothing when nothing changed; **carries the labeller's own reason, unparaphrased** |
+| `unit/time-machine/projection.test.ts` | 8 | both axes are named; the demo log's two timelines **genuinely diverge**; learned is a prefix fold; valid shows a decision *before the system had heard of it*; the diff strip says which axis it measured |
+| `unit/substrate/learned-time.test.ts` | 2 | an event stamped in the past is clamped forward, not rejected; **valid time is not clamped** — a decision can be older than the record of it |
+| `integration/phase6-views.test.tsx` | 7 | timeline, lattice, time machine, health, settings, decision card and provenance all render against real store state |
+| `integration/phase6-tuning.test.ts` | 5 | the cap persists on `whylog:settings:v1` and survives a reload; cap 0 vs cap `MAX_CASCADE_DEPTH` produce different, correct depths; **the same setting read twice is not a coin** |
+| `integration/phase6-dod.test.tsx` | 11 | the DoD reduced to checkable claims — see §10.3 |
+
+### 10.3 The visual-language contract was false in two ways
+
+§0 claimed *"Red appears only for `conflicts` edges and failing guards."* That claim is the whole
+visual language, and it was false. The plan's rule is *"colour encodes epistemic status, never
+severity or category"*, and red is reserved for one thing: a live contradiction.
+
+**1. `--status-contested` was `#f87171` — the same red as `--edge-conflict`.**
+The timeline badge and the decision badge disagreed about the same state: `StatusBadge.tsx` maps
+UNSOUND and CONTESTED to `var(--label-unknown)`, which is amber `#fbbf24`, while the decision
+status badge rendered through `--status-contested`, which was red. So CONTESTED was amber on one
+card and red on another, and red was not reserved for contradiction. It is `#fbbf24` now.
+
+The variable *names* in `theme.ts` are misleading and are the reason this survived review:
+`--label-out` is grey and means SUPERSEDED, `--label-unknown` is amber and means UNSOUND. The
+names read as though grey were "out" in a bad way and amber were "unknown". `TIMELINE_STATUS_COLOUR`
+maps correctly; only the token names lie.
+
+**2. The light theme defined no `--status-*` or `--mode-*` token at all.**
+The dark `:root` block carried twelve of them; `@media (prefers-color-scheme: light)` redefined
+`--label-*`, `--edge-*` and `--action` and stopped. On a light-mode machine `var(--status-contested)`
+and `var(--mode-local)` resolved to *nothing* — the decision status badge had no colour and no
+border, and the engine badge could not say whether a decision came from the local engine or a
+model, which is §6.8's requirement. Both theme blocks now define the same tokens.
+
+`phase6-dod.test.tsx` "colour is reserved for epistemic status, and red is reserved for
+contradictions" now asserts the four timeline colours, that the decision badge routes through
+`--status-contested`, that no red hex (`#f87171`, `#dc2626`) appears on any token whose name is
+not `action` or `edge-conflict`, that no `--status-*`/`--label-*` token is red, **and that every
+dark `:root` token exists in the light `:root`**. The last assertion is the one that would have
+caught bug 2 on any machine, in either theme.
+
+### 10.4 Four more defects execution found
+
+**1. `recordBatch` dropped `at` and `occurredAt`** (`store/whylog.ts`). Every batched event
+defaulted to "now" for both valid and learned time, so the log's *entire* bi-temporality was
+destroyed at the write path — the property the time machine exists to show. Both fields are
+forwarded now. This is the same class as the Phase 4 `log.head?.hash` bug: a plausible field name
+silently yields `undefined`, and the loss is invisible until something downstream depends on it.
+
+**2. Learned time was not monotonic under batching** (`learnedAt()`). Two events written in the
+same millisecond, or an event stamped in the past, could make learned time go backwards, which
+breaks the prefix replay the learned axis is built on. The clamp that `record` already had was
+missing from `recordBatch`. Observed as an ~1-in-10 flake in the monotonicity test, not as a
+deterministic failure — which is exactly how a `Date.now()` bug presents.
+
+**3. The provenance episode id never rendered.** `commitReview` never records a
+`TranscriptImported` event, so `ProvenanceBlock` looked up an episode that was not there and
+rendered an empty string. The card now shows the id unconditionally and the view test asserts it
+is not empty. `tests/integration/phase6-views.test.tsx` "the provenance shows an episode id, not
+an empty string" is the regression guard.
+
+**4. The local engine cannot extract an accepted downside.** The LLM prompt asks for one; the
+local path has no field to put it in. The DoD requires the decision card to render the accepted
+downside, so `buildDemoLog` takes an `editDownside` option and the curated fixture edits it
+through the same `edit` action a human would use — the card is tested with a real downside on a
+keyless run rather than with a mock. Reported, not "fixed": closing it means teaching the local
+engine a field it was never asked to produce.
+
+### 10.5 What was deliberately NOT machine-checked
+
+| DoD line | Why not | How it would be checked |
+|---|---|---|
+| "fixture review under 60 seconds" | A stopwatch claim, not a code claim | Time a human through the fixture |
+| "first run to first decision under 30 seconds" | Same | Same |
+| Lattice legibility at 20 decisions | Needs eyes; jsdom has no layout | Load a 20-decision log in a browser |
+| Keyboard reachability, focus order, contrast | jsdom has no accessibility tree worth asserting against | A real browser, or axe against a live render |
+| The bundle a user actually loads | `npm run build` proves it *compiles*, not that it *runs* | `npm run dev` and a click-through |
+
+The honest summary: 43 of Phase 6's DoD lines now have a machine behind them, and the five above
+do not. Any of those five could be wrong right now and nothing in `npm run verify` would say so.
+
