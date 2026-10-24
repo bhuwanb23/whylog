@@ -330,6 +330,12 @@ export function validateLoose(event: AnyEvent): ValidationResult {
   });
 }
 
+/** A human-readable rendering of a validation result, for failure messages
+ *  in callers that already know the result is (or may be) a rejection. */
+export function validationMessage(result: ValidationResult): string {
+  return result.ok ? "ok" : `rule ${result.rule}: ${result.message}`;
+}
+
 /** Type-level helper: the payload type for a given event type, for callers
  *  constructing events. */
 export type PayloadOf<T extends EventType> = EventPayloadMap[T];
