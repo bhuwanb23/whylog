@@ -1,0 +1,20 @@
+Cursor — whylog-eval-m02
+Oct 11, 15:30
+
+human: the export is slow
+assistant: how slow, and how big is the log?
+human: like 4 seconds. 200 decisions
+assistant: that's the embedding step. are you re-embedding everything each time?
+human: probably
+assistant: we could cache by content hash
+human: or we could just not embed at all and use bm25
+assistant: bm25 alone would lose semantic matching
+human: do we need semantic matching?
+assistant: for "why did we choose X" queries, yes. for exact technology names, no
+human: hmm
+human: ok what if we do both
+assistant: hybrid — bm25 plus dense, fused with reciprocal rank fusion. that's the standard answer and it's cheap
+human: fine. but no vector database. I'm not running postgres for this
+assistant: agreed, brute force cosine over 200 vectors is sub-millisecond anyway
+human: ok. hybrid retrieval, rrf fusion, no vector db. the reason for no db is that 200 vectors doesn't need one
+assistant: recording all three. premise: the corpus is small enough that brute force is fast

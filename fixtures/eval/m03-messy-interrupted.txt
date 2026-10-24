@@ -1,0 +1,15 @@
+whylog-eval-m03 — Oct 14, 11:02
+
+user: I was thinking we should
+assistant: go on
+user: actually wait. let me check something first
+user: ok so the thing is the deploy
+assistant: what about it?
+user: we're not deploying at all are we
+assistant: correct, it's a local tool. that was decided on Oct 3
+user: right. so do we even need the docker stuff
+assistant: no. there's no Dockerfile in the repo and there shouldn't be
+user: ok good. let's leave it
+user: OH. but what about when we do ship it
+assistant: that's a different decision under different premises. when you have a deploy target, revisit hosting
+user: fine. for now hosting is local-only, no container
