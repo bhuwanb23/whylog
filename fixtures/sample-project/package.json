@@ -1,0 +1,9 @@
+{
+  "name": "sample-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The project the fixture transcript's decisions describe. It is what the exported guard set is checked against: the SQLite driver is present, Postgres is not, and there is no server.",
+  "dependencies": {
+    "better-sqlite3": "^11.5.0"
+  }
+}

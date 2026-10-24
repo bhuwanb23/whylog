@@ -46,7 +46,18 @@ EXTENSIONS = (".ts", ".tsx")
 
 
 def strip_noise(src: str) -> str:
-    """Blank out comments, strings, template literals and regex literals."""
+    """Blank out comments, strings, template literals and regex literals.
+
+    Template literals are the awkward part. A template body may contain
+    `${ ... }` interpolations, and the code inside an interpolation may itself
+    contain a template literal - `node -e ${doubleQuote(`...${x}...`)}` is
+    ordinary in this codebase. A flat scan ends the OUTER template at the INNER
+    template's opening backtick, and everything after it is then read as code,
+    which reports a brace imbalance that is not there.
+
+    So the scanner recurses: a template is scanned by a function that knows how
+    to find its real end, and an interpolation is scanned as code.
+    """
     out: list[str] = []
     i, n = 0, len(src)
     prev = ""  # last significant emitted char, used to spot a regex literal
@@ -56,6 +67,110 @@ def strip_noise(src: str) -> str:
         out.append(ch)
         if not ch.isspace():
             prev = ch
+
+    def blank(count: int) -> None:
+        if count > 0:
+            out.append(" " * count)
+
+    def scan_regex(start: int) -> int:
+        """Index just past the regex literal at `start`, or `start` if there is none."""
+        j = start + 1
+        in_class = False
+        closed = False
+        while j < n:
+            ch = src[j]
+            if ch == "\\":
+                j += 2
+                continue
+            if ch == "[":
+                in_class = True
+            elif ch == "]":
+                in_class = False
+            elif ch == "/" and not in_class:
+                closed = True
+                j += 1
+                break
+            elif ch == "\n":
+                break
+            j += 1
+        if not closed:
+            return start
+        while j < n and src[j].isalpha():
+            j += 1
+        return j
+
+    def scan_template(start: int) -> int:
+        """Index just past the closing backtick of the template at `start`."""
+        j = start + 1
+        while j < n:
+            ch = src[j]
+            if ch == "\\":
+                j += 2
+                continue
+            if ch == "`":
+                return j + 1
+            if ch == "$" and src[j + 1 : j + 2] == "{":
+                j = scan_interpolation(j + 2)
+                continue
+            j += 1
+        return n
+
+    def scan_interpolation(start: int) -> int:
+        """Index just past the `}` that closes the interpolation opened before `start`."""
+        j = start
+        depth = 0
+        local_prev = ""
+        while j < n:
+            two = src[j : j + 2]
+            ch = src[j]
+            if two == "//":
+                k = src.find("\n", j)
+                j = n if k < 0 else k
+                continue
+            if two == "/*":
+                k = src.find("*/", j + 2)
+                j = n if k < 0 else k + 2
+                continue
+            if ch in "\"'":
+                quote = ch
+                j += 1
+                while j < n:
+                    if src[j] == "\\":
+                        j += 2
+                        continue
+                    if src[j] == quote:
+                        j += 1
+                        break
+                    if src[j] == "\n":
+                        break
+                    j += 1
+                continue
+            if ch == "`":
+                j = scan_template(j)
+                continue
+            if ch == "{":
+                depth += 1
+                j += 1
+                continue
+            if ch == "}":
+                if depth == 0:
+                    return j + 1
+                depth -= 1
+                j += 1
+                continue
+            if (
+                ch == "/"
+                and value_expected(src, j, local_prev)
+                and src[j + 1 : j + 2] not in ("", " ", "\t", "\n", "=")
+            ):
+                k = scan_regex(j)
+                if k > j:
+                    j = k
+                    continue
+            if not ch.isspace():
+                local_prev = ch
+            j += 1
+        return n
 
     while i < n:
         two = src[i : i + 2]
@@ -73,28 +188,12 @@ def strip_noise(src: str) -> str:
             continue
 
         if c == "`":
-            depth = 0
-            i += 1
-            while i < n:
-                if src[i] == "\\":
-                    i += 2
-                    continue
-                if src[i] == "`" and depth == 0:
-                    i += 1
-                    break
-                if src[i : i + 2] == "${":
-                    depth += 1
-                    out.append("  ")
-                    i += 2
-                    continue
-                if src[i] == "}" and depth > 0:
-                    depth -= 1
-                    out.append(" ")
-                    i += 1
-                    continue
-                out.append(" ")
-                i += 1
-            emit(" ")
+            # The template is scanned RECURSIVELY, so a template inside a
+            # template's interpolation does not end the outer one.
+            j = scan_template(i)
+            blank(j - i)
+            prev = ""
+            i = j
             continue
 
         if c in "\"'":
@@ -128,33 +227,13 @@ def strip_noise(src: str) -> str:
             and value_expected(src, i, prev)
             and rest not in ("", " ", "\t", "\n", "=")
         ):
-            j = i + 1
-            in_class = False
-            closed = False
-            while j < n:
-                ch = src[j]
-                if ch == "\\":
-                    j += 2
-                    continue
-                if ch == "[":
-                    in_class = True
-                elif ch == "]":
-                    in_class = False
-                elif ch == "/" and not in_class:
-                    closed = True
-                    j += 1
-                    break
-                elif ch == "\n":
-                    break
-                j += 1
-            if closed:
-                while j < n and src[j].isalpha():
-                    j += 1
+            j = scan_regex(i)
+            if j > i:
                 # Blank the whole literal as ONE unit. Emitting it character by
                 # character would let an apostrophe inside a regex alternation
                 # (`/let'?s/`) be mistaken for the start of a string, which then
                 # swallows the closing paren and reports a phantom imbalance.
-                out.append(" " * (j - i))
+                blank(j - i)
                 if not src[i:j].isspace():
                     prev = "/"
                 i = j
@@ -216,6 +295,12 @@ def rel(path: pathlib.Path) -> str:
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:
     """Map an import specifier to a filesystem path, or None for a package."""
+    # Vite appends a query suffix to say HOW to load a file: `?raw` inlines it as a string,
+    # `?url` emits an asset URL, `?worker` wraps it. The path on disk has no suffix, so it must be
+    # stripped before resolving — otherwise `fixtures/demo-transcript.txt?raw` looks for a file
+    # literally named that and reports an unresolved import that resolves perfectly at build time.
+    spec = spec.split("?", 1)[0]
+
     if spec.startswith("@/"):
         target = SRC / spec[2:]
     elif spec.startswith("."):

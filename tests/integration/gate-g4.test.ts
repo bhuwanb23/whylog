@@ -12,19 +12,18 @@
  * threshold, no model is consulted at any step.
  */
 
-import { beforeEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { createLocalEngine } from "@/ai/local";
+import { commitReview } from "@/extraction/commit";
 import { runExtraction } from "@/extraction/pipeline";
 import { applyAction, approve } from "@/extraction/review/actions";
-import { commitReview } from "@/extraction/commit";
-import { useWhyLog } from "@/store/whylog";
 import { useGuards } from "@/store/guards";
 import { useReasoning } from "@/store/reasoning";
-import { label } from "@/reasoning/labeller";
-import { asISO, type TranscriptId } from "@/types/common";
+import { useWhyLog } from "@/store/whylog";
+import { type TranscriptId, asISO } from "@/types/common";
 import { isDeterministic } from "@/types/guards";
 
 const FIXTURE = resolve(process.cwd(), "fixtures", "demo-transcript.txt");
@@ -78,7 +77,7 @@ async function buildLog() {
 
 /** The whole G4 loop: paste, synthesise, accept in bulk, run. */
 async function runG4() {
-  const state = await buildLog();
+  await buildLog();
 
   useGuards.getState().loadProject({ manifest: MANIFEST });
   const parse = useGuards.getState().parse;
@@ -118,17 +117,17 @@ describe("Gate G4 — it verifies", () => {
   });
 
   it("the manifest is parsed and the project is built", async () => {
-    const state = await buildLog();
+    await buildLog();
     useGuards.getState().loadProject({ manifest: MANIFEST });
 
     const project = useGuards.getState().project;
     expect(project.dependencies["pg"]).toBe("^8.11.3");
     expect(project.dependencies["next"]).toBe("^15.1.0");
-    expect(state.decisions.size).toBeGreaterThan(0);
+    expect(useWhyLog.getState().state.decisions.size).toBeGreaterThan(0);
   });
 
   it("guards are synthesised from the log's decisions, with no model", async () => {
-    const state = await buildLog();
+    await buildLog();
     useGuards.getState().loadProject({ manifest: MANIFEST });
 
     const synthesised = await useGuards.getState().synthesise({ templatesOnly: true });
@@ -179,6 +178,26 @@ describe("Gate G4 — it verifies", () => {
     }
   });
 
+  it("the DATABASE decision is contradicted by the manifest line, verbatim", async () => {
+    const { proposals, state } = await runG4();
+
+    /* The log says "use SQLite, not Postgres". The manifest says the project
+     * depends on `pg`, which is the Postgres driver. The exclusion guard fails,
+     * and the proposal's evidence has to be the line that failed - the same
+     * line, character for character, because a paraphrased quote is not a
+     * quote. */
+    const quoting = proposals.filter((p) => p.evidence.quote.includes('"pg": "^8.11.3"'));
+    expect(quoting.length).toBeGreaterThan(0);
+    expect(quoting.every((p) => p.evidence.source === "guard")).toBe(true);
+
+    // And the decision it contradicts is a DATABASE one.
+    const contradicted = quoting[0]?.unsoundDecisionId;
+    expect(contradicted).toBeDefined();
+    const decision = contradicted === undefined ? undefined : state.decisions.get(contradicted);
+    expect(decision?.variable).toBe("DATABASE");
+    expect(decision?.statement.toLowerCase()).toContain("sqlite");
+  });
+
   it("the loop went through the same door a transcript uses", async () => {
     await runG4();
 
@@ -191,7 +210,7 @@ describe("Gate G4 — it verifies", () => {
     const proposals = [...useWhyLog.getState().state.proposals.values()];
     for (const proposal of proposals) {
       expect(proposal.entrenchment).toBeDefined();
-      expect(proposal.entrenchment.breakdown.length).toBeGreaterThan(0);
+      expect(Object.keys(proposal.entrenchment.components).length).toBeGreaterThan(0);
     }
   });
 });

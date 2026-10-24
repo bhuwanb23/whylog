@@ -24,7 +24,7 @@
     "eval": "tsx src/eval/run.ts",
     "eval:ablation": "tsx src/eval/ablation/run.ts",
     "eval:report": "tsx src/eval/report.ts",
-    "guards:ci": "tsx scripts/export_guards.ts",
+    "guards:ci": "tsx --tsconfig tsconfig.app.json scripts/export_guards.ts",
     "verify": "npm run typecheck && npm run check && npm run test",
     "scaffold:regen": "python3 scripts/gen_scaffold.py",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
@@ -44,7 +44,6 @@
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
-    "d3-force": "^3.0.0",
     "jsdom": "^25.0.1",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.19.2",

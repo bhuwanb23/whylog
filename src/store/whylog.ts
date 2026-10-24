@@ -139,6 +139,31 @@ function foldOptions(engineId: EngineId, at: ISODateString): FoldOptions {
   return { engine: engineId, now: at };
 }
 
+/**
+ * The LEARNED time of an event, clamped so it can never move backwards.
+ *
+ * The substrate validates this (event-validation rule 4) and rejects the whole batch with
+ * "Learned time must be monotonic", so the appender has to guarantee it rather than hope
+ * every caller does. The reason it is not automatic: several layers capture a timestamp
+ * before the work they timestamp, and the work can cross a millisecond boundary. The
+ * reasoning cycle is the clearest case - it takes `startedAt`, then gate (b) asks retrieval
+ * for candidates, which rebuilds the index and records an `IndexRebuilt` event with a FRESH
+ * `nowISO()`, and only then does the cycle record its own drafts stamped with the OLDER
+ * `startedAt`. The log then contained an event learned a millisecond before its predecessor,
+ * and the batch was rejected.
+ *
+ * Clamping is the right repair rather than a rejection: an event in an append-only log
+ * cannot have been learned before the event before it, so the later of the two times is the
+ * true one. The caller's INTENT - "this happened at T" - is preserved in `occurredAt`, which
+ * is exactly what the substrate's own message says to do: "set `occurredAt` instead if the
+ * decision is older than the record of it".
+ */
+function learnedAt(log: EventLog, candidate: ISODateString): ISODateString {
+  const floor = log.lastAt;
+  if (floor === null || floor === undefined) return candidate;
+  return candidate < floor ? floor : candidate;
+}
+
 /** The actor for an event with none supplied: the active engine, so every node
  *  produced by a machine is stamped as machine-made. */
 function defaultActor(active: ActiveEngine | null): Actor {
@@ -289,14 +314,14 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         payload: draft.payload,
         actor: draft.actor ?? context.actor ?? defaultActor(active),
         reason: draft.reason ?? context.reason,
-        ...(draft.at === undefined ? {} : { at: draft.at }),
+        ...(draft.at === undefined ? {} : { at: learnedAt(log, draft.at) }),
         ...(draft.occurredAt === undefined
           ? context.occurredAt === undefined
             ? {}
             : { occurredAt: context.occurredAt }
           : { occurredAt: draft.occurredAt }),
       },
-      { now: at, actor: defaultActor(active), reason: context.reason },
+      { now: learnedAt(log, at), actor: defaultActor(active), reason: context.reason },
     );
 
     if (!outcome.ok) {
@@ -344,8 +369,25 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
           payload: draft.payload as EventPayloadMap[EventType],
           actor: draft.actor ?? actor,
           reason: draft.reason ?? context.reason,
+          /* The valid time and the learned time, forwarded exactly as the single-event
+           * `record` path forwards them.
+           *
+           * They used to be DROPPED here, and that silently destroyed the bi-temporality
+           * the whole substrate exists for: `seal` falls back to `context.now` for both, so
+           * every event claimed it happened at the moment it was learned. The extraction
+           * pipeline threads the transcript's date all the way to the drafts - a decision
+           * MADE on the 3rd, LEARNED today - and the store threw that away. The
+           * consequence was not cosmetic: the time machine's two axes could never diverge,
+           * because "what was true then" and "what did we know then" had the same clock.
+           */
+          ...(draft.at === undefined ? {} : { at: learnedAt(log, draft.at) }),
+          ...(draft.occurredAt === undefined
+            ? context.occurredAt === undefined
+              ? {}
+              : { occurredAt: context.occurredAt }
+            : { occurredAt: draft.occurredAt }),
         },
-        context: { now: at, actor, reason: draft.reason ?? context.reason },
+        context: { now: learnedAt(log, at), actor, reason: draft.reason ?? context.reason },
       })),
     );
 

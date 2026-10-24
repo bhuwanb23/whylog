@@ -691,6 +691,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
           // AGAINST the premise, so `supports` is false only in that case.
           supports: kind !== "guard",
           ...(p.evidenceSpan === undefined ? {} : { span: p.evidenceSpan }),
+          ...(p.evidenceQuote === undefined ? {} : { quote: p.evidenceQuote }),
           eventId: event.id,
           at: event.occurredAt,
         }),
@@ -764,9 +765,13 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         failedPremiseId: p.failedPremiseId,
         failedPremiseText: failedPremise?.text ?? String(p.failedPremiseId),
         evidence: {
-          quote: event.reason,
-          source: "transcript",
-          confidence: asConfidence(failedPremise?.confidence ?? 0.5),
+          /* The evidence the reasoning cycle saw, carried by the event. It used
+           * to be rebuilt here from `event.reason` — and the reason is the
+           * "why not auto-applied" note, so every stored proposal quoted the
+           * boilerplate and claimed it came from a transcript. */
+          quote: p.evidence.quote,
+          source: p.evidence.source,
+          confidence: asConfidence(p.evidence.confidence),
         },
         ...(nogood === undefined ? {} : { nogood }),
         cascade,
@@ -981,6 +986,10 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
           evidence: withEvidence(premise, {
             kind: "guard",
             supports: false,
+            // The line of the manifest that falsified it. There is no span to
+            // point at - a manifest is not a transcript - but the line IS the
+            // evidence, and the revision proposal has to quote it.
+            quote: p.evidence,
             eventId: event.id,
             at: event.occurredAt,
           }),

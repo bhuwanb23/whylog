@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# The gate that was missing.
+#
+# The tree was rewritten from a stale snapshot six times, and every rewrite
+# deleted work that had been verified. The tests CAUGHT it every time - 20 of
+# them failed, and `linkHash is not defined` was the first thing the suite said.
+# Nothing ran them: CI had never executed (the branch was 14 commits ahead of
+# origin) and the structural checker could not start (it called `python3`, which
+# is not on this machine).
+#
+# So the check runs HERE, before a commit can carry a broken tree. It is the
+# cheapest place for it to live: the person making the change is the person who
+# can fix it.
+#
+# Bypass with `git commit --no-verify` if you really mean it - but then CI will
+# say so too, in public, on the branch.
+#
+set -e
+
+echo "pre-commit: typecheck + tests"
+
+if ! npm run --silent typecheck; then
+  echo ""
+  echo "pre-commit: typecheck FAILED. The commit was not made."
+  echo "  If this is a false positive, `npm run typecheck` will say why."
+  exit 1
+fi
+
+if ! npm run --silent test; then
+  echo ""
+  echo "pre-commit: tests FAILED. The commit was not made."
+  echo "  A reverted fix shows up here first - that is what it is for."
+  exit 1
+fi
+
+echo "pre-commit: ok"

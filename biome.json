@@ -47,5 +47,10 @@
       "trailingCommas": "all",
       "arrowParentheses": "always"
     }
+  },
+  "json": {
+    "parser": {
+      "allowComments": true
+    }
   }
 }

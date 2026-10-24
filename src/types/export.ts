@@ -35,7 +35,7 @@ export const TARGET_FILENAMES: Readonly<Record<ExportTarget, string>> = {
   "agents-md": "AGENTS.md",
   cursorrules: ".cursorrules",
   "decisions-md": "DECISIONS.md",
-  "ci-guards": "scripts/whylog-guards.mjs",
+  "ci-guards": "scripts/whylog-guards.cjs",
 };
 
 /* -------------------------------------------------------------------------- */
@@ -230,7 +230,11 @@ export type StampVerification =
   | { readonly ok: true }
   | {
       readonly ok: false;
-      readonly reason: "head-mismatch" | "missing-stamp" | "schema-incompatible";
+      readonly reason:
+        | "head-mismatch"
+        | "digest-mismatch"
+        | "missing-stamp"
+        | "schema-incompatible";
       readonly expected?: string;
       readonly found?: string;
     };

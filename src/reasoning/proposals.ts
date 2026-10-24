@@ -221,6 +221,23 @@ function firstInListPremise(state: GraphState, decisionId: DecisionId): PremiseI
 export function evidenceForFinding(state: GraphState, finding: GateFinding): ProposalEvidence {
   if (finding.premiseId !== null) {
     const premise = state.premises.get(finding.premiseId);
+
+    /* A finding is "this premise was REFUTED", so the evidence for it is the
+     * REFUTING observation. A guard failure records the line of the manifest
+     * that falsified the premise, and that line is the evidence - the
+     * transcript span that originally supported the premise is the thing that
+     * turned out to be wrong, not the proof that it was. */
+    const refuting = premise?.evidence.find(
+      (entry) => !entry.supports && entry.quote !== undefined,
+    );
+    if (refuting?.quote !== undefined) {
+      return {
+        quote: refuting.quote,
+        source: refuting.kind,
+        confidence: asConfidence(premise?.confidence ?? 0.5),
+      };
+    }
+
     const best = premise?.evidence.find((entry) => entry.supports && entry.span !== undefined);
 
     if (best?.span !== undefined) {
@@ -242,6 +259,30 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   const a = state.decisions.get(finding.decisionId);
   const b =
     finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
+
+  /* A guard failure is evidence ABOUT THE DECISION IT PROTECTS, and the guard
+   * record carries the verbatim line that failed. `GuardRunResult.evidence`
+   * exists to be quoted - "evidence without a quote is not evidence" - and for
+   * a drift finding there is no premise to quote, so the decision's own
+   * transcript snippet would be quoted instead: the thing that turned out to
+   * be wrong, rather than the proof that it was.
+   *
+   * An ABSENCE check that fails is the contradiction: the decision excluded
+   * this, and the project contains it. A PRESENCE check that fails is drift:
+   * the decision was not implemented yet. The contradiction is the evidence
+   * worth quoting, so it is preferred. */
+  const failingGuards = [...state.guards.values()].filter(
+    (guard) => guard.decisionId === finding.decisionId && guard.lastRun?.outcome === "fail",
+  );
+  const contradicting =
+    failingGuards.find((guard) => guard.spec.kind.endsWith("_absent")) ?? failingGuards[0];
+  if (contradicting?.lastRun?.evidence !== undefined) {
+    return {
+      quote: contradicting.lastRun.evidence,
+      source: "guard",
+      confidence: asConfidence(finding.deterministic ? 0.9 : 0.6),
+    };
+  }
 
   const quote =
     b === undefined

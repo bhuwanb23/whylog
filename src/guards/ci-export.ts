@@ -50,6 +50,7 @@
  * ---------------------------------------------------------------------------
  */
 
+import { RUNNER_PATH } from "@/export/verify-command";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
@@ -536,7 +537,12 @@ export function renderWorkflow(guardCount: number): string {
     "",
     "      # No install step: the runner uses only the Node standard library.",
     "      - name: WhyLog decision guards",
-    "        run: node .whylog/guards.cjs",
+    /* The runner's path comes from RUNNER_PATH, the same constant the verify commands use.
+     * It used to be hard-coded here as `.whylog/guards.cjs`, a path that does not exist: the
+     * runner is written to `scripts/whylog-guards.cjs`, so the emitted workflow failed at
+     * "Cannot find module" before it could run a single guard. A workflow that points at the
+     * wrong file is a workflow that proves nothing. */
+    `        run: node ${RUNNER_PATH}`,
     "",
     "      # Advisory only. A guard is a lock on a decision, not a lint rule, so its",
     "      # failure is uploaded as an artifact for the PR rather than commented by a bot.",
@@ -545,7 +551,7 @@ export function renderWorkflow(guardCount: number): string {
     "        uses: actions/upload-artifact@v4",
     "        with:",
     "          name: whylog-guard-failures",
-    "          path: .whylog/",
+    `          path: ${RUNNER_PATH.slice(0, RUNNER_PATH.lastIndexOf("/"))}/`,
     "          if-no-files-found: ignore",
     "",
   ].join("\n");

@@ -109,6 +109,9 @@ export interface ReviseInput {
   readonly skipSemantic?: boolean;
   /** Phase 4. Absent means implementation cost is UNKNOWN, never assumed. */
   readonly guards?: ReadonlyMap<DecisionId, GuardStatus>;
+  /** Phase 6.8. How deep the cascade may follow shared-premise edges. Absent means the module
+   *  default, which keeps `revise` usable by callers that have no settings to offer. */
+  readonly cascadeDepthCap?: number;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -265,7 +268,16 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
             truncated: false,
             potentiallyAffectedBeyondCap: 0,
           }
-        : cascade(state, labels, retracted);
+        : cascade(
+            state,
+            labels,
+            retracted,
+            /* Threaded from the caller rather than defaulting here. Before this, `cascade()`
+             * accepted a depth cap that no call site ever supplied, so the setting in Settings was
+             * inert end to end and every run used MAX_CASCADE_DEPTH whether the user asked for 2 or
+             * 12. A parameter nobody passes is not a configuration surface. */
+            input.cascadeDepthCap ?? MAX_CASCADE_DEPTH,
+          );
 
     for (const step of cascadeResult.steps) {
       drafts.push(cascadeDraft(input, step));
@@ -500,6 +512,11 @@ function proposalDraft(
         .map((step) => ({ decisionId: step.to, became: step.became })),
       survivors: proposal.cascade.survivors,
       entrenchment: proposal.entrenchment,
+      evidence: {
+        quote: proposal.evidence.quote,
+        source: proposal.evidence.source,
+        confidence: proposal.evidence.confidence,
+      },
       ...(adjudication?.kind === "reject-newcomer"
         ? { rejectedNewcomer: { eventId: PLACEHOLDER_EVENT_ID, why: adjudication.why } }
         : {}),

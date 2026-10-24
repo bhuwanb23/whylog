@@ -146,6 +146,9 @@ export function describeVerification(
         "Recompile to bring it up to date.",
       ].join(" ");
     }
+
+    case "digest-mismatch":
+      return `${path} still names the log head it was compiled from, but its content has changed since (expected digest ${verification.expected?.slice(0, 12)}…, found ${verification.found?.slice(0, 12)}…). The log has NOT moved: the FILE was edited in place. An agent that rewrites a rule without superseding it has done exactly what the anti-re-litigation line exists to prevent.`;
   }
 }
 

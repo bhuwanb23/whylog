@@ -460,11 +460,40 @@ export type {
   TemplateOutput,
   TemplateSource,
 } from "./types";
-/* `AttributedGuard` is the templates module's type — a guard paired with the
- * source that produced it — not one of the shared contracts in ./types. */
+/* `AttributedGuard` is the templates module's type - a guard paired with the
+ * source that produced it - not one of the shared contracts in ./types. */
 export type { AttributedGuard } from "./templates";
 export type { CiExport, CiExportInput, ExportedGuard } from "./ci-export";
 export type { ComplianceResult, CoverageResult, SoundnessResult, DriftResult, RatioResult };
+
+/**
+ * Reconstruct evaluated guards from the graph, for callers that need metrics but did not run the
+ * evaluation themselves — the export compiler stamping compliance, or the store recomputing after
+ * a review action.
+ *
+ * `newViolation` cannot be recovered here: a stored `lastRun` does not record whether the baseline
+ * knew about it. Every stored failure is therefore treated as new, which is the conservative
+ * direction for a caller that has no baseline in hand. The run path in `runAll` computes it
+ * properly; this is only for between-run recomputation.
+ */
+export function evaluatedFromState(state: GraphState): readonly EvaluatedGuard[] {
+  const out: EvaluatedGuard[] = [];
+
+  for (const guard of state.guards.values()) {
+    if (guard.lifecycle !== "accepted") continue;
+    if (guard.lastRun === undefined) continue;
+
+    out.push({
+      guard,
+      result: guard.lastRun,
+      skipped: guard.lastRun.outcome === "skip",
+      skipReason: guard.lastRun.skipReason ?? null,
+      newViolation: guard.lastRun.outcome === "fail",
+    });
+  }
+
+  return out;
+}
 
 /** Everything the health panel prints about this phase, in one call. */
 export function describeGuards(state: GraphState): string {

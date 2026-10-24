@@ -144,6 +144,7 @@ const REQUIRED_PAYLOAD_KEYS: Readonly<Record<EventType, readonly string[]>> = {
     "cascade",
     "survivors",
     "entrenchment",
+    "evidence",
     "availableActions",
   ],
   DecisionReversed: ["decisionId", "newValue", "supersedesEventId"],

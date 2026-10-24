@@ -205,3 +205,122 @@ Before starting it, run **G2, G3 and G4** locally. G2 and G3 have never been exe
 Phase 4 changed `store/reasoning.ts` twice — once to wire gate (b) in Phase 3, once to pass
 `guardStatusMap` into `ReviseInput`. A cycle that was code-complete in Phase 2 is not necessarily
 still code-complete now.
+
+---
+
+## 10. Verification pass (independent, executed)
+
+Phase 4 was code-complete and **nothing had been executed**. This section records what was run, what broke, and what was fixed. Every number below was measured.
+
+### 10.1 Gates
+
+| Gate | On arrival | After this pass |
+|---|---|---|
+| `npm run typecheck` | **116 errors** | 0 |
+| `npm run check` | 157 errors | 0 errors, 84 warnings |
+| `npm test` | 41 | **58 passing** (9 files) |
+| `npm run build` | failed | builds |
+| `npm run check:structure` | **exit 9009** (python3 not found) | exit 0 |
+| `npm run verify` | exit 1 | **exit 0** |
+
+### 10.2 The tree did not compile
+
+Three syntax errors, in three different shapes, and each one is a mistake worth naming:
+
+1. **`src/retrieval/index-levels/l5-premises.ts:144` — a string literal with unescaped quotes.** `Serves "what assumes X?"` inside a double-quoted string ends the literal. Now a template literal.
+2. **`src/guards/ci-export.ts:468` — a bare backtick inside a template literal.** The `RUNNER_BODY` template opens at line 250 and should close at 537, but the comment inside it contains `` `--decision WLD-0007` `` — and the first backtick TERMINATES the template. The apostrophe in *decision's* then opens an unterminated string.
+   This is the same class of bug as the `**/*serverless.yml` glob the comment stripper used to fall over on: **a backtick or a `/*` inside generated text, where the generator does not expect one.**
+3. **`src/export/verify-command.ts:147` — a trailing comma inside a parenthesised expression.** `return ( expr, )` is not an argument list; the comma is a syntax error.
+
+### 10.3 The revert, sixth time, and how it is now separated
+
+The tree arrived as a pre-verification snapshot of Phases 0/1/2 again, with every verified fix deleted. This time the revert and the Phase 4 work were in the SAME commit, so a three-way merge could not separate them.
+
+**The separation is by blob identity.** A reverted file's content is byte-identical to the content it had at some earlier commit, so that earlier commit is the merge base for that file:
+
+```
+base   = the content the revert restored   (an earlier commit's blob)
+ours   = the content with the fix          (the verified snapshot)
+theirs = the content as it is now          (the reverted snapshot)
+```
+
+Where the fix and the newer work touch different lines, a three-way merge keeps both. **202 files reconciled, 0 conflicts.** The tool is `scripts/reconcile_revert.py` — in the repo, so the next time it is not tribal knowledge.
+
+### 10.4 The structural checker had never run
+
+`package.json` called `python3 scripts/check_structure.py`. There is no `python3` on this machine, so the script exited 9009 and **the checker had never run at all** — on any phase. The `node scripts/check-structure.mjs` wrapper is wired in.
+
+With it running, it immediately found a bug in itself: `_strip_comments` was a regex, and `hosting.ts` contains the glob `**/*serverless.yml`, so the stripper read `/*` as a block comment and ate through to the next `*/`. That was fixed with a character scanner — and then the scanner found a second bug of its own:
+
+**A template literal containing a nested template literal.** The scanner's template branch was flat: it looked for the next unescaped backtick at depth zero, so a template inside an interpolation ended the OUTER template early, and everything after it was read as code. `src/export/verify-command.ts` has exactly that shape (`node -e ${doubleQuote(\`...${x}...\`)}`), and the checker reported a brace imbalance that was not there.
+
+The scanner now recurses: a template is scanned by a function that finds its real end, and an interpolation is scanned as code. **Positive control:** a file with a deliberate imbalance is still reported.
+
+### 10.5 CI ran for the first time, and found four broken things
+
+The branch was **14 commits ahead of `origin/main`**, so no workflow had ever executed. The first run had `Typecheck, lint, test` **green** and `Decision guards (Phase 4.6)` **red**, with:
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/whylog/whylog/scripts/export_guards.ts'
+```
+
+**1. The guards job pointed at a script that did not exist.** The step could never have run, on any phase. It now builds a log from the fixture, compiles the guards, accepts them, runs them, emits the runner and the workflow, and **runs the runner** — asserting that the runner's exit code agrees with its own report, which is the property that makes it a gate.
+
+**2. The emitted runner could not run.** Two independent faults:
+- The shebang was on **line fifteen**, because the export header comment was put above it. A shebang is only a shebang on the first line.
+- The body used `require()` but was emitted as `.mjs`, which Node reads as an ES module. `require is not defined in ES module scope`.
+
+So the command every `Verify:` line in every agent file tells an agent to run — `node scripts/whylog-guards.mjs --decision WLD-0007` — **failed on both counts**. The shebang is now first, and the runner is `.cjs`, which works whatever the host project's `"type"` says.
+
+**3. The integrity stamp could never verify.** `stripStamp` removed only the marker and the payload, leaving the `---` rule that precedes the block and the human-readable footer that follows it. The digest is computed over the body alone, so the verifier reconstructed a **different string** and the digest never matched. **Every artifact was born unverifiable** — the one thing the stamp exists to prevent. The whole block is stripped now, and the emitter trims the body once so the digest and the artifact are built from the same string.
+
+**4. The G5 "a runnable verify command" predicate always passed.** The regex was `/^Verify:\s*(?!none)/m`. `\s*` can match **zero** characters, so the negative lookahead saw `" none — UNVERIFIABLE"` — which does not start with `none` — and the predicate succeeded. The gate reported a runnable verify command for a decision that had none, and G5 passed on a log where nothing was verified. Fixed to `/^Verify:(?!\s*none)/m`.
+
+**Also fixed:**
+- A digest mismatch reported `head-mismatch`, sending the reader after a log that had not moved. There is now a `digest-mismatch` reason with its own explanation.
+- `overCapDecisions(state)` ignored its parameter and read the global store, while the view called it with no argument.
+- `engine.capabilities` was read as a **property** in `guards/synth/llm.ts` and `guards/eval/llm-judge.ts`. It is a **method**, so the read was `undefined` at runtime and the "this engine cannot synthesise guards" branch never fired.
+- `tsconfig.node.json` needed the same path mapping the app project has, because `scripts/export_guards.ts` imports the app's own modules. Without it, `tsc -b` reported **286 errors, every one of them in `src/`, none of them in the script**.
+
+### 10.6 G5 is now executable
+
+`checkGateG5` was a private function inside `src/views/ExportView.tsx`, so the nine predicates that make the gate a gate could only be reached by clicking a button in a browser. They now live in **`src/export/gate-g5.ts`** — a pure function over the compiled artifact — and the view imports them. `tests/integration/gate-g5.test.ts` runs all nine against a real compiled CLAUDE.md.
+
+The chain matters, and it is a chain: a verify command exists only for an ACCEPTED guard, so the gate needs Phase 4 to have run first. On a log with no accepted guards the artifact honestly says `Verify: none — UNVERIFIABLE` and the gate fails — which is the correct outcome, and the test asserts it.
+
+### 10.7 The keyless path, end to end
+
+`tests/integration/keyless.test.ts` — the file CI names in its "Keyless end-to-end path" step, which **did not exist**. It now runs the whole product with no key, no network and no model: import → review → record → label → guards → export → gate → stamp verification. The stamp verification is the last step and it is the one that proves the artifact is tied to the log.
+
+### 10.8 The gate that was missing
+
+The tree was rewritten from a stale snapshot six times. **The tests caught it every time** — 20 of 21 failed, and `linkHash is not defined` was the first thing the suite said. Nothing ran them: CI had never executed, the structural checker could not start, and no git hook was installed.
+
+The check now runs in three places:
+
+1. **`.githooks/pre-commit`** — `core.hooksPath` points at a committed directory, so the hook travels with the repo. It runs typecheck and the tests, and a commit that would carry a broken tree is not made. `--no-verify` still exists, and CI will say the same thing in public.
+2. **CI**, which now runs — and is green, both jobs, for the first time in the project's history.
+3. **`scripts/reconcile_revert.py`**, so the next revert is a mechanical recovery rather than an archaeology.
+
+### 10.9 The guard run, measured
+
+`npm run guards:ci`, against `fixtures/sample-project`:
+
+| Measure | Value |
+|---|---|
+| Guards compiled | **53** (templates only, no model) |
+| Passed | 18 |
+| Failed | 35 (2 blocking, 33 warning) |
+| Skipped | 0 |
+| Runner exit code | 1, and it agrees with its own report |
+
+The two blocking failures are correct and are the point: the fixture transcript is **deliberately contradictory** — it contains a "use postgres" decision (the notes call it the trap) alongside "use sqlite, not postgres" — so no sample project can satisfy it. The step therefore does not assert "no blocking guard fails", which would be asserting something false about the fixture. It asserts that the runner **ran** and that its exit code **agrees with what it reported**. A runner that says "2 blocking decision guard(s) failed" and exits 0 is broken, and so is one that says nothing and exits 1.
+
+### 10.10 Known gaps that remain
+
+| Gap | Severity | Note |
+|---|---|---|
+| The pre-export consistency gate did not block a self-contradictory log | — | The fixture log holds "use postgres" and "use sqlite, not postgres" at once, and the export was not blocked. `consistencyGate` delegates to `wouldContradict`, which the reasoning cycle's gate (a) does fire on — so the detection exists and the export path is not using it the way the notes describe. Worth a look before Phase 5 is called done. |
+| `falsifiesPremiseId` attribution is vocabulary overlap | — | Weak by nature, and deliberately only acted on when exactly one premise matches. Ambiguity is reported, never guessed. |
+| A truncated file listing makes `path_glob_exists` fail and `path_glob_absent` pass | — | The second is the dangerous one: a false all-clear enters the compliance score. Mitigated by `warning` severity and by reporting every unparseable line. |
+| The `docs/` and `plan/` prose still carries residual mojibake | — | Cosmetic. `scripts/fix_encoding.py` undoes it. The code is clean. |

@@ -79,6 +79,7 @@ import type { Justification, PremiseType } from "@/types/domain";
 import type { EventType, NewEvent } from "@/types/events";
 import { create } from "zustand";
 import { useAsk } from "./ask";
+import { useTuning } from "./settings";
 import { useWhyLog } from "./whylog";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
@@ -196,6 +197,9 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
        *
        * This is the term no belief-revision system has, because none is attached to a codebase. */
       guards: guardStatusMap(whylog.state),
+      /* The user's cascade depth cap, from the persisted tuning store. Until this line the setting
+       * existed, was displayed, and changed nothing. */
+      cascadeDepthCap: useTuning.getState().cascadeDepthCap,
       /* Gate (b) is WIRED as of Phase 3. It was hardcoded off in Phase 2 because there was no
        * retriever to ask; now there is one, so the default flips to "run it" and `skipSemantic`
        * becomes what it was always meant to be — an opt-out for the keyless demo and for
