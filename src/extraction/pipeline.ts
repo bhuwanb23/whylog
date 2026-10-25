@@ -26,37 +26,29 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DiscardedCandidate } from "@/ai/types";
-import type { ExtractionRequest, ExtractionResult, WhyLogEngine } from "@/ai/types";
-import { nowISO } from "@/lib/format";
-import type { GraphState } from "@/substrate/graph-state";
 import type { EngineId, ISODateString, TranscriptId } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import { type ChunkingResult, chunkTurns, describeChunking } from "./chunking";
-import { describeHistogram } from "./confidence";
-import { type NormalizerOptions, describeNormalisation, normaliseTranscript } from "./normalizer";
-import { type OriginClassification, describeProvenance, summariseOrigins } from "./provenance";
+import type { Modality } from "@/types/domain";
+import type { DiscardedCandidate } from "@/ai/types";
+import { nowISO } from "@/lib/format";
+import type { WhyLogEngine, ExtractionResult, ExtractionRequest } from "@/ai/types";
+import type { GraphState } from "@/substrate/graph-state";
+import { normaliseTranscript, describeNormalisation, type NormalizerOptions } from "./normalizer";
+import { segmentEpisodes, describeSegmentation } from "./segmentation";
+import { chunkTurns, describeChunking, type ChunkingResult } from "./chunking";
+import { validateExtraction, describeValidation, type ValidationReport } from "./snippet-validation";
+import { resolveExtraction, describeResolution, describeIdempotence, type ResolutionReport } from "./resolution";
+import { summariseOrigins, describeProvenance, type OriginClassification } from "./provenance";
 import { buildQueue, fallbackOrigin, mergeTiers, originOf } from "./queue-build";
-import {
-  type ResolutionReport,
-  describeIdempotence,
-  describeResolution,
-  resolveExtraction,
-} from "./resolution";
-import { describeSegmentation, segmentEpisodes } from "./segmentation";
-import {
-  type ValidationReport,
-  describeValidation,
-  validateExtraction,
-} from "./snippet-validation";
+import { describeHistogram } from "./confidence";
+import { voteAcrossRuns, describeVoting, type VoteOutcome, type VotingOptions } from "./voting";
 import type {
-  EpisodeWindow,
   ExtractionRun,
   NormalizedTranscript,
+  EpisodeWindow,
   ResolvedCandidate,
   StageReport,
 } from "./types";
-import { type VoteOutcome, type VotingOptions, describeVoting, voteAcrossRuns } from "./voting";
 
 export interface ExtractionInput {
   readonly transcriptId: TranscriptId;
@@ -136,15 +128,7 @@ export async function runExtraction(
     ...(options.collapseNoise === undefined ? {} : { collapseNoise: options.collapseNoise }),
     ...(input.label === undefined ? {} : { label: input.label }),
   });
-  stages.push(
-    stage(
-      "normalise",
-      stageStart,
-      input.raw.length,
-      normalized.text.length,
-      describeNormalisation(normalized),
-    ),
-  );
+  stages.push(stage("normalise", stageStart, input.raw.length, normalized.text.length, describeNormalisation(normalized)));
 
   if (normalized.turns.length === 0) {
     return { ok: false, failure: { kind: "no-turns" } };
@@ -152,16 +136,8 @@ export async function runExtraction(
 
   /* ---- 1.1 chunk ---- */
   stageStart = nowMs();
-  const chunking = chunkTurns(normalized.turns, options.chunkChars);
-  stages.push(
-    stage(
-      "segment",
-      stageStart,
-      normalized.turns.length,
-      chunking.chunks.length,
-      describeChunking(chunking),
-    ),
-  );
+  const chunking = chunkTurns(normalized.turns, options.chunkChars, normalized);
+  stages.push(stage("segment", stageStart, normalized.turns.length, chunking.chunks.length, describeChunking(chunking)));
 
   /* ---- 1.2 segment ---- */
   stageStart = nowMs();
@@ -188,8 +164,7 @@ export async function runExtraction(
   let result: ExtractionResult;
   let voting: VoteOutcome | null = null;
 
-  const votingOn =
-    options.voting !== undefined && options.voting.runs > 1 && options.engine.capabilities().voting;
+  const votingOn = options.voting !== undefined && options.voting.runs > 1 && options.engine.capabilities().voting;
 
   try {
     if (votingOn && options.voting !== undefined) {
@@ -225,13 +200,7 @@ export async function runExtraction(
   stageStart = nowMs();
   const validated = validateExtraction(result, normalized.raw);
   stages.push(
-    stage(
-      "recognise",
-      stageStart,
-      validated.report.checked,
-      validated.report.passed,
-      describeValidation(validated.report),
-    ),
+    stage("recognise", stageStart, validated.report.checked, validated.report.passed, describeValidation(validated.report)),
   );
   result = validated.result;
 
@@ -262,13 +231,7 @@ export async function runExtraction(
     { state: options.state, engine: options.engineId },
   );
   stages.push(
-    stage(
-      "resolve",
-      stageStart,
-      tiered.queue.length,
-      resolved.resolved.length,
-      describeResolution(resolved.report),
-    ),
+    stage("resolve", stageStart, tiered.queue.length, resolved.resolved.length, describeResolution(resolved.report)),
   );
 
   const run: ExtractionRun = {
@@ -309,10 +272,7 @@ export async function runExtraction(
 /* Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function discardsFromValidation(
-  result: ExtractionResult,
-  failed: number,
-): readonly DiscardedCandidate[] {
+function discardsFromValidation(result: ExtractionResult, failed: number): readonly DiscardedCandidate[] {
   if (failed === 0) return [];
 
   // A downgraded decision keeps its structure and loses its span, so an empty span
@@ -360,10 +320,7 @@ export function describeOutcome(outcome: PipelineOutcome): string {
   const summary = summariseOrigins(outcome.origins);
   return [
     describeNormalisation(outcome.normalized),
-    describeSegmentation(
-      { episodes: outcome.episodes, uncoveredTurns: 0, cueHits: 0 },
-      outcome.normalized.turns.length,
-    ),
+    describeSegmentation({ episodes: outcome.episodes, uncoveredTurns: 0, cueHits: 0 }, outcome.normalized.turns.length),
     describeValidation(outcome.validation),
     describeProvenance(summary, outcome.origins.length),
     describeResolution(outcome.resolution),

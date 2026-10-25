@@ -55,15 +55,7 @@ export function EmptyState(props: EmptyStateProps): ReactElement {
         {props.what}
       </div>
 
-      <div
-        style={{
-          fontSize: 13,
-          marginTop: 10,
-          maxWidth: 520,
-          marginLeft: "auto",
-          marginRight: "auto",
-        }}
-      >
+      <div style={{ fontSize: 13, marginTop: 10, maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
         {props.action}
       </div>
 
@@ -79,15 +71,7 @@ export function EmptyState(props: EmptyStateProps): ReactElement {
       ) : null}
 
       {props.also !== undefined && props.also.length > 0 ? (
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            gap: 12,
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
+        <div style={{ marginTop: 12, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           {props.also.map((entry) => (
             <button
               key={entry.label}
@@ -102,9 +86,7 @@ export function EmptyState(props: EmptyStateProps): ReactElement {
         </div>
       ) : null}
 
-      {props.children !== undefined ? (
-        <div style={{ marginTop: 16, textAlign: "left" }}>{props.children}</div>
-      ) : null}
+      {props.children !== undefined ? <div style={{ marginTop: 16, textAlign: "left" }}>{props.children}</div> : null}
     </div>
   );
 }

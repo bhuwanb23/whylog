@@ -49,9 +49,6 @@
  * ---------------------------------------------------------------------------
  */
 
-import { acceptedGuards } from "@/guards";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ISODateString } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import type {
@@ -65,15 +62,18 @@ import type {
 } from "@/types/export";
 import { DEFAULT_EXPORT_BUDGET_LINES } from "@/types/export";
 import type { Guard } from "@/types/guards";
-import { FIXED_OVERHEAD, allocate, estimateTokens, indexEntryFor } from "./budget";
-import { type GateReport, consistencyGate } from "./consistency-gate";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { acceptedGuards } from "@/guards";
 /* `priority.ts` exports its own `guardStatusFor`, shaped for the ranking (it also reports whether
  * any guard is `blocking`). `guards/feedback.ts` exports a different one, shaped for entrenchment.
  * Same name, different jobs — so only the ranking one is imported here, and importing both would
  * have meant aliasing one and inviting a future reader to use whichever they found first. */
-import { type PriorityBreakdown, guardStatusFor, priorityOf } from "./priority";
+import { guardStatusFor, priorityOf, type PriorityBreakdown } from "./priority";
 import { recordFor } from "./record";
 import { rejectedBlock } from "./rejected-block";
+import { allocate, estimateTokens, FIXED_OVERHEAD, indexEntryFor } from "./budget";
+import { consistencyGate, type GateReport } from "./consistency-gate";
 
 export interface CifOptions {
   readonly maxLines?: number;
@@ -117,17 +117,8 @@ export function buildCif(
   /* ---- 1. candidate set ---- */
   const candidates = candidateIds(state, labels, options);
 
-  /* ---- 2. the gate, before anything is rendered ----
-   *
-   * The gate gets BOTH sets: every candidate (so a conflict is reported even when the file
-   * dodges it) and the ones that will actually be written (so the file is only blocked when
-   * the file itself would be wrong). */
-  const gate = consistencyGate({
-    state,
-    labels,
-    candidates: candidates.map((entry) => entry.id),
-    emitted: candidates.filter((entry) => entry.excluded === null).map((entry) => entry.id),
-  });
+  /* ---- 2. the gate, before anything is rendered ---- */
+  const gate = consistencyGate({ state, labels, candidates: candidates.map((entry) => entry.id) });
 
   /* ---- 3. rank ---- */
   const priorities = new Map<DecisionId, PriorityBreakdown>();
@@ -151,23 +142,21 @@ export function buildCif(
   ranked.sort((a, b) => b.priority - a.priority || (a.id < b.id ? -1 : 1));
 
   /* ---- 4. records, built in rank order so `allocate` can trust the ordering ---- */
-  const allRecords: ExportRecord[] = ranked
-    .map((entry) => {
-      const decision = state.decisions.get(entry.id);
-      if (decision === undefined) return null;
+  const allRecords: ExportRecord[] = ranked.map((entry) => {
+    const decision = state.decisions.get(entry.id);
+    if (decision === undefined) return null;
 
-      return recordFor({
-        state,
-        labels,
-        decision,
-        label: labels.get(entry.id)?.label ?? decision.label,
-        /* Tier is assigned by `allocate` below; records are built as inline and demoted after. */
-        tier: "inline",
-        priority: entry.priority,
-        now,
-      });
-    })
-    .filter((record): record is ExportRecord => record !== null);
+    return recordFor({
+      state,
+      labels,
+      decision,
+      label: labels.get(entry.id)?.label ?? decision.label,
+      /* Tier is assigned by `allocate` below; records are built as inline and demoted after. */
+      tier: "inline",
+      priority: entry.priority,
+      now,
+    });
+  }).filter((record): record is ExportRecord => record !== null);
 
   /* ---- 5. allocate against the budget ---- */
   const allocation = allocate(allRecords, linesForRecord, maxLines);
@@ -215,12 +204,10 @@ export function buildCif(
     cif,
     gate,
     budget,
-    excluded: candidates
-      .filter((entry) => entry.excluded !== null)
-      .map((entry) => ({
-        id: entry.id,
-        reason: entry.excluded ?? "excluded",
-      })),
+    excluded: candidates.filter((entry) => entry.excluded !== null).map((entry) => ({
+      id: entry.id,
+      reason: entry.excluded ?? "excluded",
+    })),
     priorities,
     blocked: gate.blocked,
   };
@@ -256,12 +243,11 @@ function candidateIds(
 
     if (decision.status === "superseded" || decision.status === "archived") {
       if (options?.includeSuperseded !== true) {
-        excluded = `${decision.status} — the log has withdrawn it, and its replacement is emitted instead`;
+        excluded = decision.status + " — the log has withdrawn it, and its replacement is emitted instead";
       }
     } else if (label === "OUT") {
       if (options?.includeOut !== true) {
-        excluded =
-          "labelled OUT — a premise it rests on has been falsified, so it is not currently believed";
+        excluded = "labelled OUT — a premise it rests on has been falsified, so it is not currently believed";
       }
     }
 
@@ -321,27 +307,25 @@ export function describeCif(result: CifResult): string {
   const lines = [
     result.blocked ? "BLOCKED by the consistency gate." : "Consistency gate passed.",
     "",
-    `  inline (tier 1)   ${result.cif.stats.decisionsIncluded}`,
-    `  index  (tier 2)   ${result.cif.stats.decisionsLinkedOut}`,
-    `  excluded          ${result.cif.stats.decisionsExcluded}`,
-    `  lines             ${result.cif.stats.lineCount} / ${result.budget.maxLines}${result.budget.overBudget ? "  — OVER BUDGET" : ""}`,
-    `  ~tokens           ${result.cif.stats.estimatedTokens}`,
-    `  rejected entries  ${result.cif.rejected.length}`,
-    `  compliance        ${Math.round(result.cif.stats.compliance * 100)}%`,
-    `  coverage          ${Math.round(result.cif.stats.verifiableCoverage * 100)}%`,
+    "  inline (tier 1)   " + result.cif.stats.decisionsIncluded,
+    "  index  (tier 2)   " + result.cif.stats.decisionsLinkedOut,
+    "  excluded          " + result.cif.stats.decisionsExcluded,
+    "  lines             " + result.cif.stats.lineCount + " / " + result.budget.maxLines +
+      (result.budget.overBudget ? "  — OVER BUDGET" : ""),
+    "  ~tokens           " + result.cif.stats.estimatedTokens,
+    "  rejected entries  " + result.cif.rejected.length,
+    "  compliance        " + Math.round(result.cif.stats.compliance * 100) + "%",
+    "  coverage          " + Math.round(result.cif.stats.verifiableCoverage * 100) + "%",
   ];
 
   if (result.gate.conflicts.length > 0) {
     lines.push("");
-    lines.push(
-      `Conflicts found: ${result.gate.conflicts.length} (${result.blocked ? "blocking — both sides were being emitted" : "reported only — the export dodged them, the log did not"})`,
-    );
+    lines.push("Conflicts found: " + result.gate.conflicts.length +
+      " (" + (result.blocked ? "blocking — both sides were being emitted" : "reported only — the export dodged them, the log did not") + ")");
   }
 
   if (result.gate.annotations.length > 0) {
-    lines.push(
-      `Annotations: ${result.gate.annotations.length} attached inline to the records they concern.`,
-    );
+    lines.push("Annotations: " + result.gate.annotations.length + " attached inline to the records they concern.");
   }
 
   return lines.join("\n");
@@ -349,17 +333,14 @@ export function describeCif(result: CifResult): string {
 
 /** The six agent-optimized properties, checked against one record. Used by the export view to
  *  show the acceptance criterion being met rather than asserted. */
-export function checkSixProperties(
-  record: ExportRecord,
-): readonly { property: string; present: boolean; note: string }[] {
+export function checkSixProperties(record: ExportRecord): readonly { property: string; present: boolean; note: string }[] {
   return [
     {
       property: "scoped to file globs",
       present: record.appliesTo.length > 0,
-      note:
-        record.appliesTo.length > 0
-          ? record.appliesTo.join(", ")
-          : "MISSING — an agent editing a stylesheet has no way to know this record does not concern it, so it loads the rule and burns context",
+      note: record.appliesTo.length > 0
+        ? record.appliesTo.join(", ")
+        : "MISSING — an agent editing a stylesheet has no way to know this record does not concern it, so it loads the rule and burns context",
     },
     {
       property: "imperative, not prose",
@@ -369,14 +350,12 @@ export function checkSixProperties(
     {
       property: "verifiable",
       present: record.verifyCommand !== undefined,
-      note:
-        record.verifyCommand ??
-        "MISSING — no accepted guard, so this decision is UNVERIFIABLE and the record says so",
+      note: record.verifyCommand ?? "MISSING — no accepted guard, so this decision is UNVERIFIABLE and the record says so",
     },
     {
       property: "token-aware",
       present: true,
-      note: `tier ${record.tier}, priority ${record.priority.toFixed(3)}`,
+      note: "tier " + record.tier + ", priority " + record.priority.toFixed(3),
     },
     {
       property: "non-conflicting",
@@ -386,7 +365,7 @@ export function checkSixProperties(
     {
       property: "addressable",
       present: record.id.length > 0,
-      note: `${record.id} — stable, never renumbered, never reused`,
+      note: record.id + " — stable, never renumbered, never reused",
     },
   ];
 }

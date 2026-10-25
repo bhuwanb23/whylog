@@ -49,13 +49,17 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { Decision, DecisionOrigin, DecisionVariable } from "@/types/domain";
-import type { AdjudicationOutcome, EntrenchmentBreakdown } from "@/types/reasoning";
-import { ENTRENCHMENT_WEIGHTS } from "@/types/reasoning";
-import { type GuardStatus, entrenchmentOf } from "./entrenchment";
+import { canonicalValueOf } from "@/ontology";
 import { wouldContradict } from "./gates/structural";
+import type { AdjudicationOutcome, EntrenchmentBreakdown } from "@/types/reasoning";
+import {
+  ENTRENCHMENT_WEIGHTS,
+  UNKNOWN_IMPLEMENTATION_COST,
+} from "@/types/reasoning";
+import type { GraphState } from "@/substrate/graph-state";
+import { entrenchmentOf, type GuardStatus } from "./entrenchment";
 
 /* -------------------------------------------------------------------------- */
 /* The newcomer                                                               */
@@ -77,7 +81,7 @@ export interface Newcomer {
   readonly confidence: number;
   /** Valid time of the observation. Defaults to now. */
   readonly observedAt?: string;
-  readonly source?: "transcript" | "guard" | "human" | "repo-scan";
+  readonly source?: "transcript" | "guard" | "human" | "repo-scan" | undefined;
 }
 
 export interface AdjudicationInput {
@@ -346,18 +350,9 @@ function dominantTerm(state: GraphState, decisionId: DecisionId): string {
   const w = breakdown.weights;
 
   const contributions: { readonly name: string; readonly amount: number }[] = [
-    {
-      name: `who stated it (${c.sourceAuthority.toFixed(2)})`,
-      amount: w.sourceAuthority * c.sourceAuthority,
-    },
-    {
-      name: `how many sources agree (${c.corroboration.toFixed(2)})`,
-      amount: w.corroboration * c.corroboration,
-    },
-    {
-      name: `extraction confidence (${c.confidence.toFixed(2)})`,
-      amount: w.confidence * c.confidence,
-    },
+    { name: `who stated it (${c.sourceAuthority.toFixed(2)})`, amount: w.sourceAuthority * c.sourceAuthority },
+    { name: `how many sources agree (${c.corroboration.toFixed(2)})`, amount: w.corroboration * c.corroboration },
+    { name: `extraction confidence (${c.confidence.toFixed(2)})`, amount: w.confidence * c.confidence },
     { name: `how recent it is (${c.recency.toFixed(2)})`, amount: w.recency * c.recency },
   ];
 

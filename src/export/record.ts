@@ -39,11 +39,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import type { Decision, DecisionLabel } from "@/types/domain";
 import type { ExportRecord, RejectedBlockEntry } from "@/types/export";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
 import { verifyCommandFor } from "./verify-command";
 
 export interface RecordInput {
@@ -96,22 +96,15 @@ export function recordFor(input: RecordInput): ExportRecord {
     imperative: imperativeFor(decision, rejected),
     appliesTo: decision.appliesTo,
     becausePremiseIds: premises.map((entry) => entry.id),
-    becauseText:
-      premises.length === 0
-        ? ""
-        : premises.map((entry) => `${entry.text} (${entry.id})`).join(", "),
-    rejected: rejected.map((entry) =>
-      entry.why === undefined ? { value: entry.value } : { value: entry.value, why: entry.why },
-    ),
+    becauseText: premises.length === 0 ? "" : premises.map((entry) => entry.text + " (" + entry.id + ")").join(", "),
+    rejected: rejected.map((entry) => (entry.why === undefined ? { value: entry.value } : { value: entry.value, why: entry.why })),
     ...(verify === null ? {} : { verifyCommand: verify.command }),
     status: label,
     guardsPassing: passing,
     guardsTotal: total,
     ...(lastVerifiedAt === undefined ? {} : { lastVerifiedAt }),
     contestedPremise: premises.some((entry) => entry.contested),
-    failingGuard: guards.some(
-      (guard) => guard.lastRun !== undefined && guard.lastRun.outcome === "fail",
-    ),
+    failingGuard: guards.some((guard) => guard.lastRun !== undefined && guard.lastRun.outcome === "fail"),
     tier: input.tier,
     priority: input.priority,
   };
@@ -137,9 +130,9 @@ export function imperativeFor(
 
   const statement = decision.statement.trim();
   if (isAlreadyImperative(statement)) {
-    parts.push(`${statement.replace(/\.\s*$/, "")}.`);
+    parts.push(statement.replace(/\.\s*$/, "") + ".");
   } else {
-    parts.push(`MUST use ${decision.value}.`);
+    parts.push("MUST use " + decision.value + ".");
   }
 
   /* The MUST NOT clause is compiled from the rejected alternatives, which is why alternatives are
@@ -147,9 +140,7 @@ export function imperativeFor(
    * propose the thing you already turned down. */
   if (rejected.length > 0) {
     const names = rejected.map((entry) => entry.value).slice(0, MUST_NOT_LIMIT);
-    parts.push(
-      `MUST NOT introduce ${names.join(", ")}${rejected.length > MUST_NOT_LIMIT ? ` (and ${rejected.length - MUST_NOT_LIMIT} other rejected options — see the Rejected section)` : ""}.`,
-    );
+    parts.push("MUST NOT introduce " + names.join(", ") + (rejected.length > MUST_NOT_LIMIT ? " (and " + (rejected.length - MUST_NOT_LIMIT) + " other rejected options — see the Rejected section)" : "") + ".");
   }
 
   return parts.join(" ");
@@ -257,7 +248,7 @@ function acceptedGuardsOf(state: GraphState, decisionId: DecisionId) {
  * use; a warning three sections away is a warning that does not exist.
  */
 export function renderStatus(record: ExportRecord): string {
-  const parts: string[] = [`Status: ${record.status}`];
+  const parts: string[] = ["Status: " + record.status];
 
   if (record.status === "IN") parts.push("sound");
   else if (record.status === "UNKNOWN") parts.push("justification incomplete");
@@ -266,11 +257,10 @@ export function renderStatus(record: ExportRecord): string {
   if (record.guardsTotal === 0) {
     parts.push("no guards — UNVERIFIABLE");
   } else {
-    parts.push(`guards ${record.guardsPassing}/${record.guardsTotal} passing`);
+    parts.push("guards " + record.guardsPassing + "/" + record.guardsTotal + " passing");
   }
 
-  if (record.lastVerifiedAt !== undefined)
-    parts.push(`last verified ${record.lastVerifiedAt.slice(0, 10)}`);
+  if (record.lastVerifiedAt !== undefined) parts.push("last verified " + record.lastVerifiedAt.slice(0, 10));
 
   if (record.contestedPremise) parts.push("PREMISE CONTESTED");
   if (record.failingGuard) parts.push("VERIFY CURRENTLY FAILS");

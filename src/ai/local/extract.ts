@@ -35,31 +35,26 @@
  * ---------------------------------------------------------------------------
  */
 
-import { scoreAlternative, scoreDecision, scorePremise } from "@/ai/local/confidence";
+import type { EngineId, ISODateString } from "@/types/common";
+import { asConfidence } from "@/types/common";
 import type {
   AlternativeCandidate,
+  DecisionCandidate,
   DiscardedCandidate,
   EpisodeSpan,
   ExtractionRequest,
   ExtractionResult,
   PremiseCandidate,
 } from "@/ai/types";
-import { recoverAlternatives } from "@/extraction/alternatives";
-import {
-  type DecisionContext,
-  type RecoveredDecision,
-  recoverDecisions,
-} from "@/extraction/decisions";
-import type { OffsetMap } from "@/extraction/offset-map";
-import { linkPremises } from "@/extraction/premise-linker";
-import { type RecoveredPremise, recoverPremises } from "@/extraction/premises";
-import { type OriginClassification, classifyOrigin } from "@/extraction/provenance";
-import type { EpisodeWindow, NormalizedTranscript } from "@/extraction/types";
-import { canonicalValueOf } from "@/ontology/canonicalize";
-import type { EngineId, ISODateString } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import { isWorldObservable } from "@/types/domain";
-import type { DecisionVariable } from "@/types/domain";
+import type { EpisodeWindow, NormalizedTranscript } from "@/extraction/types";
+import type { OffsetMap } from "@/extraction/offset-map";
+import { recoverDecisions, type DecisionContext, type RecoveredDecision } from "@/extraction/decisions";
+import { recoverPremises, type RecoveredPremise } from "@/extraction/premises";
+import { linkPremises } from "@/extraction/premise-linker";
+import { recoverAlternatives } from "@/extraction/alternatives";
+import { classifyOrigin, type OriginClassification } from "@/extraction/provenance";
+import { scoreAlternative, scoreDecision, scorePremise } from "@/ai/local/confidence";
 
 export interface LocalExtractionContext {
   readonly normalized: NormalizedTranscript;
@@ -80,10 +75,7 @@ export interface LocalExtraction {
 /* Entry point                                                                */
 /* -------------------------------------------------------------------------- */
 
-export function extractLocal(
-  request: ExtractionRequest,
-  context: LocalExtractionContext,
-): LocalExtraction {
+export function extractLocal(request: ExtractionRequest, context: LocalExtractionContext): LocalExtraction {
   const started = nowMs();
   const map = mapOf(context.normalized);
 
@@ -103,13 +95,6 @@ export function extractLocal(
   /** Index of the first decision belonging to each episode, so alternatives can
    *  attach to a decision in their own episode rather than to the first one. */
   const decisionBaseByEpisode: number[] = [];
-  /** For the CURRENT episode: the run-level index of each of its decisions. An
-   *  explicit map, not arithmetic, because a suppressed duplicate shifts every
-   *  index after it. */
-  const runIndexOfEpisodeDecision: number[] = [];
-  /** Canonical (variable, value) pairs already recovered in THIS run. A second
-   *  candidate for the same pair is a restatement, not a new decision. */
-  const seenDecisionKeys = new Set<string>();
   let premiseCount = 0;
 
   for (const episode of context.episodes) {
@@ -120,9 +105,6 @@ export function extractLocal(
     });
 
     decisionBaseByEpisode[episode.index] = decisions.length;
-    // The index map is per EPISODE: the local index an alternative carries is an
-    // index into this episode's decisions.
-    runIndexOfEpisodeDecision.length = 0;
 
     /* ---- decisions ---- */
     const decisionRecovery = recoverDecisions(episode, decisionContext);
@@ -158,38 +140,6 @@ export function extractLocal(
         ...(link?.outRefs ?? []).map((i) => premiseBase + episodePremises.length + i),
       ];
 
-      // WITHIN-RUN DUPLICATE SUPPRESSION.
-      //
-      // The same decision can be recovered from two episodes — the fixture's
-      // trailing "DEMO SEQUENCE" block restates the Postgres decision, and a
-      // real transcript does the same when a topic returns. Without this, the
-      // run produces TWO candidates for one decision, the ladder has no way to
-      // merge them (there is no node yet), and the commit writes two nodes.
-      //
-      // It also breaks idempotence: on a RE-import, one candidate merges onto
-      // the first node and the other onto the second, so the alternatives
-      // attached to them stop matching. Suppressing the duplicate HERE fixes
-      // both, and it is the same reason `discardedBy: "duplicate"` exists in
-      // the discard vocabulary.
-      const key = decisionKeyOf(decision.candidate.variable, decision.candidate.value);
-      if (seenDecisionKeys.has(key)) {
-        discarded.push({
-          kind: "decision",
-          discardedBy: "duplicate",
-          rawText: decision.candidate.statement,
-          confidence: asConfidence(breakdown.total),
-        });
-        // No run-level index: this candidate is not in the array, and anything
-        // pointing at it (an alternative) has to be dropped with it.
-        return;
-      }
-      seenDecisionKeys.add(key);
-
-      // The run-level index of this episode's decision, so an alternative can
-      // point at it. An explicit map rather than an arithmetic base, because a
-      // suppressed decision shifts every index after it.
-      runIndexOfEpisodeDecision[localIndex] = decisions.length;
-
       decisions.push({
         ...decision,
         candidate: {
@@ -215,7 +165,7 @@ export function extractLocal(
     premiseCount += episodePremises.length;
 
     /* ---- excluded conditions become premises too ---- */
-    for (const excluded of episodeExcluded) {
+    episodeExcluded.forEach((excluded) => {
       const source = episodePremises[excluded.sourcePremiseIndex];
       const attached = source !== undefined;
       const breakdown = scorePremise(
@@ -233,34 +183,19 @@ export function extractLocal(
           confidence: asConfidence(Math.min(breakdown.total, excluded.confidence)),
         },
       });
-    }
+    });
     premiseCount += episodeExcluded.length;
 
     /* ---- alternatives ---- */
     const alternativeRecovery = recoverAlternatives(episode, episodeDecisions, decisionContext);
     discarded.push(...alternativeRecovery.discarded);
 
+    const base = decisionBaseByEpisode[episode.index] ?? decisions.length - episodeDecisions.length;
     for (const alternative of alternativeRecovery.alternatives) {
       const breakdown = scoreAlternative(alternative);
-      const globalDecisionIndex = runIndexOfEpisodeDecision[alternative.decisionIndex];
+      const globalDecisionIndex = base + alternative.decisionIndex;
 
-      // An alternative whose parent decision was suppressed as a duplicate is
-      // itself a duplicate: it rejects the same value for the same decision.
-      if (globalDecisionIndex === undefined) {
-        discarded.push({
-          kind: "alternative",
-          discardedBy: "duplicate",
-          rawText: alternative.candidate.value,
-          confidence: asConfidence(breakdown.total),
-        });
-        continue;
-      }
-
-      alternatives.push({
-        ...alternative.candidate,
-        confidence: breakdown.total,
-        decisionRef: globalDecisionIndex,
-      });
+      alternatives.push({ ...alternative.candidate, confidence: breakdown.total, decisionRef: globalDecisionIndex });
 
       const target = decisions[globalDecisionIndex];
       if (target !== undefined) {
@@ -311,10 +246,7 @@ function mapOf(normalized: NormalizedTranscript): OffsetMap {
  *  shape. Synthesising one is cheaper than threading a nullable through
  *  `scorePremise`, and the synthesised source is never emitted — only its score is
  *  used. */
-function synthesisedSource(excluded: {
-  type: PremiseCandidate["type"];
-  candidate: PremiseCandidate;
-}): RecoveredPremise {
+function synthesisedSource(excluded: { type: PremiseCandidate["type"]; candidate: PremiseCandidate }): RecoveredPremise {
   return {
     candidate: excluded.candidate,
     cue: {
@@ -326,31 +258,10 @@ function synthesisedSource(excluded: {
     },
     kind: "explicit",
     polarity: "negative",
-    turn: {
-      index: -1,
-      speaker: "unknown",
-      text: excluded.candidate.text,
-      start: 0,
-      end: 0,
-      rawStart: 0,
-      rawEnd: 0,
-      attribution: "none",
-    },
+    turn: { index: -1, speaker: "unknown", text: excluded.candidate.text, start: 0, end: 0, attribution: "none" },
     episodeIndex: -1,
     predicateVia: "cue",
   };
-}
-
-/**
- * The identity of a decision, for within-run duplicate suppression.
- *
- * The CANONICAL value, so "pg" and "postgres" are the same decision even if
- * the alias table missed one of them. A decision on a different variable is a
- * different decision: `DATABASE=sqlite` and `STORAGE=sqlite` are not the same
- * claim.
- */
-function decisionKeyOf(variable: DecisionVariable, value: string): string {
-  return `${variable}:${canonicalValueOf(variable, value)}`;
 }
 
 function nowMs(): number {
@@ -361,9 +272,6 @@ function nowMs(): number {
  *  `commit.ts` needs the same value and deriving it twice would risk a mismatch —
  *  and a mismatch between a premise's valid time and its decision's would put them
  *  in the wrong order on the timeline. */
-export function occurredAtOf(
-  normalized: NormalizedTranscript,
-  fallback: ISODateString,
-): ISODateString {
+export function occurredAtOf(normalized: NormalizedTranscript, fallback: ISODateString): ISODateString {
   return normalized.occurredAt.length > 0 ? normalized.occurredAt : fallback;
 }

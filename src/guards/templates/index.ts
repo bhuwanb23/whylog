@@ -44,9 +44,7 @@ export interface AttributedGuard {
   readonly source: TemplateSource;
 }
 
-const DISPATCH: Readonly<
-  Partial<Record<DecisionVariable, (input: TemplateInput) => TemplateOutput>>
-> = {
+const DISPATCH: Readonly<Partial<Record<DecisionVariable, (input: TemplateInput) => TemplateOutput>>> = {
   DATABASE: databaseGuards,
   FRAMEWORK: frameworkGuards,
   HOSTING: hostingGuards,
@@ -57,9 +55,7 @@ const DISPATCH: Readonly<
 /** Which variables have a specific template. Printed in the health panel, because "≥80% from
  *  templates" is only meaningful if you can see which slots are covered and which fall through
  *  to the generic strategies. */
-export const TEMPLATED_VARIABLES: readonly DecisionVariable[] = Object.keys(
-  DISPATCH,
-) as DecisionVariable[];
+export const TEMPLATED_VARIABLES: readonly DecisionVariable[] = Object.keys(DISPATCH) as DecisionVariable[];
 
 export function hasTemplate(variable: DecisionVariable): boolean {
   return DISPATCH[variable] !== undefined;
@@ -96,9 +92,7 @@ export function templateGuards(input: TemplateInput): readonly AttributedGuard[]
  *  synthesiser can report "generic only" distinctly from "no template matched at all" — the
  *  first is a coverage gap in the templates, the second is a decision with nothing checkable. */
 export function genericOnly(input: TemplateInput): readonly AttributedGuard[] {
-  return dedupe(
-    genericGuards(input).map((guard): AttributedGuard => ({ guard, source: "generic-value" })),
-  );
+  return dedupe(genericGuards(input).map((guard): AttributedGuard => ({ guard, source: "generic-value" })));
 }
 
 function sourceOf(variable: DecisionVariable): TemplateSource {
@@ -143,10 +137,7 @@ function dedupe(guards: readonly AttributedGuard[]): readonly AttributedGuard[] 
       best.set(key, entry);
       continue;
     }
-    if (
-      byConfidence === 0 &&
-      kindRank(entry.guard.spec.kind) < kindRank(existing.guard.spec.kind)
-    ) {
+    if (byConfidence === 0 && kindRank(entry.guard.spec.kind) < kindRank(existing.guard.spec.kind)) {
       best.set(key, entry);
     }
   }
@@ -169,33 +160,29 @@ function specKey(guard: ProposedGuard): string {
   switch (spec.kind) {
     case "dependency_present":
     case "dependency_absent":
-      return `${spec.kind}\u0000${spec.package}\u0000${String(spec.includeDev ?? spec.kind === "dependency_absent")}`;
+      return spec.kind + "\u0000" + spec.package + "\u0000" + String(spec.includeDev ?? spec.kind === "dependency_absent");
     case "path_glob_exists":
     case "path_glob_absent":
-      return `${spec.kind}\u0000${spec.glob}`;
+      return spec.kind + "\u0000" + spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return `${spec.kind}\u0000${spec.pattern}\u0000${spec.glob}\u0000${String(spec.wordBoundary ?? true)}\u0000${String(spec.caseSensitive ?? false)}`;
+      return (
+        spec.kind + "\u0000" + spec.pattern + "\u0000" + spec.glob +
+        "\u0000" + String(spec.wordBoundary ?? true) + "\u0000" + String(spec.caseSensitive ?? false)
+      );
     case "command_exit_zero":
-      return `${spec.kind}\u0000${spec.command}`;
+      return spec.kind + "\u0000" + spec.command;
     case "llm_judge":
-      return `${spec.kind}\u0000${spec.rubric}\u0000${spec.scopeGlobs.join(",")}`;
+      return spec.kind + "\u0000" + spec.rubric + "\u0000" + spec.scopeGlobs.join(",");
   }
 }
 
 /** How much of a decision the templates cover, for the health panel. */
 export function describeCoverage(variable: DecisionVariable): string {
   return hasTemplate(variable)
-    ? `${variable} has a specific template, plus the generic rejection / value / scope strategies.`
-    : `${variable} has no specific template. The generic strategies still apply: every rejected alternative must be absent, the chosen value is checked if it looks like a package or path, and the decision's own globs must match something.`;
+    ? variable + " has a specific template, plus the generic rejection / value / scope strategies."
+    : variable + " has no specific template. The generic strategies still apply: every rejected alternative must be absent, the chosen value is checked if it looks like a package or path, and the decision's own globs must match something.";
 }
 
 export { authGuards, databaseGuards, frameworkGuards, hostingGuards, storageGuards };
-export {
-  genericGuards,
-  globGuards,
-  rejectedGuards,
-  valueGuards,
-  looksLikePackage,
-  looksLikePath,
-} from "./generic";
+export { genericGuards, globGuards, rejectedGuards, valueGuards, looksLikePackage, looksLikePath } from "./generic";

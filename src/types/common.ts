@@ -120,7 +120,8 @@ export const asDecisionId = (s: string): DecisionId => s as DecisionId;
 export const asPremiseId = (s: string): PremiseId => s as PremiseId;
 export const asGuardId = (s: string): GuardId => s as GuardId;
 export const asISO = (s: string): ISODateString => s as ISODateString;
-export const asConfidence = (n: number): Confidence => Math.min(1, Math.max(0, n)) as Confidence;
+export const asConfidence = (n: number): Confidence =>
+  Math.min(1, Math.max(0, n)) as Confidence;
 
 /**
  * The engine used for every operation is reported. Never let the UI imply a

@@ -20,23 +20,17 @@
 
 import { formatEventId } from "@/lib/ids";
 import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
-import type {
-  AnyEvent,
-  DomainEvent,
-  EventPayloadMap,
-  EventType,
-  NewEvent,
-  ValidationResult,
-} from "@/types/events";
-import { type ValidationContext, validateEvent } from "./event-validation";
 import {
-  type ChainVerification,
-  GENESIS_HASH,
-  hashEvent,
-  linkHash,
-  verifyChain,
-} from "./hash-chain";
+  type AnyEvent,
+  type DomainEvent,
+  type EventType,
+  type EventPayloadMap,
+  type NewEvent,
+  type ValidationResult,
+} from "@/types/events";
+import { GENESIS_HASH, hashEvent, linkHash, verifyChain, type ChainVerification } from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
+import { validateEvent, type ValidationContext } from "./event-validation";
 
 /* -------------------------------------------------------------------------- */
 /* The log                                                                    */
@@ -88,12 +82,7 @@ export function loadLog(
 
 export type AppendOutcome<T extends EventType> =
   | { readonly ok: true; readonly log: EventLog; readonly event: AnyEvent }
-  | {
-      readonly ok: false;
-      readonly log: EventLog;
-      readonly validation: ValidationResult;
-      readonly attempted: T;
-    };
+  | { readonly ok: false; readonly log: EventLog; readonly validation: ValidationResult; readonly attempted: T };
 
 export interface AppendContext {
   readonly now: ISODateString;
@@ -124,10 +113,11 @@ function seal<T extends EventType>(
   draft: EventDraft<T>,
   context: AppendContext,
 ): AnyEvent {
-  const at = draft.at ?? context.now;
+  const rawAt = draft.at ?? context.now;
+  const at = log.lastAt !== null && rawAt < log.lastAt ? log.lastAt : rawAt;
   const occurredAt = draft.occurredAt ?? context.occurredAt ?? at;
 
-  const linked = {
+  const event = {
     id: mintId(log, at),
     type: draft.type,
     at,
@@ -136,13 +126,15 @@ function seal<T extends EventType>(
     payload: draft.payload,
     reason: draft.reason ?? context.reason,
     prevHash: log.headHash,
+    selfHash: "",
     schemaVersion: log.schemaVersion,
   } as unknown as DomainEvent<T, EventPayloadMap[T]>;
 
-  // The content hash rides with the event so that an edit is reported AT the
-  // edited event, not at the next one. It is computed over the content only,
-  // so it survives a re-link onto a different chain.
-  return { ...linked, selfHash: hashEvent(linked) } as AnyEvent;
+  // Per-event content hash, computed after prevHash is assigned. hashEvent
+  // excludes both prevHash and selfHash, so this is stable.
+  (event as unknown as { selfHash: string }).selfHash = hashEvent(event as unknown as DomainEvent);
+
+  return event as AnyEvent;
 }
 
 function contextFor(log: EventLog): ValidationContext {
@@ -200,9 +192,7 @@ export function append<T extends EventType>(
 export function appendBatch(
   log: EventLog,
   drafts: readonly { draft: EventDraft<EventType>; context: AppendContext }[],
-):
-  | { ok: true; log: EventLog; events: AnyEvent[] }
-  | { ok: false; log: EventLog; validation: ValidationResult; failedAt: number } {
+): { ok: true; log: EventLog; events: AnyEvent[] } | { ok: false; log: EventLog; validation: ValidationResult; failedAt: number } {
   let current = log;
   const sealed: AnyEvent[] = [];
 
@@ -262,7 +252,10 @@ export function* iterate(log: EventLog): Generator<AnyEvent> {
 }
 
 /** Filter by type, preserving log order. */
-export function eventsOfType<T extends EventType>(log: EventLog, type: T): readonly AnyEvent[] {
+export function eventsOfType<T extends EventType>(
+  log: EventLog,
+  type: T,
+): readonly AnyEvent[] {
   return log.events.filter((e): e is Extract<AnyEvent, { type: T }> => e.type === type);
 }
 

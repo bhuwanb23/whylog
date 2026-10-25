@@ -30,8 +30,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import { findGlobs } from "@/lib/glob";
 import { contentTokens } from "@/lib/text";
+import { findGlobs } from "@/lib/glob";
 
 export interface RationaleCandidate {
   readonly text: string;
@@ -130,40 +130,12 @@ const DOWNSIDE_MARKERS: readonly string[] = [
 
 /** Quality attributes — the `to achieve` slot's vocabulary. */
 const QUALITY_TERMS: readonly string[] = [
-  "simplicity",
-  "simple",
-  "portability",
-  "portable",
-  "performance",
-  "speed",
-  "fast",
-  "reliability",
-  "reliable",
-  "testability",
-  "testable",
-  "maintainability",
-  "flexibility",
-  "flexible",
-  "control",
-  "predictability",
-  "deterministic",
-  "offline",
-  "zero-config",
-  "zero config",
-  "no deploy",
-  "no infrastructure",
-  "low cost",
-  "free",
-  "cheap",
-  "security",
-  "privacy",
-  "latency",
-  "throughput",
-  "developer experience",
-  "dx",
-  "velocity",
-  "stability",
-  "observability",
+  "simplicity", "simple", "portability", "portable", "performance", "speed", "fast",
+  "reliability", "reliable", "testability", "testable", "maintainability",
+  "flexibility", "flexible", "control", "predictability", "deterministic",
+  "offline", "zero-config", "zero config", "no deploy", "no infrastructure",
+  "low cost", "free", "cheap", "security", "privacy", "latency", "throughput",
+  "developer experience", "dx", "velocity", "stability", "observability",
 ];
 
 /** Concern markers — the `facing` slot. */
@@ -218,11 +190,7 @@ export function extractRationale(text: string, at: number): RationaleCandidate |
   return rationaleIn(text, at, "after") ?? rationaleIn(text, at, "before");
 }
 
-function rationaleIn(
-  text: string,
-  at: number,
-  direction: "after" | "before",
-): RationaleCandidate | null {
+function rationaleIn(text: string, at: number, direction: "after" | "before"): RationaleCandidate | null {
   const windowStart = direction === "after" ? at : Math.max(0, at - RATIONALE_WINDOW);
   const windowEnd = direction === "after" ? Math.min(text.length, at + RATIONALE_WINDOW) : at;
   const window = text.slice(windowStart, windowEnd);
@@ -298,9 +266,7 @@ export function extractAppliesTo(text: string, at: number): readonly string[] {
 }
 
 function extractQuality(text: string, at: number): string | null {
-  const window = text
-    .slice(Math.max(0, at - 120), Math.min(text.length, at + RATIONALE_WINDOW))
-    .toLowerCase();
+  const window = text.slice(Math.max(0, at - 120), Math.min(text.length, at + RATIONALE_WINDOW)).toLowerCase();
   for (const term of QUALITY_TERMS) {
     if (window.includes(term)) return term;
   }
@@ -323,10 +289,7 @@ function extractConcern(text: string, at: number): string | null {
   // No marker: the tokens of the preceding clause are the best available summary
   // of what prompted the decision. Weak, and reported as such by being the last
   // resort rather than a scored candidate.
-  const preceding = window
-    .trim()
-    .split(CLAUSE_END)
-    .filter((s) => s.trim().length > 0);
+  const preceding = window.trim().split(CLAUSE_END).filter((s) => s.trim().length > 0);
   const last = preceding[preceding.length - 1];
   if (last === undefined) return null;
   const tokens = contentTokens(last);
@@ -357,11 +320,7 @@ function readClause(text: string, start: number): { text: string; start: number;
 
 export function describeFields(fields: ClauseFields): string {
   const parts: string[] = [];
-  parts.push(
-    fields.rationale === null
-      ? "no rationale clause"
-      : `rationale via "${fields.rationale.marker}"`,
-  );
+  parts.push(fields.rationale === null ? "no rationale clause" : `rationale via "${fields.rationale.marker}"`);
   parts.push(fields.downside === null ? "no accepted downside" : "accepted downside recovered");
   parts.push(fields.quality === null ? "no quality term" : `quality: ${fields.quality}`);
   parts.push(fields.concern === null ? "no concern" : `concern: ${fields.concern.slice(0, 40)}`);

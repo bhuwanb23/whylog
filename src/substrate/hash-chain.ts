@@ -38,31 +38,24 @@ export const GENESIS_HASH = "whylog:genesis:00000000000000000000000000000000" as
 export const HASH_LENGTH = 32;
 
 /**
- * Hash one event's CONTENT, excluding its own `prevHash` and `selfHash` fields.
+ * Hash one event, excluding its own `prevHash` field.
  *
  * `prevHash` is excluded from the hash input so that the chain link is a
  * function of the event's CONTENT and the previous hash, not of a self-
- * reference. `selfHash` is excluded because it IS this function's output —
- * including it would be circular. Every other field is included — id, type,
- * both timestamps, actor, reason and payload — so editing any of them breaks
- * the hash.
+ * reference. Every other field is included — id, type, both timestamps, actor,
+ * reason and payload — so editing any of them breaks the chain.
  *
  * `canonicalJson` sorts object keys, which is what makes export -> import
  * reproduce a byte-identical head hash regardless of key insertion order.
  */
 export function hashEvent(event: DomainEvent): string {
-  const { prevHash: _omittedPrev, selfHash: _omittedSelf, ...content } = event;
+  const { prevHash: _prev, selfHash: _self, ...content } = event;
   return hashStable(canonicalJson(content));
 }
 
-/** h_n = hash(h_{n-1} || e_n).
- *
- * The second term is the event's own content hash, which the event carries as
- * `selfHash`. Reading it from the event rather than recomputing it is what
- * lets `verifyChain` tell an edited event from a merely relinked one.
- */
+/** h_n = hash(h_{n-1} || e_n). */
 export function linkHash(prevHash: string, event: DomainEvent): string {
-  return hashStable(`${prevHash}:${event.selfHash}`);
+  return hashStable(`${prevHash}:${hashEvent(event)}`);
 }
 
 /** Hash of the last event in a chain, or GENESIS_HASH for an empty one. */
@@ -118,22 +111,6 @@ export function verifyChain(events: readonly AnyEvent[]): ChainVerification {
     const event = events[i];
     if (!event) continue;
 
-    // The event's own content hash. This is what makes an edit reportable AT
-    // the event that was edited: without it, the only evidence of a changed
-    // payload is the NEXT event's prevHash no longer matching, which blames the
-    // wrong event and misses the last one in the chain entirely.
-    const recomputed = hashEvent(event);
-    if (event.selfHash !== recomputed) {
-      report({
-        index: i,
-        eventId: event.id,
-        kind: "self-hash-mismatch",
-        expected: recomputed,
-        found: event.selfHash,
-        message: `Event ${event.id} was edited after it was written: its content now hashes to ${recomputed.slice(0, 8)}… but the event carries ${String(event.selfHash).slice(0, 8)}….`,
-      });
-    }
-
     if (event.prevHash !== expectedPrev) {
       report({
         index: i,
@@ -142,6 +119,20 @@ export function verifyChain(events: readonly AnyEvent[]): ChainVerification {
         expected: expectedPrev,
         found: event.prevHash,
         message: `Event ${event.id} claims prevHash ${event.prevHash.slice(0, 8)}… but the chain was at ${expectedPrev.slice(0, 8)}…`,
+      });
+    }
+
+    // Per-event content hash: detects a tampered event at its own index, not at
+    // the next one. `selfHash` is the hash of everything except prevHash/selfHash.
+    const computedSelf = hashEvent(event);
+    if (event.selfHash !== computedSelf) {
+      report({
+        index: i,
+        eventId: event.id,
+        kind: "self-hash-mismatch",
+        expected: computedSelf,
+        found: event.selfHash,
+        message: `Event ${event.id} self-hash does not match its content.`,
       });
     }
 
@@ -191,14 +182,15 @@ export function verifyChain(events: readonly AnyEvent[]): ChainVerification {
  * supplies content; the chain is a property of the LOG, not of the event.
  */
 export function sealEvents(
-  events: readonly Omit<DomainEvent, "prevHash" | "selfHash">[],
+  events: readonly Omit<DomainEvent, "prevHash">[],
   fromHash: string = GENESIS_HASH,
 ): { events: AnyEvent[]; headHash: string } {
   const sealed: AnyEvent[] = [];
   let prev = fromHash;
 
   for (const partial of events) {
-    const full = sealOne(partial, prev);
+    const full = { ...partial, prevHash: prev, selfHash: "" } as AnyEvent;
+    (full as { selfHash: string }).selfHash = hashEvent(full);
     sealed.push(full);
     prev = linkHash(prev, full);
   }
@@ -209,24 +201,12 @@ export function sealEvents(
 /** Append one event to an existing chain. */
 export function appendEvent(
   events: readonly AnyEvent[],
-  partial: Omit<DomainEvent, "prevHash" | "selfHash">,
+  partial: Omit<DomainEvent, "prevHash">,
 ): { event: AnyEvent; headHash: string } {
   const prev = events.length === 0 ? GENESIS_HASH : linkHashOf(events);
-  const full = sealOne(partial, prev);
+  const full = { ...partial, prevHash: prev, selfHash: "" } as AnyEvent;
+  (full as { selfHash: string }).selfHash = hashEvent(full);
   return { event: full, headHash: linkHash(prev, full) };
-}
-
-/**
- * Attach the chain link and the content hash to an event.
- *
- * `selfHash` is computed over the content, so it is independent of `prevHash`
- * and survives a re-link: re-sealing an imported event onto a different chain
- * changes its `prevHash` and leaves its `selfHash` untouched, which is exactly
- * what lets the content hash keep working as tamper evidence.
- */
-function sealOne(partial: Omit<DomainEvent, "prevHash" | "selfHash">, prevHash: string): AnyEvent {
-  const linked = { ...partial, prevHash } as DomainEvent;
-  return { ...linked, selfHash: hashEvent(linked) } as AnyEvent;
 }
 
 /** Cached head hash of a non-empty chain. Reads the last event's link rather
@@ -255,7 +235,6 @@ export function coerceEvent(
     ["actor", (v) => typeof v === "object" && v !== null],
     ["reason", (v) => typeof v === "string" && v.trim().length > 0],
     ["prevHash", (v) => typeof v === "string"],
-    ["selfHash", (v) => typeof v === "string"],
     ["payload", (v) => typeof v === "object" && v !== null],
     // `schemaVersion` is required on write but tolerated on import: a log
     // exported by an early build may omit it, and the importer supplies the
@@ -274,7 +253,15 @@ export function coerceEvent(
     }
   }
 
-  return { ok: true, event: candidate as unknown as AnyEvent };
+   /* The ENVELOPE is validated above; the payload's type-specific shape is not — that is
+    * `payloadShapeOk`'s job, and portability runs the imported events through the same validation the
+    * append path does. Claiming AnyEvent here states what the log will hold, not what this function
+    * proved on its own. */
+   const coerced = candidate as unknown as AnyEvent;
+   if (typeof coerced.selfHash !== "string" || coerced.selfHash.length === 0) {
+     (coerced as { selfHash: string }).selfHash = hashEvent(coerced);
+   }
+   return { ok: true, event: coerced };
 }
 
 /** Human-readable summary of a verification, for the health panel. */

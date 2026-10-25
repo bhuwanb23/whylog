@@ -32,12 +32,14 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 import type { ExtractionRun } from "@/extraction/types";
 import type { ResolvedCandidate } from "@/extraction/types";
+import type { ConfidenceTier, ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
 import { tierOf } from "@/extraction/types";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
-import type { ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
+
+
 
 /* -------------------------------------------------------------------------- */
 /* From an uncommitted run                                                    */
@@ -156,8 +158,13 @@ export function queueFromState(state: GraphState): readonly ReviewItem[] {
   }
 
   for (const alternative of state.alternatives.values()) {
-    if (alternative.provenance === undefined) continue;
-    items.push(itemFromAlternative(alternative));
+    /* `snippet` is REQUIRED on the node, so there is no missing-provenance case to skip. What can be
+     * missing is quotable TEXT, and an alternative with none cannot be checked against the
+     * transcript — queueing it would ask the human to confirm something unconfirmable. */
+    if (alternative.snippet.text.length === 0) continue;
+    /* An alternative records no origin or engine of its own; it inherits them from the decision it
+     * was rejected in favour of, which is the only honest source. */
+    items.push(itemFromAlternative(alternative, state.decisions.get(alternative.decisionId) ?? null));
   }
 
   return items;
@@ -193,11 +200,14 @@ function itemFromPremise(premise: Premise): ReviewItem {
     id: premise.id,
     title: `${premise.type}.${premise.predicate}`,
     detail: premise.text,
-    quote: premise.provenance.snippet.text,
+    quote: premise.evidence[0]?.span?.text ?? "",
     confidence,
     tier: tierOf(confidence),
-    origin: premise.provenance.origin.replace(/_/g, " "),
-    engine: premise.provenance.extractedBy.model,
+    /* A Premise node records neither an origin nor an engine: its provenance lives on its EVIDENCE,
+     * one entry per independent observation. The first observation's kind is the closest honest
+     * answer, and there is no engine to name — the field that produced one before did not exist. */
+    origin: premise.evidence[0]?.kind ?? "unknown",
+    engine: "unknown",
     expanded: tierOf(confidence) !== "low" && !derived,
     resolution: `corroborated ${premise.corroboration}×`,
     conflictsWith: [],
@@ -206,7 +216,7 @@ function itemFromPremise(premise: Premise): ReviewItem {
   };
 }
 
-function itemFromAlternative(alternative: RejectedAlternative): ReviewItem {
+function itemFromAlternative(alternative: RejectedAlternative, decision: Decision | null): ReviewItem {
   const confidence = alternative.confidence;
   return {
     key: alternative.id,
@@ -214,11 +224,11 @@ function itemFromAlternative(alternative: RejectedAlternative): ReviewItem {
     id: alternative.id,
     title: `rejected: ${alternative.value}`,
     detail: alternative.whyRejected ?? "no reason recovered — stored, but it will never pre-empt",
-    quote: alternative.provenance?.snippet.text ?? "",
+    quote: alternative.snippet.text,
     confidence,
     tier: tierOf(confidence),
-    origin: alternative.provenance?.origin.replace(/_/g, " ") ?? "unknown",
-    engine: alternative.provenance?.extractedBy.model ?? "unknown",
+    origin: decision?.provenance?.origin.replace(/_/g, " ") ?? "unknown",
+    engine: decision?.provenance?.extractedBy.model ?? "unknown",
     expanded: false,
     resolution: `against ${alternative.decisionId}`,
     conflictsWith: [],
@@ -322,8 +332,7 @@ export interface QueueSummary {
 }
 
 export function summariseQueue(items: readonly ReviewItem[]): QueueSummary {
-  const count = (predicate: (item: ReviewItem) => boolean): number =>
-    items.filter(predicate).length;
+  const count = (predicate: (item: ReviewItem) => boolean): number => items.filter(predicate).length;
 
   return {
     total: items.length,
@@ -359,9 +368,7 @@ export function describeQueue(summary: QueueSummary): string {
   if (summary.derived > 0) parts.push(`${summary.derived} derived rather than quoted — read those`);
   if (summary.conflicts > 0) parts.push(`${summary.conflicts} conflict with a live decision`);
   if (summary.reviewed > 0) {
-    parts.push(
-      `${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`,
-    );
+    parts.push(`${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`);
   }
   return parts.join(" · ");
 }

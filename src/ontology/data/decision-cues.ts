@@ -49,19 +49,27 @@ export interface DecisionCue {
    *  `proposed` modality rather than `asserted`. ONLY asserted modality creates
    *  an IN-labelled node, so this field is doing real work. */
   readonly speculative: boolean;
+  /**
+   * True for phrases that mark the WHY or the CONDITION beside a decision rather than the decision
+   * itself: "because", "since", "so that", "in order to", "as long as".
+   *
+   * They stay in this table because they are good EPISODE BOUNDARY markers — the negotiation is where
+   * the rationale appears, and `segmentEpisodes` reads this table. But `recoverOne` must not mint a
+   * decision from them. Doing so emits a SECOND candidate for a decision the real cue already found,
+   * carrying a different span and often a different variable, which the matcher cannot align to the
+   * label: one true decision becomes one false negative and one false positive. `rationale.ts` and
+   * `premise-cues.ts` already own these phrases for the jobs they are actually for.
+   *
+   * Optional so the 115 cues that do mark decisions need not carry a redundant flag.
+   */
+  readonly rationaleOnly?: boolean;
 }
 
 export const DECISION_CUES: readonly DecisionCue[] = [
   /* ---- committed, past tense: the strongest signals ---- */
   { phrase: "decided to", direction: "accept", weight: 0.95, valueAfter: true, speculative: false },
   { phrase: "decided on", direction: "accept", weight: 0.95, valueAfter: true, speculative: false },
-  {
-    phrase: "decided against",
-    direction: "reject",
-    weight: 0.95,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "decided against", direction: "reject", weight: 0.95, valueAfter: true, speculative: false },
   { phrase: "we decided", direction: "accept", weight: 0.95, valueAfter: true, speculative: false },
   { phrase: "i decided", direction: "accept", weight: 0.95, valueAfter: true, speculative: false },
   { phrase: "decision:", direction: "accept", weight: 0.98, valueAfter: true, speculative: false },
@@ -75,20 +83,8 @@ export const DECISION_CUES: readonly DecisionCue[] = [
   { phrase: "picked", direction: "accept", weight: 0.85, valueAfter: true, speculative: false },
   { phrase: "settled on", direction: "accept", weight: 0.9, valueAfter: true, speculative: false },
   { phrase: "opted for", direction: "accept", weight: 0.88, valueAfter: true, speculative: false },
-  {
-    phrase: "sticking with",
-    direction: "accept",
-    weight: 0.85,
-    valueAfter: true,
-    speculative: false,
-  },
-  {
-    phrase: "committed to",
-    direction: "accept",
-    weight: 0.88,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "sticking with", direction: "accept", weight: 0.85, valueAfter: true, speculative: false },
+  { phrase: "committed to", direction: "accept", weight: 0.88, valueAfter: true, speculative: false },
   { phrase: "locked in", direction: "accept", weight: 0.85, valueAfter: true, speculative: false },
   { phrase: "final call", direction: "accept", weight: 0.9, valueAfter: true, speculative: false },
 
@@ -108,13 +104,7 @@ export const DECISION_CUES: readonly DecisionCue[] = [
 
   /* ---- explicit rejection: the alternative-mining cues ---- */
   { phrase: "instead of", direction: "pivot", weight: 0.92, valueAfter: false, speculative: false },
-  {
-    phrase: "rather than",
-    direction: "pivot",
-    weight: 0.92,
-    valueAfter: false,
-    speculative: false,
-  },
+  { phrase: "rather than", direction: "pivot", weight: 0.92, valueAfter: false, speculative: false },
   { phrase: "not using", direction: "reject", weight: 0.9, valueAfter: true, speculative: false },
   { phrase: "don't use", direction: "reject", weight: 0.9, valueAfter: true, speculative: false },
   { phrase: "dont use", direction: "reject", weight: 0.9, valueAfter: true, speculative: false },
@@ -126,34 +116,16 @@ export const DECISION_CUES: readonly DecisionCue[] = [
   { phrase: "skip", direction: "reject", weight: 0.72, valueAfter: true, speculative: false },
   { phrase: "skipping", direction: "reject", weight: 0.74, valueAfter: true, speculative: false },
   { phrase: "no need for", direction: "reject", weight: 0.8, valueAfter: true, speculative: false },
-  {
-    phrase: "out of scope",
-    direction: "reject",
-    weight: 0.78,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "out of scope", direction: "reject", weight: 0.78, valueAfter: true, speculative: false },
   { phrase: "too heavy", direction: "reject", weight: 0.75, valueAfter: false, speculative: false },
   { phrase: "overkill", direction: "reject", weight: 0.8, valueAfter: false, speculative: false },
 
   /* ---- present tense, plain assertion ---- */
   { phrase: "we use", direction: "accept", weight: 0.85, valueAfter: true, speculative: false },
-  {
-    phrase: "we're using",
-    direction: "accept",
-    weight: 0.88,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "we're using", direction: "accept", weight: 0.88, valueAfter: true, speculative: false },
   { phrase: "using", direction: "accept", weight: 0.6, valueAfter: true, speculative: false },
   { phrase: "it's", direction: "neutral", weight: 0.4, valueAfter: true, speculative: false },
-  {
-    phrase: "the stack is",
-    direction: "accept",
-    weight: 0.9,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "the stack is", direction: "accept", weight: 0.9, valueAfter: true, speculative: false },
   { phrase: "stack:", direction: "accept", weight: 0.9, valueAfter: true, speculative: false },
   { phrase: "we'll use", direction: "accept", weight: 0.8, valueAfter: true, speculative: false },
   { phrase: "will use", direction: "accept", weight: 0.78, valueAfter: true, speculative: false },
@@ -166,44 +138,20 @@ export const DECISION_CUES: readonly DecisionCue[] = [
   { phrase: "should we", direction: "neutral", weight: 0.35, valueAfter: true, speculative: true },
   { phrase: "could we", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
   { phrase: "we could", direction: "neutral", weight: 0.35, valueAfter: true, speculative: true },
-  {
-    phrase: "might be worth",
-    direction: "neutral",
-    weight: 0.3,
-    valueAfter: true,
-    speculative: true,
-  },
+  { phrase: "might be worth", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
   { phrase: "consider", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
-  {
-    phrase: "considering",
-    direction: "neutral",
-    weight: 0.32,
-    valueAfter: true,
-    speculative: true,
-  },
-  {
-    phrase: "thinking about",
-    direction: "neutral",
-    weight: 0.3,
-    valueAfter: true,
-    speculative: true,
-  },
+  { phrase: "considering", direction: "neutral", weight: 0.32, valueAfter: true, speculative: true },
+  { phrase: "thinking about", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
   { phrase: "maybe", direction: "neutral", weight: 0.2, valueAfter: true, speculative: true },
   { phrase: "one option", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
   { phrase: "an option", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
-  {
-    phrase: "alternative",
-    direction: "neutral",
-    weight: 0.35,
-    valueAfter: true,
-    speculative: true,
-  },
+  { phrase: "alternative", direction: "neutral", weight: 0.35, valueAfter: true, speculative: true },
   { phrase: "trade-off", direction: "neutral", weight: 0.4, valueAfter: true, speculative: true },
   { phrase: "tradeoff", direction: "neutral", weight: 0.4, valueAfter: true, speculative: true },
   { phrase: "downside", direction: "neutral", weight: 0.45, valueAfter: true, speculative: true },
   { phrase: "if we ever", direction: "neutral", weight: 0.3, valueAfter: true, speculative: true },
 
-  /* ---- human acceptance of a proposal the agent has just made --------------
+    /* ---- human acceptance of a proposal the agent has just made --------------
    *
    * The single most common way a decision is actually reached in a transcript: the
    * agent proposes, the human says one word. "deal. Vite + React + Tailwind instead
@@ -223,28 +171,10 @@ export const DECISION_CUES: readonly DecisionCue[] = [
   { phrase: "fine.", direction: "accept", weight: 0.75, valueAfter: false, speculative: false },
   { phrase: "agreed.", direction: "accept", weight: 0.85, valueAfter: false, speculative: false },
   { phrase: "noted:", direction: "accept", weight: 0.7, valueAfter: true, speculative: false },
-  {
-    phrase: "let's do that",
-    direction: "accept",
-    weight: 0.85,
-    valueAfter: false,
-    speculative: false,
-  },
-  {
-    phrase: "let's do it",
-    direction: "accept",
-    weight: 0.8,
-    valueAfter: false,
-    speculative: false,
-  },
+  { phrase: "let's do that", direction: "accept", weight: 0.85, valueAfter: false, speculative: false },
+  { phrase: "let's do it", direction: "accept", weight: 0.8, valueAfter: false, speculative: false },
   { phrase: "ship it", direction: "accept", weight: 0.8, valueAfter: false, speculative: false },
-  {
-    phrase: "sounds good",
-    direction: "accept",
-    weight: 0.65,
-    valueAfter: false,
-    speculative: false,
-  },
+  { phrase: "sounds good", direction: "accept", weight: 0.65, valueAfter: false, speculative: false },
 
   /* ---- commitment in the future tense ------------------------------------
    *
@@ -255,42 +185,12 @@ export const DECISION_CUES: readonly DecisionCue[] = [
    * ------------------------------------------------------------------------ */
   { phrase: "we'll do", direction: "accept", weight: 0.85, valueAfter: true, speculative: false },
   { phrase: "we'll keep", direction: "accept", weight: 0.8, valueAfter: true, speculative: false },
-  {
-    phrase: "we'll go with",
-    direction: "accept",
-    weight: 0.9,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "we'll go with", direction: "accept", weight: 0.9, valueAfter: true, speculative: false },
   { phrase: "i'll use", direction: "accept", weight: 0.8, valueAfter: true, speculative: false },
-  {
-    phrase: "we're going with",
-    direction: "accept",
-    weight: 0.9,
-    valueAfter: true,
-    speculative: false,
-  },
-  {
-    phrase: "we're dropping",
-    direction: "reject",
-    weight: 0.9,
-    valueAfter: true,
-    speculative: false,
-  },
-  {
-    phrase: "we're skipping",
-    direction: "reject",
-    weight: 0.85,
-    valueAfter: true,
-    speculative: false,
-  },
-  {
-    phrase: "let's go with",
-    direction: "accept",
-    weight: 0.85,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "we're going with", direction: "accept", weight: 0.9, valueAfter: true, speculative: false },
+  { phrase: "we're dropping", direction: "reject", weight: 0.9, valueAfter: true, speculative: false },
+  { phrase: "we're skipping", direction: "reject", weight: 0.85, valueAfter: true, speculative: false },
+  { phrase: "let's go with", direction: "accept", weight: 0.85, valueAfter: true, speculative: false },
   { phrase: "let's drop", direction: "reject", weight: 0.85, valueAfter: true, speculative: false },
   { phrase: "let's skip", direction: "reject", weight: 0.8, valueAfter: true, speculative: false },
 
@@ -304,20 +204,8 @@ export const DECISION_CUES: readonly DecisionCue[] = [
   { phrase: "i'd use", direction: "accept", weight: 0.75, valueAfter: true, speculative: true },
   { phrase: "i'd go with", direction: "accept", weight: 0.75, valueAfter: true, speculative: true },
   { phrase: "i would use", direction: "accept", weight: 0.7, valueAfter: true, speculative: true },
-  {
-    phrase: "i would go with",
-    direction: "accept",
-    weight: 0.7,
-    valueAfter: true,
-    speculative: true,
-  },
-  {
-    phrase: "my recommendation is",
-    direction: "accept",
-    weight: 0.8,
-    valueAfter: true,
-    speculative: true,
-  },
+  { phrase: "i would go with", direction: "accept", weight: 0.7, valueAfter: true, speculative: true },
+  { phrase: "my recommendation is", direction: "accept", weight: 0.8, valueAfter: true, speculative: true },
   { phrase: "i recommend", direction: "accept", weight: 0.75, valueAfter: true, speculative: true },
 
   /* ---- the conclusion of a Socratic exchange -----------------------------
@@ -332,91 +220,25 @@ export const DECISION_CUES: readonly DecisionCue[] = [
    * ------------------------------------------------------------------------ */
   { phrase: "then no ", direction: "reject", weight: 0.8, valueAfter: true, speculative: false },
   { phrase: "then we ", direction: "accept", weight: 0.6, valueAfter: false, speculative: true },
-  {
-    phrase: "is buying you nothing",
-    direction: "reject",
-    weight: 0.8,
-    valueAfter: false,
-    speculative: false,
-  },
-  {
-    phrase: "is pure cost",
-    direction: "reject",
-    weight: 0.85,
-    valueAfter: false,
-    speculative: false,
-  },
-  {
-    phrase: "pure overhead",
-    direction: "reject",
-    weight: 0.8,
-    valueAfter: false,
-    speculative: false,
-  },
-  {
-    phrase: "not worth it",
-    direction: "reject",
-    weight: 0.8,
-    valueAfter: false,
-    speculative: false,
-  },
-  {
-    phrase: "overkill for",
-    direction: "reject",
-    weight: 0.8,
-    valueAfter: false,
-    speculative: false,
-  },
-  {
-    phrase: "absurd for",
-    direction: "reject",
-    weight: 0.75,
-    valueAfter: false,
-    speculative: false,
-  },
+  { phrase: "is buying you nothing", direction: "reject", weight: 0.8, valueAfter: false, speculative: false },
+  { phrase: "is pure cost", direction: "reject", weight: 0.85, valueAfter: false, speculative: false },
+  { phrase: "pure overhead", direction: "reject", weight: 0.8, valueAfter: false, speculative: false },
+  { phrase: "not worth it", direction: "reject", weight: 0.8, valueAfter: false, speculative: false },
+  { phrase: "overkill for", direction: "reject", weight: 0.8, valueAfter: false, speculative: false },
+  { phrase: "absurd for", direction: "reject", weight: 0.75, valueAfter: false, speculative: false },
   { phrase: "instead", direction: "pivot", weight: 0.6, valueAfter: false, speculative: false },
 
-  /* ---- rationale markers: not decisions, but they bound the episode ---- */
-  { phrase: "because", direction: "neutral", weight: 0.5, valueAfter: true, speculative: false },
-  { phrase: "since", direction: "neutral", weight: 0.4, valueAfter: true, speculative: false },
-  {
-    phrase: "the reason is",
-    direction: "neutral",
-    weight: 0.6,
-    valueAfter: true,
-    speculative: false,
-  },
-  { phrase: "so that", direction: "neutral", weight: 0.45, valueAfter: true, speculative: false },
-  {
-    phrase: "in order to",
-    direction: "neutral",
-    weight: 0.45,
-    valueAfter: true,
-    speculative: false,
-  },
-  {
-    phrase: "given that",
-    direction: "neutral",
-    weight: 0.55,
-    valueAfter: true,
-    speculative: false,
-  },
+/* ---- rationale markers: not decisions, but they bound the episode ---- */
+  { phrase: "because", direction: "neutral", weight: 0.5, valueAfter: true, speculative: false , rationaleOnly: true },
+  { phrase: "since", direction: "neutral", weight: 0.4, valueAfter: true, speculative: false , rationaleOnly: true },
+  { phrase: "the reason is", direction: "neutral", weight: 0.6, valueAfter: true, speculative: false },
+  { phrase: "so that", direction: "neutral", weight: 0.45, valueAfter: true, speculative: false , rationaleOnly: true },
+  { phrase: "in order to", direction: "neutral", weight: 0.45, valueAfter: true, speculative: false , rationaleOnly: true },
+  { phrase: "given that", direction: "neutral", weight: 0.55, valueAfter: true, speculative: false },
   { phrase: "assuming", direction: "neutral", weight: 0.55, valueAfter: true, speculative: false },
-  { phrase: "as long as", direction: "neutral", weight: 0.5, valueAfter: true, speculative: false },
-  {
-    phrase: "the catch is",
-    direction: "neutral",
-    weight: 0.55,
-    valueAfter: true,
-    speculative: false,
-  },
-  {
-    phrase: "accepting that",
-    direction: "neutral",
-    weight: 0.6,
-    valueAfter: true,
-    speculative: false,
-  },
+  { phrase: "as long as", direction: "neutral", weight: 0.5, valueAfter: true, speculative: false , rationaleOnly: true },
+  { phrase: "the catch is", direction: "neutral", weight: 0.55, valueAfter: true, speculative: false },
+  { phrase: "accepting that", direction: "neutral", weight: 0.6, valueAfter: true, speculative: false },
 ];
 
 /** Index by phrase for O(1) lookup during matching. */

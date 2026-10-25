@@ -86,7 +86,7 @@ export interface EngineMetric {
 }
 
 export function describeEngineId(engine: EngineId): string {
-  return engine.kind + (engine.model.length > 0 ? `/${engine.model}` : "");
+  return engine.kind + (engine.model.length > 0 ? "/" + engine.model : "");
 }
 
 /** Precision, recall and F1 from raw counts. Returns zeros rather than NaN when a denominator is
@@ -97,10 +97,8 @@ export function precisionRecall(
   falsePositives: number,
   falseNegatives: number,
 ): PrecisionRecall {
-  const precision =
-    truePositives + falsePositives === 0 ? 0 : truePositives / (truePositives + falsePositives);
-  const recall =
-    truePositives + falseNegatives === 0 ? 0 : truePositives / (truePositives + falseNegatives);
+  const precision = truePositives + falsePositives === 0 ? 0 : truePositives / (truePositives + falsePositives);
+  const recall = truePositives + falseNegatives === 0 ? 0 : truePositives / (truePositives + falseNegatives);
   const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
 
   return { precision, recall, f1, truePositives, falsePositives, falseNegatives };
@@ -126,13 +124,11 @@ export function precisionAtK(relevantInTopK: number, k: number): number {
 export const COMPARATORS: Readonly<Partial<Record<MetricId, { source: string; value: string }>>> = {
   "decision-extraction": {
     source: "RecovAr (docs/05 §4.1)",
-    value:
-      "75% recall / 77% precision on commit-message rationale; Kantara reports F1 0.70–0.75 on contradictions",
+    value: "75% recall / 77% precision on commit-message rationale; Kantara reports F1 0.70–0.75 on contradictions",
   },
   "premise-extraction": {
     source: "none published",
-    value:
-      "No system surveyed extracts premises from dialogue. This is new territory, so the number has no comparator and is reported as such.",
+    value: "No system surveyed extracts premises from dialogue. This is new territory, so the number has no comparator and is reported as such.",
   },
   "alternative-precision": {
     source: "ARGUS (arXiv:2604.10345)",
@@ -140,43 +136,35 @@ export const COMPARATORS: Readonly<Partial<Record<MetricId, { source: string; va
   },
   "contradiction-recall-l1": {
     source: "Kantara (arXiv:2506.11005)",
-    value:
-      "Reported 396 contradictory pairs found over the Linux kernel at F1 0.70–0.75, but published COUNTS rather than recall over a planted set",
+    value: "Reported 396 contradictory pairs found over the Linux kernel at F1 0.70–0.75, but published COUNTS rather than recall over a planted set",
   },
   "invalidation-recall-l2": {
     source: "none published",
-    value:
-      "No system surveyed detects that a decision's premise became false without the decision being mentioned. There is no comparator because there is no component.",
+    value: "No system surveyed detects that a decision's premise became false without the decision being mentioned. There is no comparator because there is no component.",
   },
   "cascade-correctness-l3": {
     source: "none published",
-    value:
-      "No system surveyed cascades a retraction and then STOPS where independent support exists.",
+    value: "No system surveyed cascades a retraction and then STOPS where independent support exists.",
   },
   "survivor-preservation": {
     source: "none published",
-    value:
-      "Over-retraction is the failure mode that kills this product, and nobody measures it because nobody cascades.",
+    value: "Over-retraction is the failure mode that kills this product, and nobody measures it because nobody cascades.",
   },
   "answer-groundedness": {
     source: "RepoRationale",
-    value:
-      "Specifies the evidence contract (bounded searches, citations resolve in-run, insufficient-evidence first-class) but publishes no quantity",
+    value: "Specifies the evidence contract (bounded searches, citations resolve in-run, insufficient-evidence first-class) but publishes no quantity",
   },
   "retrieval-precision": {
     source: "agentmemory",
-    value:
-      "R@5 95.2% with BM25 + vector + graph and RRF — a DIFFERENT task (memory recall over conversation turns, not decisions over a corpus)",
+    value: "R@5 95.2% with BM25 + vector + graph and RRF — a DIFFERENT task (memory recall over conversation turns, not decisions over a corpus)",
   },
   "guard-precision": {
     source: "fitness-function literature",
-    value:
-      "Qualitative throughout. No published precision figure, because no surveyed tool generates the check from the decision.",
+    value: "Qualitative throughout. No published precision figure, because no surveyed tool generates the check from the decision.",
   },
   "modality-precision": {
     source: "none published",
-    value:
-      "Of the statements the system DECLINED to turn into decisions, how many were correctly declined. The guard against hypotheticals becoming nodes.",
+    value: "Of the statements the system DECLINED to turn into decisions, how many were correctly declined. The guard against hypotheticals becoming nodes.",
   },
 };
 

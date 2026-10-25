@@ -18,18 +18,19 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { DecisionOrigin, Modality } from "@/types/domain";
 import type { ExtractionResult } from "@/ai/types";
-import type { Modality } from "@/types/domain";
+import type { EpisodeWindow } from "./types";
+import type { ResolvedCandidate } from "./types";
+import { tierOf } from "./types";
 import {
-  type TieredDecision,
   histogram,
   tierAlternative,
   tierDecision,
   tierPremise,
+  type TieredDecision,
 } from "./confidence";
-import { type OriginClassification, classifyOrigin } from "./provenance";
-import type { EpisodeWindow } from "./types";
-import type { ResolvedCandidate } from "./types";
+import { classifyOrigin, type OriginClassification } from "./provenance";
 
 /* -------------------------------------------------------------------------- */
 /* Tiering                                                                    */
@@ -40,10 +41,7 @@ export interface Tiered {
   readonly histogram: ReturnType<typeof histogram>;
 }
 
-export function buildQueue(
-  result: ExtractionResult,
-  origins: readonly OriginClassification[],
-): Tiered {
+export function buildQueue(result: ExtractionResult, origins: readonly OriginClassification[]): Tiered {
   const queue: ResolvedCandidate[] = [];
 
   const decisions = result.decisions.map((candidate, i) =>
@@ -53,11 +51,7 @@ export function buildQueue(
     tierPremise(candidate, candidate.confidence, decisionTierForPremise(decisions, i)),
   );
   const alternatives = result.alternatives.map((candidate) =>
-    tierAlternative(
-      candidate,
-      candidate.confidence,
-      decisions[candidate.decisionRef]?.tier ?? null,
-    ),
+    tierAlternative(candidate, candidate.confidence, decisions[candidate.decisionRef]?.tier ?? null),
   );
 
   decisions.forEach((tiered, i) => {
@@ -77,6 +71,7 @@ export function buildQueue(
       episodeId: null,
       inRefs: candidate.premiseRefs,
       outRefs: [],
+      /* I4: no candidate reaches an event without a human action. Built null; the review layer sets it. */
       action: null,
     });
   });
@@ -98,6 +93,7 @@ export function buildQueue(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      /* I4: no candidate reaches an event without a human action. Built null; the review layer sets it. */
       action: null,
     });
   });
@@ -119,6 +115,7 @@ export function buildQueue(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      /* I4: no candidate reaches an event without a human action. Built null; the review layer sets it. */
       action: null,
     });
   });

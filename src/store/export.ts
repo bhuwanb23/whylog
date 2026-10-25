@@ -30,33 +30,28 @@
  * ---------------------------------------------------------------------------
  */
 
+import { create } from "zustand";
+import type { Actor } from "@/types/common";
+import type { EventType, NewEvent } from "@/types/events";
+import type { DecisionId, ISODateString } from "@/types/common";
+import type { CompiledArtifact, ExportTarget, IntegrityStamp, StampVerification } from "@/types/export";
+import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
 import {
-  type CompileResult,
-  type MergePlan,
   compile,
-  describeBudget,
   describeCompile,
   describeExportPhase,
   describeMergePlan,
-  explainVerification,
   importedEvent,
   mismatchPayload,
   planMerge,
   verifyStamp,
+  explainVerification,
+  describeBudget,
+  type CompileResult,
+  type MergePlan,
 } from "@/export";
 import { nowISO } from "@/lib/format";
-import { type Result, err, ok } from "@/lib/result";
-import type { Actor } from "@/types/common";
-import type { DecisionId, ISODateString } from "@/types/common";
-import type { EventType, NewEvent } from "@/types/events";
-import type {
-  CompiledArtifact,
-  ExportTarget,
-  IntegrityStamp,
-  StampVerification,
-} from "@/types/export";
-import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
-import { create } from "zustand";
+import { ok, err, type Result } from "@/lib/result";
 import { useWhyLog } from "./whylog";
 
 /** `system`, not `engine`: compiling a graph into Markdown is deterministic, and stamping it as
@@ -131,15 +126,13 @@ export const useExport = create<ExportState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message =
-        "The log is read-only: its hash chain is broken. An export needs to append the events that record it.";
+      const message = "The log is read-only: its hash chain is broken. An export needs to append the events that record it.";
       set({ status: "failed", error: message });
       return err(message);
     }
 
     if (whylog.state.decisions.size === 0) {
-      const message =
-        "The log holds no decisions, so there is nothing to compile. Import a transcript first.";
+      const message = "The log holds no decisions, so there is nothing to compile. Import a transcript first.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -158,9 +151,7 @@ export const useExport = create<ExportState>()((set, get) => ({
         includeOut: get().includeOut,
         includeSuperseded: get().includeSuperseded,
         ...(get().projectName.trim().length === 0 ? {} : { projectName: get().projectName.trim() }),
-        engineAtGeneration:
-          whylog.engineId.kind +
-          (whylog.engineId.model.length > 0 ? `/${whylog.engineId.model}` : ""),
+        engineAtGeneration: whylog.engineId.kind + (whylog.engineId.model.length > 0 ? "/" + whylog.engineId.model : ""),
       });
 
       /* ---- a blocked export keeps its explanation ---- */
@@ -173,14 +164,18 @@ export const useExport = create<ExportState>()((set, get) => ({
           error: null,
         });
         return err(
-          `Blocked by the pre-export consistency gate. ${result.gate.conflicts.length} conflicting pair(s). Nothing was written — see the explanation below.`,
+          "Blocked by the pre-export consistency gate. " +
+            result.gate.conflicts.length + " conflicting pair(s). Nothing was written — see the explanation below.",
         );
       }
 
       /* ---- commit the events that record the export ---- */
       if (result.drafts.length > 0) {
         const committed = whylog.recordBatch(result.drafts, {
-          reason: `Compiled ${result.artifacts.length} export artifact(s) from log head ${result.stamp.headHash.slice(0, 12)} and stamped them, so each file can be tied back to the state that produced it.`,
+          reason:
+            "Compiled " + result.artifacts.length + " export artifact(s) from log head " +
+            result.stamp.headHash.slice(0, 12) + " and stamped them, so each file can be tied back to " +
+            "the state that produced it.",
           actor: EXPORT_ACTOR,
           occurredAt: nowISO() as ISODateString,
         });
@@ -207,9 +202,7 @@ export const useExport = create<ExportState>()((set, get) => ({
   toggleTarget: (target) => {
     const current = get().targets;
     set({
-      targets: current.includes(target)
-        ? current.filter((entry) => entry !== target)
-        : [...current, target],
+      targets: current.includes(target) ? current.filter((entry) => entry !== target) : [...current, target],
     });
   },
 
@@ -244,25 +237,29 @@ export const useExport = create<ExportState>()((set, get) => ({
 
     const payload = mismatchPayload(path, current, verification);
     const at = nowISO() as ISODateString;
-    const reason = `A manual check of ${path} found it does not correspond to the current log. Expected head ${payload.expectedHead.slice(0, 12) || "(empty log)"}, found ${payload.foundHead === null ? "no stamp" : payload.foundHead.slice(0, 12)}. Recorded because an artifact that no longer matches its log is either stale or has been rewritten — and an agent reading a rewritten rule is following something nobody decided.`;
 
     const draft: NewEvent<EventType> = {
       type: "ExportIntegrityMismatch",
       payload,
       actor: EXPORT_ACTOR,
-      reason,
+      reason:
+        "A manual check of " + path + " found it does not correspond to the current log. Expected head " +
+        (payload.expectedHead.slice(0, 12) || "(empty log)") + ", found " +
+        (payload.foundHead === null ? "no stamp" : payload.foundHead.slice(0, 12)) +
+        ". Recorded because an artifact that no longer matches its log is either stale or has been " +
+        "rewritten — and an agent reading a rewritten rule is following something nobody decided.",
       at,
       occurredAt: at,
     };
 
     const committed = whylog.recordBatch([draft], {
-      reason,
+      reason: draft.reason,
       actor: EXPORT_ACTOR,
       occurredAt: at,
     });
 
     if (!committed.ok) {
-      return err(`The mismatch was detected but could not be recorded: ${committed.error}`);
+      return err("The mismatch was detected but could not be recorded: " + committed.error);
     }
 
     return ok(check);
@@ -332,7 +329,10 @@ export function describeSelectedBudget(state: ExportState): string {
   const artifact = selectedArtifact(state);
   if (artifact === null) return "Nothing compiled yet.";
 
-  return `${artifact.filename}\n${describeBudget(artifact.budget, artifact.contents.split("\n").length, Math.round(artifact.contents.length / 4))}`;
+  return (
+    artifact.filename + "\n" +
+    describeBudget(artifact.budget, artifact.contents.split("\n").length, Math.round(artifact.contents.length / 4))
+  );
 }
 
 export function selectedArtifact(state: ExportState): CompiledArtifact | null {
@@ -348,15 +348,15 @@ export function describeTarget(target: ExportTarget): string {
 
 export function describeStamp(stamp: IntegrityStamp): string {
   return [
-    `Log head           ${stamp.headHash.slice(0, 12)}`,
-    `Generated          ${stamp.generatedAt}`,
-    `Schema             whylog/v${stamp.schemaVersion}`,
-    `Decisions          ${stamp.decisions.total} (IN ${stamp.decisions.inLabel} · OUT ${stamp.decisions.out} · superseded ${stamp.decisions.superseded})`,
-    `Premises           ${stamp.premises.total} (IN ${stamp.premises.inLabel} · OUT ${stamp.premises.out} · contested ${stamp.premises.contested})`,
-    `Compliance         ${Math.round(stamp.compliance * 100)}%`,
-    `Coverage           ${Math.round(stamp.verifiableCoverage * 100)}%`,
-    `Guards             ${stamp.guards.passing} passing / ${stamp.guards.failing} failing`,
-    `Engine             ${stamp.engineAtGeneration}`,
+    "Log head           " + stamp.headHash.slice(0, 12),
+    "Generated          " + stamp.generatedAt,
+    "Schema             whylog/v" + stamp.schemaVersion,
+    "Decisions          " + stamp.decisions.total + " (IN " + stamp.decisions.inLabel + " · OUT " + stamp.decisions.out + " · superseded " + stamp.decisions.superseded + ")",
+    "Premises           " + stamp.premises.total + " (IN " + stamp.premises.inLabel + " · OUT " + stamp.premises.out + " · contested " + stamp.premises.contested + ")",
+    "Compliance         " + Math.round(stamp.compliance * 100) + "%",
+    "Coverage           " + Math.round(stamp.verifiableCoverage * 100) + "%",
+    "Guards             " + stamp.guards.passing + " passing / " + stamp.guards.failing + " failing",
+    "Engine             " + stamp.engineAtGeneration,
     "",
     "Auditability, NOT security. The hash is unsalted and the algorithm is in the source, so",
     "anyone can recompute it — including an agent that has just rewritten the file and the stamp",

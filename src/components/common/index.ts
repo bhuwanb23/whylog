@@ -21,10 +21,4 @@ export { EmptyState, FirstRunState, type EmptyStateProps } from "./EmptyState";
 export { Collapsible, type CollapsibleProps } from "./Collapsible";
 export { ConfidenceBar } from "./ConfidenceBar";
 export { EngineBadge, ModeBadge } from "./EngineBadge";
-export {
-  useKeybinds,
-  describeKeybinds,
-  isTypingTarget,
-  KeyHint,
-  type KeybindAction,
-} from "./Keybind";
+export { useKeybinds, describeKeybinds, isTypingTarget, KeyHint, type KeybindAction } from "./Keybind";

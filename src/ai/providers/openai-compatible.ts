@@ -24,14 +24,8 @@
  * ---------------------------------------------------------------------------
  */
 
+import { EngineError, fromResponse, malformedOutputError, networkError, retryPolicy } from "../errors";
 import type { ProviderId } from "../config";
-import {
-  EngineError,
-  fromResponse,
-  malformedOutputError,
-  networkError,
-  retryPolicy,
-} from "../errors";
 
 export interface ChatMessage {
   readonly role: "system" | "user" | "assistant";
@@ -109,9 +103,7 @@ async function once(
   request: ChatRequest,
 ): Promise<ChatResponse> {
   if (request.signal?.aborted) {
-    throw new EngineError("cancelled", "Cancelled before the request was sent.", {
-      engine: request.model,
-    });
+    throw new EngineError("cancelled", "Cancelled before the request was sent.", { engine: request.model });
   }
 
   const url = ENDPOINTS[provider];
@@ -131,12 +123,9 @@ async function once(
     });
 
     const text = await response.text();
-    if (!response.ok)
-      throw fromResponse(response.status, text.slice(0, MAX_QUOTED_BODY), request.model);
+    if (!response.ok) throw fromResponse(response.status, text.slice(0, MAX_QUOTED_BODY), request.model);
 
-    return provider === "anthropic"
-      ? readAnthropic(text, request.model)
-      : readOpenAi(text, request.model);
+    return provider === "anthropic" ? readAnthropic(text, request.model) : readOpenAi(text, request.model);
   } catch (error) {
     if (error instanceof EngineError) throw error;
     if (controller.signal.aborted && request.signal?.aborted) {
@@ -222,9 +211,7 @@ function headers(
 
 function readOpenAi(raw: string, model: string): ChatResponse {
   const parsed = parseJson(raw, model);
-  const choice = Array.isArray(parsed["choices"])
-    ? (parsed["choices"][0] as Record<string, unknown>)
-    : undefined;
+  const choice = Array.isArray(parsed["choices"]) ? (parsed["choices"][0] as Record<string, unknown>) : undefined;
   const message = choice?.["message"] as Record<string, unknown> | undefined;
   const text = typeof message?.["content"] === "string" ? message["content"] : "";
 
@@ -241,9 +228,7 @@ function readOpenAi(raw: string, model: string): ChatResponse {
 
 function readAnthropic(raw: string, model: string): ChatResponse {
   const parsed = parseJson(raw, model);
-  const blocks = Array.isArray(parsed["content"])
-    ? (parsed["content"] as readonly Record<string, unknown>[])
-    : [];
+  const blocks = Array.isArray(parsed["content"]) ? (parsed["content"] as readonly Record<string, unknown>[]) : [];
   const text = blocks
     .filter((block) => block["type"] === "text" && typeof block["text"] === "string")
     .map((block) => block["text"] as string)
@@ -268,11 +253,7 @@ function parseJson(raw: string, model: string): Record<string, unknown> {
     }
     return parsed as Record<string, unknown>;
   } catch {
-    throw fromResponse(
-      502,
-      `Provider returned something that is not JSON: ${raw.slice(0, 120)}`,
-      model,
-    );
+    throw fromResponse(502, `Provider returned something that is not JSON: ${raw.slice(0, 120)}`, model);
   }
 }
 
@@ -307,11 +288,7 @@ export function extractJson(text: string, model: string): Record<string, unknown
     }
     return parsed as Record<string, unknown>;
   } catch (error) {
-    throw malformedOutputError(
-      candidate.slice(start, Math.min(end + 1, start + MAX_QUOTED_BODY)),
-      model,
-      error,
-    );
+    throw malformedOutputError(candidate.slice(start, Math.min(end + 1, start + MAX_QUOTED_BODY)), model, error);
   }
 }
 

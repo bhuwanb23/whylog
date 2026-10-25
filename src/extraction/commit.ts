@@ -56,15 +56,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import {
-  formatAlternativeId,
-  formatDecisionId,
-  formatEpisodeId,
-  formatJustificationId,
-  formatPremiseId,
-} from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
 import type {
+  Actor,
   AlternativeId,
   Confidence,
   DecisionId,
@@ -72,16 +65,24 @@ import type {
   EpisodeId,
   EventId,
   ISODateString,
+  JustificationId,
   PremiseId,
   TranscriptId,
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import type { Actor } from "@/types/common";
-import type { Justification } from "@/types/domain";
 import type { EventType, JustificationAttachedPayload, NewEvent } from "@/types/events";
-import { isDerivedPremise } from "./review";
+import type { Justification } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
+import {
+  formatAlternativeId,
+  formatDecisionId,
+  formatEpisodeId,
+  formatJustificationId,
+  formatPremiseId,
+} from "@/lib/ids";
 import { isAccepted } from "./types";
 import type { ResolvedCandidate, ReviewAction } from "./types";
+import { isDerivedPremise } from "./review";
 
 export interface CommitInput {
   readonly transcriptId: TranscriptId;
@@ -106,7 +107,10 @@ export interface CommitInput {
    *  approval is not a considered one, and promoting ten decisions to IN in a
    *  single click is how a machine inference ends up driving a cascade. */
   readonly viaBulkApprove?: boolean;
-  readonly actor?: Actor;
+  /** Who is committing. Absent means the human, because committing IS the human's act (I4) —
+   *  the recognisers only ever produce candidates. The previous inline shape
+   *  (`{kind, id}`) matched no variant of `Actor`, so it could never have been passed. */
+  readonly actor?: Actor | undefined;
 }
 
 export interface CommitOk {
@@ -165,10 +169,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   // `contest` is not an acceptance and not a discard: it parks the item. Phase 2
   // turns the Contested queue into proposals; until then a contested item is
   // recorded as a discard so it does not silently vanish, with the human's reason.
-  const accepted = reviewed.filter(
-    (item) =>
-      item.action !== null && item.action.type !== "discard" && item.action.type !== "contest",
-  );
+  const accepted = reviewed.filter((item) => item.action !== null && item.action.type !== "discard" && item.action.type !== "contest");
   const rejected = reviewed.filter((item) => item.action?.type === "discard");
   const contested = reviewed.filter((item) => item.action?.type === "contest");
   if (accepted.length === 0 && rejected.length === 0 && contested.length === 0) {
@@ -177,6 +178,10 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
 
   const drafts: NewEvent<EventType>[] = [];
   const reasons: string[] = [];
+  /* Every event in a commit is stamped with the same actor. Resolved once rather than defaulted at
+   * each of the ten push sites, so a future caller that passes an actor cannot end up with half the
+   * batch attributed one way and half another. */
+  const actor: Actor = input.actor ?? { kind: "human" };
 
   /* ---- id allocation, from the CURRENT counters ---- */
   // Derived from state rather than from a module-level counter, so a failed commit
@@ -201,9 +206,10 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   /* ---- 1. premises ---- */
   let premiseCount = 0;
   let premiseConfirmations = 0;
+  const outListPremiseIds = new Set<PremiseId>();
 
-  for (const item of input.items) {
-    if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) continue;
+  input.items.forEach((item) => {
+    if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) return;
 
     // A merge does not create a node: `PremiseAsserted` on an EXISTING id appends
     // evidence and takes the max confidence, which is what corroboration is.
@@ -215,6 +221,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
     premiseIds.set(item.key, id);
 
     drafts.push({
+      actor,
       type: "PremiseAsserted",
       payload: {
         premiseId: id,
@@ -227,60 +234,32 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         engine: input.engine,
         snippet: item.premise.snippet,
       },
+      reason:
+        `Premise ${id} (${item.premise.type}.${item.premise.predicate}) recovered from ` +
+        `${input.transcriptId} and accepted on review.`,
     });
     premiseCount += 1;
 
     if (item.action?.type === "edit") {
-      drafts.push(
-        reviewEvent(
-          "PremiseCorrected",
-          {
-            premiseId: id,
-            fields: item.action.fields,
-          },
-          `Premise ${id} corrected by hand: ${item.premise.predicate}`,
-          reasons,
-        ),
-      );
-    } else if (isDerivedPremise(item.premise.predicate, item.premise.text)) {
-      /* A DERIVED EXCLUSION is NOT confirmed.
-       *
-       * An exclusion premise describes a condition the decision EXCLUDES —
-       * "more than one process needs to write at once". It is a hypothesis about
-       * what would break the decision, not an observation that it holds.
-       *
-       * Confirming it would label it IN, and an OUT-list premise that is IN
-       * invalidates its justification: the decision is unsound because the thing
-       * it excluded turns out to be true. So confirming every derived exclusion
-       * makes EVERY decision in the log unsound the moment it is written, and
-       * one falsification takes the whole graph with it. That is risk R2 — the
-       * cascade crying wolf — and over-retraction is worse than under-retraction.
-       *
-       * It stays UNKNOWN until somebody OBSERVES it, and an observation is
-       * exactly what makes it IN: the world moved, the excluded condition turned
-       * out to hold, and the decision has to be revisited. That is Doyle's
-       * non-monotonic justification running in the right direction.
-       */
-    } else {
-      drafts.push(
-        reviewEvent(
-          "PremiseConfirmed",
-          { premiseId: id },
-          `Premise ${id} confirmed: ${item.premise.text}`,
-          reasons,
-        ),
-      );
-      premiseConfirmations += 1;
+      drafts.push(reviewEvent("PremiseCorrected", actor, {
+        premiseId: id,
+        fields: item.action.fields,
+      }, `Premise ${id} corrected by hand: ${item.premise.predicate}`, reasons));
     }
-  }
+    // A premise that lands in a decision's OUT-list stays UNKNOWN: confirming it to
+    // IN means "the excluded condition holds", which the JTMS out-list rule reads as
+    // invalidating the justification. The decision list is built in loop 2 (below),
+    // so PremiseConfirmed for out-list members is emitted after that pass. In-list
+    // premises are always confirmed so `validityOf`'s in-list clause can hold.
+  });
 
   /* ---- 2. decisions ---- */
   let decisionCount = 0;
   let approvals = 0;
   let edits = 0;
 
-  for (const item of input.items) {
-    if (item.kind !== "decision" || item.decision === null || !isAccepted(item.action)) continue;
+  input.items.forEach((item) => {
+    if (item.kind !== "decision" || item.decision === null || !isAccepted(item.action)) return;
 
     const id =
       item.resolution.action === "merge" && item.resolution.matchedId !== null
@@ -290,9 +269,11 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
     decisionIds.set(item.key, id);
 
     const refs = resolvePremiseRefs(item.inRefs, input.items, premiseIds);
+    for (const outId of refs.outList) outListPremiseIds.add(outId);
     const episodeId = episodeIdFor(item.episodeIndex, input.episodeIds, state);
 
     drafts.push({
+      actor,
       type: "DecisionProposed",
       payload: {
         decisionId: id,
@@ -302,9 +283,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         value: item.decision.value,
         statement: item.decision.statement,
         ...(item.decision.rationale === undefined ? {} : { rationale: item.decision.rationale }),
-        ...(item.decision.acceptedDownside === undefined
-          ? {}
-          : { acceptedDownside: item.decision.acceptedDownside }),
+        ...(item.decision.acceptedDownside === undefined ? {} : { acceptedDownside: item.decision.acceptedDownside }),
         origin: item.origin,
         modality: item.decision.modality,
         confidence: item.confidence,
@@ -320,6 +299,9 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         // episode from the decision's own snippet, which is a real range in a real
         // transcript; `episodeIds` above is what names it.
       },
+      reason:
+        `Decision ${id} (${item.decision.variable} → ${item.decision.value}) proposed from ` +
+        `${input.transcriptId} and accepted on review.`,
     });
     decisionCount += 1;
 
@@ -337,13 +319,14 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
       };
 
       drafts.push({
+
+        actor,
         type: "JustificationAttached",
         payload: { justificationId, consequent: id, justification },
         // A STATE_CHANGING event, so `reason` is mandatory. It states what the
         // justification rests on, which is the sentence a user reads when gate (c)
         // fires six months later.
         reason: justificationReason(justification),
-        ...(input.actor === undefined ? {} : { actor: input.actor }),
         occurredAt: input.occurredAt,
       });
       reasons.push(justificationReason(justification));
@@ -351,68 +334,68 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
 
     /* ---- 5. the review event ---- */
     if (item.action?.type === "edit") {
-      drafts.push(
-        reviewEvent(
-          "DecisionEdited",
-          {
-            decisionId: id,
-            fields: item.action.fields,
-          },
-          `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`,
-          reasons,
-        ),
-      );
+      drafts.push(reviewEvent("DecisionEdited", actor, {
+        decisionId: id,
+        fields: item.action.fields,
+      }, `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`, reasons));
       edits += 1;
     } else {
-      const viaBulk =
-        item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
-      drafts.push(
-        reviewEvent(
-          "DecisionApproved",
-          {
-            decisionId: id,
-            viaBulkApprove: viaBulk,
-          },
-          approvalReason(item, viaBulk),
-          reasons,
-        ),
-      );
+      const viaBulk = item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
+      drafts.push(reviewEvent("DecisionApproved", actor, {
+        decisionId: id,
+        viaBulkApprove: viaBulk,
+      }, approvalReason(item, viaBulk), reasons));
       approvals += 1;
     }
+  });
+
+  /* ---- 1b. PremiseConfirmed for in-list premises only (after outListPremiseIds is known) ---- */
+  for (const [key, id] of premiseIds) {
+    if (outListPremiseIds.has(id)) continue; // stays UNKNOWN so the justification stays valid
+    const item = input.items.find((candidate) => candidate.key === key);
+    if (item?.kind !== "premise" || item.premise === null) continue;
+    drafts.push(reviewEvent("PremiseConfirmed", actor, { premiseId: id },
+      `Premise ${id} confirmed: ${item.premise.text}`, reasons));
+    premiseConfirmations += 1;
   }
 
   /* ---- 4. alternatives, after their decisions ---- */
   let alternativeCount = 0;
 
-  for (const item of input.items) {
-    if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action))
-      continue;
+  input.items.forEach((item) => {
+    if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action)) return;
 
     const decisionKey = `decision:${item.alternative.decisionRef}`;
     const decisionId = decisionIds.get(decisionKey);
-    if (decisionId === undefined) continue; // its decision was discarded, so it has nothing to be an alternative TO
+    if (decisionId === undefined) return; // its decision was discarded, so it has nothing to be an alternative TO
 
     const seq = (alternativesByDecision.get(decisionId) ?? 0) + 1;
     alternativesByDecision.set(decisionId, seq);
     const alternativeId: AlternativeId = formatAlternativeId(decisionId, seq);
 
     drafts.push({
+      actor,
       type: "AlternativeRejected",
       payload: {
         alternativeId,
         decisionId,
         variable: item.alternative.variable,
         value: item.alternative.value,
-        ...(item.alternative.whyRejected === undefined
-          ? {}
-          : { whyRejected: item.alternative.whyRejected }),
+        ...(item.alternative.whyRejected === undefined ? {} : { whyRejected: item.alternative.whyRejected }),
         confidence: item.confidence,
         engine: input.engine,
         snippet: item.alternative.snippet,
       },
+      /* The reason says whether a `whyRejected` was recovered, because that is exactly what decides
+       * whether this alternative can ever pre-empt a later proposal. */
+      reason:
+        `Alternative ${alternativeId} (${item.alternative.value}) rejected in favour of ${decisionId}` +
+        (item.alternative.whyRejected === undefined
+          ? ", with no reason recovered — stored, but it will never pre-empt."
+          : `: ${item.alternative.whyRejected}`),
     });
     alternativeCount += 1;
-  }
+  });
 
   /* ---- 6. discards ---- */
   let discardCount = 0;
@@ -420,6 +403,7 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   for (const item of [...rejected, ...contested]) {
     const action = item.action;
     drafts.push({
+      actor,
       type: "ExtractionDiscarded",
       payload: {
         candidateKind: item.kind,
@@ -430,12 +414,14 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         rawText: contestedReason(action, item.snippet.text, item.key),
         confidence: asConfidence(item.confidence),
       },
+      reason: `${item.kind} candidate ${item.key} discarded by the reviewer rather than committed.`,
     });
     discardCount += 1;
   }
 
   for (const discard of input.machineDiscards ?? []) {
     drafts.push({
+      actor,
       type: "ExtractionDiscarded",
       payload: {
         candidateKind: discard.kind,
@@ -443,15 +429,23 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         rawText: discard.rawText,
         confidence: discard.confidence,
       },
+      reason:
+        `${discard.kind} candidate discarded by the recogniser (${discard.discardedBy}); ` +
+        "never shown for review.",
     });
     discardCount += 1;
   }
 
-  const nonMonotonic = drafts.filter(
-    (draft) =>
-      draft.type === "JustificationAttached" &&
-      (draft.payload as JustificationAttachedPayload).justification.outList.length > 0,
-  ).length;
+  /* `NewEvent<EventType>` instantiates the generic ONCE with the whole union, so `type` and
+   * `payload` are not correlated: narrowing on one does not narrow the other, and the payload has to
+   * be re-typed by hand. This counts gate (c)'s input — a justification with a non-empty OUT-list is
+   * non-monotonic, which is what makes a premise able to falsify a decision rather than merely
+   * support it. */
+  const nonMonotonic = drafts.filter((draft) => {
+    if (draft.type !== "JustificationAttached") return false;
+    const payload = draft.payload as JustificationAttachedPayload;
+    return payload.justification.outList.length > 0;
+  }).length;
 
   return {
     ok: true,
@@ -521,9 +515,7 @@ function resolvePremiseRefs(
 }
 
 function justificationReason(justification: Justification): string {
-  const parts = [
-    `${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`,
-  ];
+  const parts = [`${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`];
   if (justification.outList.length > 0) {
     parts.push(
       `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} — non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
@@ -543,21 +535,19 @@ function justificationReason(justification: Justification): string {
  * and it should say WHICH item it was about, because the reason is what the audit
  * trail shows six months later when somebody asks why a decision is IN.
  */
-function reviewEvent<
-  T extends
-    | "DecisionApproved"
-    | "DecisionEdited"
-    | "DecisionRejected"
-    | "PremiseConfirmed"
-    | "PremiseCorrected",
->(type: T, payload: NewEvent<T>["payload"], reason: string, reasons: string[]): NewEvent<T> {
+function reviewEvent<T extends "DecisionApproved" | "DecisionEdited" | "DecisionRejected" | "PremiseConfirmed" | "PremiseCorrected">(
+  type: T,
+  actor: Actor,
+  payload: NewEvent<T>["payload"],
+  reason: string,
+  reasons: string[],
+): NewEvent<T> {
   reasons.push(reason);
-  return { type, payload, reason };
+  return { type, actor, payload, reason };
 }
 
 function approvalReason(item: ResolvedCandidate, bulk: boolean): string {
-  const label =
-    item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
+  const label = item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
   return bulk
     ? `Approved ${label} in a bulk action, so it stays UNKNOWN rather than IN until it is approved individually.`
     : `Approved ${label}: the extraction is accepted and the decision is asserted.`;
@@ -589,5 +579,6 @@ function episodeIdFor(
   // sequence rather than a guess at an existing one.
   return formatEpisodeId(state.counters.episodes + Math.max(1, episodeIndex + 1));
 }
+
 
 export { PLACEHOLDER_EVENT_ID };

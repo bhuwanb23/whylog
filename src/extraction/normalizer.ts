@@ -41,10 +41,6 @@
  */
 
 import type { ISODateString, TranscriptId } from "@/types/common";
-import { placeholderFor, scanNoise } from "./noise";
-import { type OffsetMap, OffsetMapBuilder, identityMap, rawAt, rawBounds } from "./offset-map";
-import { type RawTurn, attributeSpeakers, detectShape, linesWithOffsets } from "./speakers";
-import { type RecoveredTime, recoverTimestamp } from "./timestamps";
 import type {
   CodeBlock,
   InputShape,
@@ -54,6 +50,10 @@ import type {
   NormalizedTranscript,
   NormalizedTurn,
 } from "./types";
+import { OffsetMapBuilder, identityMap, rawAt, rawBounds, type OffsetMap } from "./offset-map";
+import { attributeSpeakers, detectShape, linesWithOffsets, type RawTurn } from "./speakers";
+import { recoverTimestamp, type RecoveredTime } from "./timestamps";
+import { placeholderFor, scanNoise } from "./noise";
 
 export interface NormalizerOptions {
   readonly transcriptId: TranscriptId;
@@ -99,8 +99,6 @@ export function normaliseTranscript(raw: string, options: NormalizerOptions): No
     return {
       index: i,
       speaker: turn.speaker,
-      rawStart: turn.rawStart,
-      rawEnd: turn.rawEnd,
       text: assembled.text.slice(start, end),
       start,
       end,
@@ -120,10 +118,7 @@ export function normaliseTranscript(raw: string, options: NormalizerOptions): No
     unattributedTurns: turns.filter((t) => t.speaker === "unknown").length,
     codeBlocks: codeBlocks.length,
     noiseRegions: noise.length,
-    noiseCharsCollapsed: noise.reduce(
-      (total, region) => total + (region.rawEnd - region.rawStart),
-      0,
-    ),
+    noiseCharsCollapsed: noise.reduce((total, region) => total + (region.rawEnd - region.rawStart), 0),
   };
 
   return {
@@ -156,11 +151,7 @@ interface Collected {
  * maps, and the only way to guarantee that is to never build the second claim
  * without seeing the first.
  */
-function collectClaims(
-  raw: string,
-  turns: readonly RawTurn[],
-  options: NormalizerOptions,
-): Collected {
+function collectClaims(raw: string, turns: readonly RawTurn[], options: NormalizerOptions): Collected {
   const claims: Claim[] = [];
   const codeBlocks: CodeBlock[] = [];
 
@@ -368,10 +359,8 @@ export function describeNormalisation(result: NormalizedTranscript): string {
     `${s.turns} turns (${s.humanTurns} human · ${s.agentTurns} agent · ${s.unattributedTurns} unattributed)`,
     `${kept}% of the raw text reached the recognisers`,
   ];
-  if (s.codeBlocks > 0)
-    parts.push(`${s.codeBlocks} code block${s.codeBlocks === 1 ? "" : "s"} lifted`);
-  if (s.noiseRegions > 0)
-    parts.push(`${s.noiseRegions} noise region${s.noiseRegions === 1 ? "" : "s"} collapsed`);
+  if (s.codeBlocks > 0) parts.push(`${s.codeBlocks} code block${s.codeBlocks === 1 ? "" : "s"} lifted`);
+  if (s.noiseRegions > 0) parts.push(`${s.noiseRegions} noise region${s.noiseRegions === 1 ? "" : "s"} collapsed`);
   if (s.unattributedTurns > 0) {
     parts.push("unattributed turns default to the LOWEST authority, never to human");
   }
@@ -385,11 +374,7 @@ export function toRawBounds(
   start: number,
   end: number,
 ): readonly [number, number] {
-  return rawBounds(
-    { anchors: result.anchors, normalisedLength: result.text.length, rawLength: result.raw.length },
-    start,
-    end,
-  );
+  return rawBounds({ anchors: result.anchors, normalisedLength: result.text.length, rawLength: result.raw.length }, start, end);
 }
 
 /** The identity normalisation, for callers that already have clean text. */

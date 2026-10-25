@@ -79,13 +79,16 @@ export function describeHairball(report: HairballReport): string {
 
   if (report.collapsedPremises > 0) {
     lines.push(
-      `${report.collapsedPremises} premise(s) collapsed into their decision's card. A premise supporting exactly one decision adds a node and an edge to say what the card already says; collapsing them is what leaves the SHARED premises — the load-bearing ones — visible.`,
+      report.collapsedPremises + " premise(s) collapsed into their decision's card. A premise " +
+        "supporting exactly one decision adds a node and an edge to say what the card already says; " +
+        "collapsing them is what leaves the SHARED premises — the load-bearing ones — visible.",
     );
   }
 
   if (report.hiddenSuperseded > 0) {
     lines.push(
-      `${report.hiddenSuperseded} superseded/archived decision(s) hidden. History, not structure: they carry no weight in a cascade. Toggle to show them.`,
+      report.hiddenSuperseded + " superseded/archived decision(s) hidden. History, not structure: " +
+        "they carry no weight in a cascade. Toggle to show them.",
     );
   }
 
@@ -98,14 +101,14 @@ export function describeHairball(report: HairballReport): string {
 
   if (report.tooDense) {
     lines.push(
-      `STILL DENSE: ${report.edgeCount} edges, above the ${DENSITY_LIMIT}-edge legibility limit. Select a premise to focus one cascade — the plan's rule is to render one cascade at a time, never the whole graph unfiltered.`,
+      "STILL DENSE: " + report.edgeCount + " edges, above the " + DENSITY_LIMIT +
+        "-edge legibility limit. Select a premise to focus one cascade — the plan's rule is to render " +
+        "one cascade at a time, never the whole graph unfiltered.",
     );
   }
 
   if (lines.length === 0) {
-    lines.push(
-      "Nothing withheld. Every premise, decision and structural edge in the log is drawn.",
-    );
+    lines.push("Nothing withheld. Every premise, decision and structural edge in the log is drawn.");
   }
 
   return lines.join("\n\n");

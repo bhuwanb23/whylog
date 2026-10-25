@@ -248,24 +248,24 @@ export function describeCorpus(corpus: Corpus): string {
   const c = compositionOf(corpus);
 
   const lines = [
-    `DecisionMemEval v${corpus.version} — ${c.total} transcript(s)`,
+    "DecisionMemEval v" + corpus.version + " — " + c.total + " transcript(s)",
     "",
-    `  clean          ${c.clean}`,
-    `  messy          ${c.messy}`,
-    `  adversarial    ${c.adversarial}`,
+    "  clean          " + c.clean,
+    "  messy          " + c.messy,
+    "  adversarial    " + c.adversarial,
     "",
-    `  labelled decisions      ${c.decisions}`,
-    `  labelled premises       ${c.premises}`,
-    `  labelled alternatives   ${c.alternatives}`,
-    `  planted cases           ${c.plants}`,
-    `  labelled questions      ${corpus.questions.length}`,
+    "  labelled decisions      " + c.decisions,
+    "  labelled premises       " + c.premises,
+    "  labelled alternatives   " + c.alternatives,
+    "  planted cases           " + c.plants,
+    "  labelled questions      " + corpus.questions.length,
   ];
 
   if (Object.keys(c.plantsByKind).length > 0) {
     lines.push("");
     lines.push("Planted cases by kind:");
     for (const [kind, count] of Object.entries(c.plantsByKind)) {
-      lines.push(`  ${kind.padEnd(46)}${count}`);
+      lines.push("  " + kind.padEnd(46) + count);
     }
   }
 
@@ -330,8 +330,7 @@ export interface ResolvedAlternative extends Omit<LabelledAlternative, "quote"> 
   readonly transcript: string;
 }
 
-export interface ResolvedTranscript
-  extends Omit<LabelledTranscript, "decisions" | "premises" | "alternatives"> {
+export interface ResolvedTranscript extends Omit<LabelledTranscript, "decisions" | "premises" | "alternatives"> {
   readonly raw: string;
   readonly decisions: readonly ResolvedDecision[];
   readonly premises: readonly ResolvedPremise[];

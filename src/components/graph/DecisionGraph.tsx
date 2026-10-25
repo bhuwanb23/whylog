@@ -25,12 +25,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
-import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import type { ReactElement } from "react";
 import type { DecisionId } from "@/types/common";
 import type { DecisionVariable } from "@/types/domain";
-import type { ReactElement } from "react";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
 import { LabelBadge, StatusBadge } from "../common/StatusBadge";
 
 export interface SupersessionChain {
@@ -58,24 +58,17 @@ export function chainsOf(state: GraphState): readonly SupersessionChain[] {
       return atA === atB ? (a < b ? -1 : 1) : atA < atB ? -1 : 1;
     });
 
-    const live =
-      sorted.find((id) => {
-        const decision = state.decisions.get(id);
-        return (
-          decision !== undefined &&
-          decision.status !== "superseded" &&
-          decision.status !== "archived"
-        );
-      }) ?? null;
+    const live = sorted.find((id) => {
+      const decision = state.decisions.get(id);
+      return decision !== undefined && decision.status !== "superseded" && decision.status !== "archived";
+    }) ?? null;
 
     out.push({ variable, decisions: sorted, live });
   }
 
   /* Longest chain first: a variable that has been reversed four times is the interesting one, and
    * it is also the one most likely to harbour an unreconciled contradiction. */
-  return out.sort(
-    (a, b) => b.decisions.length - a.decisions.length || (a.variable < b.variable ? -1 : 1),
-  );
+  return out.sort((a, b) => b.decisions.length - a.decisions.length || (a.variable < b.variable ? -1 : 1));
 }
 
 export function DecisionGraph({
@@ -129,8 +122,8 @@ export function DecisionGraph({
                     title={LABEL_MEANING[nodeLabel]}
                     style={{
                       textAlign: "left",
-                      border: `1px solid ${isLive ? LABEL_COLOUR[nodeLabel] : "var(--border-strong)"}`,
-                      borderLeft: `3px solid ${LABEL_COLOUR[nodeLabel]}`,
+                      border: "1px solid " + (isLive ? LABEL_COLOUR[nodeLabel] : "var(--border-strong)"),
+                      borderLeft: "3px solid " + LABEL_COLOUR[nodeLabel],
                       borderRadius: 4,
                       padding: "6px 9px",
                       background: isLive ? "var(--surface-raised)" : "transparent",
@@ -164,10 +157,10 @@ export function DecisionGraph({
       ))}
 
       <div className="faint" style={{ fontSize: 11 }}>
-        Ordered by VALID time, not learned time: a pasted historical transcript would otherwise put
-        a three-week-old decision at the end of its own chain because it was learned last.
-        Struck-through entries are superseded — retained as history, never hidden, and excluded from
-        agent exports by default.
+        Ordered by VALID time, not learned time: a pasted historical transcript would otherwise put a
+        three-week-old decision at the end of its own chain because it was learned last. Struck-through
+        entries are superseded — retained as history, never hidden, and excluded from agent exports by
+        default.
       </div>
     </div>
   );

@@ -13,10 +13,10 @@
  * than a silent omission.
  */
 
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { UnverifiableDecision } from "@/types/guards";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 
 export interface CoverageResult {
   readonly score: number;
@@ -66,7 +66,9 @@ export function coverage(
     else if (proposed > 0) awaiting.push(decisionId);
   }
 
-  const uncovered = inDecisions.filter((id) => !covered.includes(id) && !awaiting.includes(id));
+  const uncovered = inDecisions.filter(
+    (id) => !covered.includes(id) && !awaiting.includes(id),
+  );
 
   return {
     score: inDecisions.length === 0 ? 0 : covered.length / inDecisions.length,
@@ -84,26 +86,25 @@ export function describeCoverage(result: CoverageResult): string {
   }
 
   const lines = [
-    `Verifiable coverage: ${result.covered} of ${result.inDecisions} IN decisions have at least one accepted guard.`,
+    "Verifiable coverage: " + result.covered + " of " + result.inDecisions + " IN decisions have at least one accepted guard.",
   ];
 
   if (result.awaitingAcceptance.length > 0) {
     lines.push(
-      `  ${result.awaitingAcceptance.length} more have PROPOSED guards awaiting acceptance: ${result.awaitingAcceptance.join(", ")}. One review click each.`,
+      "  " + result.awaitingAcceptance.length + " more have PROPOSED guards awaiting acceptance: " +
+        result.awaitingAcceptance.join(", ") + ". One review click each.",
     );
   }
 
   if (result.uncovered.length > 0) {
-    lines.push(
-      `  ${result.uncovered.length} have nothing proposed: ${result.uncovered.join(", ")}`,
-    );
+    lines.push("  " + result.uncovered.length + " have nothing proposed: " + result.uncovered.join(", "));
   }
 
   if (result.unverifiable.length > 0) {
     lines.push("");
     lines.push("Unverifiable — no guard could be synthesised, and the reason is recorded:");
     for (const entry of result.unverifiable) {
-      lines.push(`  ${entry.decisionId} — ${entry.reason}`);
+      lines.push("  " + entry.decisionId + " — " + entry.reason);
     }
   }
 

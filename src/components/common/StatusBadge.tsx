@@ -25,6 +25,8 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { ReactElement } from "react";
+import type { DecisionLabel, DecisionStatus } from "@/types/domain";
 import {
   LABEL_BACKGROUND,
   LABEL_COLOUR,
@@ -32,8 +34,6 @@ import {
   STATUS_COLOUR,
   STATUS_MEANING,
 } from "@/theme";
-import type { DecisionLabel, DecisionStatus } from "@/types/domain";
-import type { ReactElement } from "react";
 
 export function LabelBadge({ label }: { label: DecisionLabel }): ReactElement {
   return (
@@ -42,13 +42,12 @@ export function LabelBadge({ label }: { label: DecisionLabel }): ReactElement {
       title={LABEL_MEANING[label]}
       style={{
         color: LABEL_COLOUR[label],
-        border: `1px solid ${LABEL_COLOUR[label]}`,
+        border: "1px solid " + LABEL_COLOUR[label],
         /* UNFOUNDED is a data-quality warning, not a truth claim, and the plan draws it hollow
          * with a dashed border so it cannot be mistaken for a verdict about the world. */
         borderStyle: label === "UNFOUNDED" ? "dashed" : "solid",
         /* UNKNOWN is absence of evidence, drawn as absence of fill. */
-        background:
-          label === "UNKNOWN" || label === "UNFOUNDED" ? "transparent" : LABEL_BACKGROUND[label],
+        background: label === "UNKNOWN" || label === "UNFOUNDED" ? "transparent" : LABEL_BACKGROUND[label],
       }}
     >
       {label}
@@ -119,18 +118,12 @@ export const TIMELINE_STATUS_COLOUR: Readonly<Record<TimelineStatus, string>> = 
 };
 
 export const TIMELINE_STATUS_MEANING: Readonly<Record<TimelineStatus, string>> = {
-  SOUND:
-    "Labelled IN — at least one justification is valid. The decision currently rests on something.",
-  UNSOUND:
-    "Labelled OUT — every justification failed. Retracted, not deleted, and still searchable. Amber rather than red because this is the system working, not an error.",
-  UNVERIFIED:
-    "Labelled UNKNOWN — the premises are neither confirmed nor refuted. Drawn hollow: absence of evidence is rendered as absence of fill.",
-  UNFOUNDED:
-    "A DATA-QUALITY warning: the justification chain never reaches a premise. Not a claim that the decision is wrong.",
-  CONTESTED:
-    "Screened out by non-prioritized revision — new information could not outrank what it contradicts. Waiting for you; never silently applied.",
-  SUPERSEDED:
-    "Replaced by a later decision on the same variable, or archived. Retained as history and excluded from agent exports by default.",
+  SOUND: "Labelled IN — at least one justification is valid. The decision currently rests on something.",
+  UNSOUND: "Labelled OUT — every justification failed. Retracted, not deleted, and still searchable. Amber rather than red because this is the system working, not an error.",
+  UNVERIFIED: "Labelled UNKNOWN — the premises are neither confirmed nor refuted. Drawn hollow: absence of evidence is rendered as absence of fill.",
+  UNFOUNDED: "A DATA-QUALITY warning: the justification chain never reaches a premise. Not a claim that the decision is wrong.",
+  CONTESTED: "Screened out by non-prioritized revision — new information could not outrank what it contradicts. Waiting for you; never silently applied.",
+  SUPERSEDED: "Replaced by a later decision on the same variable, or archived. Retained as history and excluded from agent exports by default.",
 };
 
 export function TimelineStatusBadge({ status }: { status: TimelineStatus }): ReactElement {
@@ -140,12 +133,12 @@ export function TimelineStatusBadge({ status }: { status: TimelineStatus }): Rea
       title={TIMELINE_STATUS_MEANING[status]}
       style={{
         color: TIMELINE_STATUS_COLOUR[status],
-        border: `1px solid ${TIMELINE_STATUS_COLOUR[status]}`,
+        border: "1px solid " + TIMELINE_STATUS_COLOUR[status],
         /* Hollow for the two that mean "we do not know", filled for the two that mean "we do". */
         background:
           status === "UNVERIFIED" || status === "UNFOUNDED"
             ? "transparent"
-            : `color-mix(in srgb, ${TIMELINE_STATUS_COLOUR[status]} 12%, transparent)`,
+            : "color-mix(in srgb, " + TIMELINE_STATUS_COLOUR[status] + " 12%, transparent)",
         borderStyle: status === "UNFOUNDED" ? "dashed" : "solid",
         textDecoration: status === "SUPERSEDED" ? "line-through" : "none",
       }}
@@ -158,14 +151,7 @@ export function TimelineStatusBadge({ status }: { status: TimelineStatus }): Rea
 /** The visual language as a legend. Rendered wherever statuses appear, because a colour system
  *  nobody can look up is a colour system nobody can learn. */
 export function StatusLegend(): ReactElement {
-  const statuses: TimelineStatus[] = [
-    "SOUND",
-    "UNSOUND",
-    "UNVERIFIED",
-    "UNFOUNDED",
-    "CONTESTED",
-    "SUPERSEDED",
-  ];
+  const statuses: TimelineStatus[] = ["SOUND", "UNSOUND", "UNVERIFIED", "UNFOUNDED", "CONTESTED", "SUPERSEDED"];
 
   return (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>

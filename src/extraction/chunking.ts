@@ -35,7 +35,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { NormalizedTurn } from "./types";
+import { toRawBounds } from "./normalizer";
+import type { NormalizedTranscript, NormalizedTurn } from "./types";
 
 export const DEFAULT_CHUNK_CHARS = 12_000;
 
@@ -74,6 +75,7 @@ export interface ChunkingResult {
 export function chunkTurns(
   turns: readonly NormalizedTurn[],
   budget: number = DEFAULT_CHUNK_CHARS,
+  normalized: NormalizedTranscript,
 ): ChunkingResult {
   if (turns.length === 0) {
     return { chunks: [], budget, oversizedTurns: 0 };
@@ -104,7 +106,7 @@ export function chunkTurns(
       end += 1;
     }
 
-    chunks.push(buildChunk(chunks.length, turns, start, end, chunks.length > 0));
+    chunks.push(buildChunk(chunks.length, turns, start, end, chunks.length > 0, normalized));
     if (end >= turns.length) break;
 
     // One turn of overlap. `end - 1` is safe because `end > start` always holds:
@@ -121,14 +123,17 @@ function buildChunk(
   start: number,
   end: number,
   overlapsPrevious: boolean,
+  normalized: NormalizedTranscript,
 ): Chunk {
   const slice = turns.slice(start, end);
   const text = slice.map((t) => t.text).join("\n\n");
 
   const first = slice[0];
   const last = slice[slice.length - 1];
-  const rawStart = first?.rawStart ?? 0;
-  const rawEnd = last?.rawEnd ?? rawStart;
+  /* A turn's start/end are NORMALISED offsets. `rawRange` is documented as raw, and the review pane
+   * highlights with it, so reporting normalised offsets there would highlight the wrong slice of the
+   * pasted text whenever noise was collapsed — silently, and only on messy transcripts. */
+  const [rawStart, rawEnd] = toRawBounds(normalized, first?.start ?? 0, last?.end ?? 0);
 
   const oversized = slice.length === 1 && (first?.text.length ?? 0) > DEFAULT_CHUNK_CHARS;
 

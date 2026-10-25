@@ -5,15 +5,7 @@
  * touches localStorage, the hash chain, or the fold.
  */
 
-export {
-  useWhyLog,
-  bootOnce,
-  isBooted,
-  persistenceAvailable,
-  type BootStatus,
-  type Notice,
-  type WhyLogState,
-} from "./whylog";
+export { useWhyLog, bootOnce, isBooted, persistenceAvailable, type BootStatus, type Notice, type WhyLogState } from "./whylog";
 export * as selectors from "./selectors";
 export {
   DEFAULT_CASCADE_DEPTH_CAP,
@@ -98,3 +90,21 @@ export {
   type GuardState,
   type GuardStoreStatus,
 } from "./guards";
+
+/**
+ * Phase 5 — the agent-native export compiler.
+ *
+ * Derived and disposable like the reasoning and ask stores: every artifact can be recompiled from
+ * the log at any time, so persisting the compiled text would create a second source of truth that
+ * could disagree with the first. Only the EVENTS recording that an export happened are persisted.
+ */
+export {
+  useExport,
+  describeExportState,
+  describeSelectedBudget,
+  describeStamp,
+  selectedArtifact,
+  type ExportState,
+  type ExportStatus,
+  type CheckResult,
+} from "./export";

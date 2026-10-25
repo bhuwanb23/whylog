@@ -66,11 +66,11 @@ import type { CascadeResult, NogoodRecord, RevisionProposal } from "@/types/reas
 import { entrenchmentBand } from "@/types/reasoning";
 import { closeWindow, openWindow, reopenWindow } from "./bi-temporal";
 import {
+  INDEX_UNBUILT,
+  ZERO_COUNTERS,
   type ContradictionRecord,
   type ExportRecordState,
   type GraphState,
-  INDEX_UNBUILT,
-  ZERO_COUNTERS,
 } from "./graph-state";
 import { GENESIS_HASH, linkHash } from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
@@ -105,10 +105,10 @@ export interface Draft {
   contradictions: ContradictionRecord[];
   exports: Map<ExportId, ExportRecordState>;
 
-  byVariable: ReadonlyMap<DecisionVariable, readonly DecisionId[]>;
+  byVariable: Map<DecisionVariable, DecisionId[]>;
   byFingerprint: Map<string, DecisionId>;
   premiseByFingerprint: Map<string, PremiseId>;
-  premiseToDecisions: ReadonlyMap<PremiseId, readonly DecisionId[]>;
+  premiseToDecisions: Map<PremiseId, DecisionId[]>;
   guardIndex: Map<GuardId, DecisionId>;
 
   pendingReview: DecisionId[];
@@ -170,6 +170,21 @@ export function emptyDraft(engine: EngineId, at: ISODateString): Draft {
 }
 
 /** Convert a frozen state back into a draft, for incremental append. */
+/**
+ * Copy a reverse index into the mutable form the draft needs.
+ *
+ * `GraphState` exposes these as `ReadonlyMap<K, readonly DecisionId[]>` so a projection cannot
+ * mutate the graph. `new Map(source)` copies the ENTRIES but keeps the same readonly arrays, which
+ * the fold cannot append to and which does not typecheck as the draft's `Map<K, DecisionId[]>`.
+ * Copying the arrays too is what makes the draft independent of the state it was cloned from:
+ * sharing them would let a fold mutate a graph that is still being read.
+ */
+function copyIdIndex<K>(source: ReadonlyMap<K, readonly DecisionId[]>): Map<K, DecisionId[]> {
+  const out = new Map<K, DecisionId[]>();
+  for (const [key, ids] of source) out.set(key, [...ids]);
+  return out;
+}
+
 export function toDraft(state: GraphState): Draft {
   return {
     events: [...state.events],
@@ -191,10 +206,10 @@ export function toDraft(state: GraphState): Draft {
     contradictions: [...state.contradictions],
     exports: new Map(state.exports),
 
-    byVariable: new Map(state.byVariable),
+    byVariable: copyIdIndex(state.byVariable),
     byFingerprint: new Map(state.byFingerprint),
     premiseByFingerprint: new Map(state.premiseByFingerprint),
-    premiseToDecisions: new Map(state.premiseToDecisions),
+    premiseToDecisions: copyIdIndex(state.premiseToDecisions),
     guardIndex: new Map(state.guardIndex),
 
     pendingReview: [...state.pendingReview],
@@ -353,7 +368,9 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
             : { variable: bounds.variable }),
           turnRange: bounds === undefined ? ([0, 0] as const) : bounds.turnRange,
           charRange:
-            bounds === undefined ? ([p.snippet.start, p.snippet.end] as const) : bounds.charRange,
+            bounds === undefined
+              ? ([p.snippet.start, p.snippet.end] as const)
+              : bounds.charRange,
         };
         draft.episodes.set(p.episodeId, episode);
         draft.counters = { ...draft.counters, episodes: draft.counters.episodes + 1 };
@@ -462,15 +479,6 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         corroboration: 0,
         confidence: p.confidence,
         resolvedFrom: [event.id],
-        justifications: [],
-        provenance: {
-          transcriptId: p.transcriptId,
-          episodeId: p.episodeId,
-          snippet: p.snippet,
-          origin: p.origin,
-          extractedBy: p.engine,
-          confidence: p.confidence,
-        },
       };
 
       draft.premises.set(p.premiseId, premise);
@@ -492,14 +500,6 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         // pre-emption index: a false pre-emption is worse than none, and ARGUS
         // measured 15.4% precision on exactly this component.
         confirmedByHuman: false,
-        provenance: {
-          transcriptId: p.transcriptId,
-          episodeId: p.episodeId,
-          snippet: p.snippet,
-          origin: p.origin,
-          extractedBy: p.engine,
-          confidence: p.confidence,
-        },
       };
       draft.alternatives.set(p.alternativeId, alternative);
 
@@ -691,7 +691,6 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
           // AGAINST the premise, so `supports` is false only in that case.
           supports: kind !== "guard",
           ...(p.evidenceSpan === undefined ? {} : { span: p.evidenceSpan }),
-          ...(p.evidenceQuote === undefined ? {} : { quote: p.evidenceQuote }),
           eventId: event.id,
           at: event.occurredAt,
         }),
@@ -764,15 +763,22 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
         unsoundDecisionId: p.unsoundDecisionId,
         failedPremiseId: p.failedPremiseId,
         failedPremiseText: failedPremise?.text ?? String(p.failedPremiseId),
-        evidence: {
-          /* The evidence the reasoning cycle saw, carried by the event. It used
-           * to be rebuilt here from `event.reason` — and the reason is the
-           * "why not auto-applied" note, so every stored proposal quoted the
-           * boilerplate and claimed it came from a transcript. */
-          quote: p.evidence.quote,
-          source: p.evidence.source,
-          confidence: asConfidence(p.evidence.confidence),
-        },
+        evidence:
+          p.evidence === undefined
+            ? {
+                /* Logs written before the payload carried evidence reconstructed it from
+                 * the reason, which is a paraphrase. Keep that path only for replaying
+                 * old events; new ones store the finding's verbatim quote and source. */
+                quote: event.reason,
+                source: "transcript",
+                confidence: asConfidence(failedPremise?.confidence ?? 0.5),
+              }
+            : {
+                quote: p.evidence.quote,
+                source: p.evidence.source,
+                confidence: p.evidence.confidence,
+                ...(p.evidence.span === undefined ? {} : { span: p.evidence.span }),
+              },
         ...(nogood === undefined ? {} : { nogood }),
         cascade,
         entrenchment: p.entrenchment,
@@ -940,8 +946,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       const accepted = patchGuard(draft, p.guardId, (g) => ({ ...g, lifecycle: "accepted" }));
       if (!accepted) skip(draft, event, `unknown guard ${p.guardId}`);
       const guard = draft.guards.get(p.guardId);
-      if (guard)
-        patchDecision(draft, guard.decisionId, (d) => ({ ...d, verifiability: "verified" }));
+      if (guard) patchDecision(draft, guard.decisionId, (d) => ({ ...d, verifiability: "verified" }));
       return draft;
     }
 
@@ -954,12 +959,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       if (!ran) skip(draft, event, `unknown guard ${p.guardId}`);
       // A passing re-run clears Drift Age: the decision is being honoured again.
       if (p.result === "pass") {
-        // The key is removed, not set to undefined: "never failed" is the absence
-        // of the field, and `firstFailedAt: undefined` is not the same thing.
-        patchGuard(draft, p.guardId, (g) => {
-          const { firstFailedAt: _cleared, ...rest } = g;
-          return rest;
-        });
+        patchGuard(draft, p.guardId, (g) => ({ ...g, firstFailedAt: undefined }));
       }
       return draft;
     }
@@ -986,10 +986,6 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
           evidence: withEvidence(premise, {
             kind: "guard",
             supports: false,
-            // The line of the manifest that falsified it. There is no span to
-            // point at - a manifest is not a transcript - but the line IS the
-            // evidence, and the revision proposal has to quote it.
-            quote: p.evidence,
             eventId: event.id,
             at: event.occurredAt,
           }),
@@ -1070,11 +1066,10 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
       // engine DISABLES semantic retrieval until an explicit re-index, rather
       // than quietly mixing two vector spaces and returning confident nonsense.
       const wasBuilt = draft.index.builtBy !== undefined;
-      const _staleSince =
-        wasBuilt && draft.index.staleSince === undefined ? event.at : draft.index.staleSince;
       draft.index = {
         ...draft.index,
         stale: wasBuilt || draft.index.stale,
+        staleSince: wasBuilt && draft.index.staleSince === undefined ? event.at : draft.index.staleSince,
         lastEventId: event.id,
       };
       return draft;
@@ -1126,6 +1121,7 @@ export function applyEvent(draft: Draft, event: AnyEvent): Draft {
   }
 }
 
+
 /* -------------------------------------------------------------------------- */
 /* Editing                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -1147,27 +1143,15 @@ function applyEdit(decision: Decision, fields: EditableFields): Decision {
 
   const rationale = fields["rationale"];
   if (typeof rationale === "string") next = { ...next, rationale };
-  else if (rationale === null) {
-    // The key is removed, not set to undefined. "No rationale" is the absence of
-    // the field; leaving `rationale: undefined` behind would make the node
-    // carry a field whose value is explicitly nothing.
-    const { rationale: _cleared, ...rest } = next;
-    next = rest;
-  }
+  else if (rationale === null) next = { ...next, rationale: undefined };
 
   const downside = fields["acceptedDownside"];
   if (typeof downside === "string") next = { ...next, acceptedDownside: downside };
-  else if (downside === null) {
-    const { acceptedDownside: _cleared, ...rest } = next;
-    next = rest;
-  }
+  else if (downside === null) next = { ...next, acceptedDownside: undefined };
 
   const yStatement = fields["yStatement"];
   if (typeof yStatement === "string") next = { ...next, yStatement };
-  else if (yStatement === null) {
-    const { yStatement: _cleared, ...rest } = next;
-    next = rest;
-  }
+  else if (yStatement === null) next = { ...next, yStatement: undefined };
 
   const value = fields["value"];
   if (typeof value === "string") next = { ...next, value };
@@ -1205,8 +1189,7 @@ function applyPremiseEdit(premise: Premise, fields: EditableFields): Premise {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     next = { ...next, value };
   } else if (value === null) {
-    const { value: _cleared, ...rest } = next;
-    next = rest;
+    next = { ...next, value: undefined };
   }
 
   return next;
@@ -1376,15 +1359,13 @@ function rebuildCorroboration(draft: Draft): void {
     const refs = premiseRefs.get(id) ?? 0;
     // log2 scaling: the fourth independent justification is worth much less than
     // the second. Matches docs/02 §3.4's corroboration term.
-    const corroboration =
-      refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
+    const corroboration = refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
     draft.premises.set(id, { ...premise, corroboration });
   }
 
   for (const [id, decision] of draft.decisions) {
     const refs = decision.justificationIds.length;
-    const corroboration =
-      refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
+    const corroboration = refs <= 1 ? (refs === 1 ? 0.5 : 0) : Math.min(1, 0.5 + Math.log2(refs) / 4);
     draft.decisions.set(id, { ...decision, corroboration });
   }
 }
@@ -1458,23 +1439,14 @@ function rebuildMetrics(draft: Draft): void {
     ["decisionsUnknown", decisions.filter((d) => d.label === "UNKNOWN").length],
     ["decisionsUnfounded", decisions.filter((d) => d.label === "UNFOUNDED").length],
     ["premises", draft.premises.size],
-    [
-      "premisesOpen",
-      [...draft.premises.values()].filter((p) => p.temporal.invalidFrom === undefined).length,
-    ],
+    ["premisesOpen", [...draft.premises.values()].filter((p) => p.temporal.invalidFrom === undefined).length],
     ["justifications", draft.justifications.size],
-    [
-      "nonMonotonicJustifications",
-      [...draft.justifications.values()].filter((j) => j.outList.length > 0).length,
-    ],
+    ["nonMonotonicJustifications", [...draft.justifications.values()].filter((j) => j.outList.length > 0).length],
     ["nogoods", draft.nogoods.size],
     ["transcripts", draft.transcripts.size],
     ["episodes", draft.episodes.size],
     ["alternatives", draft.alternatives.size],
-    [
-      "alternativesConfirmed",
-      [...draft.alternatives.values()].filter((a) => a.confirmedByHuman).length,
-    ],
+    ["alternativesConfirmed", [...draft.alternatives.values()].filter((a) => a.confirmedByHuman).length],
     ["guards", guards.length],
     ["guardsAccepted", accepted.length],
     ["guardsPassing", passing.length],
@@ -1488,10 +1460,7 @@ function rebuildMetrics(draft: Draft): void {
     // are not covering the corpus and Phase 1's numbers cannot be trusted.
     ["otherVariableRate", decisions.length === 0 ? 0 : otherCount / decisions.length],
     ["compliance", accepted.length === 0 ? 1 : passing.length / accepted.length],
-    [
-      "verifiableCoverage",
-      live.length === 0 ? 0 : live.filter((d) => d.guardIds.length > 0).length / live.length,
-    ],
+    ["verifiableCoverage", live.length === 0 ? 0 : live.filter((d) => d.guardIds.length > 0).length / live.length],
     ["skippedEvents", draft.skipped.length],
   ];
 

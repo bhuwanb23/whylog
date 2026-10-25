@@ -48,7 +48,12 @@
 import { cosine } from "@/lib/cosine";
 import { contentTokens, normalise } from "@/lib/text";
 import type { DecisionId, EngineId, EventId, PremiseId } from "@/types/common";
-import type { Decision, DecisionVariable, Premise, PremiseType } from "@/types/domain";
+import type {
+  Decision,
+  DecisionVariable,
+  Premise,
+  PremiseType,
+} from "@/types/domain";
 
 /* -------------------------------------------------------------------------- */
 /* Thresholds                                                                 */
@@ -208,7 +213,10 @@ export function premisePool(
 /** variable || canonical value. Used for dedup only — it is NOT identity,
  *  because two decisions on the same variable and value can legitimately differ
  *  in time (a reversal), and the fingerprint cannot see that. */
-export function decisionFingerprint(variable: DecisionVariable, canonicalValue: string): string {
+export function decisionFingerprint(
+  variable: DecisionVariable,
+  canonicalValue: string,
+): string {
   return `${variable}\u0000${normalise(canonicalValue)}`;
 }
 
@@ -382,11 +390,7 @@ function scoreAgainstDecisions(
   for (const candidate of input.candidates) {
     const vector = input.vectors?.get(candidate.id);
     if (vector && input.queryVector) {
-      scored.push({
-        decision: candidate,
-        score: cosine(input.queryVector, vector),
-        via: "embedding",
-      });
+      scored.push({ decision: candidate, score: cosine(input.queryVector, vector), via: "embedding" });
       continue;
     }
     // No vector for this candidate: fall back to lexical rather than scoring it
@@ -400,7 +404,11 @@ function scoreAgainstDecisions(
   // same score must always resolve to the same one, or a replay of the same
   // import produces a different graph.
   scored.sort((a, b) =>
-    b.score === a.score ? (a.decision.id < b.decision.id ? -1 : 1) : b.score - a.score,
+    b.score === a.score
+      ? a.decision.id < b.decision.id
+        ? -1
+        : 1
+      : b.score - a.score,
   );
   return scored;
 }
@@ -543,11 +551,7 @@ function scoreAgainstPremises(input: ResolvePremiseInput): readonly ScoredPremis
   for (const candidate of input.candidates) {
     const vector = input.vectors?.get(candidate.id);
     if (vector && input.queryVector) {
-      scored.push({
-        premise: candidate,
-        score: cosine(input.queryVector, vector),
-        via: "embedding",
-      });
+      scored.push({ premise: candidate, score: cosine(input.queryVector, vector), via: "embedding" });
       continue;
     }
     scored.push({

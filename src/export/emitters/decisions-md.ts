@@ -65,7 +65,7 @@ export function emitDecisionsMd(
   const name = projectName ?? "this project";
   const sections: string[] = [];
 
-  sections.push(`# ${name} — Decision log`);
+  sections.push("# " + name + " — Decision log");
   sections.push("");
   sections.push(
     "Compiled from a WhyLog decision log. Every decision the log holds is here, including the " +
@@ -85,15 +85,13 @@ export function emitDecisionsMd(
   sections.push("");
   sections.push("| | |");
   sections.push("|---|---|");
-  sections.push(`| Decisions rendered | ${cif.records.length} |`);
-  sections.push(
-    `| Inline / linked out | ${cif.stats.decisionsIncluded} / ${cif.stats.decisionsLinkedOut} |`,
-  );
-  sections.push(`| Excluded from the agent files | ${cif.stats.decisionsExcluded} |`);
-  sections.push(`| Compliance | ${Math.round(cif.stats.compliance * 100)}% |`);
-  sections.push(`| Verifiable coverage | ${Math.round(cif.stats.verifiableCoverage * 100)}% |`);
-  sections.push(`| Log head | \`${cif.headHash}\` |`);
-  sections.push(`| Generated | ${cif.generatedAt} |`);
+  sections.push("| Decisions rendered | " + cif.records.length + " |");
+  sections.push("| Inline / linked out | " + cif.stats.decisionsIncluded + " / " + cif.stats.decisionsLinkedOut + " |");
+  sections.push("| Excluded from the agent files | " + cif.stats.decisionsExcluded + " |");
+  sections.push("| Compliance | " + Math.round(cif.stats.compliance * 100) + "% |");
+  sections.push("| Verifiable coverage | " + Math.round(cif.stats.verifiableCoverage * 100) + "% |");
+  sections.push("| Log head | `" + cif.headHash + "` |");
+  sections.push("| Generated | " + cif.generatedAt + " |");
   sections.push("");
 
   if (cif.records.length === 0) sections.push("_The log holds no decisions._");
@@ -117,7 +115,8 @@ export function emitDecisionsMd(
 
     for (const entry of cif.rejected) {
       sections.push(
-        `| **${entry.value}** | ${entry.decisionId} | ${entry.why} | ${entry.premiseStatus}${entry.contested ? " ⚠ **UNDER REVIEW**" : ""} |`,
+        "| **" + entry.value + "** | " + entry.decisionId + " | " + entry.why + " | " +
+          entry.premiseStatus + (entry.contested ? " ⚠ **UNDER REVIEW**" : "") + " |",
       );
     }
     sections.push("");
@@ -132,7 +131,7 @@ export function emitDecisionsMd(
     );
     sections.push("");
     for (const entry of cif.index) {
-      sections.push(`- ${entry.id} · ${entry.imperative}`);
+      sections.push("- " + entry.id + " · " + entry.imperative);
     }
     sections.push("");
   }
@@ -147,13 +146,15 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
 
   lines.push("---");
   lines.push("");
-  lines.push(`## ${record.id} — ${narrative?.yStatement ?? record.imperative}`);
+  lines.push("## " + record.id + " — " + (narrative?.yStatement ?? record.imperative));
   lines.push("");
 
   lines.push(renderStatus(record));
   if (narrative !== undefined) {
     lines.push(
-      `Lifecycle: ${narrative.status} · Variable: ${narrative.variable} = ${narrative.value} · Origin: ${narrative.origin} (confidence ${narrative.confidence.toFixed(2)}) · Entrenchment ${narrative.entrenchment.toFixed(2)} · Decided ${narrative.decidedAt.slice(0, 10)}`,
+      "Lifecycle: " + narrative.status + " · Variable: " + narrative.variable + " = " + narrative.value +
+        " · Origin: " + narrative.origin + " (confidence " + narrative.confidence.toFixed(2) + ")" +
+        " · Entrenchment " + narrative.entrenchment.toFixed(2) + " · Decided " + narrative.decidedAt.slice(0, 10),
     );
   }
   lines.push("");
@@ -165,7 +166,7 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
     lines.push("Held under these assumptions:");
     lines.push("");
     for (const premiseId of record.becausePremiseIds) {
-      lines.push(`- \`${premiseId}\` — ${premiseTextFor(record, premiseId)}`);
+      lines.push("- `" + premiseId + "` — " + premiseTextFor(record, premiseId));
     }
     lines.push("");
     lines.push(
@@ -174,9 +175,7 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
     );
     if (record.contestedPremise) {
       lines.push("");
-      lines.push(
-        "**At least one of these premises is contested** — neither confirmed nor refuted.",
-      );
+      lines.push("**At least one of these premises is contested** — neither confirmed nor refuted.");
     }
   } else {
     lines.push(
@@ -193,11 +192,11 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
   lines.push(record.imperative);
   if (narrative?.rationale !== undefined && narrative.rationale.length > 0) {
     lines.push("");
-    lines.push(`Rationale: ${narrative.rationale}`);
+    lines.push("Rationale: " + narrative.rationale);
   }
   if (record.appliesTo.length > 0) {
     lines.push("");
-    lines.push(`Applies to: ${record.appliesTo.map((glob) => `\`${glob}\``).join(", ")}`);
+    lines.push("Applies to: " + record.appliesTo.map((glob) => "`" + glob + "`").join(", "));
   }
   lines.push("");
 
@@ -205,7 +204,7 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
   lines.push("### Consequences");
   lines.push("");
   if (narrative?.acceptedDownside !== undefined && narrative.acceptedDownside.length > 0) {
-    lines.push(`Accepted downside: ${narrative.acceptedDownside}`);
+    lines.push("Accepted downside: " + narrative.acceptedDownside);
     lines.push("");
   }
   if (record.verifyCommand !== undefined) {
@@ -216,7 +215,9 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
     lines.push("```");
     lines.push("");
     lines.push(
-      `Guards ${record.guardsPassing}/${record.guardsTotal} passing${record.failingGuard ? " — **currently failing**" : ""}${record.lastVerifiedAt !== undefined ? ` · last verified ${record.lastVerifiedAt.slice(0, 10)}` : ""}.`,
+      "Guards " + record.guardsPassing + "/" + record.guardsTotal + " passing" +
+        (record.failingGuard ? " — **currently failing**" : "") +
+        (record.lastVerifiedAt !== undefined ? " · last verified " + record.lastVerifiedAt.slice(0, 10) : "") + ".",
     );
   } else {
     lines.push(
@@ -231,9 +232,7 @@ function renderAdr(record: ExportRecord, narrative: DecisionNarrative | undefine
     lines.push("### Alternatives considered");
     lines.push("");
     for (const entry of record.rejected) {
-      lines.push(
-        `- **${entry.value}**${entry.why === undefined ? " — no reason recorded" : ` — ${entry.why}`}`,
-      );
+      lines.push("- **" + entry.value + "**" + (entry.why === undefined ? " — no reason recorded" : " — " + entry.why));
     }
     lines.push("");
   }
@@ -254,17 +253,13 @@ function relatedLines(narrative: DecisionNarrative | undefined): readonly string
   if (narrative === undefined) return [];
 
   const out: string[] = [];
-  if (narrative.supersedes.length > 0) out.push(`- Supersedes: ${narrative.supersedes.join(", ")}`);
-  if (narrative.supersededBy.length > 0)
-    out.push(`- **Superseded by: ${narrative.supersededBy.join(", ")}** — this record is history`);
-  if (narrative.dependsOn.length > 0) out.push(`- Depends on: ${narrative.dependsOn.join(", ")}`);
+  if (narrative.supersedes.length > 0) out.push("- Supersedes: " + narrative.supersedes.join(", "));
+  if (narrative.supersededBy.length > 0) out.push("- **Superseded by: " + narrative.supersededBy.join(", ") + "** — this record is history");
+  if (narrative.dependsOn.length > 0) out.push("- Depends on: " + narrative.dependsOn.join(", "));
   if (narrative.sharesPremiseWith.length > 0) {
-    out.push(
-      `- Shares a premise with: ${narrative.sharesPremiseWith.join(", ")} — falsifying that premise puts all of them in play at once`,
-    );
+    out.push("- Shares a premise with: " + narrative.sharesPremiseWith.join(", ") + " — falsifying that premise puts all of them in play at once");
   }
-  if (narrative.conflictsWith.length > 0)
-    out.push(`- Recorded conflict with: ${narrative.conflictsWith.join(", ")}`);
+  if (narrative.conflictsWith.length > 0) out.push("- Recorded conflict with: " + narrative.conflictsWith.join(", "));
 
   return out;
 }
@@ -273,7 +268,7 @@ function relatedLines(narrative: DecisionNarrative | undefined): readonly string
  *  record, so the text is split back out rather than re-read from the graph — which would be the
  *  emitter reaching past the CIF. */
 function premiseTextFor(record: ExportRecord, premiseId: string): string {
-  const marker = ` (${premiseId})`;
+  const marker = " (" + premiseId + ")";
 
   for (const part of record.becauseText.split(", ")) {
     if (part.endsWith(marker)) return part.slice(0, part.length - marker.length);

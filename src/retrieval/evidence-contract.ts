@@ -66,11 +66,24 @@ export class SearchTrace {
   private readonly steps: SearchStep[] = [];
   private readonly seen = new Set<DecisionId>();
   private bounded = false;
+  /**
+   * The budget for THIS run.
+   *
+   * Defaults to the contract ceiling. Lowering it is how the ablation measures what the contract
+   * costs — a budget nobody can vary is a budget nobody has shown to be load-bearing. Clamped to
+   * [1, MAX_SEARCHES]: the ceiling is the contract, so a caller may spend less but never more, and
+   * a zero budget would refuse every question before searching, which measures nothing.
+   */
+  private readonly budget: number;
+
+  constructor(budget: number = MAX_SEARCHES) {
+    this.budget = Math.max(1, Math.min(Math.trunc(budget), MAX_SEARCHES));
+  }
 
   /** Record one search. Returns false if the budget was already spent — the caller must
    *  then stop, which is the whole point of returning a value rather than throwing. */
   record(step: SearchStep): boolean {
-    if (this.steps.length >= MAX_SEARCHES) {
+    if (this.steps.length >= this.budget) {
       this.bounded = true;
       return false;
     }
@@ -102,15 +115,22 @@ export class SearchTrace {
     return this.steps.length;
   }
 
+  /** The budget in force for THIS run. Exposed so the answer text and the stop reason describe the
+   *  ceiling the run actually had rather than the module constant, which is what makes a lowered
+   *  budget visible in the output instead of silently ignored. */
+  get maxSearches(): number {
+    return this.budget;
+  }
+
   get isBoundedOut(): boolean {
-    return this.bounded || this.steps.length >= MAX_SEARCHES;
+    return this.bounded || this.steps.length >= this.budget;
   }
 
   /** Freeze into the immutable artifact stored on the answer. */
   freeze(sufficiencyAssessment: string): RunTrace {
     return {
       searches: [...this.steps],
-      maxSearches: MAX_SEARCHES,
+      maxSearches: this.budget,
       boundedOut: this.bounded,
       sufficiencyAssessment,
     };
@@ -159,10 +179,7 @@ export function resolveCitations(
 
 /** A claim is only grounded if it cites something that resolved. Recomputed here rather than
  *  trusted from the composer, because the composer does not know what the run retrieved. */
-export function groundClaims(
-  claims: readonly Claim[],
-  resolving: ReadonlySet<DecisionId>,
-): readonly Claim[] {
+export function groundClaims(claims: readonly Claim[], resolving: ReadonlySet<DecisionId>): readonly Claim[] {
   return claims.map((claim) => ({
     text: claim.text,
     citations: claim.citations,
@@ -215,16 +232,24 @@ export function assessSufficiency(
   groundedness: number,
   totalClaims: number,
 ): string {
-  const budget = `${trace.searchCount} of ${MAX_SEARCHES} searches used`;
-  const score = `${(groundedness * 100).toFixed(0)}% grounded (${totalClaims} claims)`;
+  const budget = trace.searchCount + " of " + trace.maxSearches + " searches used";
+  const score = (groundedness * 100).toFixed(0) + "% grounded (" + totalClaims + " claims)";
 
   switch (reason) {
     case "STOPPED_SUFFICIENT":
-      return `${budget}, ${score}. Stopped because enough evidence was found, not because the budget ran out — a further search would have added candidates to rank, not changed the answer.`;
+      return budget + ", " + score + ". Stopped because enough evidence was found, not because the budget ran out — a further search would have added candidates to rank, not changed the answer.";
     case "STOPPED_BOUNDED":
-      return `${budget}, ${score}. STOPPED BECAUSE THE BUDGET RAN OUT, not because the log was exhausted. The answer is short of evidence and says so. A narrower or differently worded question may resolve within three searches; if it does not, the gap is in the log rather than in the query.`;
+      return (
+        budget + ", " + score + ". STOPPED BECAUSE THE BUDGET RAN OUT, not because the log was exhausted. " +
+        "The answer is short of evidence and says so. A narrower or differently worded question may resolve within three searches; " +
+        "if it does not, the gap is in the log rather than in the query."
+      );
     case "STOPPED_EMPTY":
-      return `${budget}, ${score}. Searches ran and returned nothing on-topic. This is a real result, not a failure to try: the log does not appear to contain a decision answering this question. The nearest related decisions are offered instead of an invented answer.`;
+      return (
+        budget + ", " + score + ". Searches ran and returned nothing on-topic. " +
+        "This is a real result, not a failure to try: the log does not appear to contain a decision answering this question. " +
+        "The nearest related decisions are offered instead of an invented answer."
+      );
     case "STOPPED_NO_LOG":
       return (
         "No searches ran because the log is empty. Nothing has been recorded yet, so no question can be answered. " +
@@ -239,17 +264,17 @@ export function describeContract(): string {
   return [
     "The evidence contract — four rules this answer was produced under:",
     "",
-    `  1. AT MOST ${MAX_SEARCHES} SEARCHES per question, each recorded in the trace below.`,
-    '     The bound is not a performance optimisation. An unbounded search turns "I could',
-    '     not find it" into "I have not looked hard enough yet", and a system that can',
+    "  1. AT MOST " + MAX_SEARCHES + " SEARCHES per question, each recorded in the trace below.",
+    "     The bound is not a performance optimisation. An unbounded search turns \"I could",
+    "     not find it\" into \"I have not looked hard enough yet\", and a system that can",
     "     always look again never has to say it does not know.",
     "",
     "  2. A CITATION IS VALID ONLY IF IT POINTS TO A DECISION RETRIEVED IN THIS RUN.",
-    '     Not "exists in the log". Only what this run retrieved has been read, scored and',
+    "     Not \"exists in the log\". Only what this run retrieved has been read, scored and",
     "     ranked, so only those ids count as evidence. Anything else is shown as unresolved",
     "     and reported in the groundedness notes — never silently dropped, never counted.",
     "",
-    '  3. "INSUFFICIENT EVIDENCE" IS A FIRST-CLASS ANSWER. Below the partial floor the',
+    "  3. \"INSUFFICIENT EVIDENCE\" IS A FIRST-CLASS ANSWER. Below the partial floor the",
     "     system refuses, states what is missing, and offers the nearest related decisions.",
     "",
     "  4. THE RUN LEAVES A TRACE: what was searched, what came back, the top score, why each",

@@ -22,8 +22,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { EngineId } from "@/types/common";
 import type { ReactElement } from "react";
+import type { EngineId } from "@/types/common";
 
 export function EngineBadge({ engine, title }: { engine: EngineId; title?: string }): ReactElement {
   const isLocal = engine.kind === "local";
@@ -35,19 +35,17 @@ export function EngineBadge({ engine, title }: { engine: EngineId; title?: strin
         title ??
         (isLocal
           ? "Produced by the local engine: deterministic, offline, no API key. Nothing left this browser."
-          : `Produced by an LLM engine (${engine.model}). The transcript was sent to the configured provider.`)
+          : "Produced by an LLM engine (" + engine.model + "). The transcript was sent to the configured provider.")
       }
       style={{
         color: isLocal ? "var(--mode-local)" : "var(--mode-llm)",
-        border: `1px solid ${isLocal ? "var(--mode-local)" : "var(--mode-llm)"}`,
-        background: isLocal
-          ? "color-mix(in srgb, var(--mode-local) 14%, transparent)"
-          : "transparent",
+        border: "1px solid " + (isLocal ? "var(--mode-local)" : "var(--mode-llm)"),
+        background: isLocal ? "color-mix(in srgb, var(--mode-local) 14%, transparent)" : "transparent",
         fontSize: 10,
         letterSpacing: 0.4,
       }}
     >
-      {isLocal ? "LOCAL" : `LLM${engine.model.length > 0 ? ` · ${engine.model}` : ""}`}
+      {isLocal ? "LOCAL" : "LLM" + (engine.model.length > 0 ? " · " + engine.model : "")}
     </span>
   );
 }

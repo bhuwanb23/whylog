@@ -29,11 +29,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import { auditDecision, renderSummary, renderTrail, renderWeakest } from "@/reasoning/audit";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
+import { useMemo, type ReactElement } from "react";
 import type { DecisionId } from "@/types/common";
-import { type ReactElement, useMemo } from "react";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { auditDecision, renderSummary, renderTrail, renderWeakest } from "@/reasoning/audit";
 import { SectionLabel } from "./PremiseList";
 
 export function AuditTrail({
@@ -47,19 +47,13 @@ export function AuditTrail({
 }): ReactElement {
   /* Auditing walks the justification graph to a depth cap, so it is memoised on the state rather
    * than recomputed on every expand/collapse of the card. */
-  const trail = useMemo(
-    () => auditDecision(state, labels, decisionId),
-    [state, labels, decisionId],
-  );
+  const trail = useMemo(() => auditDecision(state, labels, decisionId), [state, labels, decisionId]);
 
   return (
     <div>
       <SectionLabel>audit trail</SectionLabel>
 
-      <pre
-        className="mono dim"
-        style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", fontSize: 11, lineHeight: 1.6 }}
-      >
+      <pre className="mono dim" style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", fontSize: 11, lineHeight: 1.6 }}>
         {renderSummary(state, trail)}
       </pre>
 
@@ -77,18 +71,15 @@ export function AuditTrail({
         </div>
       )}
 
-      <pre
-        className="mono faint"
-        style={{ whiteSpace: "pre-wrap", margin: "10px 0 0", fontSize: 10.5, lineHeight: 1.55 }}
-      >
+      <pre className="mono faint" style={{ whiteSpace: "pre-wrap", margin: "10px 0 0", fontSize: 10.5, lineHeight: 1.55 }}>
         {renderTrail(trail)}
       </pre>
 
       <div className="faint" style={{ fontSize: 10, marginTop: 8 }}>
         Ordered by LEARNED time, unlike everything else in the product, which orders by valid time.
         An audit answers "when did the system come to know this?", so a decision learned today about
-        something that happened three weeks ago belongs at the END of the trail and near the START
-        of the timeline. Both orderings are correct; they answer different questions.
+        something that happened three weeks ago belongs at the END of the trail and near the START of
+        the timeline. Both orderings are correct; they answer different questions.
       </div>
     </div>
   );

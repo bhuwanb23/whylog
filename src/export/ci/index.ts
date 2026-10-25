@@ -17,16 +17,16 @@
  * the verify commands that reference it.
  *
  * That guarantee is the point. A `CLAUDE.md` telling an agent to run
- * `node scripts/whylog-guards.cjs --decision WLD-0007` is only true if that file exists and
+ * `node scripts/whylog-guards.mjs --decision WLD-0007` is only true if that file exists and
  * honours that flag. Compiling both from one graph in one pass is what makes it true.
  * ---------------------------------------------------------------------------
  */
 
-import { type CiExport, exportCi } from "@/guards";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
-import type { ExportId, ISODateString } from "@/types/common";
 import type { CompiledArtifact, ExportTarget, IntegrityStamp } from "@/types/export";
+import type { ExportId, ISODateString } from "@/types/common";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { exportCi, type CiExport } from "@/guards";
 import { RUNNER_PATH } from "../verify-command";
 import { emitRunner, emitWorkflow } from "./runner";
 
@@ -100,3 +100,4 @@ export function emitCi(input: CiInput, requiredByDocuments: boolean): CiResult {
 
   return { artifacts, export: exported, requiredByDocuments };
 }
+

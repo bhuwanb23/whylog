@@ -28,8 +28,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import { EmptyState } from "@/components/common";
-import { DecisionCard } from "@/components/decision";
+import { useMemo, useState, type ReactElement } from "react";
+import type { DecisionId, PremiseId } from "@/types/common";
+import type { NodeId } from "@/reasoning/labeller";
+import { label as labelGraph } from "@/reasoning/labeller";
+import { entrenchmentOf } from "@/reasoning/entrenchment";
+import { guardStatusMap } from "@/guards";
+import { useWhyLog } from "@/store/whylog";
 import {
   DecisionGraph,
   PremiseLattice,
@@ -37,14 +42,8 @@ import {
   layoutLattice,
   reportHairball,
 } from "@/components/graph";
-import { guardStatusMap } from "@/guards";
-import { entrenchmentOf } from "@/reasoning/entrenchment";
-import type { NodeId } from "@/reasoning/labeller";
-import { label as labelGraph } from "@/reasoning/labeller";
-import { useWhyLog } from "@/store/whylog";
-import type { DecisionId } from "@/types/common";
-import { asPremiseId } from "@/types/common";
-import { type ReactElement, useMemo, useState } from "react";
+import { DecisionCard } from "@/components/decision";
+import { EmptyState } from "@/components/common";
 
 export function GraphView(): ReactElement {
   const whylog = useWhyLog();
@@ -82,20 +81,10 @@ export function GraphView(): ReactElement {
         <h2 className="card-title">
           The premise lattice
           <span style={{ marginLeft: 12, display: "inline-flex", gap: 6 }}>
-            <button
-              type="button"
-              className="badge"
-              style={{ opacity: mode === "lattice" ? 1 : 0.55 }}
-              onClick={() => setMode("lattice")}
-            >
+            <button type="button" className="badge" style={{ opacity: mode === "lattice" ? 1 : 0.55 }} onClick={() => setMode("lattice")}>
               lattice
             </button>
-            <button
-              type="button"
-              className="badge"
-              style={{ opacity: mode === "chains" ? 1 : 0.55 }}
-              onClick={() => setMode("chains")}
-            >
+            <button type="button" className="badge" style={{ opacity: mode === "chains" ? 1 : 0.55 }} onClick={() => setMode("chains")}>
               supersession chains
             </button>
           </span>
@@ -104,22 +93,22 @@ export function GraphView(): ReactElement {
         {mode === "lattice" ? (
           <>
             <p className="dim" style={{ margin: "0 0 12px", fontSize: 12 }}>
-              <strong>Not a decision graph.</strong> This is <strong>bipartite</strong>: assumptions
-              are the load-bearing nodes, in columns by premise type, and decisions hang below them
-              as leaves. Nobody in this category has that picture, because nobody stores that
-              structure — it is not a rendering choice over the same data, it is the data. A tool
-              that records "we chose SQLite" can draw a node; only a tool that also records{" "}
-              <em>given single-user, given no deploy infra, never if concurrent writers</em> can
-              draw this.
+              <strong>Not a decision graph.</strong> This is <strong>bipartite</strong>: assumptions are
+              the load-bearing nodes, in columns by premise type, and decisions hang below them as
+              leaves. Nobody in this category has that picture, because nobody stores that structure —
+              it is not a rendering choice over the same data, it is the data. A tool that records "we
+              chose SQLite" can draw a node; only a tool that also records{" "}
+              <em>given single-user, given no deploy infra, never if concurrent writers</em> can draw
+              this.
             </p>
 
             <div className="notice notice-info" style={{ marginBottom: 12, fontSize: 12 }}>
               <strong>Click a premise, then falsify it.</strong> Every decision resting on it
-              highlights; the labels flip in sequence; the ones with independent support survive.
-              That animation is the whole concept in ten seconds — and it is a REAL cascade,
-              computed by diffing the labels before and after the Phase 2 cycle ran, not a
-              simulation. A simulated cascade would show everything flipping, which is exactly the
-              "cries wolf" behaviour the independent-support stop exists to prevent.
+              highlights; the labels flip in sequence; the ones with independent support survive. That
+              animation is the whole concept in ten seconds — and it is a REAL cascade, computed by
+              diffing the labels before and after the Phase 2 cycle ran, not a simulation. A simulated
+              cascade would show everything flipping, which is exactly the "cries wolf" behaviour the
+              independent-support stop exists to prevent.
             </div>
 
             <PremiseLattice
@@ -130,29 +119,20 @@ export function GraphView(): ReactElement {
             />
 
             <label className="faint" style={{ fontSize: 11, marginTop: 10, display: "block" }}>
-              <input
-                type="checkbox"
-                checked={showHidden}
-                onChange={(event) => setShowHidden(event.target.checked)}
-              />{" "}
-              also draw superseded decisions and topical `related` edges. Off by default: a
-              superseded decision is history and a `related` edge is topical, never structural —
-              neither carries weight in a cascade, and drawing them at full strength implies that
-              they do.
+              <input type="checkbox" checked={showHidden} onChange={(event) => setShowHidden(event.target.checked)} />{" "}
+              also draw superseded decisions and topical `related` edges. Off by default: a superseded
+              decision is history and a `related` edge is topical, never structural — neither carries
+              weight in a cascade, and drawing them at full strength implies that they do.
             </label>
           </>
         ) : (
           <>
             <p className="dim" style={{ margin: "0 0 12px", fontSize: 12 }}>
               Supersession chains by variable — the picture every competitor ships, kept because it
-              answers a question the lattice answers badly. What replaced what, and when, is a
-              sequence; in the lattice it is one edge between two leaves in the same row.
+              answers a question the lattice answers badly. What replaced what, and when, is a sequence;
+              in the lattice it is one edge between two leaves in the same row.
             </p>
-            <DecisionGraph
-              state={whylog.state}
-              labels={labels}
-              onSelect={(id) => setSelected(id)}
-            />
+            <DecisionGraph state={whylog.state} labels={labels} onSelect={(id) => setSelected(id)} />
           </>
         )}
       </section>
@@ -165,12 +145,12 @@ export function GraphView(): ReactElement {
             labels={labels}
             decisionId={selectedDecision}
             entrenchment={breakdown}
-            onSelectPremise={(id) => setSelected(id)}
+            onSelectPremise={(id) => setSelected(id as NodeId)}
           />
         </section>
       ) : null}
 
-      {selected?.startsWith("P-") ? (
+      {selected !== null && selected.startsWith("P-") ? (
         <section className="card">
           <h2 className="card-title">Premise {selected}</h2>
           <PremiseDetail premiseId={selected} />
@@ -184,8 +164,8 @@ export function GraphView(): ReactElement {
 
 function PremiseDetail({ premiseId }: { premiseId: string }): ReactElement {
   const whylog = useWhyLog();
-  const premise = whylog.state.premises.get(asPremiseId(premiseId));
-  const dependents = whylog.state.premiseToDecisions.get(asPremiseId(premiseId)) ?? [];
+  const premise = whylog.state.premises.get(premiseId as PremiseId);
+  const dependents = whylog.state.premiseToDecisions.get(premiseId as PremiseId) ?? [];
   const labels = useMemo(() => labelGraph(whylog.state).labels, [whylog.state]);
 
   if (premise === undefined) {
@@ -198,17 +178,7 @@ function PremiseDetail({ premiseId }: { premiseId: string }): ReactElement {
     <div>
       <div style={{ fontSize: 13 }}>
         <span className="mono faint">{premise.id}</span>{" "}
-        <span
-          className="badge"
-          style={{
-            color:
-              label === "IN"
-                ? "var(--label-in)"
-                : label === "OUT"
-                  ? "var(--label-out)"
-                  : "var(--label-unknown)",
-          }}
-        >
+        <span className="badge" style={{ color: label === "IN" ? "var(--label-in)" : label === "OUT" ? "var(--label-out)" : "var(--label-unknown)" }}>
           {label}
         </span>{" "}
         {premise.text}
@@ -216,13 +186,13 @@ function PremiseDetail({ premiseId }: { premiseId: string }): ReactElement {
 
       <div className="mono faint" style={{ fontSize: 11, marginTop: 6 }}>
         {premise.type}.{premise.predicate}
-        {premise.value === undefined ? "" : ` = ${String(premise.value)}`}
+        {premise.value === undefined ? "" : " = " + String(premise.value)}
       </div>
 
       <div className="dim" style={{ fontSize: 12, marginTop: 10 }}>
         {dependents.length === 0
           ? "Nothing rests on this premise. It is recorded but load-bearing for no decision — worth checking whether the decision it was extracted beside lost its justification."
-          : `${dependents.length} decision(s) rest on this premise: ${dependents.join(", ")}. Falsifying it puts every one of them in play at once, which is why a SHARED premise is drawn larger in the lattice than one with a single dependent.`}
+          : dependents.length + " decision(s) rest on this premise: " + dependents.join(", ") + ". Falsifying it puts every one of them in play at once, which is why a SHARED premise is drawn larger in the lattice than one with a single dependent."}
       </div>
     </div>
   );
@@ -247,8 +217,8 @@ function AntiHairballCard(): ReactElement {
       </pre>
       <div className="faint" style={{ fontSize: 11, marginTop: 10 }}>
         {report.nodeCount} nodes · {report.edgeCount} edges. A diagram that hides things without
-        saying so is a diagram the viewer cannot trust — the first thing they wonder is whether
-        their log is incomplete.
+        saying so is a diagram the viewer cannot trust — the first thing they wonder is whether their
+        log is incomplete.
       </div>
     </section>
   );

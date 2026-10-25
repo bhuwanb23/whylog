@@ -137,7 +137,7 @@ export function renderIndex(entries: readonly IndexEntry[]): string {
   if (entries.length === 0) return "";
 
   const lines = [
-    `## Index — ${entries.length} further decision(s), not inline`,
+    "## Index — " + entries.length + " further decision(s), not inline",
     "",
     "These are in force but did not fit the token budget. Each is one line so you know it exists;",
     "read DECISIONS.md for the full record before changing code it governs.",
@@ -146,7 +146,9 @@ export function renderIndex(entries: readonly IndexEntry[]): string {
 
   for (const entry of entries) {
     lines.push(
-      `- ${entry.id} · ${entry.imperative}${entry.appliesTo.length > 0 ? ` · ${entry.appliesTo.join(", ")}` : ""} · see ${entry.seeAlso}`,
+      "- " + entry.id + " · " + entry.imperative +
+        (entry.appliesTo.length > 0 ? " · " + entry.appliesTo.join(", ") : "") +
+        " · see " + entry.seeAlso,
     );
   }
 
@@ -154,17 +156,15 @@ export function renderIndex(entries: readonly IndexEntry[]): string {
 }
 
 /** The live budget indicator. */
-export function describeBudget(
-  budget: ExportBudget,
-  lineCount: number,
-  estimatedTokens: number,
-): string {
+export function describeBudget(budget: ExportBudget, lineCount: number, estimatedTokens: number): string {
   const lines = [
-    `Budget: ${lineCount} / ${budget.maxLines} lines${budget.overBudget ? "  — OVER" : ""}  ·  ~${estimatedTokens} tokens`,
-    `  inline (tier 1)   ${budget.inlineCount} decision(s), full record form`,
-    `  index  (tier 2)   ${budget.indexCount} decision(s), one line each`,
-    `  excluded          ${budget.excludedCount} (OUT or superseded)`,
-    `  fixed overhead    ${FIXED_OVERHEAD.lines} lines (headings, rejected block, stamp)`,
+    "Budget: " + lineCount + " / " + budget.maxLines + " lines" +
+      (budget.overBudget ? "  — OVER" : "") +
+      "  ·  ~" + estimatedTokens + " tokens",
+    "  inline (tier 1)   " + budget.inlineCount + " decision(s), full record form",
+    "  index  (tier 2)   " + budget.indexCount + " decision(s), one line each",
+    "  excluded          " + budget.excludedCount + " (OUT or superseded)",
+    "  fixed overhead    " + FIXED_OVERHEAD.lines + " lines (headings, rejected block, stamp)",
   ];
 
   if (budget.overBudget) {
@@ -186,20 +186,21 @@ export function estimateTokens(lineCount: number): number {
 export function describeExcluded(excluded: readonly { id: DecisionId; reason: string }[]): string {
   if (excluded.length === 0) return "Nothing was excluded.";
 
-  const lines = [`${excluded.length} decision(s) excluded from the agent files:`, ""];
+  const lines = [
+    excluded.length + " decision(s) excluded from the agent files:",
+    "",
+  ];
 
   for (const entry of excluded.slice(0, 12)) {
-    lines.push(`  ${entry.id} — ${entry.reason}`);
+    lines.push("  " + entry.id + " — " + entry.reason);
   }
 
-  if (excluded.length > 12) lines.push(`  … ${excluded.length - 12} more`);
+  if (excluded.length > 12) lines.push("  … " + (excluded.length - 12) + " more");
 
   lines.push("");
-  lines.push(
-    "Excluded by default, and only returned under an explicit toggle: a file containing a",
-  );
-  lines.push('reversed rule alongside its replacement is exactly the "model may pick one');
-  lines.push('arbitrarily" failure. DECISIONS.md carries them, because a human reading history');
+  lines.push("Excluded by default, and only returned under an explicit toggle: a file containing a");
+  lines.push("reversed rule alongside its replacement is exactly the \"model may pick one");
+  lines.push("arbitrarily\" failure. DECISIONS.md carries them, because a human reading history");
   lines.push("needs the reversals and an agent following rules does not.");
 
   return lines.join("\n");

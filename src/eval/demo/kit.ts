@@ -26,13 +26,11 @@
  */
 
 import { createLocalEngine, localEngineId } from "@/ai/local";
-import { synthesiseDecision } from "@/guards";
 import { nowISO } from "@/lib/format";
-import { type EventLog, appendBatch, emptyLog, fold } from "@/substrate";
-import type { GraphState } from "@/substrate/graph-state";
-import { type EngineId, type ISODateString, asISO } from "@/types/common";
-import type { EventType, NewEvent } from "@/types/events";
+import { appendBatch, emptyLog, fold, type EventLog } from "@/substrate";
 import { STORAGE_KEYS } from "./keys";
+import type { EngineId, ISODateString } from "@/types/common";
+import type { GraphState } from "@/substrate/graph-state";
 
 /** The storage keys a reset must clear. Listed here rather than scattered, because a reset that misses
  *  one key leaves the next demo starting from the previous one's state — the failure is invisible until
@@ -72,14 +70,10 @@ export async function buildSeed(): Promise<SeedResult> {
   const loaded = loadCorpus(corpus, CORPUS_ROOT);
 
   if (loaded.missingFiles.length > 0) {
-    warnings.push(
-      `${loaded.missingFiles.length} corpus file(s) missing: ${loaded.missingFiles.join(", ")}`,
-    );
+    warnings.push(loaded.missingFiles.length + " corpus file(s) missing: " + loaded.missingFiles.join(", "));
   }
   if (loaded.unresolved.length > 0) {
-    warnings.push(
-      `${loaded.unresolved.length} corpus label(s) do not resolve — the seed will still build, but the metrics would not be trustworthy.`,
-    );
+    warnings.push(loaded.unresolved.length + " corpus label(s) do not resolve — the seed will still build, but the metrics would not be trustworthy.");
   }
 
   /* Only the two demo fixtures are seeded. The full twelve-transcript corpus produces a graph too large
@@ -87,14 +81,12 @@ export async function buildSeed(): Promise<SeedResult> {
    * premise invalidation, both of which live entirely in these two files. */
   const demoOnly = {
     ...loaded.corpus,
-    transcripts: loaded.corpus.transcripts.filter(
-      (transcript) => transcript.id === "demo1" || transcript.id === "demo2",
+    transcripts: loaded.corpus.transcripts.filter((transcript) =>
+      transcript.id === "demo1" || transcript.id === "demo2",
     ),
-    questions: loaded.corpus.questions.filter(
-      (question) => question.id === "q1" || question.id === "q8",
-    ),
-    plants: loaded.corpus.plants.filter(
-      (plant) => plant.id === "L1-sqlite" || plant.id === "L2-premise-falsified",
+    questions: loaded.corpus.questions.filter((question) => question.id === "q1" || question.id === "q8"),
+    plants: loaded.corpus.plants.filter((plant) =>
+      plant.id === "L1-sqlite" || plant.id === "L2-premise-falsified",
     ),
   };
 
@@ -107,61 +99,12 @@ export async function buildSeed(): Promise<SeedResult> {
   });
 
   for (const entry of run.transcripts) {
-    if (!entry.ok)
-      warnings.push(
-        `fixture ${entry.transcript.id} failed to import: ${entry.failure ?? "unknown"}`,
-      );
-  }
-
-  /* Guards are synthesised, never auto-accepted. The harness only reads `guardStatusMap` and never
-   * writes guard events, so without this step the seed would show beat 7 an empty list. Templates
-   * keep the seed deterministic; letter suffixes match `formatGuardId` (`G-0007a`). */
-  const actor = { kind: "system" } as const;
-  const guardDrafts: NewEvent<EventType>[] = [];
-  const baseLog = rebuildLog(run);
-
-  /* Learned time is monotonic: take the max of wall-clock and the rebuilt log's lastAt so the
-   * guard events cannot be stamped earlier than the chain they append to. */
-  const lastAtMs = baseLog.lastAt === null ? 0 : Date.parse(baseLog.lastAt);
-  const at = asISO(new Date(Math.max(Date.parse(nowISO()), lastAtMs + 1)).toISOString());
-
-  for (const decision of run.state.decisions.values()) {
-    if (decision.status === "superseded" || decision.status === "archived") continue;
-    const result = await synthesiseDecision({
-      state: run.state,
-      decisionId: decision.id,
-      templatesOnly: true,
-      actor,
-      at,
-    });
-    guardDrafts.push(...result.drafts);
-  }
-
-  let log = baseLog;
-  if (guardDrafts.length > 0) {
-    const appended = appendBatch(
-      log,
-      guardDrafts.map((draft) => ({
-        draft,
-        context: { now: at, actor, reason: draft.reason ?? "guard synthesis" },
-      })),
-    );
-    if (appended.ok) {
-      log = appended.log;
-    } else {
-      const detail =
-        appended.validation.ok === false
-          ? appended.validation.message
-          : "unknown validation failure";
-      warnings.push(
-        `guard synthesis events failed to append (draft ${appended.failedAt}): ${detail}`,
-      );
-    }
+    if (!entry.ok) warnings.push("fixture " + entry.transcript.id + " failed to import: " + (entry.failure ?? "unknown"));
   }
 
   return {
-    log,
-    state: fold(log.events, { engine: engineId, now: at }),
+    log: rebuildLog(run),
+    state: run.state,
     engineId,
     builtAt: nowISO(),
     decisions: run.state.decisions.size,
@@ -184,12 +127,7 @@ function rebuildLog(run: { state: GraphState }): EventLog {
     log,
     run.state.events.map((event) => ({
       draft: { type: event.type, payload: event.payload, actor: event.actor, reason: event.reason },
-      context: {
-        now: event.at,
-        actor: event.actor,
-        reason: event.reason,
-        occurredAt: event.occurredAt,
-      },
+      context: { now: event.at, actor: event.actor, reason: event.reason, occurredAt: event.occurredAt },
     })),
   );
 
@@ -197,12 +135,7 @@ function rebuildLog(run: { state: GraphState }): EventLog {
    * original. That is acceptable for a seed — the app reseals on import via `substrate/portability.ts`,
    * which is the supported path for bringing an external log in — but it is not acceptable to pretend
    * otherwise, so the reconstruction folds rather than claiming to restore. */
-  return appended.ok
-    ? appended.log
-    : fold(run.state.events, {
-        engine: run.state.computedAt ? localEngineId() : localEngineId(),
-        now: nowISO(),
-      }) && emptyLog();
+  return appended.ok ? appended.log : fold(run.state.events, { engine: run.state.computedAt ? localEngineId() : localEngineId(), now: nowISO() }) && emptyLog();
 }
 
 /**
@@ -212,10 +145,7 @@ function rebuildLog(run: { state: GraphState }): EventLog {
  * resetting once, which matters because a presenter who is unsure whether the reset landed will press it
  * again, and a reset that compounds would be worse than none.
  */
-export function resetDemo(storage: Storage | null): {
-  cleared: readonly string[];
-  available: boolean;
-} {
+export function resetDemo(storage: Storage | null): { cleared: readonly string[]; available: boolean } {
   if (storage === null) return { cleared: [], available: false };
 
   const cleared: string[] = [];
@@ -237,5 +167,5 @@ export function describeReset(result: { cleared: readonly string[]; available: b
   if (result.cleared.length === 0) {
     return "Nothing to clear: storage was already empty. Reset is idempotent, so this is a clean start.";
   }
-  return `Cleared ${result.cleared.length} key(s): ${result.cleared.join(", ")}. Rebuilding the seed from the two demo fixtures.`;
+  return "Cleared " + result.cleared.length + " key(s): " + result.cleared.join(", ") + ". Rebuilding the seed from the two demo fixtures.";
 }

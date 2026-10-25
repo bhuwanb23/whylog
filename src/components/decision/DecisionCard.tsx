@@ -135,10 +135,10 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
       <YStatement decision={decision} />
 
       {decision.rationale !== undefined && decision.rationale.length > 0 ? (
-        <p className="dim" style={{ margin: "8px 0 0", fontSize: 12 }}>
+        <div className="dim" style={{ margin: "8px 0 0", fontSize: 12 }}>
           <SectionLabel>rationale</SectionLabel>
           <span style={{ marginLeft: 8 }}>{decision.rationale}</span>
-        </p>
+        </div>
       ) : null}
 
       {/* ---- the section that answers the only question this card exists for ---- */}

@@ -28,47 +28,49 @@
  * ---------------------------------------------------------------------------
  */
 
-import { DEFAULT_CONFIG, engineIdOf, readConfig } from "@/ai/config";
-import { type ActiveEngine, getEngine, invalidateEngine } from "@/ai/engine";
+import { create } from "zustand";
 import { nowISO } from "@/lib/format";
-import { type Result, err, ok } from "@/lib/result";
+import { ok, err, type Result } from "@/lib/result";
+import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
+import type { AnyEvent, EventType, EventPayloadMap, NewEvent } from "@/types/events";
 import {
-  type EventLog,
+  append as appendToLog,
   appendBatch as appendBatchToLog,
   appendSealed,
-  append as appendToLog,
   emptyLog,
   loadLog as sealLog,
   verify as verifyLog,
+  type EventLog,
 } from "@/substrate/event-log";
+import { validationMessage } from "@/substrate/event-validation";
 import type { GraphState } from "@/substrate/graph-state";
 import { emptyState } from "@/substrate/graph-state";
-import type { ChainVerification } from "@/substrate/hash-chain";
-import { type FoldOptions, fold, rebuild } from "@/substrate/materialize";
+import { fold, rebuild, type FoldOptions } from "@/substrate/materialize";
 import {
-  type StorageReport,
-  isPersistent,
   loadLog as loadStoredLog,
-  reclaimSpace,
   saveEvents,
   report as storageReport,
+  isPersistent,
+  reclaimSpace,
   wipeAll,
+  type StorageReport,
 } from "@/substrate/persistence";
 import {
-  type ImportOutcome,
-  type PortableLog,
-  describeImportOutcome,
-  describeRejection,
   exportLog,
   importLog,
   reseal,
   serializeLog,
+  describeImportOutcome,
+  describeRejection,
+  type ImportOutcome,
+  type PortableLog,
 } from "@/substrate/portability";
+import type { ChainVerification } from "@/substrate/hash-chain";
+import { label } from "@/reasoning/labeller";
 import { SCHEMA_VERSION } from "@/substrate/schema";
-import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
-import type { AnyEvent, EventPayloadMap, EventType, NewEvent } from "@/types/events";
-import { create } from "zustand";
-import { type SettingsState, initialSettings } from "./settings";
+import { getEngine, invalidateEngine, type ActiveEngine } from "@/ai/engine";
+import { DEFAULT_CONFIG, engineIdOf, readConfig } from "@/ai/config";
+import { initialSettings, type SettingsState } from "./settings";
 
 /* -------------------------------------------------------------------------- */
 /* Shape                                                                      */
@@ -108,7 +110,13 @@ export interface WhyLogState {
   /* --- actions --- */
   readonly boot: () => void;
   readonly record: <T extends EventType>(
-    draft: NewEvent<T>,
+    /* `actor` and `reason` are optional ON THE DRAFT because the implementation fills them from
+     * `context` (then from the active engine's default actor). Declaring them required forced every
+     * caller to duplicate a reason the context already carries. */
+    draft: Omit<NewEvent<T>, "actor" | "reason"> & {
+      readonly actor?: Actor | undefined;
+      readonly reason?: string | undefined;
+    },
     context: { reason: string; actor?: Actor; occurredAt?: ISODateString },
   ) => Result<EventId, string>;
   readonly recordBatch: (
@@ -137,31 +145,6 @@ function notice(tone: Notice["tone"], title: string, body: string, at: ISODateSt
 
 function foldOptions(engineId: EngineId, at: ISODateString): FoldOptions {
   return { engine: engineId, now: at };
-}
-
-/**
- * The LEARNED time of an event, clamped so it can never move backwards.
- *
- * The substrate validates this (event-validation rule 4) and rejects the whole batch with
- * "Learned time must be monotonic", so the appender has to guarantee it rather than hope
- * every caller does. The reason it is not automatic: several layers capture a timestamp
- * before the work they timestamp, and the work can cross a millisecond boundary. The
- * reasoning cycle is the clearest case - it takes `startedAt`, then gate (b) asks retrieval
- * for candidates, which rebuilds the index and records an `IndexRebuilt` event with a FRESH
- * `nowISO()`, and only then does the cycle record its own drafts stamped with the OLDER
- * `startedAt`. The log then contained an event learned a millisecond before its predecessor,
- * and the batch was rejected.
- *
- * Clamping is the right repair rather than a rejection: an event in an append-only log
- * cannot have been learned before the event before it, so the later of the two times is the
- * true one. The caller's INTENT - "this happened at T" - is preserved in `occurredAt`, which
- * is exactly what the substrate's own message says to do: "set `occurredAt` instead if the
- * decision is older than the record of it".
- */
-function learnedAt(log: EventLog, candidate: ISODateString): ISODateString {
-  const floor = log.lastAt;
-  if (floor === null || floor === undefined) return candidate;
-  return candidate < floor ? floor : candidate;
 }
 
 /** The actor for an event with none supplied: the active engine, so every node
@@ -215,7 +198,10 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         engine: resolved,
         engineId: resolved.id,
         storage: storageReport(),
-        notices: [...notices, notice("error", "Stored log could not be read", stored.error, at)],
+        notices: [
+          ...notices,
+          notice("error", "Stored log could not be read", stored.error, at),
+        ],
       });
       return;
     }
@@ -297,7 +283,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
   /* ---------------- record ---------------- */
 
   record: (draft, context) => {
-    const { log, status } = get();
+    const { log, state, status } = get();
     const at = nowISO() as ISODateString;
 
     if (status === "degraded") {
@@ -314,20 +300,17 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         payload: draft.payload,
         actor: draft.actor ?? context.actor ?? defaultActor(active),
         reason: draft.reason ?? context.reason,
-        ...(draft.at === undefined ? {} : { at: learnedAt(log, draft.at) }),
+        ...(draft.at === undefined ? {} : { at: draft.at }),
         ...(draft.occurredAt === undefined
           ? context.occurredAt === undefined
             ? {}
             : { occurredAt: context.occurredAt }
           : { occurredAt: draft.occurredAt }),
       },
-      { now: learnedAt(log, at), actor: defaultActor(active), reason: context.reason },
+      { now: at, actor: defaultActor(active), reason: context.reason },
     );
 
-    if (!outcome.ok) {
-      const validation = outcome.validation;
-      return err(validation.ok ? "The event was rejected by validation." : validation.message);
-    }
+    if (!outcome.ok) return err(validationMessage(outcome.validation));
 
     const nextState = fold(outcome.log.events, foldOptions(get().engineId, at));
     const saved = saveEvents(outcome.log.events, outcome.log.headHash, at);
@@ -369,38 +352,88 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
           payload: draft.payload as EventPayloadMap[EventType],
           actor: draft.actor ?? actor,
           reason: draft.reason ?? context.reason,
-          /* The valid time and the learned time, forwarded exactly as the single-event
-           * `record` path forwards them.
-           *
-           * They used to be DROPPED here, and that silently destroyed the bi-temporality
-           * the whole substrate exists for: `seal` falls back to `context.now` for both, so
-           * every event claimed it happened at the moment it was learned. The extraction
-           * pipeline threads the transcript's date all the way to the drafts - a decision
-           * MADE on the 3rd, LEARNED today - and the store threw that away. The
-           * consequence was not cosmetic: the time machine's two axes could never diverge,
-           * because "what was true then" and "what did we know then" had the same clock.
-           */
-          ...(draft.at === undefined ? {} : { at: learnedAt(log, draft.at) }),
+          // The two clocks MUST survive the mapping. Phase 1 commits a whole
+          // extraction as one batch whose `occurredAt` is the transcript time,
+          // not now: dropping these fields would stamp every imported decision
+          // with the moment of import, which silently destroys the bi-temporal
+          // split (0.3) for the entire pipeline.
+          ...(draft.at === undefined ? {} : { at: draft.at }),
           ...(draft.occurredAt === undefined
             ? context.occurredAt === undefined
               ? {}
               : { occurredAt: context.occurredAt }
             : { occurredAt: draft.occurredAt }),
         },
-        context: { now: learnedAt(log, at), actor, reason: draft.reason ?? context.reason },
+        context: {
+          now: at,
+          actor,
+          reason: draft.reason ?? context.reason,
+          ...(context.occurredAt === undefined ? {} : { occurredAt: context.occurredAt }),
+        },
       })),
     );
 
-    if (!outcome.ok) {
-      const validation = outcome.validation;
-      return err(validation.ok ? "The event was rejected by validation." : validation.message);
+    if (!outcome.ok) return err(validationMessage(outcome.validation));
+
+    let workingLog = outcome.log;
+    let workingEvents = outcome.events;
+    let nextState = fold(workingLog.events, foldOptions(get().engineId, at));
+
+    /* ------------------------------------------------------------------
+     * Post-commit relabel. The fold's DecisionApproved handler stores an
+     * unconditionally-IN label, so a justification whose out-list premise is
+     * IN (the JTMS-invalid case) drifts from the labeller. Left uncorrected,
+     * guards read a stale IN/OUT and skip. Diff the pure labeller against the
+     * stored labels and append the corrective LabelChanged drafts in the SAME
+     * batch, then re-fold so the log — not just the cache — records the flip.
+     * This is REVISE's ASSERT step, run on every commit rather than only at
+     * boot/revise, so the authoritative label lives in the log.
+     * ------------------------------------------------------------------ */
+    const drift = label(nextState).changed;
+    if (drift.length > 0) {
+      const relabelDrafts = drift.map(
+        (c): NewEvent<"LabelChanged"> => ({
+          type: "LabelChanged",
+          payload: {
+            nodeId: c.id,
+            from: c.from,
+            to: c.to,
+            ...(c.reason.kind === "all-justifications-invalid" && c.reason.failedPremiseId
+              ? { triggerPremiseId: c.reason.failedPremiseId }
+              : {}),
+            ...(c.reason.kind === "valid-justification"
+              ? { invalidJustificationId: c.reason.justificationId }
+              : {}),
+            gate: "cascade",
+          },
+          actor,
+          reason: `Post-commit relabel: ${c.id} moved from ${c.from} to ${c.to} (${c.reason.kind.replace(/-/g, " ")}).`,
+          ...(at === undefined ? {} : { at: at as ISODateString }),
+        }),
+      );
+      const relabelOutcome = appendBatchToLog(
+        workingLog,
+        relabelDrafts.map((draft) => ({
+          draft: {
+            type: draft.type,
+            payload: draft.payload as EventPayloadMap[EventType],
+            actor: draft.actor,
+            reason: draft.reason,
+          },
+          context: { now: at, actor, reason: draft.reason },
+        })),
+      );
+      if (relabelOutcome.ok) {
+        workingLog = relabelOutcome.log;
+        workingEvents = [...workingEvents, ...relabelOutcome.events];
+        nextState = fold(workingLog.events, foldOptions(get().engineId, at));
+      }
     }
 
-    const nextState = fold(outcome.log.events, foldOptions(get().engineId, at));
-    const saved = saveEvents(outcome.log.events, outcome.log.headHash, at);
+    const saved = saveEvents(workingLog.events, workingLog.headHash, at);
 
     set((current) => ({
-      log: outcome.log,
+      log: workingLog,
       state: nextState,
       status: current.status === "empty" ? "loaded" : current.status,
       pristine: false,
@@ -410,7 +443,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         : [...current.notices, notice("error", "Recorded but not saved", saved.error, at)],
     }));
 
-    return ok(outcome.events.map((e) => e.id));
+    return ok(workingEvents.map((e) => e.id));
   },
 
   /* ---------------- rebuild ---------------- */
@@ -420,7 +453,10 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
     const { log } = get();
     // Throw the cache away and re-fold from the log. Safe by construction: the
     // projections are derived and the log is untouched.
-    const state = rebuild(get().state, foldOptions(get().engineId, at));
+    const state = rebuild(
+      get().state,
+      foldOptions(get().engineId, at),
+    );
     set((current) => ({
       state,
       notices: [

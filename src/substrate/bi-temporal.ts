@@ -143,31 +143,15 @@ export function matchesAsOf(window: ValidityWindow, filter: AsOfFilter): boolean
 
 /** Newest-first by VALID time. The timeline order, the default search order,
  *  and the recency input to entrenchment. */
-export function byValidDesc<T extends { valid: ISODateString }>(a: T, b: T): number {
-  if (a.valid === b.valid) return 0;
-  return a.valid < b.valid ? 1 : -1;
-}
-
-/**
- * Newest-first by VALID time, for nodes that carry a `temporal` window.
- *
- * `Decision` and `Premise` nest their bi-temporal pair under `temporal`; the
- * flat `byValidDesc` is for wrappers that surface `valid` directly. Both read
- * the SAME axis — valid time, never learned time — so ordering the timeline is
- * chronology in the world regardless of when the log learned it.
- */
-export function byTemporalValidDesc<T extends { temporal: { valid: ISODateString } }>(
-  a: T,
-  b: T,
-): number {
+export function byValidDesc<T extends { temporal: { readonly valid: ISODateString } }>(a: T, b: T): number {
   if (a.temporal.valid === b.temporal.valid) return 0;
   return a.temporal.valid < b.temporal.valid ? 1 : -1;
 }
 
 /** Oldest-first by VALID time. The order an export narrates in. */
-export function byValidAsc<T extends { valid: ISODateString }>(a: T, b: T): number {
-  if (a.valid === b.valid) return 0;
-  return a.valid < b.valid ? -1 : 1;
+export function byValidAsc<T extends { temporal: { readonly valid: ISODateString } }>(a: T, b: T): number {
+  if (a.temporal.valid === b.temporal.valid) return 0;
+  return a.temporal.valid < b.temporal.valid ? -1 : 1;
 }
 
 /** Oldest-first by LEARNED time. The audit trail order. */
@@ -183,16 +167,11 @@ export function byIdAsc<T extends { id: string }>(a: T, b: T): number {
   return a.id < b.id ? -1 : 1;
 }
 
-/** Compose comparators. `compare(byValidDesc, byIdAsc)` gives a total order.
- *
- * Two type parameters, not one: the two comparators constrain different fields
- * (`valid` and `id`), and a single inferred `T` would force the second
- * comparator to be assignable to the first one's constraint. The result orders
- * the intersection, which is what the callers actually hold. */
-export function compare<A, B>(
-  primary: (a: A, b: A) => number,
-  secondary: (a: B, b: B) => number,
-): (a: A & B, b: A & B) => number {
+/** Compose comparators. `compare(byValidDesc, byIdAsc)` gives a total order. */
+export function compare<T>(
+  primary: (a: T, b: T) => number,
+  secondary: (a: T, b: T) => number,
+): (a: T, b: T) => number {
   return (a, b) => primary(a, b) || secondary(a, b);
 }
 
@@ -260,13 +239,9 @@ export function overlaps(a: ValidityWindow, b: ValidityWindow): boolean {
 /** Exponential decay with a 30-day half-life, in (0, 1]. 1.0 for a decision
  *  made today. Exported here rather than in reasoning/ because the input is a
  *  validity window, not an entrenchment breakdown. */
-export function recency(
-  window: ValidityWindow,
-  reference: ISODateString,
-  halfLifeDays = 30,
-): number {
+export function recency(window: ValidityWindow, reference: ISODateString, halfLifeDays = 30): number {
   const age = validAgeDays(window, reference);
-  return 0.5 ** (age / halfLifeDays);
+  return Math.pow(0.5, age / halfLifeDays);
 }
 
 /* -------------------------------------------------------------------------- */

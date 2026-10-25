@@ -37,26 +37,20 @@
  * ---------------------------------------------------------------------------
  */
 
-import {
-  EmptyState,
-  FirstRunState,
-  StatusLegend,
-  TimelineStatusBadge,
-  timelineStatusOf,
-} from "@/components/common";
-import type { TimelineStatus } from "@/components/common";
-import { DecisionCard } from "@/components/decision";
-import { guardStatusMap } from "@/guards";
-import { VARIABLES } from "@/ontology";
-import { entrenchmentOf } from "@/reasoning/entrenchment";
-import { type Labelled, type NodeId, label as labelGraph } from "@/reasoning/labeller";
-import { type RetrievalResult, retrieveOnly, useAsk } from "@/store/ask";
-import { assertUserDecision } from "@/store/reasoning";
-import { useWhyLog } from "@/store/whylog";
-import type { GraphState } from "@/substrate/graph-state";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import type { DecisionId } from "@/types/common";
-import type { DecisionVariable } from "@/types/domain";
-import { type ReactElement, useEffect, useMemo, useState } from "react";
+import type { DecisionLabel, DecisionVariable } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
+import { label as labelGraph, type Labelled, type NodeId } from "@/reasoning/labeller";
+import { entrenchmentOf } from "@/reasoning/entrenchment";
+import { guardStatusMap } from "@/guards";
+import { useWhyLog } from "@/store/whylog";
+import { useAsk, retrieveOnly, type RetrievalResult } from "@/store/ask";
+import { assertUserDecision } from "@/store/reasoning";
+import { VARIABLES } from "@/ontology";
+import { DecisionCard } from "@/components/decision";
+import { EmptyState, FirstRunState, StatusLegend, TimelineStatusBadge, timelineStatusOf } from "@/components/common";
+import type { TimelineStatus } from "@/components/common";
 
 interface Filters {
   variable: DecisionVariable | "all";
@@ -135,7 +129,10 @@ export function TimelineView(): ReactElement {
     return (
       <section className="card">
         <h2 className="card-title">Timeline</h2>
-        <FirstRunState onPaste={() => setQuickLog(true)} onDemo={() => setQuickLog(true)} />
+        <FirstRunState
+          onPaste={() => setQuickLog(true)}
+          onDemo={() => setQuickLog(true)}
+        />
       </section>
     );
   }
@@ -154,8 +151,8 @@ export function TimelineView(): ReactElement {
 
         <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
           Ordered by <strong>valid time</strong> — when each decision became true in the world, not
-          when WhyLog learned about it. Paste a three-week-old transcript and its decisions land
-          where they belong rather than at the top.
+          when WhyLog learned about it. Paste a three-week-old transcript and its decisions land where
+          they belong rather than at the top.
         </p>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -166,16 +163,8 @@ export function TimelineView(): ReactElement {
             style={{ flex: 1, minWidth: 240, fontSize: 12 }}
             aria-label="Search decisions"
           />
-          {searching ? (
-            <span className="faint mono" style={{ fontSize: 11 }}>
-              searching…
-            </span>
-          ) : null}
-          <button
-            type="button"
-            className="badge"
-            onClick={() => setQuickLog((previous) => !previous)}
-          >
+          {searching ? <span className="faint mono" style={{ fontSize: 11 }}>searching…</span> : null}
+          <button type="button" className="badge" onClick={() => setQuickLog((previous) => !previous)}>
             {quickLog ? "close quick log" : "Quick log (N)"}
           </button>
         </div>
@@ -184,10 +173,8 @@ export function TimelineView(): ReactElement {
           <div className="faint" style={{ fontSize: 11, marginTop: 6 }}>
             Ranked by relevance, not date — that is what running the retrieval stack buys. Levels
             available: {results.levels.join(", ")}
-            {results.levelsUnavailable.length > 0
-              ? ` (unavailable: ${results.levelsUnavailable.join(", ")})`
-              : ""}{" "}
-            · method {results.method} · {results.durationMs} ms.
+            {results.levelsUnavailable.length > 0 ? " (unavailable: " + results.levelsUnavailable.join(", ") + ")" : ""} ·
+            method {results.method} · {results.durationMs} ms.
           </div>
         ) : null}
 
@@ -208,7 +195,7 @@ export function TimelineView(): ReactElement {
         {rows.length === 0 ? (
           <EmptyState
             title="Nothing matches those filters"
-            what={`The log holds ${whylog.state.decisions.size} decision(s) and none of them satisfy the current filters or search.`}
+            what={"The log holds " + whylog.state.decisions.size + " decision(s) and none of them satisfy the current filters or search."}
             action="Clear the filters to see the whole timeline."
             onAction={() => {
               setFilters(NO_FILTERS);
@@ -300,18 +287,12 @@ function TimelineRow({
       <span style={{ fontSize: 12.5, flex: 1 }}>{decision.statement}</span>
 
       {rank !== null ? (
-        <span
-          className="mono faint"
-          style={{ fontSize: 10 }}
-          title="Relevance rank from the retrieval stack"
-        >
+        <span className="mono faint" style={{ fontSize: 10 }} title="Relevance rank from the retrieval stack">
           #{rank + 1}
         </span>
       ) : null}
 
-      <span className="mono faint" style={{ fontSize: 10 }}>
-        {decision.variable}
-      </span>
+      <span className="mono faint" style={{ fontSize: 10 }}>{decision.variable}</span>
 
       <TimelineStatusBadge status={timelineStatusOf(nodeLabel, decision.status)} />
     </button>
@@ -350,8 +331,7 @@ function FilterBar({
 
   const transcripts = useMemo(() => {
     const set = new Set<string>(["all"]);
-    for (const decision of state.decisions.values())
-      set.add(decision.provenance.snippet.transcriptId);
+    for (const decision of state.decisions.values()) set.add(decision.provenance.snippet.transcriptId);
     return [...set];
   }, [state]);
 
@@ -360,65 +340,18 @@ function FilterBar({
   return (
     <div>
       <h2 className="card-title">Filters</h2>
-      <div
-        style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12 }}
-      >
-        <Select
-          label="variable"
-          value={filters.variable}
-          onChange={(value) => set({ variable: value as Filters["variable"] })}
-          options={["all", ...VARIABLES]}
-        />
-        <Select
-          label="status"
-          value={filters.status}
-          onChange={(value) => set({ status: value as Filters["status"] })}
-          options={[
-            "all",
-            "SOUND",
-            "UNSOUND",
-            "UNVERIFIED",
-            "UNFOUNDED",
-            "CONTESTED",
-            "SUPERSEDED",
-          ]}
-        />
-        <Select
-          label="origin"
-          value={filters.origin}
-          onChange={(value) => set({ origin: value })}
-          options={origins}
-        />
-        <Select
-          label="engine"
-          value={filters.engine}
-          onChange={(value) => set({ engine: value })}
-          options={engines}
-        />
-        <Select
-          label="transcript"
-          value={filters.transcript}
-          onChange={(value) => set({ transcript: value })}
-          options={transcripts}
-        />
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12 }}>
+        <Select label="variable" value={filters.variable} onChange={(value) => set({ variable: value as Filters["variable"] })} options={["all", ...VARIABLES]} />
+        <Select label="status" value={filters.status} onChange={(value) => set({ status: value as Filters["status"] })} options={["all", "SOUND", "UNSOUND", "UNVERIFIED", "UNFOUNDED", "CONTESTED", "SUPERSEDED"]} />
+        <Select label="origin" value={filters.origin} onChange={(value) => set({ origin: value })} options={origins} />
+        <Select label="engine" value={filters.engine} onChange={(value) => set({ engine: value })} options={engines} />
+        <Select label="transcript" value={filters.transcript} onChange={(value) => set({ transcript: value })} options={transcripts} />
 
         <label className="faint" style={{ fontSize: 11 }}>
-          from{" "}
-          <input
-            type="date"
-            value={filters.from}
-            onChange={(event) => set({ from: event.target.value })}
-            style={{ fontSize: 11, marginLeft: 4 }}
-          />
+          from <input type="date" value={filters.from} onChange={(event) => set({ from: event.target.value })} style={{ fontSize: 11, marginLeft: 4 }} />
         </label>
         <label className="faint" style={{ fontSize: 11 }}>
-          to{" "}
-          <input
-            type="date"
-            value={filters.to}
-            onChange={(event) => set({ to: event.target.value })}
-            style={{ fontSize: 11, marginLeft: 4 }}
-          />
+          to <input type="date" value={filters.to} onChange={(event) => set({ to: event.target.value })} style={{ fontSize: 11, marginLeft: 4 }} />
         </label>
 
         <button type="button" className="badge faint" onClick={() => onChange(NO_FILTERS)}>
@@ -443,11 +376,7 @@ function Select({
   return (
     <label className="faint" style={{ fontSize: 11 }}>
       {label}{" "}
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={{ fontSize: 11, marginLeft: 4 }}
-      >
+      <select value={value} onChange={(event) => onChange(event.target.value)} style={{ fontSize: 11, marginLeft: 4 }}>
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -469,13 +398,8 @@ function matches(
 
   if (filters.variable !== "all" && decision.variable !== filters.variable) return false;
   if (filters.origin !== "all" && decision.provenance.origin !== filters.origin) return false;
-  if (filters.engine !== "all" && decision.provenance.extractedBy.kind !== filters.engine)
-    return false;
-  if (
-    filters.transcript !== "all" &&
-    decision.provenance.snippet.transcriptId !== filters.transcript
-  )
-    return false;
+  if (filters.engine !== "all" && decision.provenance.extractedBy.kind !== filters.engine) return false;
+  if (filters.transcript !== "all" && decision.provenance.snippet.transcriptId !== filters.transcript) return false;
   if (filters.from.length > 0 && decision.temporal.valid.slice(0, 10) < filters.from) return false;
   if (filters.to.length > 0 && decision.temporal.valid.slice(0, 10) > filters.to) return false;
 
@@ -521,12 +445,7 @@ function QuickLog({ onDone }: { onDone: () => void }): ReactElement {
     setBusy(true);
     setNote(null);
 
-    const outcome = await assertUserDecision(
-      variable,
-      value.trim(),
-      statement.trim(),
-      reason.trim(),
-    );
+    const outcome = await assertUserDecision(variable, value.trim(), statement.trim(), reason.trim());
 
     setBusy(false);
 
@@ -555,11 +474,7 @@ function QuickLog({ onDone }: { onDone: () => void }): ReactElement {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
         <label className="faint" style={{ fontSize: 11 }}>
           variable
-          <select
-            value={variable}
-            onChange={(event) => setVariable(event.target.value as DecisionVariable)}
-            style={{ display: "block", fontSize: 12, marginTop: 3 }}
-          >
+          <select value={variable} onChange={(event) => setVariable(event.target.value as DecisionVariable)} style={{ display: "block", fontSize: 12, marginTop: 3 }}>
             {VARIABLES.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -570,12 +485,7 @@ function QuickLog({ onDone }: { onDone: () => void }): ReactElement {
 
         <label className="faint" style={{ fontSize: 11 }}>
           value
-          <input
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder="sqlite"
-            style={{ display: "block", fontSize: 12, marginTop: 3 }}
-          />
+          <input value={value} onChange={(event) => setValue(event.target.value)} placeholder="sqlite" style={{ display: "block", fontSize: 12, marginTop: 3 }} />
         </label>
       </div>
 

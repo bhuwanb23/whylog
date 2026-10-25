@@ -31,34 +31,31 @@
  * ---------------------------------------------------------------------------
  */
 
-import { EmptyState } from "@/components/common";
-import { DecisionCard } from "@/components/decision";
+import { useMemo, useState, type ReactElement } from "react";
+import type { DecisionId, ISODateString } from "@/types/common";
+import { label as labelGraph, type NodeId } from "@/reasoning/labeller";
+import { useWhyLog } from "@/store/whylog";
 import { PremiseLattice } from "@/components/graph";
+import { DecisionCard } from "@/components/decision";
+import { EmptyState } from "@/components/common";
+import { entrenchmentOf } from "@/reasoning/entrenchment";
+import { guardStatusMap } from "@/guards";
 import {
   AXIS_LABEL,
-  type TimeAxis,
   describeDiff,
   diffGraphs,
   graphAt,
   timeRange,
   visibleAt,
+  type TimeAxis,
 } from "@/components/time-machine/projection";
-import { guardStatusMap } from "@/guards";
-import { entrenchmentOf } from "@/reasoning/entrenchment";
-import { type NodeId, label as labelGraph } from "@/reasoning/labeller";
-import { useWhyLog } from "@/store/whylog";
-import type { DecisionId, ISODateString } from "@/types/common";
-import { type ReactElement, useMemo, useState } from "react";
 
 export function TimeMachineView(): ReactElement {
   const whylog = useWhyLog();
   const [axis, setAxis] = useState<TimeAxis>("valid");
   const [at, setAt] = useState<string>("");
 
-  const range = useMemo(
-    () => timeRange(whylog.log.events, whylog.state),
-    [whylog.log.events, whylog.state],
-  );
+  const range = useMemo(() => timeRange(whylog.log.events, whylog.state), [whylog.log.events, whylog.state]);
 
   const target = (at.length === 0 ? range.latest : at) as ISODateString;
 
@@ -108,9 +105,9 @@ export function TimeMachineView(): ReactElement {
         <h2 className="card-title">Time machine</h2>
 
         <p className="dim" style={{ margin: "0 0 12px", fontSize: 12 }}>
-          Bi-temporal replay. Because the log is append-only and the fold is pure and total, this is
-          a slider over an existing mechanism rather than a feature — nothing here computes history,
-          it re-derives it.
+          Bi-temporal replay. Because the log is append-only and the fold is pure and total, this is a
+          slider over an existing mechanism rather than a feature — nothing here computes history, it
+          re-derives it.
         </p>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -147,7 +144,7 @@ export function TimeMachineView(): ReactElement {
               if (chosen !== undefined) setAt(chosen.at);
             }}
             style={{ flex: 1, minWidth: 240 }}
-            aria-label={`Replay position on the ${axisMeta.short} axis`}
+            aria-label={"Replay position on the " + axisMeta.short + " axis"}
           />
 
           <input
@@ -165,8 +162,8 @@ export function TimeMachineView(): ReactElement {
 
         <div className="mono faint" style={{ fontSize: 11, marginTop: 8 }}>
           {target.slice(0, 10)} on the <strong>{axisMeta.short}</strong> axis · range{" "}
-          {range.earliest.slice(0, 10)} … {range.latest.slice(0, 10)} · {whylog.log.events.length}{" "}
-          event(s)
+          {range.earliest.slice(0, 10)} … {range.latest.slice(0, 10)} ·{" "}
+          {whylog.log.events.length} event(s)
         </div>
       </section>
 
@@ -184,16 +181,15 @@ export function TimeMachineView(): ReactElement {
 
         {axis === "learned" ? (
           <div className="dim" style={{ fontSize: 12, marginTop: 10 }}>
-            This is a genuine prefix replay: {past.decisions.size} decision(s) exist because only
-            the events recorded at or before this moment were folded. Anything learned later is not
-            merely hidden — it does not exist yet on this axis.
+            This is a genuine prefix replay: {past.decisions.size} decision(s) exist because only the
+            events recorded at or before this moment were folded. Anything learned later is not merely
+            hidden — it does not exist yet on this axis.
           </div>
         ) : (
           <div className="dim" style={{ fontSize: 12, marginTop: 10 }}>
-            Valid time cannot be produced by a prefix fold: the events are stored in LEARNED order,
-            so cutting by index would drop a decision made in January but recorded in October.
-            Instead the current graph is filtered by validity window, which is the definition of
-            "true at T".
+            Valid time cannot be produced by a prefix fold: the events are stored in LEARNED order, so
+            cutting by index would drop a decision made in January but recorded in October. Instead the
+            current graph is filtered by validity window, which is the definition of "true at T".
           </div>
         )}
 
@@ -220,11 +216,10 @@ export function TimeMachineView(): ReactElement {
       ) : null}
 
       <section className="card">
-        <h2 className="card-title">What changed between {target.slice(0, 10)} and now</h2>
-        <pre
-          className="mono dim"
-          style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 11.5, lineHeight: 1.6 }}
-        >
+        <h2 className="card-title">
+          What changed between {target.slice(0, 10)} and now
+        </h2>
+        <pre className="mono dim" style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 11.5, lineHeight: 1.6 }}>
           {describeDiff(diff)}
         </pre>
       </section>

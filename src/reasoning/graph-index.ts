@@ -39,9 +39,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, JustificationId, PremiseId } from "@/types/common";
 import type { Justification } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
 
 export interface ReasoningIndex {
   /** decision → its justifications, from `decision.justificationIds`. */

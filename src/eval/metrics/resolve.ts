@@ -34,14 +34,14 @@ export interface Resolver {
 }
 
 export interface Alignments<TDecision, TPremise, TAlternative> {
-  readonly decisions: Alignment<{ transcript: string; key: string }, TDecision>;
-  readonly premises: Alignment<{ transcript: string; key: string }, TPremise>;
-  readonly alternatives: Alignment<{ transcript: string; key: string }, TAlternative>;
+  readonly decisions: Alignment<any, TDecision>;
+  readonly premises: Alignment<any, TPremise>;
+  readonly alternatives: Alignment<any, TAlternative>;
 }
 
 export function buildResolver(
   corpus: ResolvedCorpus,
-  _run: RunResult,
+  run: RunResult,
   decisions: Alignment<{ transcript: string; key: string }, { id: DecisionId }>,
   premises: Alignment<{ transcript: string; key: string }, { id: PremiseId }>,
   alternatives: Alignment<{ transcript: string; key: string }, { id: AlternativeId }>,
@@ -51,18 +51,15 @@ export function buildResolver(
   const alternativeMap = new Map<string, AlternativeId>();
   const unresolvable: string[] = [];
 
-  for (const pair of decisions.pairs)
-    decisionMap.set(`${pair.label.transcript}/${pair.label.key}`, pair.node.id);
-  for (const pair of premises.pairs)
-    premiseMap.set(`${pair.label.transcript}/${pair.label.key}`, pair.node.id);
-  for (const pair of alternatives.pairs)
-    alternativeMap.set(`${pair.label.transcript}/${pair.label.key}`, pair.node.id);
+  for (const pair of decisions.pairs) decisionMap.set(pair.label.transcript + "/" + pair.label.key, pair.node.id);
+  for (const pair of premises.pairs) premiseMap.set(pair.label.transcript + "/" + pair.label.key, pair.node.id);
+  for (const pair of alternatives.pairs) alternativeMap.set(pair.label.transcript + "/" + pair.label.key, pair.node.id);
 
   /* Every key the plants reference is checked up front, so a missing node is reported once, here,
    * rather than surfacing as a mysterious zero in whichever metric happened to ask. */
   for (const plant of corpus.plants) {
     for (const key of [...plant.expectUnsound, ...plant.expectSurvivors]) {
-      if (!decisionMap.has(key) && !premiseMap.has(key)) unresolvable.push(`${plant.id} -> ${key}`);
+      if (!decisionMap.has(key) && !premiseMap.has(key)) unresolvable.push(plant.id + " -> " + key);
     }
   }
 

@@ -95,7 +95,10 @@ export function canLoad(version: number): boolean {
  * The CALLER appends them, because appending requires sealing with the current
  * head hash and only the event log knows that.
  */
-export function migrateEvents(events: readonly AnyEvent[], fromVersion: number): MigrationOutcome {
+export function migrateEvents(
+  events: readonly AnyEvent[],
+  fromVersion: number,
+): MigrationOutcome {
   if (fromVersion === SCHEMA_VERSION) {
     return {
       ok: true,

@@ -33,13 +33,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
-import type { WhyLogEngine } from "@/ai/types";
+import type {
+  AlternativeCandidate,
+  DecisionCandidate,
+  PremiseCandidate,
+} from "@/ai/types";
 import { runExtraction } from "@/extraction/pipeline";
-import { isDerivedPremise } from "@/extraction/review";
 import { DEFAULT_VOTING } from "@/extraction/voting";
-import { guardStatusMap } from "@/guards/feedback";
-import { monotonicNow, nowISO } from "@/lib/format";
 import {
   formatAlternativeId,
   formatDecisionId,
@@ -47,34 +47,40 @@ import {
   formatPremiseId,
   formatTranscriptId,
 } from "@/lib/ids";
+import { monotonicNow, nowISO } from "@/lib/format";
+import { revise, type ReviseResult } from "@/reasoning/revise";
 import { label } from "@/reasoning/labeller";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { type ReviseResult, revise } from "@/reasoning/revise";
 import { ask } from "@/retrieval";
 import { buildIndex } from "@/retrieval/build-index";
 import { appendBatch, emptyLog, fold } from "@/substrate";
 import type { EventLog } from "@/substrate/event-log";
 import { validationMessage } from "@/substrate/event-validation";
-import type { GraphState } from "@/substrate/graph-state";
 import { asISO } from "@/types/common";
 import type {
   Actor,
   AlternativeId,
+  Confidence,
   DecisionId,
   EngineId,
   EpisodeId,
-  EventId,
   ISODateString,
-  JustificationId,
   PremiseId,
   TranscriptId,
 } from "@/types/common";
-import type { Decision, Justification, Premise, RejectedAlternative } from "@/types/domain";
 import type { AnyEvent, EventType, NewEvent } from "@/types/events";
-import type { Guard } from "@/types/guards";
+import type { Justification } from "@/types/domain";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { Answer } from "@/types/retrieval";
-import type { AblationConfig, SweptParams } from "./ablation/toggles";
+import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
+import type { WhyLogEngine } from "@/ai/types";
+import type { Guard } from "@/types/guards";
+import { guardStatusMap } from "@/guards/feedback";
+import { synthesiseAll } from "@/guards";
+import { PLACEHOLDER_EVENT_ID } from "@/extraction/commit";
+import { isDerivedPremise } from "@/extraction/review";
 import type { LabelledQuestion, ResolvedCorpus, ResolvedTranscript } from "./corpus/labels";
+import type { AblationConfig, SweptParams } from "./ablation/toggles";
 
 /* -------------------------------------------------------------------------- */
 /* Shapes                                                                     */
@@ -135,7 +141,7 @@ export interface RunResult {
   readonly transcripts: readonly TranscriptRun[];
   readonly questions: readonly QuestionRun[];
   readonly proposalsRaised: number;
-  /** Revision passes whose drafts the log REFUSED, with the validation message.
+  /** Batches the log REFUSED — a revision pass or the guard synthesis — with the validation message.
    *
    *  Recorded rather than thrown: a revision the log rejects is a finding about the reasoner, and
    *  abandoning the run would bury it under a stack trace. Left visible because the alternative —
@@ -149,16 +155,6 @@ export interface RunResult {
 }
 
 const ACTOR: Actor = { kind: "system" };
-
-/**
- * The eventId on an extraction informant before the fold rewrites it.
- *
- * Every extraction informant carries the id of the event that produced it; a draft cannot know that
- * id, because the log mints it at append time. The commit path uses this same sentinel, and the
- * `JustificationAttached` fold case rewrites it to the real event id, so it never survives into a
- * folded graph.
- */
-const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
 
 /**
  * Commit a revision pass and re-fold.
@@ -200,10 +196,7 @@ function commitRevision(
   );
 
   if (!committed.ok) {
-    return {
-      ...unchanged,
-      failure: `revision-rejected: ${validationMessage(committed.validation)}`,
-    };
+    return { ...unchanged, failure: "revision-rejected: " + validationMessage(committed.validation) };
   }
 
   return {
@@ -309,54 +302,79 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
     const alternativeIds: AlternativeId[] = [];
 
     let decisionSeq = 0;
-    let justificationSeq = state.counters.justifications;
     for (const candidate of run.decisions) {
       decisionSeq += 1;
       const id = formatDecisionId(state.counters.decisions + decisionSeq) as DecisionId;
       decisionIds.push(id);
       decisionIdByIndex.set(indexOfDecision(run.decisions, candidate), id);
+      drafts.push(
+        decisionProposed(id, transcriptId, candidate, config.engineId, {
+          premiseIds: candidate.premiseRefs.map((ref) => premiseIdByIndex.get(ref)).filter(isDefined),
+        }),
+      );
+    }
+
+    /* ---- justifications: the IN/OUT-lists that make the graph non-monotonic ----
+     *
+     * Emitted after the decisions, because a justification's consequent is a decision id and its
+     * lists are premise ids, so both must already be minted.
+     *
+     * Without this step the graph held decisions and premises with nothing connecting them:
+     * `state.justifications` was empty, no OUT-list existed anywhere in the corpus, and gate (c) was
+     * therefore structurally incapable of firing. That silently zeroed premise-invalidation recall,
+     * cascade correctness and survivor preservation — the three metrics with no published comparator,
+     * and the whole reason this is not another decision log. A monotonic graph cannot be fixed by
+     * tuning; it has no mechanism to fix.
+     *
+     * The IN/OUT split is by the derived-premise marker, the same rule `commit.resolvePremiseRefs`
+     * applies: an OUT-list entry was INFERRED from a supporting premise rather than quoted, and
+     * `premise-linker.ts` says so in its text. Copying the rule rather than importing the function
+     * because that one resolves queue items by human action, and the harness never acts as a human. */
+    let justificationSeq = 0;
+    for (const candidate of run.decisions) {
+      const consequent = decisionIdByIndex.get(indexOfDecision(run.decisions, candidate));
+      if (consequent === undefined) continue;
 
       const inList: PremiseId[] = [];
       const outList: PremiseId[] = [];
       for (const ref of candidate.premiseRefs) {
         const premiseId = premiseIdByIndex.get(ref);
         if (premiseId === undefined) continue;
-        const premise = run.premises[ref];
-        if (premise !== undefined && isDerivedPremise(premise.predicate, premise.text)) {
-          outList.push(premiseId);
-        } else {
-          inList.push(premiseId);
-        }
+        const source = run.premises[ref];
+        if (source !== undefined && isDerivedPremise(source.predicate, source.text)) outList.push(premiseId);
+        else inList.push(premiseId);
       }
 
-      drafts.push(
-        decisionProposed(id, transcriptId, candidate, config.engineId, {
-          premiseIds: candidate.premiseRefs
-            .map((ref) => premiseIdByIndex.get(ref))
-            .filter(isDefined),
-        }),
-      );
+      /* A decision with no premise at all gets no justification. Attaching an empty one would make it
+       * vacuously valid — IN-list empty, OUT-list empty — and a decision that rests on nothing would
+       * be reported as sound forever, which is worse than reporting it as unfounded. */
+      if (inList.length === 0 && outList.length === 0) continue;
 
-      /* The justification is emitted immediately after its decision — the same ordering
-       * `commit.ts` enforces, and for the same reason: `DecisionProposed` alone records the
-       * premises but no justification, so a decision would rest on nothing and the fold's
-       * `JustificationAttached` case would never create the justification that the label and
-       * the L2 invalidation check read. The IN/OUT split is recovered exactly as
-       * `resolvePremiseRefs` recovers it: an OUT-list entry is the one whose text carries the
-       * marker `premise-linker.ts` writes. */
-      if (inList.length > 0 || outList.length > 0) {
-        justificationSeq += 1;
-        drafts.push(
-          justificationAttached(
-            id,
-            inList,
-            outList,
-            config.engineId,
-            formatJustificationId(justificationSeq),
-            asISO(transcript.occurredAt),
-          ),
-        );
-      }
+      justificationSeq += 1;
+      const justificationId = formatJustificationId(state.counters.justifications + justificationSeq);
+      const occurredAt = asISO(transcript.occurredAt);
+      const justification: Justification = {
+        id: justificationId,
+        consequent,
+        inList,
+        outList,
+        informant: { kind: "extraction", engine: config.engineId, eventId: PLACEHOLDER_EVENT_ID },
+        createdAt: occurredAt,
+      };
+
+      drafts.push({
+        type: "JustificationAttached",
+        payload: { justificationId, consequent, justification },
+        actor: ACTOR,
+        reason:
+          `Attaching a justification for ${consequent}: ${inList.length} supporting premise` +
+          (inList.length === 1 ? "" : "s") +
+          (outList.length === 0
+            ? "."
+            : ` and ${outList.length} excluded condition` +
+              (outList.length === 1 ? "" : "s") +
+              " — non-monotonic, so it can be invalidated by the world rather than only by a contradiction."),
+      });
     }
 
     let alternativeSeq = 0;
@@ -387,7 +405,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         context: {
           now: clock.next(),
           actor: ACTOR,
-          reason: `Eval harness importing ${transcript.id}`,
+          reason: "Eval harness importing " + transcript.id,
           occurredAt: asISO(transcript.occurredAt),
         },
       })),
@@ -398,7 +416,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         transcript,
         runtimeId: transcriptId,
         ok: false,
-        failure: `append-rejected: ${validationMessage(appended.validation)}`,
+        failure: "append-rejected: " + validationMessage(appended.validation),
         durationMs: monotonicNow() - tStart,
         decisionIds,
         premiseIds,
@@ -420,9 +438,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       actor: ACTOR,
       now: clock.next(),
       guards: guardStatusMap(state),
-      ...(config.params.cascadeDepthCap === null
-        ? {}
-        : { cascadeDepthCap: config.params.cascadeDepthCap }),
+      ...(config.params.cascadeDepthCap === null ? {} : { cascadeDepthCap: config.params.cascadeDepthCap }),
       ...(config.toggles.semanticContradiction ? {} : { skipSemantic: true }),
     });
 
@@ -431,7 +447,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       revised,
       clock,
       config.engineId,
-      `Eval harness revision pass after importing ${transcript.id}`,
+      "Eval harness revision pass after importing " + transcript.id,
     );
     log = afterImport.log;
     state = afterImport.state;
@@ -464,20 +480,13 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
     for (const step of plant.falsify ?? []) {
       const owner = transcripts.find((entry) => entry.transcript.id === step.transcript);
       if (owner === undefined) {
-        interventions.push({
-          plant: plant.id,
-          predicate: step.predicate,
-          applied: false,
-          premiseId: null,
-          reason: "transcript not imported",
-        });
+        interventions.push({ plant: plant.id, predicate: step.predicate, applied: false, premiseId: null, reason: "transcript not imported" });
         continue;
       }
 
-      const target = [...state.premises.values()].find(
-        (premise) =>
-          premise.predicate === step.predicate &&
-          premise.evidence.some((evidence) => evidence.span?.transcriptId === owner.runtimeId),
+      const target = [...state.premises.values()].find((premise) =>
+        premise.predicate === step.predicate &&
+        premise.evidence.some((evidence) => evidence.span?.transcriptId === owner.runtimeId),
       );
 
       if (target === undefined) {
@@ -486,8 +495,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
           predicate: step.predicate,
           applied: false,
           premiseId: null,
-          reason:
-            "no extracted premise with that predicate in that transcript — the cascade is UNTESTED, not passed",
+          reason: "no extracted premise with that predicate in that transcript — the cascade is UNTESTED, not passed",
         });
         continue;
       }
@@ -508,13 +516,7 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       ]);
 
       if (!falsified.ok) {
-        interventions.push({
-          plant: plant.id,
-          predicate: step.predicate,
-          applied: false,
-          premiseId: target.id,
-          reason: `append rejected: ${validationMessage(falsified.validation)}`,
-        });
+        interventions.push({ plant: plant.id, predicate: step.predicate, applied: false, premiseId: target.id, reason: "append rejected: " + validationMessage(falsified.validation) });
         continue;
       }
 
@@ -527,29 +529,57 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         actor: ACTOR,
         now: clock.next(),
         guards: guardStatusMap(state),
-        ...(config.params.cascadeDepthCap === null
-          ? {}
-          : { cascadeDepthCap: config.params.cascadeDepthCap }),
+        ...(config.params.cascadeDepthCap === null ? {} : { cascadeDepthCap: config.params.cascadeDepthCap }),
       });
       const afterIntervention = commitRevision(
         log,
         afterFalsify,
         clock,
         config.engineId,
-        `Eval harness revision pass after falsifying ${step.predicate}`,
+        "Eval harness revision pass after falsifying " + step.predicate,
       );
       log = afterIntervention.log;
       state = afterIntervention.state;
       proposalsRaised += afterIntervention.proposals;
       if (afterIntervention.failure !== null) revisionFailures.push(afterIntervention.failure);
 
-      interventions.push({
-        plant: plant.id,
-        predicate: step.predicate,
-        applied: true,
-        premiseId: target.id,
-        reason: step.reason,
-      });
+      interventions.push({ plant: plant.id, predicate: step.predicate, applied: true, premiseId: target.id, reason: step.reason });
+    }
+  }
+
+  /* ---- guard synthesis, once over the merged graph ----
+   *
+   * Templates need no repository state: they compile a decision into the check that would falsify
+   * it, which is the central novelty claim and the one that needs no fixture repo to demonstrate.
+   * `templatesOnly` keeps the run keyless and deterministic. Every guard enters as PROPOSED — the
+   * harness never acts as a human, so invariant I4 holds and the hardening check "0 guards
+   * auto-accepted without a human" stays true.
+   *
+   * Without this step the graph contained no guards at all: guard precision reported NOT MEASURED,
+   * synthesis rate read 0%, the demo seed had nothing to show in beat 7, and `guards:ci` exported an
+   * empty runner. */
+  const synthesised = await synthesiseAll({
+    state,
+    engine: config.engine,
+    templatesOnly: true,
+    actor: ACTOR,
+    at: clock.next(),
+  });
+
+  if (synthesised.drafts.length > 0) {
+    const guardsCommitted = appendBatch(
+      log,
+      synthesised.drafts.map((draft) => ({
+        draft,
+        context: { now: clock.next(), actor: ACTOR, reason: "Eval harness compiling guards from decisions" },
+      })),
+    );
+
+    if (guardsCommitted.ok) {
+      log = guardsCommitted.log;
+      state = fold(log.events, { engine: config.engineId, now: clock.next() });
+    } else {
+      revisionFailures.push("guard-synthesis-rejected: " + validationMessage(guardsCommitted.validation));
     }
   }
 
@@ -619,7 +649,7 @@ function transcriptImported(
   return {
     type: "TranscriptImported",
     actor: ACTOR,
-    reason: `Eval harness importing ${transcript.id}`,
+    reason: "Eval harness importing " + transcript.id,
     payload: {
       transcriptId,
       rawChars: transcript.raw.length,
@@ -640,7 +670,7 @@ function decisionProposed(
   return {
     type: "DecisionProposed",
     actor: ACTOR,
-    reason: `Extracted from transcript ${transcriptId}`,
+    reason: "Extracted from transcript " + transcriptId,
     payload: {
       decisionId: id,
       transcriptId,
@@ -649,9 +679,7 @@ function decisionProposed(
       value: candidate.value,
       statement: candidate.statement,
       ...(candidate.rationale === undefined ? {} : { rationale: candidate.rationale }),
-      ...(candidate.acceptedDownside === undefined
-        ? {}
-        : { acceptedDownside: candidate.acceptedDownside }),
+      ...(candidate.acceptedDownside === undefined ? {} : { acceptedDownside: candidate.acceptedDownside }),
       origin: candidate.origin,
       modality: candidate.modality,
       confidence: candidate.confidence,
@@ -674,7 +702,7 @@ function premiseProposed(
   return {
     type: "PremiseAsserted",
     actor: ACTOR,
-    reason: `Extracted from transcript ${transcriptId}`,
+    reason: "Extracted from transcript " + transcriptId,
     payload: {
       premiseId: id,
       transcriptId,
@@ -689,34 +717,6 @@ function premiseProposed(
   } as NewEvent<EventType>;
 }
 
-function justificationAttached(
-  consequent: DecisionId,
-  inList: readonly PremiseId[],
-  outList: readonly PremiseId[],
-  engine: EngineId,
-  justificationId: JustificationId,
-  createdAt: ISODateString,
-): NewEvent<EventType> {
-  const justification: Justification = {
-    id: justificationId,
-    consequent,
-    inList,
-    outList,
-    informant: { kind: "extraction", engine, eventId: PLACEHOLDER_EVENT_ID },
-    createdAt,
-  };
-
-  return {
-    type: "JustificationAttached",
-    actor: ACTOR,
-    // A STATE_CHANGING event, so `reason` is mandatory. It states what the
-    // justification rests on, which is the sentence a user reads when gate (c)
-    // fires six months later.
-    reason: justificationReason(justification),
-    payload: { justificationId, consequent, justification },
-  } as NewEvent<EventType>;
-}
-
 function alternativeRejected(
   id: AlternativeId,
   decisionId: DecisionId,
@@ -726,7 +726,7 @@ function alternativeRejected(
   return {
     type: "AlternativeRejected",
     actor: ACTOR,
-    reason: `Extracted alongside decision ${decisionId}`,
+    reason: "Extracted alongside decision " + decisionId,
     payload: {
       alternativeId: id,
       decisionId,
@@ -738,19 +738,6 @@ function alternativeRejected(
       snippet: candidate.snippet,
     },
   } as NewEvent<EventType>;
-}
-
-/** Mirrors `commit.ts`'s reason: it states what the justification rests on. */
-function justificationReason(justification: Justification): string {
-  const parts = [
-    `${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`,
-  ];
-  if (justification.outList.length > 0) {
-    parts.push(
-      `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} — non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
-    );
-  }
-  return `Attaching a justification for ${justification.consequent}: ${parts.join(", ")}.`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -766,20 +753,15 @@ function justificationReason(justification: Justification): string {
  * graph needs, without inventing a counter that would disagree with the pipeline's own.
  */
 function formatEpisodeId(transcriptId: TranscriptId, offset: number): string {
-  return `${transcriptId}#e${offset}`;
+  return transcriptId + "#e" + offset;
 }
 
 function indexOfDecision(all: readonly DecisionCandidate[], one: DecisionCandidate): number {
-  return all.findIndex(
-    (candidate) => candidate.snippet.start === one.snippet.start && candidate.value === one.value,
-  );
+  return all.findIndex((candidate) => candidate.snippet.start === one.snippet.start && candidate.value === one.value);
 }
 
 function indexOfPremise(all: readonly PremiseCandidate[], one: PremiseCandidate): number {
-  return all.findIndex(
-    (candidate) =>
-      candidate.snippet.start === one.snippet.start && candidate.predicate === one.predicate,
-  );
+  return all.findIndex((candidate) => candidate.snippet.start === one.snippet.start && candidate.predicate === one.predicate);
 }
 
 function isDefined<T>(value: T | undefined): value is T {
@@ -843,15 +825,13 @@ export function eventsOf(run: RunResult): readonly AnyEvent[] {
  *  actually a crash. */
 export function describeFailures(run: RunResult): string {
   const failed = run.transcripts.filter((entry) => !entry.ok);
-  if (failed.length === 0)
-    return `All ${run.transcripts.length} transcripts imported without failure.`;
+  if (failed.length === 0) return "All " + run.transcripts.length + " transcripts imported without failure.";
 
   const lines = [
-    `${failed.length} of ${run.transcripts.length} transcript(s) FAILED to import.`,
+    failed.length + " of " + run.transcripts.length + " transcript(s) FAILED to import.",
     "Metrics below are computed over what survived. A failure is scored as producing nothing,",
     "which is a real result, but it is not the same result as low recall:",
   ];
-  for (const entry of failed)
-    lines.push(`  ${entry.transcript.id} · ${entry.failure ?? "unknown"}`);
+  for (const entry of failed) lines.push("  " + entry.transcript.id + " · " + (entry.failure ?? "unknown"));
   return lines.join("\n");
 }

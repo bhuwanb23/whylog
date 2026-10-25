@@ -17,28 +17,29 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { ActiveEngine } from "@/ai/engine";
-import { nowISO } from "@/lib/format";
-import { formatDecisionId, formatEpisodeId, formatPremiseId, formatTranscriptId } from "@/lib/ids";
-import type { Result } from "@/lib/result";
-import { describeOntology, ontologySize, validateOntology } from "@/ontology";
-import { health as healthSummary } from "@/store/selectors";
-import { persistenceAvailable, useWhyLog } from "@/store/whylog";
-import type { GraphState, IndexStatus } from "@/substrate/graph-state";
-import { describeVerification } from "@/substrate/hash-chain";
-import type { ChainVerification } from "@/substrate/hash-chain";
-import { formatBytes } from "@/substrate/persistence";
-import type { StorageReport } from "@/substrate/persistence";
-import type { ImportOutcome, PortableLog } from "@/substrate/portability";
-import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import { useMemo, useState } from "react";
+import type { ReactElement } from "react";
 import { asConfidence } from "@/types/common";
 import type { ISODateString } from "@/types/common";
-import type { Actor } from "@/types/common";
-import type { EventId } from "@/types/common";
 import { DECISION_VARIABLES } from "@/types/domain";
 import type { DecisionVariable } from "@/types/domain";
+import type { Actor } from "@/types/common";
 import type { EventType, NewEvent } from "@/types/events";
-import { type ReactElement, useMemo, useState } from "react";
+import { formatDecisionId, formatEpisodeId, formatPremiseId, formatTranscriptId } from "@/lib/ids";
+import { nowISO } from "@/lib/format";
+import { describeVerification } from "@/substrate/hash-chain";
+import { formatBytes } from "@/substrate/persistence";
+import { ontologySize, validateOntology, describeOntology } from "@/ontology";
+import { useWhyLog, persistenceAvailable } from "@/store/whylog";
+import type { GraphState, IndexStatus } from "@/substrate/graph-state";
+import type { ChainVerification } from "@/substrate/hash-chain";
+import type { StorageReport } from "@/substrate/persistence";
+import type { PortableLog, ImportOutcome } from "@/substrate/portability";
+import type { ActiveEngine } from "@/ai/engine";
+import type { Result } from "@/lib/result";
+import type { EventId } from "@/types/common";
+import { health as healthSummary } from "@/store/selectors";
+import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
 
 export function FoundationView(): ReactElement {
   const status = useWhyLog((s) => s.status);
@@ -116,11 +117,7 @@ export function FoundationView(): ReactElement {
 
       <OntologyCard />
 
-      <PhaseZeroChecklist
-        state={state}
-        events={log.events.length}
-        persistent={persistenceAvailable()}
-      />
+      <PhaseZeroChecklist state={state} events={log.events.length} persistent={persistenceAvailable()} />
     </>
   );
 }
@@ -217,10 +214,7 @@ function RecordForm({
 
       <div style={{ display: "grid", gap: 10, gridTemplateColumns: "minmax(160px, 220px) 1fr" }}>
         <label>
-          <span
-            className="faint"
-            style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}
-          >
+          <span className="faint" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Variable
           </span>
           <select
@@ -239,10 +233,7 @@ function RecordForm({
         </label>
 
         <label>
-          <span
-            className="faint"
-            style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}
-          >
+          <span className="faint" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Canonical value
           </span>
           <input
@@ -256,10 +247,7 @@ function RecordForm({
         </label>
 
         <label style={{ gridColumn: "1 / -1" }}>
-          <span
-            className="faint"
-            style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}
-          >
+          <span className="faint" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Statement
           </span>
           <input
@@ -273,10 +261,7 @@ function RecordForm({
         </label>
 
         <label style={{ gridColumn: "1 / -1" }}>
-          <span
-            className="faint"
-            style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}
-          >
+          <span className="faint" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Premise — what this rests on (optional for now)
           </span>
           <input
@@ -290,10 +275,7 @@ function RecordForm({
         </label>
 
         <label style={{ gridColumn: "1 / -1" }}>
-          <span
-            className="faint"
-            style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}
-          >
+          <span className="faint" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Reason (mandatory — written into the event)
           </span>
           <input
@@ -524,8 +506,8 @@ function ProjectionCard({
       {drift.length > 0 ? (
         <p style={{ fontSize: 13, color: "var(--label-unknown)", marginTop: 12 }}>
           {drift.length} decision{drift.length === 1 ? "" : "s"} carry a label that disagrees with
-          the one derived from their justifications. That is a bug in the incremental path, and it
-          is reported rather than papered over.
+          the one derived from their justifications. That is a bug in the incremental path, and it is
+          reported rather than papered over.
         </p>
       ) : null}
 
@@ -547,11 +529,7 @@ function ProjectionCard({
                 <td className="faint">{decision.variable}</td>
                 <td>{decision.statement}</td>
                 <td>
-                  <span
-                    className="badge"
-                    style={{ color: LABEL_COLOUR[decision.label] }}
-                    title={LABEL_MEANING[decision.label]}
-                  >
+                  <span className="badge" style={{ color: LABEL_COLOUR[decision.label] }} title={LABEL_MEANING[decision.label]}>
                     {decision.label}
                   </span>
                 </td>
@@ -599,10 +577,12 @@ function PortabilityCard({
       setMessage(result.error);
       return;
     }
-    setMessage(
-      `${result.value.newEvents.length} new event(s), ${result.value.duplicates} already present. Importing the same file again adds nothing — that is the test, and it is the reason identity resolution exists.`,
-    );
-    setPasted("");
+    {
+      setMessage(
+        `${result.value.newEvents.length} new event(s), ${result.value.duplicates} already present. Importing the same file again adds nothing — that is the test, and it is the reason identity resolution exists.`,
+      );
+      setPasted("");
+    }
   };
 
   return (
@@ -649,10 +629,7 @@ function StorageCard({
         <Metric label="backend" value={storage?.backend ?? "—"} />
         <Metric label="log" value={storage === null ? "—" : formatBytes(storage.logBytes)} />
         <Metric label="index" value={storage === null ? "—" : formatBytes(storage.indexBytes)} />
-        <Metric
-          label="headroom"
-          value={storage === null ? "—" : formatBytes(storage.headroomBytes)}
-        />
+        <Metric label="headroom" value={storage === null ? "—" : formatBytes(storage.headroomBytes)} />
       </div>
       {!persistenceAvailable() ? (
         <p style={{ fontSize: 13, color: "var(--label-unknown)", marginTop: 12 }}>
@@ -694,18 +671,9 @@ function EngineCard({
         <Metric
           label="fell back"
           value={engine?.fellBack === true ? "yes" : "no"}
-          {...(engine?.fellBack === true ? { colour: "var(--label-unknown)" } : {})}
+          colour={engine?.fellBack === true ? "var(--label-unknown)" : undefined}
         />
-        <Metric
-          label="index"
-          value={
-            indexStatus.stale
-              ? "stale"
-              : indexStatus.builtBy === undefined
-                ? "not built"
-                : "current"
-          }
-        />
+        <Metric label="index" value={indexStatus.stale ? "stale" : indexStatus.builtBy === undefined ? "not built" : "current"} />
       </div>
 
       {capabilities === undefined ? null : (
@@ -722,11 +690,7 @@ function EngineCard({
             <CapabilityRow name="embedding" on={capabilities.embedding} />
             <CapabilityRow name="reranking" on={capabilities.reranking} />
             <CapabilityRow name="composition" on={capabilities.composition} />
-            <CapabilityRow
-              name="guard synthesis"
-              on={capabilities.guardSynthesis !== "none"}
-              note={capabilities.guardSynthesis}
-            />
+            <CapabilityRow name="guard synthesis" on={capabilities.guardSynthesis !== "none"} note={capabilities.guardSynthesis} />
             <CapabilityRow name="three-run voting" on={capabilities.voting} />
             <CapabilityRow name="index-time questions" on={capabilities.questionGeneration} />
           </tbody>
@@ -745,11 +709,7 @@ function EngineCard({
   );
 }
 
-function CapabilityRow({
-  name,
-  on,
-  note,
-}: { name: string; on: boolean; note?: string }): ReactElement {
+function CapabilityRow({ name, on, note }: { name: string; on: boolean; note?: string }): ReactElement {
   return (
     <tr>
       <td>{name}</td>
@@ -823,16 +783,8 @@ function PhaseZeroChecklist({
     ["0.4", "Six-rung identity ladder; double import creates zero new nodes", events >= 0],
     ["0.5", "Hash chain appended on write, verified on load and on import", events >= 0],
     ["0.6", "Portable JSON of EVENTS; export → import → identical head hash", events >= 0],
-    [
-      "0.7",
-      "Ontology: 14 variables, 8 premise types, aliases, antonyms",
-      ontologySize().variables === 15,
-    ],
-    [
-      "0.8",
-      "Embeddings outside the log, engine-tagged, stale-flagged",
-      state.index.stale || state.index.builtBy === undefined,
-    ],
+    ["0.7", "Ontology: 14 variables, 8 premise types, aliases, antonyms", ontologySize().variables === 15],
+    ["0.8", "Embeddings outside the log, engine-tagged, stale-flagged", state.index.stale || state.index.builtBy === undefined],
     ["0.9", "Engine seam; the app runs end to end with no key", true],
     ["0.10", "Boots empty, renders an empty state, survives reload", persistent],
   ];
@@ -846,12 +798,7 @@ function PhaseZeroChecklist({
             <tr key={id}>
               <td className="mono faint">{id}</td>
               <td>{text}</td>
-              <td
-                style={{
-                  color: met ? "var(--label-in)" : "var(--label-unknown)",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <td style={{ color: met ? "var(--label-in)" : "var(--label-unknown)", whiteSpace: "nowrap" }}>
                 {met ? "implemented" : "check manually"}
               </td>
             </tr>
@@ -877,7 +824,7 @@ function Metric({
 }: {
   label: string;
   value: string;
-  colour?: string;
+  colour?: string | undefined;
 }): ReactElement {
   return (
     <div className="metric">
@@ -898,3 +845,4 @@ function download(filename: string, text: string): void {
   anchor.click();
   URL.revokeObjectURL(url);
 }
+

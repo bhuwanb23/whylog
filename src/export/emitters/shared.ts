@@ -48,10 +48,10 @@ export function renderRecord(record: ExportRecord, options?: RenderOptions): str
   const heading = options?.heading ?? "###";
   const lines: string[] = [];
 
-  lines.push(`${heading} ${record.id} — ${record.imperative}`);
+  lines.push(heading + " " + record.id + " — " + record.imperative);
 
   if (record.appliesTo.length > 0) {
-    lines.push(`Applies to: ${record.appliesTo.join(", ")}`);
+    lines.push("Applies to: " + record.appliesTo.join(", "));
   } else {
     /* Emitted rather than omitted. A record with no scope loads into every context, and saying so
      * lets a reader notice the gap and fill it — an absent line reads as "applies everywhere",
@@ -61,22 +61,23 @@ export function renderRecord(record: ExportRecord, options?: RenderOptions): str
 
   lines.push(
     record.becauseText.length > 0
-      ? `Because: ${record.becauseText}`
+      ? "Because: " + record.becauseText
       : "Because: (no premise recorded — nothing can falsify this rule, so nothing would tell you when to stop following it)",
   );
 
   if (record.rejected.length > 0) {
     lines.push(
-      `Rejected: ${record.rejected
-        .map((entry) => entry.value + (entry.why === undefined ? "" : ` — "${entry.why}"`))
-        .join(" · ")}`,
+      "Rejected: " +
+        record.rejected
+          .map((entry) => entry.value + (entry.why === undefined ? "" : ' — "' + entry.why + '"'))
+          .join(" · "),
     );
   }
 
   lines.push(
     record.verifyCommand === undefined
       ? "Verify: none — UNVERIFIABLE. No guard could be compiled from this decision."
-      : `Verify: ${record.verifyCommand}`,
+      : "Verify: " + record.verifyCommand,
   );
 
   lines.push(renderStatus(record));
@@ -102,11 +103,10 @@ export function renderRecord(record: ExportRecord, options?: RenderOptions): str
 }
 
 /** The tier-2 one-liner. Same shape in every agent target, for the same reason. */
-export function renderIndexLine(
-  id: string,
-  imperative: string,
-  appliesTo: readonly string[],
-  seeAlso: string,
-): string {
-  return `- ${id} · ${imperative}${appliesTo.length > 0 ? ` · ${appliesTo.join(", ")}` : ""} · see ${seeAlso}`;
+export function renderIndexLine(id: string, imperative: string, appliesTo: readonly string[], seeAlso: string): string {
+  return (
+    "- " + id + " · " + imperative +
+    (appliesTo.length > 0 ? " · " + appliesTo.join(", ") : "") +
+    " · see " + seeAlso
+  );
 }

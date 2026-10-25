@@ -44,11 +44,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { GraphState } from "@/substrate/graph-state";
-import { PREMISE_COLUMN_ORDER, PREMISE_RING } from "@/theme";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { DecisionLabel, PremiseType } from "@/types/domain";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { PREMISE_COLUMN_ORDER, PREMISE_RING } from "@/theme";
 
 /* -------------------------------------------------------------------------- */
 /* Geometry                                                                   */
@@ -136,6 +136,7 @@ export function layoutLattice(
   /* ---- 2. premise → decisions, restricted to those decisions ---- */
   const supports = new Map<PremiseId, DecisionId[]>();
   const excludes = new Map<PremiseId, DecisionId[]>();
+  const wanted = new Set(decisions);
 
   for (const decisionId of decisions) {
     const decision = state.decisions.get(decisionId);
@@ -243,27 +244,18 @@ export function layoutLattice(
         label: labels.get(premiseId)?.label ?? premise.label,
         text: premise.text,
         column: type,
-        dependents: new Set([
-          ...(supports.get(premiseId) ?? []),
-          ...(excludes.get(premiseId) ?? []),
-        ]).size,
+        dependents: new Set([...(supports.get(premiseId) ?? []), ...(excludes.get(premiseId) ?? [])]).size,
         collapsedPremises: [],
       });
     });
   });
 
   /* ---- 5. decision positions: barycentre of the premises they rest on ---- */
-  const decisionY =
-    TOP_MARGIN +
-    Math.max(1, maxRows) * PREMISE_ROW_HEIGHT +
-    PREMISE_BAND_HEIGHT * PREMISE_ROW_HEIGHT;
+  const decisionY = TOP_MARGIN + Math.max(1, maxRows) * PREMISE_ROW_HEIGHT + PREMISE_BAND_HEIGHT * PREMISE_ROW_HEIGHT;
 
   const positioned = decisions
     .map((decisionId) => {
-      const feeding = [
-        ...feedingPremises(decisionId, supports),
-        ...feedingPremises(decisionId, excludes),
-      ]
+      const feeding = [...(feedingPremises(decisionId, supports)), ...(feedingPremises(decisionId, excludes))]
         .filter((premiseId) => premiseX.has(premiseId))
         .map((premiseId) => premiseX.get(premiseId) as number);
 
@@ -277,8 +269,7 @@ export function layoutLattice(
     /* Decisions with no drawn premise go last, to the right: they are the unverifiable ones, and
      * clustering them together makes the gap visible instead of scattering it through the diagram. */
     .sort((a, b) => {
-      if (a.barycentre === null && b.barycentre === null)
-        return a.decisionId < b.decisionId ? -1 : 1;
+      if (a.barycentre === null && b.barycentre === null) return a.decisionId < b.decisionId ? -1 : 1;
       if (a.barycentre === null) return 1;
       if (b.barycentre === null) return -1;
       return a.barycentre - b.barycentre || (a.decisionId < b.decisionId ? -1 : 1);
@@ -290,9 +281,7 @@ export function layoutLattice(
   let cursor = LEFT_MARGIN + COLUMN_WIDTH / 2;
 
   positioned.forEach((entry, index) => {
-    const target =
-      entry.barycentre ??
-      LEFT_MARGIN + Math.max(1, orderedTypes.length) * COLUMN_WIDTH + COLUMN_WIDTH / 2 + index * 40;
+    const target = entry.barycentre ?? LEFT_MARGIN + Math.max(1, orderedTypes.length) * COLUMN_WIDTH + COLUMN_WIDTH / 2 + index * 40;
     const x = Math.max(cursor, target);
     cursor = x + 120;
     decisionX.set(entry.decisionId, x);
@@ -418,14 +407,15 @@ export function radiusFor(dependents: number): number {
 
 export function describeLayout(layout: LatticeLayout): string {
   return [
-    `${layout.premiseCount} premise node(s) in ${layout.columns.length} type column(s), ${layout.decisionCount} decision(s) below.`,
+    layout.premiseCount + " premise node(s) in " + layout.columns.length + " type column(s), " +
+      layout.decisionCount + " decision(s) below.",
     layout.collapsedPremiseCount > 0
-      ? `${layout.collapsedPremiseCount} premise(s) collapsed into their decision's card — a premise supporting exactly one decision adds a node and an edge to say what the card already says.`
+      ? layout.collapsedPremiseCount + " premise(s) collapsed into their decision's card — a premise supporting exactly one decision adds a node and an edge to say what the card already says."
       : "No premises collapsed.",
     layout.droppedDecisionCount > 0
-      ? `${layout.droppedDecisionCount} superseded/archived decision(s) hidden. Toggle to show them.`
+      ? layout.droppedDecisionCount + " superseded/archived decision(s) hidden. Toggle to show them."
       : "",
-    `${layout.edges.length} edge(s).`,
+    layout.edges.length + " edge(s).",
     "",
     "Layout is DETERMINISTIC, not a force simulation: columns by premise type, decisions at the",
     "barycentre of the premises they rest on. A force layout settles differently on each render, so",

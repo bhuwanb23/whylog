@@ -42,7 +42,7 @@ import type { EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
 import type { Resolver } from "./resolve";
-import { COMPARATORS, METRIC_NAMES, type MetricResult, describeEngineId } from "./types";
+import { COMPARATORS, METRIC_NAMES, describeEngineId, type MetricResult } from "./types";
 
 export interface FalsePositiveOutcome {
   readonly metric: MetricResult;
@@ -93,7 +93,9 @@ export function scoreFalsePositives(
     unexpectedContradictions += 1;
     if (examples.length < 8) {
       examples.push(
-        `${record.gate}/${record.verdict} · ${record.decisionA}${record.decisionB === undefined ? "" : ` vs ${record.decisionB}`} · ${record.explanation.slice(0, 90)}`,
+        record.gate + "/" + record.verdict + " · " + record.decisionA +
+          (record.decisionB === undefined ? "" : " vs " + record.decisionB) +
+          " · " + record.explanation.slice(0, 90),
       );
     }
   }
@@ -105,9 +107,7 @@ export function scoreFalsePositives(
 
     unexpectedRetractions += 1;
     if (examples.length < 8) {
-      examples.push(
-        `retraction · ${decision.id} (${decision.variable}=${decision.value}) -> ${decision.label}`,
-      );
+      examples.push("retraction · " + decision.id + " (" + decision.variable + "=" + decision.value + ") -> " + decision.label);
     }
   }
 
@@ -131,15 +131,24 @@ export function scoreFalsePositives(
       value: ratePer100,
       detail: null,
       n: decisions,
-      perEngine: [
-        { engine: describeEngineId(engine), value: ratePer100, n: decisions, detail: null },
-      ],
+      perEngine: [{ engine: describeEngineId(engine), value: ratePer100, n: decisions, detail: null }],
       comparator: COMPARATORS["false-positive-rate"] ?? {
         source: "ARGUS (arXiv:2604.10345)",
         value: "FP:FN 13:1 — 155 false positives against 12 false negatives on alternatives",
       },
-      gloss: `${ratePer100.toFixed(1)} unexpected interruption(s) per 100 decisions (${unexpectedContradictions} contradiction(s) and ${unexpectedRetractions} unexplained retraction(s) over ${decisions} decisions). ${refinementVerdicts} refinement verdict(s) were correctly NOT surfaced as conflicts.`,
-      honestNote: `LOWER IS BETTER — the only metric in the table whose good direction is inverted. The denominator is decisions in the graph, not queries, because that is the quantity a user experiences: they are interrupted by the tool rather than polling it. 'Unexpected' means no plant labelled it, so a detection that is CORRECT but unlabelled counts against the system — this metric is biased pessimistic by construction, and on a corpus of ${decisions} decisions a single unlabelled true positive moves the rate by several points. ARGUS's 13:1 is a ratio over alternatives in a different corpus and is cited as the nearest published statement of the same failure, not as a like-for-like rate. Refinement verdicts are excluded on purpose: surfacing them is what docs/03 says gets a tool switched off, so counting them would measure restraint rather than error.`,
+      gloss:
+        ratePer100.toFixed(1) + " unexpected interruption(s) per 100 decisions (" + unexpectedContradictions +
+        " contradiction(s) and " + unexpectedRetractions + " unexplained retraction(s) over " + decisions +
+        " decisions). " + refinementVerdicts + " refinement verdict(s) were correctly NOT surfaced as conflicts.",
+      honestNote:
+        "LOWER IS BETTER — the only metric in the table whose good direction is inverted. The denominator is decisions in " +
+        "the graph, not queries, because that is the quantity a user experiences: they are interrupted by the tool rather " +
+        "than polling it. 'Unexpected' means no plant labelled it, so a detection that is CORRECT but unlabelled counts " +
+        "against the system — this metric is biased pessimistic by construction, and on a corpus of " + decisions +
+        " decisions a single unlabelled true positive moves the rate by several points. ARGUS's 13:1 is a ratio over " +
+        "alternatives in a different corpus and is cited as the nearest published statement of the same failure, not as a " +
+        "like-for-like rate. Refinement verdicts are excluded on purpose: surfacing them is what docs/03 says gets a tool " +
+        "switched off, so counting them would measure restraint rather than error.",
     },
   };
 }

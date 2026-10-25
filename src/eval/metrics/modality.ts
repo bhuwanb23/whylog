@@ -40,7 +40,7 @@ import type { Decision } from "@/types/domain";
 import type { ResolvedCorpus, ResolvedDecision } from "../corpus/labels";
 import type { RunResult } from "../harness";
 import { overlapOf } from "./match";
-import { METRIC_NAMES, type MetricResult, describeEngineId } from "./types";
+import { METRIC_NAMES, describeEngineId, type MetricResult } from "./types";
 
 export interface ModalityOutcome {
   readonly metric: MetricResult;
@@ -52,11 +52,7 @@ export interface ModalityOutcome {
   readonly byTier: readonly { tier: string; expected: number; wronglyPromoted: number }[];
 }
 
-export function scoreModalityPrecision(
-  corpus: ResolvedCorpus,
-  run: RunResult,
-  engine: EngineId,
-): ModalityOutcome {
+export function scoreModalityPrecision(corpus: ResolvedCorpus, run: RunResult, engine: EngineId): ModalityOutcome {
   const nodes: Decision[] = [...run.state.decisions.values()];
   const declines: { label: ResolvedDecision; tier: string }[] = [];
 
@@ -73,12 +69,8 @@ export function scoreModalityPrecision(
     /* A decline is violated when ANY node overlaps the labelled span. Variable agreement is not
      * required, because the failure mode is not "found it and mislabelled the variable" — it is "made
      * a node out of a sentence that was not a decision", and such a node may carry any variable. */
-    const hit = nodes.find(
-      (node) =>
-        overlapOf(entry.label.span, {
-          start: node.provenance.snippet.start,
-          end: node.provenance.snippet.end,
-        }) > 0,
+    const hit = nodes.find((node) =>
+      overlapOf(entry.label.span, { start: node.provenance.snippet.start, end: node.provenance.snippet.end }) > 0,
     );
     if (hit !== undefined) wronglyPromoted.push({ label: entry.label, node: hit });
   }
@@ -106,8 +98,16 @@ export function scoreModalityPrecision(
       n: declines.length,
       perEngine: [{ engine: describeEngineId(engine), value, n: declines.length, detail: null }],
       comparator: null,
-      gloss: `${correctlyDeclined} of ${declines.length} non-decisions were correctly left out of the graph; ${wronglyPromoted.length} became nodes anyway.`,
-      honestNote: `This is a PRECISION over declines, not a recall over hypotheticals: the denominator is the statements the corpus marks as must-not-become-nodes, so a system that declines nothing scores 0 rather than undefined. n=${declines.length}, concentrated in the adversarial tier, which is small enough that one violation moves the number by several points — the per-tier breakdown is printed beside it for that reason. No comparator exists because no surveyed extractor operates on a corpus where speculation outnumbers decisions; the absence is a property of the literature, not a gap in this measurement.`,
+      gloss:
+        correctlyDeclined + " of " + declines.length + " non-decisions were correctly left out of the graph; " +
+        wronglyPromoted.length + " became nodes anyway.",
+      honestNote:
+        "This is a PRECISION over declines, not a recall over hypotheticals: the denominator is the statements the corpus " +
+        "marks as must-not-become-nodes, so a system that declines nothing scores 0 rather than undefined. n=" +
+        declines.length + ", concentrated in the adversarial tier, which is small enough that one violation moves the number " +
+        "by several points — the per-tier breakdown is printed beside it for that reason. No comparator exists because no " +
+        "surveyed extractor operates on a corpus where speculation outnumbers decisions; the absence is a property of the " +
+        "literature, not a gap in this measurement.",
     },
   };
 }

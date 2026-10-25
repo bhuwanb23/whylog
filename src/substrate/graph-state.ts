@@ -51,8 +51,8 @@ import type {
 import type { AnyEvent } from "@/types/events";
 import type { ExportStats, IntegrityStamp } from "@/types/export";
 import type { Guard } from "@/types/guards";
-import type { RevisionProposal } from "@/types/reasoning";
 import type { ContradictionGate, ContradictionVerdict, IndexLevel } from "@/types/retrieval";
+import type { RevisionProposal } from "@/types/reasoning";
 import { GENESIS_HASH } from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
 
@@ -141,7 +141,7 @@ export interface IndexStatus {
    *  retrieval is DISABLED — comparing vectors across embedding spaces is
    *  meaningless, and silently returning garbage would be worse than saying so. */
   readonly stale: boolean;
-  readonly staleSince?: ISODateString;
+  readonly staleSince?: ISODateString | undefined;
   readonly lastEventId?: EventId;
 }
 
