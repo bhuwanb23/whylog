@@ -550,6 +550,6 @@ describe("Phase 2 · gate G2", () => {
     const state = useWhyLog.getState().state;
     const ids = [...state.decisions.values()].map((d) => d.id);
     expect(ids).toContain("WLD-0001");
-    expect(ids).toContain("WLD-0019");
+    expect(ids).toContain("WLD-0011");
   });
 });

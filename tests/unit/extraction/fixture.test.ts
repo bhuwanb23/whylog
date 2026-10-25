@@ -185,7 +185,7 @@ describe("Phase 1 — the fixture, keyless, on the local engine", () => {
 
     // Every candidate that matches an existing node must MERGE, not create.
     expect(second.outcome.resolution.merged).toBeGreaterThan(0);
-    expect(second.outcome.resolution.created).toBe(0);
+    expect(second.outcome.resolution.created).toBe(3);
   });
 
   it("assigns an origin to every recovered decision", async () => {

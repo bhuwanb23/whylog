@@ -42,7 +42,7 @@ describe("The pre-export consistency gate blocks a self-contradictory log", () =
     const state = await buildDemoLog("approve-all");
 
     const postgres = state.decisions.get("WLD-0001" as never);
-    const sqlite = state.decisions.get("WLD-0005" as never);
+    const sqlite = state.decisions.get("WLD-0002" as never);
 
     expect(postgres?.variable).toBe("DATABASE");
     expect(postgres?.value).toBe("postgres");

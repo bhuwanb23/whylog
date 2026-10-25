@@ -19,7 +19,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createLocalEngine } from "@/ai/local";
 import { commitReview } from "@/extraction/commit";
 import { runExtraction } from "@/extraction/pipeline";
-import { applyAction, approve } from "@/extraction/review/actions";
+import { applyAction, approve, discard, edit } from "@/extraction/review/actions";
 import { useGuards } from "@/store/guards";
 import { useReasoning } from "@/store/reasoning";
 import { useWhyLog } from "@/store/whylog";
@@ -41,7 +41,25 @@ const MANIFEST = JSON.stringify(
   2,
 );
 
-/** Paste the transcript, review it, commit it. */
+/** The decisions the transcript settled, as the engine resolved them — the seven
+ * keys curated review keeps (one per variable). Matches tests/helpers/demo-log.ts. */
+const KEEP: ReadonlySet<string> = new Set([
+  "DATABASE=sqlite",
+  "AUTH=local",
+  "FRAMEWORK=single-page",
+  "UI_KIT=tailwind",
+  "RETRIEVAL=embeddings",
+  "TESTING=golden-file",
+  "SCOPE=single-user",
+]);
+
+/** Paste the transcript, review it (curated, not approve-all), commit it.
+ *
+ * Approve-all makes the log contradict itself: the local engine extracts NINETEEN
+ * candidates, including rejected alternatives like DATABASE=postgres. The commit-time
+ * relabel then flips every decision OUT before gate (a) can run, so G4 sees no
+ * proposals. Curated review keeps the seven settled decisions and discards the rest —
+ * the same happy path consistency-gate.test.ts uses. */
 async function buildLog() {
   const raw = readFileSync(FIXTURE, "utf-8");
   const engine = createLocalEngine();
@@ -52,7 +70,28 @@ async function buildLog() {
   );
   if (!run.ok) throw new Error(`extraction failed: ${run.failure.kind}`);
 
-  const reviewed = run.outcome.queue.map((candidate) => applyAction(candidate, approve(false)));
+  let edited = false;
+  const reviewed = run.outcome.queue.map((item) => {
+    if (item.kind !== "decision" || item.decision === null) {
+      return applyAction(item, approve(false));
+    }
+    const key = `${item.decision.variable}=${item.decision.value}`;
+    if (KEEP.has(key)) {
+      if (!edited) {
+        edited = true;
+        return applyAction(
+          item,
+          edit({ acceptedDownside: "single-writer only, until the schema grows" }),
+        );
+      }
+      return applyAction(item, approve(false));
+    }
+    return applyAction(
+      item,
+      discard("the transcript did not settle this: it is a question or a rejected alternative"),
+    );
+  });
+
   const committed = commitReview(
     {
       transcriptId: "T-0001" as TranscriptId,
