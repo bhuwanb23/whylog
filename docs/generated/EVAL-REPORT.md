@@ -1,6 +1,6 @@
 # DecisionMemEval — evaluation report
 
-Generated 2026-10-24T10:23:33.836Z. Do not edit by hand: `npm run eval:report` regenerates it.
+Generated 2026-10-24T12:13:59.627Z. Do not edit by hand: `npm run eval:report` regenerates it.
 
 Corpus 0.1.0 · engine local/cue-extractor-v1 · 12 transcripts
 
@@ -9,38 +9,38 @@ Corpus 0.1.0 · engine local/cue-extractor-v1 · 12 transcripts
 Thirteen metrics over 12 transcripts. Every one carries its sample
 size, its comparator where one is published, and a statement of what it does not establish.
 
-- **Decision extraction P / R / F1**: 0.083 (n=19)
+- **Decision extraction P / R / F1**: 0.226 (n=19)
 - **Premise extraction P / R / F1**: 0.193 (n=16)
-- **Alternative extraction precision**: 0.026 (n=8)
-- **Contradiction recall (L1 pairwise)**: 0.250 (n=4)
-- **Premise-invalidation recall (L2 non-monotonic)**: 0.000 (n=1)
-- **Cascade correctness (L3 propagation)**: 0.000 (n=2)
+- **Alternative extraction precision**: 0.000 (n=8)
+- **Contradiction recall (L1 pairwise)**: 0.500 (n=4)
+- **Premise-invalidation recall (L2 non-monotonic)**: 1.000 (n=1)
+- **Cascade correctness (L3 propagation)**: 0.500 (n=2)
 - **Survivor preservation**: 0.000 (n=2)
-- **False-positive rate per 100 decisions**: 84.9 per 100 (lower is better) (n=53)
+- **False-positive rate per 100 decisions**: 102.9 per 100 (lower is better) (n=34)
 - **Answer groundedness**: 0.000 (n=8)
-- **Retrieval precision@5**: 0.000 (n=8)
-- **Retrieval MRR**: 0.000 (n=6)
+- **Retrieval precision@5**: 0.050 (n=8)
+- **Retrieval MRR**: 0.083 (n=6)
 - **Guard precision on seeded violations**: 0.000 (n=0)
-- **Modality precision (correctly declined)**: 0.667 (n=6)
+- **Modality precision (correctly declined)**: 0.500 (n=6)
 
 ## The thirteen metrics
 
 ```
 Metric                                            Value      n  Comparator
 ----------------------------------------------------------------------------------------------------
-Decision extraction P / R / F1                    0.083     19  RecovAr (docs/05 §4.1)
+Decision extraction P / R / F1                    0.226     19  RecovAr (docs/05 §4.1)
 Premise extraction P / R / F1                     0.193     16  NONE PUBLISHED
-Alternative extraction precision                  0.026      8  ARGUS (arXiv:2604.10345)
-Contradiction recall (L1 pairwise)                0.250      4  Kantara (arXiv:2506.11005)
-Premise-invalidation recall (L2 non-monotonic)    0.000      1  NONE PUBLISHED
-Cascade correctness (L3 propagation)              0.000      2  NONE PUBLISHED
+Alternative extraction precision                  0.000      8  ARGUS (arXiv:2604.10345)
+Contradiction recall (L1 pairwise)                0.500      4  Kantara (arXiv:2506.11005)
+Premise-invalidation recall (L2 non-monotonic)    1.000      1  NONE PUBLISHED
+Cascade correctness (L3 propagation)              0.500      2  NONE PUBLISHED
 Survivor preservation                             0.000      2  NONE PUBLISHED
-False-positive rate per 100 decisions          84.9/100     53  ARGUS (arXiv:2604.10345)
+False-positive rate per 100 decisions         102.9/100     34  ARGUS (arXiv:2604.10345)
 Answer groundedness                               0.000      8  RepoRationale
-Retrieval precision@5                             0.000      8  agentmemory
-Retrieval MRR                                     0.000      6  NONE PUBLISHED
+Retrieval precision@5                             0.050      8  agentmemory
+Retrieval MRR                                     0.083      6  NONE PUBLISHED
 Guard precision on seeded violations              0.000      0  fitness-function literature
-Modality precision (correctly declined)           0.667      6  NONE PUBLISHED
+Modality precision (correctly declined)           0.500      6  NONE PUBLISHED
 
 Lower is better for: false-positive rate. Higher is better for everything else.
 6 of 13 metrics have NO published comparator — that is the new-territory claim, stated as a count.
@@ -50,9 +50,9 @@ Lower is better for: false-positive rate. Higher is better for everything else.
 
 #### Decision extraction P / R / F1
 
-**0.083** · n=19 · P 0.057 / R 0.158 / F1 0.083 (TP 3, FP 50, FN 16)
+**0.226** · n=19 · P 0.176 / R 0.316 / F1 0.226 (TP 6, FP 28, FN 13)
 
-3 of 19 labelled decisions became graph nodes; 50 node(s) had no label behind them.
+6 of 19 labelled decisions became graph nodes; 28 node(s) had no label behind them.
 
 Comparator: RecovAr (docs/05 §4.1) — 75% recall / 77% precision on commit-message rationale; Kantara reports F1 0.70–0.75 on contradictions
 
@@ -70,9 +70,9 @@ Comparator: **none published.** The absence is the finding — see the honest no
 
 #### Alternative extraction precision
 
-**0.026** · n=8 · P 0.026 / R 0.125 / F1 0.043 (TP 1, FP 37, FN 7)
+**0.000** · n=8 · P 0.000 / R 0.000 / F1 0.000 (TP 0, FP 34, FN 8)
 
-0.026 precision against ARGUS's 0.154; FP:FN 37:7 (5.3 FP per FN) against ARGUS's 13:1. 18 alternative(s) carry a stated rejection reason and 6% of those are correct — the subset the system would act on.
+0.000 precision against ARGUS's 0.154; FP:FN 34:8 (4.3 FP per FN) against ARGUS's 13:1. 15 alternative(s) carry a stated rejection reason and 0% of those are correct — the subset the system would act on.
 
 Comparator: ARGUS (arXiv:2604.10345) — 15.4% precision on alternatives, alpha 0.64, FP:FN ratio 13:1
 
@@ -80,9 +80,9 @@ Comparator: ARGUS (arXiv:2604.10345) — 15.4% precision on alternatives, alpha 
 
 #### Contradiction recall (L1 pairwise)
 
-**0.250** · n=4 · P 1.000 / R 0.250 / F1 0.400 (TP 1, FP 0, FN 3)
+**0.500** · n=4 · P 1.000 / R 0.500 / F1 0.667 (TP 2, FP 0, FN 2)
 
-1 of 4 planted L1 cases produced the expected verdict. By gate: 45 structural, 0 semantic, 0 premise. Kantara diagnostics: 0 M1, 0 M2.
+2 of 4 planted L1 cases produced the expected verdict. By gate: 11 structural, 0 semantic, 30 premise. Kantara diagnostics: 0 M1, 0 M2.
 
 Comparator: Kantara (arXiv:2506.11005) — Reported 396 contradictory pairs found over the Linux kernel at F1 0.70–0.75, but published COUNTS rather than recall over a planted set
 
@@ -90,9 +90,9 @@ Comparator: Kantara (arXiv:2506.11005) — Reported 396 contradictory pairs foun
 
 #### Premise-invalidation recall (L2 non-monotonic)
 
-**0.000** · n=1
+**1.000** · n=1
 
-0 of 1 decision(s) that should have gone unsound when their premise was falsified actually did. 0 justification(s) carry a non-empty OUT-list, which is what makes the graph non-monotonic at all. 0 premise-gate record(s) were raised.
+1 of 1 decision(s) that should have gone unsound when their premise was falsified actually did. 9 justification(s) carry a non-empty OUT-list, which is what makes the graph non-monotonic at all. 30 premise-gate record(s) were raised.
 
 Comparator: **none published.** The absence is the finding — see the honest note.
 
@@ -100,9 +100,9 @@ Comparator: **none published.** The absence is the finding — see the honest no
 
 #### Cascade correctness (L3 propagation)
 
-**0.000** · n=2
+**0.500** · n=2
 
-0 of 2 plant(s) were FULLY correct — every expected flip happened and no survivor was retracted. 0 over-retraction(s) across 2 expected survivor(s).
+1 of 2 plant(s) were FULLY correct — every expected flip happened and no survivor was retracted. 0 over-retraction(s) across 2 expected survivor(s).
 
 Comparator: **none published.** The absence is the finding — see the honest note.
 
@@ -120,19 +120,19 @@ Comparator: **none published.** The absence is the finding — see the honest no
 
 #### False-positive rate per 100 decisions
 
-**84.9 per 100 decisions** · n=53
+**102.9 per 100 decisions** · n=34
 
-84.9 unexpected interruption(s) per 100 decisions (45 contradiction(s) and 0 unexplained retraction(s) over 53 decisions). 0 refinement verdict(s) were correctly NOT surfaced as conflicts.
+102.9 unexpected interruption(s) per 100 decisions (9 contradiction(s) and 26 unexplained retraction(s) over 34 decisions). 0 refinement verdict(s) were correctly NOT surfaced as conflicts.
 
 Comparator: ARGUS (arXiv:2604.10345) — FP:FN 13:1 — 155 false positives against 12 false negatives on alternatives
 
-> LOWER IS BETTER — the only metric in the table whose good direction is inverted. The denominator is decisions in the graph, not queries, because that is the quantity a user experiences: they are interrupted by the tool rather than polling it. 'Unexpected' means no plant labelled it, so a detection that is CORRECT but unlabelled counts against the system — this metric is biased pessimistic by construction, and on a corpus of 53 decisions a single unlabelled true positive moves the rate by several points. ARGUS's 13:1 is a ratio over alternatives in a different corpus and is cited as the nearest published statement of the same failure, not as a like-for-like rate. Refinement verdicts are excluded on purpose: surfacing them is what docs/03 says gets a tool switched off, so counting them would measure restraint rather than error.
+> LOWER IS BETTER — the only metric in the table whose good direction is inverted. The denominator is decisions in the graph, not queries, because that is the quantity a user experiences: they are interrupted by the tool rather than polling it. 'Unexpected' means no plant labelled it, so a detection that is CORRECT but unlabelled counts against the system — this metric is biased pessimistic by construction, and on a corpus of 34 decisions a single unlabelled true positive moves the rate by several points. ARGUS's 13:1 is a ratio over alternatives in a different corpus and is cited as the nearest published statement of the same failure, not as a like-for-like rate. Refinement verdicts are excluded on purpose: surfacing them is what docs/03 says gets a tool switched off, so counting them would measure restraint rather than error.
 
 #### Answer groundedness
 
 **0.000** · n=8
 
-0 of 8 answer(s) carried the verdict the corpus expected. Mean groundedness 0.743 (106 grounded claim(s) of 120). 0 answer(s) exceeded the 3-search budget. Refusals: 0 of 2 correct.
+0 of 8 answer(s) carried the verdict the corpus expected. Mean groundedness 0.757 (120 grounded claim(s) of 137). 0 answer(s) exceeded the 3-search budget. Refusals: 0 of 2 correct.
 
 Comparator: RepoRationale — Specifies the evidence contract (bounded searches, citations resolve in-run, insufficient-evidence first-class) but publishes no quantity
 
@@ -140,9 +140,9 @@ Comparator: RepoRationale — Specifies the evidence contract (bounded searches,
 
 #### Retrieval precision@5
 
-**0.000** · n=8 · P 0.000 / R 0.000 / F1 0.000 (TP 0, FP 40, FN 0)
+**0.050** · n=8 · P 0.050 / R 0.000 / F1 0.000 (TP 2, FP 38, FN 0)
 
-0 relevant result(s) across 40 top-5 slots = 0.0%. The achievable ceiling on these questions is 22.5%, because 8 question(s) have fewer than 5 relevant decisions in the whole corpus.
+2 relevant result(s) across 40 top-5 slots = 5.0%. The achievable ceiling on these questions is 22.5%, because 8 question(s) have fewer than 5 relevant decisions in the whole corpus.
 
 Comparator: agentmemory — R@5 95.2% with BM25 + vector + graph and RRF — a DIFFERENT task (memory recall over conversation turns, not decisions over a corpus)
 
@@ -150,9 +150,9 @@ Comparator: agentmemory — R@5 95.2% with BM25 + vector + graph and RRF — a D
 
 #### Retrieval MRR
 
-**0.000** · n=6
+**0.083** · n=6
 
-MRR 0.000 over 6 answerable question(s). 6 returned no relevant decision in the top 5 at all.
+MRR 0.083 over 6 answerable question(s). 5 returned no relevant decision in the top 5 at all.
 
 Comparator: **none published.** The absence is the finding — see the honest note.
 
@@ -162,7 +162,7 @@ Comparator: **none published.** The absence is the finding — see the honest no
 
 **0.000** · n=0
 
-NOT MEASURED — n=0. This corpus is twelve transcripts with no repository state, so no violation could be seeded and no guard had anything to fail against. Measured instead: synthesis rate 0% (0 of 53 decisions got a proposed guard), determinism share 0% (0 deterministic, 0 llm_judge), 0 skip(s) counted as a pass, 0 guard(s) auto-accepted without a human, 0 guard(s) whose disabled flag disagrees with their decision's label.
+NOT MEASURED — n=0. This corpus is twelve transcripts with no repository state, so no violation could be seeded and no guard had anything to fail against. Measured instead: synthesis rate 100% (34 of 34 decisions got a proposed guard), determinism share 100% (93 deterministic, 0 llm_judge), 0 skip(s) counted as a pass, 0 guard(s) auto-accepted without a human, 0 guard(s) whose disabled flag disagrees with their decision's label.
 
 Comparator: fitness-function literature — Qualitative throughout. No published precision figure, because no surveyed tool generates the check from the decision.
 
@@ -170,9 +170,9 @@ Comparator: fitness-function literature — Qualitative throughout. No published
 
 #### Modality precision (correctly declined)
 
-**0.667** · n=6
+**0.500** · n=6
 
-4 of 6 non-decisions were correctly left out of the graph; 2 became nodes anyway.
+3 of 6 non-decisions were correctly left out of the graph; 3 became nodes anyway.
 
 Comparator: **none published.** The absence is the finding — see the honest note.
 
@@ -186,7 +186,7 @@ surveyed extractor operates on a corpus where speculation outnumbers decisions.
 
 - **Survivor preservation** — 0 of 2 decision(s) that shared no falsified premise kept their label. 0 were retracted anyway.
   One of the two metrics §7.2 calls unusual, and the one that predicts whether the product survives a real project. 1.0 is VACUOUS when n=0 and the gloss says so rather than printing a perfect score for an untested property — a benchmark that reports 100% because it measured nothing is worse than one that reports 40%. n=2 survivors, all from the single l03 plant, so this is a check that a specific mechanism does not over-fire, not an estimate of an over-retraction RATE. Nobody publishes a comparator because nobody cascades.
-- **Modality precision (correctly declined)** — 4 of 6 non-decisions were correctly left out of the graph; 2 became nodes anyway.
+- **Modality precision (correctly declined)** — 3 of 6 non-decisions were correctly left out of the graph; 3 became nodes anyway.
   This is a PRECISION over declines, not a recall over hypotheticals: the denominator is the statements the corpus marks as must-not-become-nodes, so a system that declines nothing scores 0 rather than undefined. n=6, concentrated in the adversarial tier, which is small enough that one violation moves the number by several points — the per-tier breakdown is printed beside it for that reason. No comparator exists because no surveyed extractor operates on a corpus where speculation outnumbers decisions; the absence is a property of the literature, not a gap in this measurement.
 
 ## Per-case detail
@@ -195,22 +195,22 @@ surveyed extractor operates on a corpus where speculation outnumbers decisions.
 
 | transcript | TP | FP | FN |
 | --- | --- | --- | --- |
-| c01 | 0 | 2 | 1 |
-| c02 | 1 | 2 | 1 |
+| c01 | 1 | 1 | 0 |
+| c02 | 1 | 1 | 1 |
 | c03 | 0 | 1 | 1 |
 | m01 | 0 | 1 | 2 |
-| m02 | 0 | 3 | 2 |
+| m02 | 1 | 1 | 1 |
 | m03 | 1 | 3 | 0 |
-| a01 | 0 | 2 | 0 |
+| a01 | 0 | 1 | 0 |
 | a02 | 0 | 0 | 2 |
 | a03 | 0 | 0 | 3 |
 | l03 | 0 | 1 | 3 |
-| demo1 | 0 | 22 | 1 |
-| demo2 | 1 | 13 | 0 |
+| demo1 | 1 | 10 | 0 |
+| demo2 | 1 | 8 | 0 |
 
 Found the sentence, understood it as the wrong kind of decision (1):
 
-- `d1` labelled FRAMEWORK, extracted as ARCHITECTURE
+- `d2` labelled STORAGE, extracted as DATABASE
 
 Premises matched on span but given the wrong predicate (11):
 
@@ -226,7 +226,7 @@ Premises matched on span but given the wrong predicate (11):
 - `p2` labelled `team.owns_user_table`, extracted as `team.expertise`
 - `p2` labelled `deployment.infrastructure`, extracted as `deployment.model`
 
-Premise TYPE errors (82) — spans overlap but the types disagree.
+Premise TYPE errors (83) — spans overlap but the types disagree.
 The substrate forbids merging across types, so these are near-misses the alignment refused:
 
 - `p1` labelled scale, extracted as time
@@ -242,59 +242,59 @@ The substrate forbids merging across types, so these are near-misses the alignme
 - `p1` labelled requirement, extracted as scale
 - `p1` labelled requirement, extracted as scale
 
-**Statements that should not have become nodes, and did** (2):
+**Statements that should not have become nodes, and did** (3):
 
-- `h1` (hypothetical) → WLD-0003
-- `h2` (hypothetical) → WLD-0007
+- `d2` (conditional) → WLD-0001
+- `h2` (hypothetical) → WLD-0006
+- `h3` (hypothetical) → WLD-0008
 
-Alternative FP:FN ratio — 37:7 (5.3 FP per FN) (ARGUS published 13:1).
+Alternative FP:FN ratio — 34:8 (4.3 FP per FN) (ARGUS published 13:1).
 
 ### Planted cases
 
 | plant | testable | expected flips | flipped | missed | survivors kept | over-retracted | correct |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| L2-premise-falsified | yes | 1 | 0 | 0 | 0 | 0 | ✗ |
+| L2-premise-falsified | yes | 1 | 1 | 0 | 0 | 0 | ✓ |
 | L3-shared-premise | yes | 1 | 0 | 0 | 0 | 0 | ✗ |
 
-**Plant keys with no runtime node** (4). These plants are scored as
+**Plant keys with no runtime node** (3). These plants are scored as
 FAILED rather than skipped — skipping would make cascade correctness improve as extraction worsens:
 
-- L2-premise-falsified -> demo1/d1
 - L3-shared-premise -> l03/d1
 - L3-shared-premise -> l03/d2
 - L3-shared-premise -> l03/d3
 
-Contradiction records by gate: 45 structural, 0 semantic, 0 premise. Kantara diagnostics: 0 M1, 0 M2.
+Contradiction records by gate: 11 structural, 0 semantic, 30 premise. Kantara diagnostics: 0 M1, 0 M2.
 
-Justifications carrying a non-empty OUT-list: 0 of 53 decisions. Zero means the graph is monotonic and L2 cannot score.
+Justifications carrying a non-empty OUT-list: 9 of 34 decisions. Zero means the graph is monotonic and L2 cannot score.
 
 Unexpected interruptions (the false-positive numerator), first 8:
 
-- structural/contradiction · WLD-0001 vs WLD-0002 · WLD-0001 and WLD-0002 are both live and IN on SCOPE with different values: "sqlite" and "s
-- structural/contradiction · WLD-0004 vs WLD-0005 · WLD-0004 and WLD-0005 are both live and IN on ARCHITECTURE with different values: "local" 
-- structural/contradiction · WLD-0011 vs WLD-0013 · WLD-0011 and WLD-0013 are both live and IN on HOSTING, and "local-only" and "vercel" are a
-- structural/contradiction · WLD-0011 vs WLD-0014 · WLD-0011 and WLD-0014 are both live and IN on HOSTING, and "local-only" and "vercel" are a
-- structural/contradiction · WLD-0024 vs WLD-0025 · WLD-0024 and WLD-0025 are both live and IN on AUTH with different values: "schema" and "lo
-- structural/contradiction · WLD-0024 vs WLD-0026 · WLD-0024 and WLD-0026 are both live and IN on AUTH with different values: "schema" and "au
-- structural/contradiction · WLD-0024 vs WLD-0027 · WLD-0024 and WLD-0027 are both live and IN on AUTH with different values: "schema" and "lo
-- structural/contradiction · WLD-0024 vs WLD-0028 · WLD-0024 and WLD-0028 are both live and IN on AUTH with different values: "schema" and "au
+- structural/contradiction · WLD-0009 vs WLD-0011 · WLD-0009 and WLD-0011 are both live and IN on HOSTING, and "local-only" and "vercel" are a
+- structural/contradiction · WLD-0009 vs WLD-0012 · WLD-0009 and WLD-0012 are both live and IN on HOSTING, and "local-only" and "vercel" are a
+- structural/contradiction · WLD-0027 vs WLD-0029 · WLD-0027 and WLD-0029 are both live and IN on DATABASE with different values: "postgres" a
+- structural/contradiction · WLD-0027 vs WLD-0031 · WLD-0027 and WLD-0031 are both live and IN on DATABASE with different values: "postgres" a
+- structural/contradiction · WLD-0026 vs WLD-0032 · WLD-0026 and WLD-0032 are both live and IN on OTHER with different values: "now" and "clau
+- structural/contradiction · WLD-0026 vs WLD-0033 · WLD-0026 and WLD-0033 are both live and IN on OTHER with different values: "now" and "agen
+- structural/contradiction · WLD-0032 vs WLD-0033 · WLD-0032 and WLD-0033 are both live and IN on OTHER with different values: "claude.md" and
+- structural/contradiction · WLD-0032 vs WLD-0034 · WLD-0032 and WLD-0034 are both live and IN on OTHER with different values: "claude.md" and
 
 ### Questions
 
 | id | verdict | expected | groundedness | claims | searches | over budget |
 | --- | --- | --- | --- | --- | --- | --- |
-| q1 | PARTIAL | GROUNDED | 0.90 | 19/21 | 1 | no |
-| q2 | PARTIAL | GROUNDED | 0.90 | 18/20 | 1 | no |
-| q3 | PARTIAL | GROUNDED | 0.90 | 19/21 | 1 | no |
+| q1 | PARTIAL | GROUNDED | 0.85 | 23/27 | 1 | no |
+| q2 | PARTIAL | GROUNDED | 0.88 | 15/17 | 1 | no |
+| q3 | PARTIAL | GROUNDED | 0.91 | 21/23 | 1 | no |
 | q4 | INSUFFICIENT_EVIDENCE | GROUNDED | 0.00 | 0/0 | 2 | no |
-| q5 | PARTIAL | INSUFFICIENT_EVIDENCE | 0.60 | 3/5 | 2 | no |
-| q6 | PARTIAL | GROUNDED | 0.90 | 19/21 | 1 | no |
-| q7 | PARTIAL | INSUFFICIENT_EVIDENCE | 0.90 | 18/20 | 1 | no |
+| q5 | PARTIAL | INSUFFICIENT_EVIDENCE | 0.78 | 7/9 | 2 | no |
+| q6 | PARTIAL | GROUNDED | 0.91 | 21/23 | 1 | no |
+| q7 | PARTIAL | INSUFFICIENT_EVIDENCE | 0.88 | 23/26 | 1 | no |
 | q8 | PARTIAL | GROUNDED | 0.83 | 10/12 | 1 | no |
 
 | id | relevant expected | found in top 5 | first relevant rank |
 | --- | --- | --- | --- |
-| q1 | 2 | 0 | — |
+| q1 | 2 | 2 | 2 |
 | q2 | 1 | 0 | — |
 | q3 | 1 | 0 | — |
 | q4 | 1 | 0 | — |
@@ -308,8 +308,8 @@ Unexpected interruptions (the false-positive numerator), first 8:
 Precision is NOT MEASURED — a transcript corpus contains no repository state, so no violation could be
 seeded. See `docs/LIMITATIONS.md`. What is measurable:
 
-- synthesis rate: 0 of 53 decisions got a proposed guard
-- determinism share: 0 deterministic, 0 `llm_judge`
+- synthesis rate: 34 of 34 decisions got a proposed guard
+- determinism share: 93 deterministic, 0 `llm_judge`
 - skips counted as passes (must be 0): 0
 - guards auto-accepted without a human (must be 0, invariant I4): 0
 - stale `disabledByDecisionLabel` flags (must be 0): 0
@@ -327,25 +327,24 @@ HARDENING PASS — 7.4
 
 NOT READY: see the failures below. A partially hardened demo is not a demo that can be given.
 
-THE FOUR DEMO-KILLERS (2/4 passing)
+THE FOUR DEMO-KILLERS (3/4 passing)
 
   PASS  Cascade over-retraction
           visible as: One premise is falsified and decisions that share nothing with it lose their label. The graph looks like it is deleting the user's history rather than maintaining it.
           evidence:   0 over-retraction(s) across 2 expected survivor(s); survivor preservation 0.000.
 
-  FAIL  False premise resolution
+  PASS  False premise resolution
           visible as: The presenter says 'nothing contradicted me, I never said the word database, the world moved and the log noticed' — and the log has not noticed. There is no recovery from this one, because it is the claim the whole demo is built around.
-          evidence:   expected demo1/d1 to go unsound; none were resolvable; unresolvable: demo1/d1. Non-empty OUT-lists in the graph: 0.
-          on stage:   Fall back to the scripted fixture pair (`fixtures/demo-transcript.txt` then `fixtures/demo-transcript-2.txt`) imported through the UI rather than the corpus, and drive the falsification by hand from the Reasoning view. It is a weaker claim — a human pointing at the premise instead of the transcript implying it — and it must be described as such on stage.
+          evidence:   demo1/d1 went unsound as expected. Non-empty OUT-lists in the graph: 9.
 
   FAIL  Hypotheticals becoming nodes
           visible as: A speculative question appears in the decision graph as a decision. Reading the node aloud is enough to end the demo, and the audience will do it without being invited to.
-          evidence:   2 non-decision(s) became nodes out of 6 labelled declines. Adversarial tier: 2 wrongly promoted of 5 expected declines.
+          evidence:   3 non-decision(s) became nodes out of 6 labelled declines. Adversarial tier: 2 wrongly promoted of 5 expected declines.
           on stage:   Filter the graph view to origin=human and modality=asserted before showing it. The hypothetical nodes still exist in the log — nothing is deleted, invariant I1 — but they are not on screen, and saying 'they are retained but not promoted' is a true and defensible sentence.
 
   PASS  Day-one guard failures
           visible as: The guards panel is red before the user has written any code. A verification layer that fails on an empty project teaches the user to ignore it, and an ignored verification layer is worse than none because it has already consumed the user's trust.
-          evidence:   0 guard(s) synthesised across 53 decisions (0%). Invariant violations: 0 skip(s) counted as pass, 0 auto-accepted, 0 stale disabled flag(s). All three must be zero.
+          evidence:   93 guard(s) synthesised across 34 decisions (100%). Invariant violations: 0 skip(s) counted as pass, 0 auto-accepted, 0 stale disabled flag(s). All three must be zero.
 
 DOCUMENTED FAILURE MODES (14 mechanical, 9 argued)
 
@@ -360,8 +359,8 @@ check and no argument is the dangerous category — it reads as covered and is c
            no node reached a circular label.
   pass    [docs/02 §7] Unfounded belief — a node IN with no path to an asserted premise
            no node reached an unfounded label.
-  FAIL    [docs/02 §7] Monotonic graph — no OUT-lists, so nothing can be retracted
-           0 justification(s) carry a non-empty OUT-list.
+  pass    [docs/02 §7] Monotonic graph — no OUT-lists, so nothing can be retracted
+           9 justification(s) carry a non-empty OUT-list.
   ARGUED  [docs/02 §7] Entrenchment miscalibration — the wrong belief is contracted first
            Entrenchment weights are declared in `reasoning/entrenchment.ts` and the ablation measures whether removing the ordering raises the false-positive rate. It does NOT measure whether the weights are right, because that needs a corpus with ground-truth entrenchment, which no public corpus has. Making it mechanical needs hand-labelled entrenchment rankings per decision.
   ARGUED  [docs/02 §7] Label oscillation — the fixpoint does not converge
@@ -391,7 +390,7 @@ check and no argument is the dangerous category — it reads as covered and is c
   pass    [docs/04 §8] Stale `disabledByDecisionLabel` after a label change
            0 stale flag(s); must be 0. This is a regression check on a bug Phase 6 found and fixed.
   pass    [docs/04 §8] `llm_judge` counted toward compliance
-           0 deterministic and 0 judged guard(s); Phase 4 excludes judged guards from compliance by filtering on `isDeterministic`.
+           93 deterministic and 0 judged guard(s); Phase 4 excludes judged guards from compliance by filtering on `isDeterministic`.
   ARGUED  [docs/04 §8] A guard that passes on a project that violates its decision
            This is guard precision, and it is NOT MEASURED: a transcript corpus contains no repository state, so no violation can be seeded. Mechanical once a fixture repository ships beside the corpus — roadmap work recorded in `docs/LIMITATIONS.md`.
   ARGUED  [docs/04 §8] Guard scoped too broadly — fires on files the decision does not govern
@@ -399,7 +398,7 @@ check and no argument is the dangerous category — it reads as covered and is c
   ARGUED  [docs/04 §8] `falsifiesPremiseId` attributed to the wrong premise
            Phase 4 attributes a falsification only when EXACTLY ONE premise matches, so ambiguity is resolved by refusing rather than guessing. Checking the guess would require planting a guard failure with a known premise target, which again needs the fixture repository.
 
-2 of 14 mechanical checks failing.
+1 of 14 mechanical checks failing.
 9 modes are argued rather than checked; each states what would make it mechanical,
 and that list is the source of the roadmap in docs/LIMITATIONS.md rather than an invented one.
 ```

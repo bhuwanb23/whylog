@@ -37,8 +37,17 @@ jobs:
       # --passWithNoTests keeps this step honest rather than red: it runs and
       # reports that there was nothing to run, instead of failing the build for
       # an absence everybody already knows about.
-      - name: Unit and integration tests
-        run: npm run test
+      # Split by tier so a red build names the tier that broke: a unit failure is a logic
+      # regression, an integration failure is a handoff between stages, an e2e failure means the
+      # demo itself will not run. `npm run test` still runs all three locally in one go.
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: End-to-end demo script
+        run: npm run test:e2e
 
   # The keyless end-to-end path. This replaces a step that used to run
   # tests/integration/keyless.test.ts, a file that does not exist — the CI was
@@ -100,4 +109,4 @@ jobs:
         run: npm run guards:ci -- --include-proposed
 
       - name: Run the exported guard set
-        run: node scripts/whylog-guards.cjs
+        run: node scripts/whylog-guards.mjs

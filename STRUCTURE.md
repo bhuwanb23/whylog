@@ -801,8 +801,11 @@ pieces are genuinely reused across views.
 `Spinner`, `Toast` — are generic chrome the views inline or do not need. `ModeBadge` became `EngineBadge`;
 `SnippetHighlight` lives inside `ProvenanceBlock`.
 
-`tests/` holds nine `.gitkeep` files and no tests, **by standing instruction**. §15 describes a suite that
-was never written. This is `LIMITATIONS.md` §10, and it is why `EVALUATION.md` contains no numbers.
+`tests/` is now **written and green**: 13 files, **172 tests**, `tsc -b` clean over `tests/` too. See
+§18.11 and `notes/TEST-SUITE.md`. §15's inventory is built, with two deliberate differences: the
+component-level suites are not written (coverage excludes `src/components/**` and `src/views/**` by
+configuration, and the logic they render is tested where it lives), and `integration/keyless.test.ts`
+exists as `integration/keyless.test.ts` — the file CI once referenced before it was written.
 
 `fixtures/expected/` is empty. The eval corpus resolves ground truth from **verbatim quotes in the
 transcripts** rather than golden files, which is strictly stronger: a golden file records an output, a quote
@@ -851,3 +854,72 @@ is met when the numbers are worth claiming, not when they exist.
 
 The counts in `notes/PHASE-7-NOTES.md` and `notes/VALIDATION-PASS.md` are left as they were: each
 records the size of the tree *at that pass*, and this one is recorded here.
+
+### 18.10 The functional pass — the plan is built, and now it works
+
+`notes/FUNCTIONAL-PASS.md` is the record. Plan-completeness re-audited: **71 sub-phases across
+`plan/phase-0`…`phase-7`, 0 referenced paths missing**, checker exit 0, 11 of 11 views routed.
+
+**274 files, 73,402 lines · `tsc -b` 0 errors · `npm run demo:verify` exit 0.**
+
+Five bugs were type-correct, ran without throwing, and silently produced nothing. They are recorded
+here because each one is a shape the structural checker and the compiler both cannot see:
+
+| bug | why no tool caught it | effect |
+|---|---|---|
+| `synthesiseAll` returned `drafts: []` — hardcoded, under a doc comment promising the events | the type was satisfied by an empty array | guard count **0** everywhere; beat 7 had nothing to show; `guards:ci` exported an empty runner |
+| the harness never emitted `JustificationAttached` | it built its own drafts and reimplemented a subset of `commit.ts` | `state.justifications.size === 0` → **no OUT-lists** → the graph was monotonic → gate (c) structurally incapable of firing → L2, cascade and survivor all zero |
+| five rationale markers (`because`, `since`, `so that`, `in order to`, `as long as`) sat in `DECISION_CUES` above `MIN_CUE_WEIGHT` | data, not code | every decision fired twice; one true decision scored as one FN **plus** one FP |
+| `recoverDecisions` kept the **first** mention per (variable, value) | both branches typecheck | a human acceptance was recorded as an agent proposal — wrong span, wrong modality, understated `source_authority`, which feeds entrenchment |
+| `pickValue`'s fast path accepted `strength === "bare"` values the fallback below it rejected | two gates, one file | `"it's the thing"` → `AUTH → "thing"` |
+
+Two added: the variable was guessed **before** the value was known (so `"sqlite"` landed in SCOPE and
+`"vite"` in ARCHITECTURE — and a mis-slotted decision costs an FN and an FP at once, because the
+matcher requires the variable to agree), and `demo/verify.ts` compared `DecisionVariable` against
+lowercase strings, so the demo's own seed check could never match.
+
+**Movement:** decision F1 0.083 → **0.226** · L1 contradiction recall 0.250 → **0.500** ·
+L2 premise-invalidation 0.000 → **1.000** · L3 cascade 0.000 → **0.500** · non-empty OUT-lists
+0 → **9** · guards 0 → **93** · synthesis rate 0% → **100%** · retrieval MRR 0.000 → **0.083** ·
+demo-killers 2/4 → **3/4**, with "False premise resolution" — the demo's peak beat — now passing.
+
+**One number got worse and that is progress:** false-positive rate 84.9 → **102.9** per 100 decisions.
+Before the justification fix the reasoner had no input at all and was silently inert; now it runs and
+over-fires. That is risk R3 from `plan/OVERVIEW.md` arriving as predicted, and it is a *tuning*
+problem — which is what the ablation harness exists for, with thresholds already declared before any
+run.
+
+`EVALUATION.md` and the pitch metrics card **still hold their `▢▢▢` placeholders**: L2 at 1.000 over
+**n=1** demonstrates that the mechanism fires, which is not a rate, and G6 asks for numbers worth
+claiming.
+
+### 18.11 The test suite — 172 tests, 13 files, all green
+
+`notes/TEST-SUITE.md` is the record. §15's inventory is now built:
+
+| path | files | tests | covers |
+|---|---|---|---|
+| `tests/setup.ts` | — | — | localStorage isolation between tests |
+| `tests/helpers/{events,graph,extraction}.ts` | — | — | Builders that seal through the REAL `appendBatch`, never by hand |
+| `tests/unit/substrate/` | 3 | 55 | Hash chain + tamper detection, the seven validation rules, bi-temporality, comparators |
+| `tests/unit/extraction/` | 2 | 21 | Rationale-only cues, bare values, strongest-mention-wins, value-before-variable, OUT-list derivation |
+| `tests/unit/reasoning/` | 1 | 12 | Doyle validity, the bipartite graph, gate (c) both clauses |
+| `tests/unit/retrieval/` | 1 | 22 | The evidence contract's budget clamp and `stopReason` precedence |
+| `tests/unit/guards/` | 1 | 12 | `capabilities()` is a method, `synthesiseAll` returns its drafts, I4, id shape |
+| `tests/integration/` | 3 | 30 | **gate (c) cascade**, keyless G2, export → import identical head hash, full pipeline on the real fixture |
+| `tests/e2e/` | 1 | 20 | The demo script as data, the built seed, `verifyDemo`, reset as a wipe |
+
+**`npm run test` passes; `test:unit` / `test:integration` / `test:e2e` split it by tier** so a red
+build names the tier that broke. `--passWithNoTests` is gone from both scripts, because tests exist.
+
+Every `describe` block that exists because of a bug found in the typecheck or functional pass says so
+in a comment, naming the bug. A regression test that does not say what regressed gets "fixed" by
+whoever next finds it inconvenient.
+
+Two tests are deliberately **not** green-as-usual:
+
+- `decisions.test.ts` has one `it.fails` pinning a KNOWN gap — a weak cue can still adopt a value
+  from elsewhere in the episode (`DATABASE → "hackathon"`, snippet `"fine."`). `it.fails` passes while
+  the bug exists and starts FAILING the moment it is fixed, which is the reminder to delete it.
+- The e2e suite asserts `report.demoable === true`, so a regression in any automatic demo check turns
+  CI red rather than waiting to be discovered on stage.

@@ -16,7 +16,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check .",
-    "check:structure": "node scripts/check-structure.mjs",
+    "check:structure": "python3 scripts/check_structure.py",
     "check:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -24,12 +24,15 @@
     "eval": "tsx src/eval/run.ts",
     "eval:ablation": "tsx src/eval/ablation/cli.ts",
     "eval:report": "tsx src/eval/report.ts",
-    "guards:ci": "tsx --tsconfig tsconfig.app.json scripts/export_guards.ts",
+    "guards:ci": "tsx scripts/export_guards.ts",
     "verify": "npm run typecheck && npm run check && npm run check:structure && npm run test",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "demo:verify": "tsx src/eval/demo/cli.ts",
     "demo:dryrun": "tsx src/eval/demo/cli.ts --runs 3",
-    "verify:all": "npm run verify && npm run eval && npm run demo:verify"
+    "verify:all": "npm run verify && npm run eval && npm run demo:verify",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e"
   },
   "dependencies": {
     "react": "^18.3.1",
