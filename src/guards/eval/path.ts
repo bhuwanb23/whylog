@@ -20,10 +20,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { PathGlobSpec, VirtualProject } from "@/types/guards";
 import { filterByGlob, matchesGlob } from "@/lib/glob";
+import type { PathGlobSpec, VirtualProject } from "@/types/guards";
 import { hasFileListing } from "../project";
-import { SKIP_NO_LISTING, type Evaluation } from "./types";
+import { type Evaluation, SKIP_NO_LISTING } from "./types";
 
 /** Cap on how many matching paths are quoted into the evidence string. A glob matching 400
  *  files produces a failure message nobody reads, and the first few are enough to act on. */
@@ -39,7 +39,10 @@ export function evalPath(spec: PathGlobSpec, project: VirtualProject): Evaluatio
       return {
         outcome: "fail",
         evidence:
-          "No file matches `" + spec.glob + "` among the " + project.filePaths.length +
+          "No file matches `" +
+          spec.glob +
+          "` among the " +
+          project.filePaths.length +
           " path(s) in the pasted listing. If the listing was partial, this failure may be an artifact of the paste rather than of the codebase.",
       };
     }
@@ -54,20 +57,27 @@ export function evalPath(spec: PathGlobSpec, project: VirtualProject): Evaluatio
   if (matches.length > 0) {
     return {
       outcome: "fail",
-      evidence: matches.length + " file(s) match `" + spec.glob + "` but none should: " + quote(matches),
+      evidence:
+        matches.length + " file(s) match `" + spec.glob + "` but none should: " + quote(matches),
     };
   }
 
   return {
     outcome: "pass",
     evidence:
-      "No file matches `" + spec.glob + "` among the " + project.filePaths.length +
+      "No file matches `" +
+      spec.glob +
+      "` among the " +
+      project.filePaths.length +
       " path(s) in the listing. Note that this passes on the listing as pasted — a file that exists but was not listed is invisible to it.",
   };
 }
 
 function quote(paths: readonly string[]): string {
-  const shown = paths.slice(0, EVIDENCE_PATH_LIMIT).map((path) => path).join(", ");
+  const shown = paths
+    .slice(0, EVIDENCE_PATH_LIMIT)
+    .map((path) => path)
+    .join(", ");
   return paths.length > EVIDENCE_PATH_LIMIT ? shown + ", … (" + paths.length + " total)" : shown;
 }
 

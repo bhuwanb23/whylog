@@ -29,6 +29,7 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { PremiseSnapshot, WhyLogEngine } from "@/ai/types";
 import { asConfidence } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type {
@@ -42,7 +43,6 @@ import type {
   StringSpec,
 } from "@/types/guards";
 import { DEFAULT_SEVERITY } from "@/types/guards";
-import type { PremiseSnapshot, WhyLogEngine } from "@/ai/types";
 import type { TemplateInput } from "../types";
 
 export interface LlmSynthInput {
@@ -72,7 +72,10 @@ export async function llmGuards(input: LlmSynthInput): Promise<LlmSynthResult> {
     return { guards: [], reason: "not consulted — the templates already filled the cap." };
   }
 
-  if (!input.engine.capabilities().guardSynthesis || input.engine.capabilities().guardSynthesis === "none") {
+  if (
+    !input.engine.capabilities().guardSynthesis ||
+    input.engine.capabilities().guardSynthesis === "none"
+  ) {
     return {
       guards: [],
       reason:

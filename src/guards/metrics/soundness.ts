@@ -14,10 +14,10 @@
  * substitutes for the other.
  */
 
-import type { DecisionId } from "@/types/common";
-import type { DecisionLabel } from "@/types/domain";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId } from "@/types/common";
+import type { DecisionLabel } from "@/types/domain";
 
 export interface SoundnessResult {
   readonly score: number;

@@ -34,10 +34,10 @@
  * ---------------------------------------------------------------------------
  */
 
+import { isGlob } from "@/lib/glob";
 import { asConfidence } from "@/types/common";
 import type { ProposedGuard } from "@/types/guards";
 import { DEFAULT_SEVERITY } from "@/types/guards";
-import { isGlob } from "@/lib/glob";
 import type { TemplateInput, TemplateOutput } from "../types";
 
 /** A value that looks like an npm package name: lowercase, possibly scoped, hyphenated. */
@@ -78,7 +78,9 @@ export function rejectedGuards(input: TemplateInput): TemplateOutput {
       out.push({
         spec: { kind: "dependency_absent", package: value, includeDev: true },
         rationale:
-          input.decisionId + " rejected " + value +
+          input.decisionId +
+          " rejected " +
+          value +
           (rejected.whyRejected === undefined ? "." : ' — "' + rejected.whyRejected + '".') +
           " Derived generically: whatever the variable, a rejected alternative should not have appeared in the dependency tree since. devDependencies are in scope, because a rejected package installed for tooling is still installed.",
         severity: DEFAULT_SEVERITY.dependency_absent,
@@ -95,7 +97,10 @@ export function rejectedGuards(input: TemplateInput): TemplateOutput {
       out.push({
         spec: { kind: "path_glob_absent", glob: "**/" + value.replace(/^\/+/, "") + "*" },
         rationale:
-          input.decisionId + " rejected " + value + ", which looks like a path, so nothing matching it should exist. Derived generically from the shape of the value rather than from the variable.",
+          input.decisionId +
+          " rejected " +
+          value +
+          ", which looks like a path, so nothing matching it should exist. Derived generically from the shape of the value rather than from the variable.",
         severity: DEFAULT_SEVERITY.path_glob_absent,
         generatedBy: "template",
         confidence: asConfidence(0.45),
@@ -117,10 +122,15 @@ export function rejectedGuards(input: TemplateInput): TemplateOutput {
         caseSensitive: false,
       },
       rationale:
-        input.decisionId + " rejected " + value +
+        input.decisionId +
+        " rejected " +
+        value +
         (rejected.whyRejected === undefined ? "" : ' ("' + rejected.whyRejected + '")') +
-        ". `" + value + "` is neither a package name nor a path, so the only deterministic check available is that it does not appear in the files this decision governs. WEAK BY NATURE: a comment saying \"we considered " + value +
-        "\" is not drift, and this guard cannot tell that from an import. Review it before accepting.",
+        ". `" +
+        value +
+        '` is neither a package name nor a path, so the only deterministic check available is that it does not appear in the files this decision governs. WEAK BY NATURE: a comment saying "we considered ' +
+        value +
+        '" is not drift, and this guard cannot tell that from an import. Review it before accepting.',
       severity: "warning",
       generatedBy: "template",
       confidence: asConfidence(0.3),
@@ -147,7 +157,11 @@ export function valueGuards(input: TemplateInput): TemplateOutput {
       {
         spec: { kind: "dependency_present", package: value, includeDev: true },
         rationale:
-          input.decisionId + " settled " + input.variable + " on " + value +
+          input.decisionId +
+          " settled " +
+          input.variable +
+          " on " +
+          value +
           ", which looks like a package name, so it should be present. Derived generically from the shape of the value: confirm the decision really is implemented by this package before accepting.",
         severity: "warning",
         generatedBy: "template",
@@ -162,7 +176,11 @@ export function valueGuards(input: TemplateInput): TemplateOutput {
       {
         spec: { kind: "path_glob_exists", glob: "**/" + value.replace(/^\/+/, "") },
         rationale:
-          input.decisionId + " settled " + input.variable + " on " + value +
+          input.decisionId +
+          " settled " +
+          input.variable +
+          " on " +
+          value +
           ", which looks like a path, so it should exist. Derived generically; review before accepting.",
         severity: "warning",
         generatedBy: "template",
@@ -193,9 +211,12 @@ export function globGuards(input: TemplateInput): TemplateOutput {
     out.push({
       spec: { kind: "path_glob_exists", glob },
       rationale:
-        input.decisionId + " declares that it governs `" + glob +
+        input.decisionId +
+        " declares that it governs `" +
+        glob +
         "`, so something matching it should exist. If nothing does, either the decision has drifted or it was recorded against a tree that no longer exists — both worth knowing, and neither is specific to " +
-        input.variable + ".",
+        input.variable +
+        ".",
       severity: DEFAULT_SEVERITY.path_glob_exists,
       generatedBy: "template",
       confidence: asConfidence(0.55),

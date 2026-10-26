@@ -20,7 +20,7 @@
  */
 
 import type { CommandSpec, VirtualProject } from "@/types/guards";
-import { SKIP_NOT_RUNNABLE, type Evaluation } from "./types";
+import { type Evaluation, SKIP_NOT_RUNNABLE } from "./types";
 
 export function evalCommand(_spec: CommandSpec, _project: VirtualProject): Evaluation {
   /* Both parameters are unused by design. The signature matches every other evaluator so the
@@ -32,13 +32,16 @@ export function evalCommand(_spec: CommandSpec, _project: VirtualProject): Evalu
     evidence: "",
     skipReason:
       SKIP_NOT_RUNNABLE.skipReason +
-      " This guard runs `" + _spec.command + "` and needs a shell; the exported CI runner executes it and reports the real exit code.",
+      " This guard runs `" +
+      _spec.command +
+      "` and needs a shell; the exported CI runner executes it and reports the real exit code.",
   };
 }
 
 /** The command as it appears in the exported runner. Quoted for a POSIX shell. */
 export function commandLine(spec: CommandSpec): string {
-  const cwd = spec.cwd === undefined || spec.cwd.length === 0 ? "" : "cd " + shellQuote(spec.cwd) + " && ";
+  const cwd =
+    spec.cwd === undefined || spec.cwd.length === 0 ? "" : "cd " + shellQuote(spec.cwd) + " && ";
   return cwd + spec.command;
 }
 

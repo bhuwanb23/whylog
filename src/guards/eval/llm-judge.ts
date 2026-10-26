@@ -30,12 +30,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { EngineId } from "@/types/common";
-import type { LlmJudgeSpec, VirtualProject } from "@/types/guards";
 import type { WhyLogEngine } from "@/ai/types";
 import { filterByGlob } from "@/lib/glob";
+import type { EngineId } from "@/types/common";
+import type { LlmJudgeSpec, VirtualProject } from "@/types/guards";
 import { hasFileContents, hasFileListing } from "../project";
-import { SKIP_NO_CONTENTS, SKIP_NO_LISTING, type Evaluation } from "./types";
+import { type Evaluation, SKIP_NO_CONTENTS, SKIP_NO_LISTING } from "./types";
 
 /** How much file text is sent to the judge. Bounded because a rubric verdict over 200 KB of
  *  source is not a better verdict than one over the first 20 KB — it is a slower and more
@@ -80,13 +80,17 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
 
   if (!input.engine.capabilities().classification) {
     return skipped(
-      "The active engine (" + input.engineId + ") cannot produce a judgement. Configure an LLM engine in Settings, or replace this guard with a deterministic one.",
+      "The active engine (" +
+        input.engineId +
+        ") cannot produce a judgement. Configure an LLM engine in Settings, or replace this guard with a deterministic one.",
       input.engineId,
     );
   }
 
-  if (!hasFileListing(project)) return skippedResult(SKIP_NO_LISTING.skipReason ?? "", input.engineId);
-  if (!hasFileContents(project)) return skippedResult(SKIP_NO_CONTENTS.skipReason ?? "", input.engineId);
+  if (!hasFileListing(project))
+    return skippedResult(SKIP_NO_LISTING.skipReason ?? "", input.engineId);
+  if (!hasFileContents(project))
+    return skippedResult(SKIP_NO_CONTENTS.skipReason ?? "", input.engineId);
 
   const scoped: string[] = [];
   for (const glob of spec.scopeGlobs) {
@@ -98,7 +102,9 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
 
   if (scoped.length === 0) {
     return skipped(
-      "No pasted file matches this guard's scope (" + spec.scopeGlobs.join(", ") + "), so there was nothing to judge.",
+      "No pasted file matches this guard's scope (" +
+        spec.scopeGlobs.join(", ") +
+        "), so there was nothing to judge.",
       input.engineId,
     );
   }
@@ -148,7 +154,11 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
     return {
       evaluation: {
         outcome: "pass",
-        evidence: "Judged by " + result.engine + ": " + (rest.length > 0 ? rest : "the rubric was satisfied"),
+        evidence:
+          "Judged by " +
+          result.engine +
+          ": " +
+          (rest.length > 0 ? rest : "the rubric was satisfied"),
       },
       engine: result.engine,
       filesJudged: files,
@@ -160,7 +170,11 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
     return {
       evaluation: {
         outcome: "fail",
-        evidence: "Judged by " + result.engine + ": " + (rest.length > 0 ? rest : "the rubric was not satisfied"),
+        evidence:
+          "Judged by " +
+          result.engine +
+          ": " +
+          (rest.length > 0 ? rest : "the rubric was not satisfied"),
       },
       engine: result.engine,
       filesJudged: files,
@@ -173,7 +187,8 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
       outcome: "skip",
       evidence: "",
       skipReason:
-        "The judge could not tell from the files in scope" + (rest.length > 0 ? ": " + rest : ".") +
+        "The judge could not tell from the files in scope" +
+        (rest.length > 0 ? ": " + rest : ".") +
         (truncated ? " The material was truncated to " + JUDGE_CHAR_BUDGET + " characters." : ""),
     },
     engine: result.engine,

@@ -66,7 +66,14 @@ const RULES: readonly AuthRule[] = [
   {
     value: "custom",
     packages: [],
-    excludes: ["@clerk/clerk-react", "@auth0/auth0-react", "next-auth", "@auth/core", "passport", "firebase"],
+    excludes: [
+      "@clerk/clerk-react",
+      "@auth0/auth0-react",
+      "next-auth",
+      "@auth/core",
+      "passport",
+      "firebase",
+    ],
     artifacts: ["**/auth/**", "**/session**"],
   },
   {
@@ -87,7 +94,12 @@ export function authGuards(input: TemplateInput): TemplateOutput {
     out.push({
       spec: { kind: "dependency_present", package: pkg, includeDev: false },
       rationale:
-        input.decisionId + " chose " + input.value + " for auth, so `" + pkg + "` should be present. Only the first matching package needs to be there; if you use a different binding for the same vendor, edit this guard.",
+        input.decisionId +
+        " chose " +
+        input.value +
+        " for auth, so `" +
+        pkg +
+        "` should be present. Only the first matching package needs to be there; if you use a different binding for the same vendor, edit this guard.",
       severity: DEFAULT_SEVERITY.dependency_present,
       generatedBy: "template",
       confidence: asConfidence(0.65),
@@ -102,7 +114,12 @@ export function authGuards(input: TemplateInput): TemplateOutput {
     out.push({
       spec: { kind: "dependency_absent", package: excluded, includeDev: true },
       rationale:
-        "`" + excluded + "` is a competing auth approach and " + input.decisionId + " settled on " + input.value +
+        "`" +
+        excluded +
+        "` is a competing auth approach and " +
+        input.decisionId +
+        " settled on " +
+        input.value +
         (input.value.toLowerCase() === "custom" || input.value.toLowerCase() === "none"
           ? ". A vendor SDK appearing alongside a hand-rolled or absent auth decision is the most common form of auth drift there is — usually a dependency added to solve one endpoint, quietly becoming the real auth system."
           : ". Two auth systems in one tree means sessions, tokens and user records can diverge."),
@@ -120,7 +137,10 @@ export function authGuards(input: TemplateInput): TemplateOutput {
     out.push({
       spec: { kind: "path_glob_exists", glob: artifact },
       rationale:
-        "Something matching `" + artifact + "` should exist if " + input.value +
+        "Something matching `" +
+        artifact +
+        "` should exist if " +
+        input.value +
         " auth was actually wired in rather than only installed. Weakest of the three: a partial listing makes it fail against a fine codebase.",
       severity: DEFAULT_SEVERITY.path_glob_exists,
       generatedBy: "template",

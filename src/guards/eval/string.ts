@@ -27,10 +27,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { StringSpec, VirtualProject } from "@/types/guards";
 import { filterByGlob, findMatchInText } from "@/lib/glob";
+import type { StringSpec, VirtualProject } from "@/types/guards";
 import { hasFileContents, hasFileListing } from "../project";
-import { SKIP_NO_CONTENTS, SKIP_NO_LISTING, type Evaluation } from "./types";
+import { type Evaluation, SKIP_NO_CONTENTS, SKIP_NO_LISTING } from "./types";
 
 export function evalString(spec: StringSpec, project: VirtualProject): Evaluation {
   /* Both a listing AND contents are needed: the glob scopes the search over the listing, and
@@ -45,7 +45,9 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
       outcome: "skip",
       evidence: "",
       skipReason:
-        "No pasted file matches the scope glob `" + spec.glob + "`, so there was nothing to search. Widen the glob or paste a file it covers.",
+        "No pasted file matches the scope glob `" +
+        spec.glob +
+        "`, so there was nothing to search. Widen the glob or paste a file it covers.",
     };
   }
 
@@ -55,8 +57,12 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
       outcome: "skip",
       evidence: "",
       skipReason:
-        scoped.length + " file(s) match the scope `" + spec.glob + "` but none of their contents were pasted, so there was nothing to search: " +
-        scoped.slice(0, 4).join(", ") + (scoped.length > 4 ? ", …" : ""),
+        scoped.length +
+        " file(s) match the scope `" +
+        spec.glob +
+        "` but none of their contents were pasted, so there was nothing to search: " +
+        scoped.slice(0, 4).join(", ") +
+        (scoped.length > 4 ? ", …" : ""),
     };
   }
 
@@ -79,8 +85,15 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
       return {
         outcome: "fail",
         evidence:
-          '"' + spec.pattern + '" found at ' + where + " — " + JSON.stringify(quoted) +
-          (options.wordBoundary ? "" : " (matched WITHOUT word boundaries, so this may be part of a longer identifier)"),
+          '"' +
+          spec.pattern +
+          '" found at ' +
+          where +
+          " — " +
+          JSON.stringify(quoted) +
+          (options.wordBoundary
+            ? ""
+            : " (matched WITHOUT word boundaries, so this may be part of a longer identifier)"),
       };
     }
 
@@ -98,9 +111,15 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
     return {
       outcome: "fail",
       evidence:
-        '"' + spec.pattern + '" does not appear in ' + searched + "." +
+        '"' +
+        spec.pattern +
+        '" does not appear in ' +
+        searched +
+        "." +
         (withContents.length < scoped.length
-          ? " " + (scoped.length - withContents.length) + " file(s) in scope had no pasted contents and were not searched."
+          ? " " +
+            (scoped.length - withContents.length) +
+            " file(s) in scope had no pasted contents and were not searched."
           : ""),
     };
   }

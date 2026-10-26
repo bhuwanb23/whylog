@@ -38,11 +38,11 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { DecisionId } from "@/types/common";
 import type { DecisionLabel } from "@/types/domain";
 import { isDeterministic } from "@/types/guards";
 import type { EvaluatedGuard } from "../types";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
 
 export interface ComplianceResult {
   readonly score: number;
@@ -135,7 +135,9 @@ export function compliance(
 export function describeCompliance(result: ComplianceResult, inDecisions: number): string {
   if (result.denominator === 0) {
     return result.unchecked.length > 0
-      ? "No compliance score: " + result.unchecked.length + " decision(s) have accepted guards but none of them could run against the pasted project. Paste a package.json or a file listing and the score becomes meaningful."
+      ? "No compliance score: " +
+          result.unchecked.length +
+          " decision(s) have accepted guards but none of them could run against the pasted project. Paste a package.json or a file listing and the score becomes meaningful."
       : "No compliance score: no IN decision has an accepted guard yet. Synthesise and accept guards first — until then there is nothing to measure.";
   }
 
@@ -143,15 +145,42 @@ export function describeCompliance(result: ComplianceResult, inDecisions: number
 
   return [
     drifted === 0
-      ? "All " + result.denominator + " checkable decision(s) hold. The code still does what the log says it does."
-      : "Your codebase has quietly stopped believing " + drifted + " of " + result.denominator +
-        " checkable decision(s): " + result.failing.join(", ") + ".",
+      ? "All " +
+        result.denominator +
+        " checkable decision(s) hold. The code still does what the log says it does."
+      : "Your codebase has quietly stopped believing " +
+        drifted +
+        " of " +
+        result.denominator +
+        " checkable decision(s): " +
+        result.failing.join(", ") +
+        ".",
     "",
-    "  raw compliance              " + percent(result.score) + "  (" + result.compliant + "/" + result.denominator + ")",
-    "  excluding baselined         " + percent(result.excludingBaselined) + "  (" + (result.compliant + result.baselinedOnly.length) + "/" + result.denominator + ")",
-    "  verifiable coverage         " + percent(result.denominator / Math.max(1, inDecisions)) + "  (" + result.denominator + " of " + inDecisions + " IN decisions have an accepted deterministic guard)",
+    "  raw compliance              " +
+      percent(result.score) +
+      "  (" +
+      result.compliant +
+      "/" +
+      result.denominator +
+      ")",
+    "  excluding baselined         " +
+      percent(result.excludingBaselined) +
+      "  (" +
+      (result.compliant + result.baselinedOnly.length) +
+      "/" +
+      result.denominator +
+      ")",
+    "  verifiable coverage         " +
+      percent(result.denominator / Math.max(1, inDecisions)) +
+      "  (" +
+      result.denominator +
+      " of " +
+      inDecisions +
+      " IN decisions have an accepted deterministic guard)",
     result.unchecked.length > 0
-      ? "  unchecked                   " + result.unchecked.length + " decision(s) whose guards all skipped — not counted either way, because 'could not check' is not 'holds'"
+      ? "  unchecked                   " +
+        result.unchecked.length +
+        " decision(s) whose guards all skipped — not counted either way, because 'could not check' is not 'holds'"
       : "",
     "",
     "Compliance and coverage are NEVER shown apart: a log with one passing guard scores 100%",

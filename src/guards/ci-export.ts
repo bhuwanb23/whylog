@@ -50,12 +50,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { Guard } from "@/types/guards";
 import { isDeterministic } from "@/types/guards";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
 import { specTarget } from "./feedback";
 
 /* -------------------------------------------------------------------------- */
@@ -129,8 +129,10 @@ export function exportCi(input: CiExportInput): CiExport {
         decisionId: decision.id,
         reason:
           guard.spec.kind === "command_exit_zero"
-            ? guard.id + " is a command guard — exported separately below, since CI is exactly where a command can run"
-            : guard.id + " is judged by a model, so it is advisory and cannot fail a build deterministically",
+            ? guard.id +
+              " is a command guard — exported separately below, since CI is exactly where a command can run"
+            : guard.id +
+              " is judged by a model, so it is advisory and cannot fail a build deterministically",
       });
 
       /* Command guards CAN be exported: CI has a shell, which the browser does not. They are
@@ -588,7 +590,11 @@ export function describeExport(exported: CiExport): string {
   }
 
   const lines = [
-    "Exported " + exported.guards.length + " guard(s) over " + new Set(exported.guards.map((g) => g.decisionId)).size + " decision(s).",
+    "Exported " +
+      exported.guards.length +
+      " guard(s) over " +
+      new Set(exported.guards.map((g) => g.decisionId)).size +
+      " decision(s).",
     "Log head: " + exported.headHash,
     "",
   ];
@@ -603,7 +609,8 @@ export function describeExport(exported: CiExport): string {
     for (const entry of exported.notExported.slice(0, 10)) {
       lines.push("  " + entry.decisionId + " — " + entry.reason);
     }
-    if (exported.notExported.length > 10) lines.push("  … " + (exported.notExported.length - 10) + " more");
+    if (exported.notExported.length > 10)
+      lines.push("  … " + (exported.notExported.length - 10) + " more");
   }
 
   lines.push("");

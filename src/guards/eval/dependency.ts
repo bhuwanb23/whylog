@@ -47,15 +47,26 @@ export function evalDependency(spec: DependencySpec, project: VirtualProject): E
       return {
         outcome: "fail",
         evidence:
-          '"' + spec.package + '" is not in package.json' +
-          (includeDev ? " (checked dependencies and devDependencies)" : " (checked dependencies only; devDependencies were not in scope for this guard)") +
-          ". Present packages: " + summarise(project, includeDev),
+          '"' +
+          spec.package +
+          '" is not in package.json' +
+          (includeDev
+            ? " (checked dependencies and devDependencies)"
+            : " (checked dependencies only; devDependencies were not in scope for this guard)") +
+          ". Present packages: " +
+          summarise(project, includeDev),
       };
     }
 
     return {
       outcome: "pass",
-      evidence: '"' + spec.package + '": "' + found.version + '" is present in ' + (found.dev ? "devDependencies" : "dependencies"),
+      evidence:
+        '"' +
+        spec.package +
+        '": "' +
+        found.version +
+        '" is present in ' +
+        (found.dev ? "devDependencies" : "dependencies"),
     };
   }
 
@@ -64,16 +75,25 @@ export function evalDependency(spec: DependencySpec, project: VirtualProject): E
     return {
       outcome: "fail",
       evidence:
-        '"' + spec.package + '": "' + found.version + '" found in package.json ' +
-        (found.dev ? "devDependencies" : "dependencies") + ".",
+        '"' +
+        spec.package +
+        '": "' +
+        found.version +
+        '" found in package.json ' +
+        (found.dev ? "devDependencies" : "dependencies") +
+        ".",
     };
   }
 
   return {
     outcome: "pass",
     evidence:
-      '"' + spec.package + '" does not appear in package.json' +
-      (includeDev ? " dependencies or devDependencies." : " dependencies (devDependencies were not in scope)."),
+      '"' +
+      spec.package +
+      '" does not appear in package.json' +
+      (includeDev
+        ? " dependencies or devDependencies."
+        : " dependencies (devDependencies were not in scope)."),
   };
 }
 

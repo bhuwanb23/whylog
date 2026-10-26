@@ -10,8 +10,8 @@
  * disagree, which is the thing that turns a decision record into fiction.
  */
 
-import type { DecisionId, GuardId, ISODateString } from "@/types/common";
 import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, GuardId, ISODateString } from "@/types/common";
 
 export const MS_PER_DAY = 86_400_000;
 
@@ -77,15 +77,26 @@ export function describeDrift(result: DriftResult): string {
   }
 
   const lines = [
-    result.entries.length + " guard(s) failing. Worst: " + result.worstDays + " day(s) — " +
+    result.entries.length +
+      " guard(s) failing. Worst: " +
+      result.worstDays +
+      " day(s) — " +
       (result.worst === null ? "" : result.worst.decisionId + " / " + result.worst.guardId + "."),
     "",
   ];
 
   for (const entry of result.entries.slice(0, 8)) {
     lines.push(
-      "  " + entry.days + "d  " + entry.decisionId + " · " + entry.guardId +
-        " (" + entry.severity + ")" + (entry.evidence.length > 0 ? " — " + truncate(entry.evidence) : ""),
+      "  " +
+        entry.days +
+        "d  " +
+        entry.decisionId +
+        " · " +
+        entry.guardId +
+        " (" +
+        entry.severity +
+        ")" +
+        (entry.evidence.length > 0 ? " — " + truncate(entry.evidence) : ""),
     );
   }
 
@@ -95,7 +106,9 @@ export function describeDrift(result: DriftResult): string {
   if (escalated.length > 0) {
     lines.push("");
     lines.push(
-      escalated.length + " of these have been failing for " + DRIFT_ESCALATION_DAYS +
+      escalated.length +
+        " of these have been failing for " +
+        DRIFT_ESCALATION_DAYS +
         "+ days. A failure ignored that long is a decision you no longer hold — either reverse",
       "it in the log or fix the code. Leaving both in place is what turns a decision record into fiction.",
     );
