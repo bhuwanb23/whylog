@@ -1060,20 +1060,20 @@ function readManifest() {
 }
 
 function listFiles(dir, out) {
-  out = out || [];
+  const acc = out || [];
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
   } catch {
-    return out;
+    return acc;
   }
   for (const entry of entries) {
     if (entry.name === "node_modules" || entry.name === ".git") continue;
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) listFiles(full, out);
-    else out.push(full.split(path.sep).join("/"));
+    if (entry.isDirectory()) listFiles(full, acc);
+    else acc.push(full.split(path.sep).join("/"));
   }
-  return out;
+  return acc;
 }
 
 function readFile(p) {

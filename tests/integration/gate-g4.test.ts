@@ -23,8 +23,9 @@ import { applyAction, approve, discard, edit } from "@/extraction/review/actions
 import { useGuards } from "@/store/guards";
 import { useReasoning } from "@/store/reasoning";
 import { useWhyLog } from "@/store/whylog";
-import { type TranscriptId, asISO } from "@/types/common";
+import { type TranscriptId, asDecisionId, asISO } from "@/types/common";
 import { isDeterministic } from "@/types/guards";
+import type { RevisionProposal } from "@/types/reasoning";
 
 const FIXTURE = resolve(process.cwd(), "fixtures", "demo-transcript.txt");
 const ENGINE_ID = { kind: "local", model: "cue-extractor-v1" } as const;
@@ -145,7 +146,7 @@ async function runG4() {
       useWhyLog.getState().state.proposals.size +
       " guardSrc=" +
       [...useWhyLog.getState().state.proposals.values()].filter(
-        (p: any) => p.evidence.source === "guard",
+        (p: RevisionProposal) => p.evidence.source === "guard",
       ).length,
   );
   expect(ran.ok).toBe(true);
@@ -216,7 +217,7 @@ describe("Gate G4 — it verifies", () => {
       "TEST guard lastRun=" +
         _g?.lastRun?.outcome +
         " guardIds on WLD-0001=" +
-        _st.decisions.get("WLD-0001" as any)?.guardIds?.length,
+        _st.decisions.get(asDecisionId("WLD-0001"))?.guardIds?.length,
     );
     const proposals = _r.proposals;
 

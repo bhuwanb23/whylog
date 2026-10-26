@@ -68,7 +68,7 @@ import {
 import { nowISO } from "@/lib/format";
 import { type Result, err, ok } from "@/lib/result";
 import type { Assertion } from "@/reasoning/assert";
-import { label } from "@/reasoning/labeller";
+import { type Labelled, type NodeId, label } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
 import type { Actor } from "@/types/common";
 import type { DecisionId, GuardId, ISODateString } from "@/types/common";
@@ -377,7 +377,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
 
     set({ status: "running", error: null, baseline: null });
     const at = nowISO() as ISODateString;
-    const labels = new Map<any, any>();
+    const labels = new Map<NodeId, Labelled>();
     for (const d of whylog.state.decisions.values()) {
       labels.set(d.id, { label: d.label, reason: { kind: "asserted-premise" } });
     }
@@ -811,7 +811,7 @@ export function describeGuardStore(state: GuardState): string {
 
 /** Decisions with more guards than the cap, for the review panel. */
 export function overCapDecisions(
-  state: GuardState,
+  _state: GuardState,
 ): readonly { decisionId: DecisionId; over: number }[] {
   const whylog = useWhyLog.getState();
   const labels = label(whylog.state).labels;
