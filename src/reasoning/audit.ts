@@ -49,19 +49,18 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, EventId, ISODateString, PremiseId } from "@/types/common";
 import type { Decision, Justification, Premise } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
 import {
+  type ReasoningIndex,
   indexGraph,
   isDerivedPremiseText,
   justificationsFor,
   premisesNamedBy,
-  type ReasoningIndex,
 } from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
 import { validityOf } from "./labeller";
-import { nogoodsInvolving } from "./nogoods";
 
 /** Deeper than this the chain stops being readable and starts being a graph dump. */
 export const MAX_AUDIT_DEPTH = 8;
@@ -70,11 +69,7 @@ export const MAX_AUDIT_DEPTH = 8;
 /* The chain                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type WeaknessKind =
-  | "unsupported-assumption"
-  | "circular-support"
-  | "sole-support"
-  | "stale";
+export type WeaknessKind = "unsupported-assumption" | "circular-support" | "sole-support" | "stale";
 
 export interface AuditStep {
   readonly depth: number;
@@ -262,10 +257,11 @@ function decisionStep(
   /* `Decision` carries no creating-event id. The justification informant does, and
    * materialize rewrites it to the event that created the decision — so the earliest
    * one is the honest answer to "which event taught the system this?". */
-  const learnedFrom = justifications
-    .map((justification) => informantEventId(justification))
-    .filter((eventId): eventId is EventId => eventId !== null)
-    .sort()[0] ?? null;
+  const learnedFrom =
+    justifications
+      .map((justification) => informantEventId(justification))
+      .filter((eventId): eventId is EventId => eventId !== null)
+      .sort()[0] ?? null;
 
   return {
     depth,
@@ -437,11 +433,7 @@ function flatten(steps: readonly AuditStep[]): readonly AuditStep[] {
   return out;
 }
 
-function nogoodsForDecision(
-  state: GraphState,
-  index: ReasoningIndex,
-  decisionId: DecisionId,
-) {
+function nogoodsForDecision(state: GraphState, index: ReasoningIndex, decisionId: DecisionId) {
   const premiseIds = new Set<PremiseId>(premisesNamedBy(index, decisionId));
   const out = [];
   for (const nogood of state.nogoods.values()) {

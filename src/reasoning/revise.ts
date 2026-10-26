@@ -56,7 +56,18 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Actor, DecisionId, EventId, ISODateString, NogoodId, PremiseId } from "@/types/common";
+import type { WhyLogEngine } from "@/ai/types";
+import { formatNogoodId } from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
+import type {
+  Actor,
+  DecisionId,
+  EventId,
+  ISODateString,
+  NogoodId,
+  PremiseId,
+} from "@/types/common";
+import type { Nogood } from "@/types/domain";
 import type { NewEvent } from "@/types/events";
 import type {
   AdjudicationOutcome,
@@ -64,33 +75,19 @@ import type {
   CascadeResult,
   RevisionProposal,
 } from "@/types/reasoning";
-import type { Nogood } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import {
-  label,
-  type Labelled,
-  type LabellingResult,
-  type NodeId,
-} from "./labeller";
-import { runGates, describeRun, type CandidatePair, type GateFinding, type GateRun } from "./gates";
+import { type Newcomer, adjudicate, findContradictors } from "./adjudication";
 import { backtrack, describeBacktrack, splitCulprits } from "./backtracking";
+import { MAX_CASCADE_DEPTH, cascade, describeCascade } from "./cascade";
+import { type GuardStatus, describeEntrenchment, entrenchmentOf } from "./entrenchment";
+import { type CandidatePair, type GateFinding, type GateRun, describeRun, runGates } from "./gates";
+import { type Labelled, type LabellingResult, type NodeId, label } from "./labeller";
+import { type NogoodDraft, blocksConjunction, isDuplicate, nogoodForFinding } from "./nogoods";
 import {
-  blocksConjunction,
-  isDuplicate,
-  nogoodForFinding,
-  type NogoodDraft,
-} from "./nogoods";
-import { cascade, describeCascade, MAX_CASCADE_DEPTH } from "./cascade";
-import { entrenchmentOf, describeEntrenchment, type GuardStatus } from "./entrenchment";
-import { adjudicate, findContradictors, type Newcomer } from "./adjudication";
-import {
+  WHY_NOT_AUTO_APPLIED,
   buildProposal,
   evidenceForFinding,
   renderProposal,
-  WHY_NOT_AUTO_APPLIED,
 } from "./proposals";
-import type { WhyLogEngine } from "@/ai/types";
-import { formatNogoodId } from "@/lib/ids";
 
 /** One label flip, as the labeller reports it. `revise` turns these into events. */
 export type LabelChange = LabellingResult["changed"][number];
@@ -110,6 +107,18 @@ export interface ReviseInput {
   /** Phase 3. Absent means gate (b) reports itself unavailable. */
   readonly retrieve?: (state: GraphState) => Promise<readonly CandidatePair[]>;
   readonly skipSemantic?: boolean;
+  /** Ablation: gate (a) off. The system stops noticing self-contradiction. */
+  readonly skipStructural?: boolean;
+  /** Ablation: gate (c) off. The graph becomes monotonic — the single most important switch
+   *  in the ablation, because it is the difference between a decision log and a belief
+   *  revision system. */
+  readonly skipPremiseInvalidation?: boolean;
+  /** Ablation: no backtracking propagation. Culprit premises are still found, but nothing
+   *  downstream of them is re-examined. */
+  readonly disableCascade?: boolean;
+  /** Ablation: Hansson screening off, so a newcomer is never refused by a more entrenched
+   *  incumbent. */
+  readonly disableEntrenchment?: boolean;
   /** Phase 4. Absent means implementation cost is UNKNOWN, never assumed. */
   readonly guards?: ReadonlyMap<DecisionId, GuardStatus>;
   /** Phase 6.8. How deep the cascade may follow shared-premise edges. Absent means the module
@@ -148,7 +157,9 @@ export interface ReviseResult {
   readonly labelChanges: readonly LabelChange[];
   readonly gates: GateRun;
   readonly cases: readonly RevisionCase[];
-  readonly adjudication: (AdjudicationOutcome & { readonly considered: readonly DecisionId[] }) | null;
+  readonly adjudication:
+    | (AdjudicationOutcome & { readonly considered: readonly DecisionId[] })
+    | null;
   /** Step 9. Ordered, ready for `appendBatch`. EMPTY on an unchanged log. */
   readonly eventDrafts: readonly EventDraftAny[];
   readonly durationMs: number;
@@ -199,6 +210,10 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
     engine: input.engine,
     ...(input.retrieve === undefined ? {} : { retrieve: input.retrieve }),
     ...(input.skipSemantic === undefined ? {} : { skipSemantic: input.skipSemantic }),
+    ...(input.skipStructural === undefined ? {} : { skipStructural: input.skipStructural }),
+    ...(input.skipPremiseInvalidation === undefined
+      ? {}
+      : { skipPremiseInvalidation: input.skipPremiseInvalidation }),
   });
 
   /* ---- 7 ADJUDICATE ----
@@ -212,6 +227,9 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
           newcomer: input.newcomer,
           now: Date.parse(input.now),
           ...(input.guards === undefined ? {} : { guards: input.guards }),
+          ...(input.disableEntrenchment === undefined
+            ? {}
+            : { disableEntrenchment: input.disableEntrenchment }),
         });
 
   const refused = adjudication?.kind === "reject-newcomer";
@@ -261,8 +279,14 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
      * backtracking may have localised to a single premise. */
     const retracted = refused ? [] : backtrackResult.culpritPremises;
     const cascadeResult: CascadeResult =
-      retracted.length === 0
-        ? { steps: [], flipped: [], survivors: [], truncated: false, potentiallyAffectedBeyondCap: 0 }
+      retracted.length === 0 || input.disableCascade === true
+        ? {
+            steps: [],
+            flipped: [],
+            survivors: [],
+            truncated: false,
+            potentiallyAffectedBeyondCap: 0,
+          }
         : cascade(
             state,
             labels,
@@ -378,10 +402,7 @@ function alreadyRecorded(state: GraphState, finding: GateFinding): boolean {
 /* Step 9 — the drafts                                                        */
 /* -------------------------------------------------------------------------- */
 
-function labelChangedDraft(
-  input: ReviseInput,
-  change: LabelChange,
-): NewEvent<"LabelChanged"> {
+function labelChangedDraft(input: ReviseInput, change: LabelChange): NewEvent<"LabelChanged"> {
   const trigger =
     change.reason.kind === "all-justifications-invalid" ? change.reason.failedPremiseId : null;
   const invalidJustificationId =
@@ -438,7 +459,10 @@ function detectionDraft(input: ReviseInput, finding: GateFinding): EventDraftAny
   };
 }
 
-function premiseInvalidatedDraft(input: ReviseInput, premiseId: PremiseId): NewEvent<"PremiseInvalidated"> {
+function premiseInvalidatedDraft(
+  input: ReviseInput,
+  premiseId: PremiseId,
+): NewEvent<"PremiseInvalidated"> {
   return {
     type: "PremiseInvalidated",
     payload: {
@@ -511,16 +535,7 @@ function proposalDraft(
         ? { rejectedNewcomer: { eventId: PLACEHOLDER_EVENT_ID, why: adjudication.why } }
         : {}),
       availableActions: proposal.availableActions,
-      /* The evidence is built by `evidenceForFinding` — verbatim guard quotes carry
-       * source "guard" — and the fold must store that record, not re-derive it from
-       * `reason`. Without this field the materialiser hardcoded source "transcript"
-       * and every guard-backed proposal lost its provenance at the log boundary. */
-      evidence: {
-        quote: proposal.evidence.quote,
-        source: proposal.evidence.source,
-        confidence: proposal.evidence.confidence,
-        ...(proposal.evidence.span === undefined ? {} : { span: proposal.evidence.span }),
-      },
+      evidence: proposal.evidence,
     },
     actor: input.actor,
     reason: `${WHY_NOT_AUTO_APPLIED} Proposed for ${proposal.unsoundDecisionId} instead.`,
@@ -604,7 +619,9 @@ function summarise(
   if (adjudication !== null && adjudication.kind === "reject-newcomer") {
     lines.push(`Screening: REFUSED. ${adjudication.why}`);
   } else if (adjudication !== null && adjudication.kind === "apply") {
-    lines.push(`Screening: accepted, retracting weakest-first: ${adjudication.retract.join(", ")}.`);
+    lines.push(
+      `Screening: accepted, retracting weakest-first: ${adjudication.retract.join(", ")}.`,
+    );
   }
 
   lines.push(`${cases.length} case(s) worked through backtracking, cascade and entrenchment.`);

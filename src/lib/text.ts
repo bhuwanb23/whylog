@@ -65,13 +65,15 @@ export const STOPWORDS: ReadonlySet<string> = new Set([
 /** Lowercase, strip punctuation, collapse whitespace. Never touches case
  *  inside code fences — callers must strip those first. */
 export function normalise(input: string): string {
-  return input
-    .toLowerCase()
-    // Keep hyphens and dots inside tokens: "better-sqlite3", "vite+react",
-    // "src/db/**" are single meaningful units.
-    .replace(/[^a-z0-9+./_*\-\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    input
+      .toLowerCase()
+      // Keep hyphens and dots inside tokens: "better-sqlite3", "vite+react",
+      // "src/db/**" are single meaningful units.
+      .replace(/[^a-z0-9+./_*\-\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 /** Split into tokens WITHOUT removing stopwords. */
@@ -114,17 +116,9 @@ export interface Turn {
   readonly end: number;
 }
 
-const HUMAN_MARKERS = [
-  /^(user|human|me|you)\s*:/i,
-  /^>\s/,
-  /^#\s*user/i,
-];
+const HUMAN_MARKERS = [/^(user|human|me|you)\s*:/i, /^>\s/, /^#\s*user/i];
 
-const AGENT_MARKERS = [
-  /^(assistant|agent|claude|copilot|cursor|codex|ai|bot)\s*:/i,
-  /^⏺/,
-  /^⎿/,
-];
+const AGENT_MARKERS = [/^(assistant|agent|claude|copilot|cursor|codex|ai|bot)\s*:/i, /^⏺/, /^⎿/];
 
 /**
  * Speaker attribution. Provenance (Phase 1.6) and therefore `source_authority`

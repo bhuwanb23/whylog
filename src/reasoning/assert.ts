@@ -51,6 +51,16 @@
  * ---------------------------------------------------------------------------
  */
 
+import {
+  formatDecisionId,
+  formatEpisodeId,
+  formatJustificationId,
+  formatPremiseId,
+  formatTranscriptId,
+  premiseFingerprint,
+} from "@/lib/ids";
+import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
+import type { GraphState } from "@/substrate/graph-state";
 import type {
   Actor,
   Confidence,
@@ -67,18 +77,8 @@ import type {
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionOrigin, DecisionVariable, Justification, PremiseType } from "@/types/domain";
-import type { EventType, NewEvent } from "@/types/events";
-import { canonicalPredicate, canonicalValueOf, foldKey } from "@/ontology/canonicalize";
-import {
-  formatDecisionId,
-  formatEpisodeId,
-  formatJustificationId,
-  formatPremiseId,
-  formatTranscriptId,
-  premiseFingerprint,
-} from "@/lib/ids";
-import type { GraphState } from "@/substrate/graph-state";
 import type { Nogood } from "@/types/domain";
+import type { EventType, NewEvent } from "@/types/events";
 import type { Newcomer } from "./adjudication";
 import { blocksConjunction } from "./nogoods";
 
@@ -263,8 +263,7 @@ export function assertNewInformation(
   let episodeNumber = context.state.counters.episodes;
 
   const transcriptId: TranscriptId =
-    transcriptIdFor(assertion, context) ??
-    nextTranscriptId(context, drafts, ++transcriptNumber);
+    transcriptIdFor(assertion, context) ?? nextTranscriptId(context, drafts, ++transcriptNumber);
 
   /* A human, a guard or a repo scan is its own authority: what it says is confirmed on
    * arrival. A transcript is not — extracted prose enters as UNKNOWN and waits for
@@ -342,7 +341,12 @@ export function assertNewInformation(
        * are the same node. */
       justificationNumber += 1;
       drafts.push(
-        justificationDraft(formatJustificationId(justificationNumber), existingDecision, inList, context),
+        justificationDraft(
+          formatJustificationId(justificationNumber),
+          existingDecision,
+          inList,
+          context,
+        ),
       );
       continue;
     }
@@ -447,13 +451,12 @@ function premiseDraft(
       text: premise.supports ? text : `refuted: ${text}`,
       confidence: premise.confidence,
       engine: context.engine,
-      snippet:
-        premise.span ?? {
-          transcriptId,
-          start: 0,
-          end: text.length,
-          text,
-        },
+      snippet: premise.span ?? {
+        transcriptId,
+        start: 0,
+        end: text.length,
+        text,
+      },
     },
     actor: context.actor,
     reason: reasonFor(premise, context),
@@ -521,8 +524,12 @@ function decisionDraft(
         modality: "asserted",
         confidence: decision.confidence,
         engine: context.engine,
-        snippet:
-          decision.span ?? { transcriptId, start: 0, end: statement.length, text: statement },
+        snippet: decision.span ?? {
+          transcriptId,
+          start: 0,
+          end: statement.length,
+          text: statement,
+        },
         premiseIds: inList,
         alternativeIds: [],
         ...(decision.appliesTo === undefined ? {} : { appliesTo: decision.appliesTo }),
@@ -530,7 +537,9 @@ function decisionDraft(
       actor: context.actor,
       reason: `Asserted from ${sourceLabel(context.source)}: ${statement}`,
       at: context.at,
-      ...(assertionOccurredAt(context) === null ? {} : { occurredAt: assertionOccurredAt(context) as ISODateString }),
+      ...(assertionOccurredAt(context) === null
+        ? {}
+        : { occurredAt: assertionOccurredAt(context) as ISODateString }),
     },
     {
       type: "JustificationAttached",
@@ -579,10 +588,7 @@ export type PremiseResolution =
  * candidates are handed to a human, which is what §2.11 means by "surfaced for human
  * confirmation rather than guessed".
  */
-export function resolvePremise(
-  state: GraphState,
-  assertion: PremiseAssertion,
-): PremiseResolution {
+export function resolvePremise(state: GraphState, assertion: PremiseAssertion): PremiseResolution {
   const canonical = canonicalPredicate(assertion.type, assertion.predicate);
 
   /* The fold's OWN identity index, keyed by `premiseFingerprint(type, predicate)`.
@@ -720,8 +726,6 @@ type PremiseInvalidatedBy = NewEvent<"PremiseInvalidated">["payload"]["invalidat
  *  does for every other forward reference in this codebase. */
 const PLACEHOLDER_GUARD_ID = "WLD-0000.g0" as GuardId;
 
-
-
 /**
  * Is this decision already in the log?
  *
@@ -748,10 +752,7 @@ export function findExistingDecision(
 /* Transcripts, informants, reasons                                           */
 /* -------------------------------------------------------------------------- */
 
-function transcriptIdFor(
-  assertion: Assertion,
-  context: AssertContext,
-): TranscriptId | null {
+function transcriptIdFor(assertion: Assertion, context: AssertContext): TranscriptId | null {
   if (assertion.source === "transcript") return assertion.transcriptId;
   return context.humanTranscriptId ?? null;
 }
@@ -791,7 +792,9 @@ function nextTranscriptId(
 function informantFor(context: AssertContext): Justification["informant"] {
   /* A human informant has no event to point at, and pointing at an unrelated one would
    * be worse than saying so. */
-  return context.actor.kind === "human" ? { kind: "human" } : { kind: "rejustification", eventId: PLACEHOLDER_EVENT_ID };
+  return context.actor.kind === "human"
+    ? { kind: "human" }
+    : { kind: "rejustification", eventId: PLACEHOLDER_EVENT_ID };
 }
 
 /** Resolved to the creating event by the materialiser on fold. */
@@ -868,7 +871,9 @@ function summarise(
     nogoodWarning,
     unresolvedNote,
     `Asserted from ${sourceLabel(assertion.source)}: ${premiseCount} premise(s), ${decisionCount} decision(s).`,
-    parts.length === 0 ? "No events — everything was already in the log." : `Events: ${parts.join(", ")}.`,
+    parts.length === 0
+      ? "No events — everything was already in the log."
+      : `Events: ${parts.join(", ")}.`,
     refuting.trim(),
   ]
     .filter((part) => part.length > 0)
@@ -892,7 +897,7 @@ export function falsifyPremise(
   type: PremiseType,
   predicate: string,
   observedText: string,
-  context: AssertContext,
+  _context: AssertContext,
 ): Assertion {
   return {
     source: "repo-scan",
@@ -924,4 +929,3 @@ export function guardResult(
 ): Assertion {
   return { source: "guard-result", decisionId, passed, observation };
 }
-

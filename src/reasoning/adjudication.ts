@@ -49,17 +49,13 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId } from "@/types/common";
 import type { Decision, DecisionOrigin, DecisionVariable } from "@/types/domain";
-import { canonicalValueOf } from "@/ontology";
-import { wouldContradict } from "./gates/structural";
 import type { AdjudicationOutcome, EntrenchmentBreakdown } from "@/types/reasoning";
-import {
-  ENTRENCHMENT_WEIGHTS,
-  UNKNOWN_IMPLEMENTATION_COST,
-} from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
-import { entrenchmentOf, type GuardStatus } from "./entrenchment";
+import { ENTRENCHMENT_WEIGHTS } from "@/types/reasoning";
+import { type GuardStatus, entrenchmentOf } from "./entrenchment";
+import { wouldContradict } from "./gates/structural";
 
 /* -------------------------------------------------------------------------- */
 /* The newcomer                                                               */
@@ -89,6 +85,11 @@ export interface AdjudicationInput {
   readonly now: number;
   /** Guard status per decision, from Phase 4. Absent => implementation cost unknown. */
   readonly guards?: ReadonlyMap<DecisionId, GuardStatus>;
+  /** Ablation only. Hansson screening requires a newcomer to outrank EVERY contradictor;
+   *  with this set the newcomer wins outright and the ordering is never consulted. The
+   *  retraction order still runs weakest-first, because that is a property of the cascade
+   *  and not of the screening. */
+  readonly disableEntrenchment?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -125,7 +126,14 @@ export function adjudicate(
     ),
   }));
 
-  const blockers = scored.filter((entry) => entry.breakdown.capped >= newcomerScore);
+  /* Entrenchment off => no blocker can ever outrank the newcomer, so the refusal branch
+   * is unreachable and every contested decision is simply retracted. That is the point of
+   * the ablation: it measures what the screening is worth by removing the only thing that
+   * can say "no". */
+  const blockers =
+    input.disableEntrenchment === true
+      ? []
+      : scored.filter((entry) => entry.breakdown.capped >= newcomerScore);
 
   if (blockers.length > 0) {
     const blocker = blockers.reduce((best, entry) =>
@@ -350,9 +358,18 @@ function dominantTerm(state: GraphState, decisionId: DecisionId): string {
   const w = breakdown.weights;
 
   const contributions: { readonly name: string; readonly amount: number }[] = [
-    { name: `who stated it (${c.sourceAuthority.toFixed(2)})`, amount: w.sourceAuthority * c.sourceAuthority },
-    { name: `how many sources agree (${c.corroboration.toFixed(2)})`, amount: w.corroboration * c.corroboration },
-    { name: `extraction confidence (${c.confidence.toFixed(2)})`, amount: w.confidence * c.confidence },
+    {
+      name: `who stated it (${c.sourceAuthority.toFixed(2)})`,
+      amount: w.sourceAuthority * c.sourceAuthority,
+    },
+    {
+      name: `how many sources agree (${c.corroboration.toFixed(2)})`,
+      amount: w.corroboration * c.corroboration,
+    },
+    {
+      name: `extraction confidence (${c.confidence.toFixed(2)})`,
+      amount: w.confidence * c.confidence,
+    },
     { name: `how recent it is (${c.recency.toFixed(2)})`, amount: w.recency * c.recency },
   ];
 

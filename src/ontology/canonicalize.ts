@@ -26,11 +26,11 @@
  */
 
 import { normalise } from "@/lib/text";
-import type { DecisionVariable, PremiseType } from "@/types/domain";
 import type { Canonicalizer } from "@/substrate/identity";
+import type { DecisionVariable, PremiseType } from "@/types/domain";
 import { ALIASES, GLOBAL_ALIASES, NONE_VALUES, canonicalToVariables } from "./data/aliases";
-import { VARIABLE_META, variableKeywords } from "./data/variables";
 import { PREMISE_TYPE_META, lookupPredicate, splitPredicate } from "./data/premise-types";
+import { VARIABLE_META, variableKeywords } from "./data/variables";
 
 /* -------------------------------------------------------------------------- */
 /* Surface-form cleanup                                                       */
@@ -48,7 +48,10 @@ export function cleanSurface(input: string): string {
   value = value.replace(/^(the|a|an)\s+/i, "");
 
   // "the X database" / "the X framework" — keep X.
-  value = value.replace(/\s+(database|db|framework|library|package|provider|service|platform|tool)$/i, "");
+  value = value.replace(
+    /\s+(database|db|framework|library|package|provider|service|platform|tool)$/i,
+    "",
+  );
 
   return value.trim();
 }
@@ -224,10 +227,7 @@ export function variableFromContext(tokens: readonly string[]): VariableGuess | 
  * ~15% of the corpus the ontology needs extending before Phase 1's numbers can
  * be trusted, and that check lives in the health panel for exactly this reason.
  */
-export function resolveVariable(
-  value: string,
-  contextTokens: readonly string[],
-): VariableGuess {
+export function resolveVariable(value: string, contextTokens: readonly string[]): VariableGuess {
   const fromValue = variableFromValue(value);
   const fromContext = variableFromContext(contextTokens);
 
@@ -282,9 +282,7 @@ export function canonicalPredicate(type: PremiseType, predicate: string): string
     if (match) return `${candidateType}.${match.name}`;
 
     // Label match — "single user" is the LABEL of `scale.single_user`.
-    const byLabel = meta.predicates.find(
-      (p) => normalise(p.label) === normalise(name),
-    );
+    const byLabel = meta.predicates.find((p) => normalise(p.label) === normalise(name));
     if (byLabel) return `${candidateType}.${byLabel.name}`;
   }
 
