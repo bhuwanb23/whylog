@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 820" width="1400" height="820" role="img" aria-label="The premise lattice — premises are shared nodes">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .ptype { font-size: 13px; font-weight: 700; letter-spacing: 1.6; fill: #6a7280; text-anchor: middle; }
+    .pname { font-size: 15px; fill: #e6e9ee; text-anchor: middle; }
+    .did { font-size: 12.5px; font-family: 'Cascadia Mono','SF Mono',Consolas,monospace; fill: #6a7280; text-anchor: middle; }
+    .dname { font-size: 15.5px; font-weight: 600; fill: #e6e9ee; text-anchor: middle; }
+    .legend { font-size: 15px; fill: #99a1ad; }
+  </style>
+
+  <rect width="1400" height="820" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">The premise lattice — premises are shared nodes</text>
+  <text x="70" y="94" class="sub">Invariant I2: "single-user" is one node that three decisions point at. That is what makes cascade exact.</text>
+
+  <!-- column headers -->
+  <text x="230" y="150" class="ptype">SCALE</text>
+  <text x="480" y="150" class="ptype">DEPLOYMENT</text>
+  <text x="730" y="150" class="ptype">TEAM</text>
+  <text x="980" y="150" class="ptype">BUDGET</text>
+  <text x="1220" y="150" class="ptype">REQUIREMENT</text>
+
+  <!-- premise labels -->
+  <text x="230" y="192" class="pname">single-user</text>
+  <text x="480" y="192" class="pname">local_only</text>
+  <text x="730" y="192" class="pname">solo_dev</text>
+  <text x="980" y="192" class="pname">zero_budget</text>
+  <text x="1220" y="192" class="pname">offline_first</text>
+
+  <!-- edges: supports (solid green), excludes (dashed amber) -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M230 244 L330 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M230 244 L640 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M480 244 L330 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M480 244 L950 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M730 244 L640 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M730 244 L1260 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M980 244 L950 560" stroke="#4ade80" stroke-width="2.4"/>
+    <path d="M1220 244 L1260 560" stroke="#4ade80" stroke-width="2.4"/>
+    <!-- OUT-list exclusions -->
+    <path d="M230 244 L950 560" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="7 5"/>
+    <path d="M980 244 L640 560" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="7 5"/>
+    <!-- conflict between decisions -->
+    <path d="M330 640 L640 640" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+  </g>
+  <text x="485" y="634" font-size="14" font-weight="700" fill="#f87171" text-anchor="middle">conflict</text>
+
+  <!-- premise nodes: open circles; solid ring = world-observable, dashed = intent -->
+  <g>
+    <circle cx="230" cy="220" r="26" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+    <circle cx="480" cy="220" r="26" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+    <circle cx="730" cy="220" r="26" fill="#0b0d10" stroke="#94a3b8" stroke-width="3.5" stroke-dasharray="7 5"/>
+    <circle cx="980" cy="220" r="26" fill="#0b0d10" stroke="#94a3b8" stroke-width="3.5" stroke-dasharray="7 5"/>
+    <circle cx="1220" cy="220" r="26" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+  </g>
+
+  <!-- decision nodes: rounded squares -->
+  <g>
+    <g transform="translate(288,560)">
+      <rect width="84" height="84" rx="20" fill="#4ade80"/>
+      <text x="42" y="50" font-size="17" font-weight="700" fill="#06231a" text-anchor="middle">D1</text>
+    </g>
+    <g transform="translate(598,560)">
+      <rect width="84" height="84" rx="20" fill="#4ade80"/>
+      <text x="42" y="50" font-size="17" font-weight="700" fill="#06231a" text-anchor="middle">D2</text>
+    </g>
+    <g transform="translate(908,560)">
+      <rect width="84" height="84" rx="20" fill="#4ade80"/>
+      <text x="42" y="50" font-size="17" font-weight="700" fill="#06231a" text-anchor="middle">D3</text>
+    </g>
+    <g transform="translate(1218,560)">
+      <rect width="84" height="84" rx="20" fill="#4ade80"/>
+      <text x="42" y="50" font-size="17" font-weight="700" fill="#06231a" text-anchor="middle">D4</text>
+    </g>
+  </g>
+
+  <text x="330" y="676" class="did">WLD-0007</text>
+  <text x="330" y="700" class="dname">SQLite, not Postgres</text>
+  <text x="640" y="676" class="did">WLD-0011</text>
+  <text x="640" y="700" class="dname">JSON embeddings</text>
+  <text x="950" y="676" class="did">WLD-0019</text>
+  <text x="950" y="700" class="dname">no deploy pipeline</text>
+  <text x="1260" y="676" class="did">WLD-0023</text>
+  <text x="1260" y="700" class="dname">local-first sync</text>
+
+  <!-- legend -->
+  <g transform="translate(70,750)">
+    <line x1="0" y1="-5" x2="44" y2="-5" stroke="#4ade80" stroke-width="2.4"/>
+    <text x="56" y="0" class="legend">supports (solid ring = world-observable premise)</text>
+    <line x1="440" y1="-5" x2="484" y2="-5" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="7 5"/>
+    <text x="496" y="0" class="legend">excludes — OUT-list (dashed ring = intent)</text>
+    <line x1="840" y1="-5" x2="884" y2="-5" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="896" y="0" class="legend">conflicts</text>
+  </g>
+</svg>

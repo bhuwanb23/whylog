@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 1040" width="1120" height="1040" role="img" aria-label="REVISE — the nine-step cycle">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 16.5px; fill: #99a1ad; }
+    .num { font-size: 30px; font-weight: 700; }
+    .step { font-size: 17px; font-weight: 700; letter-spacing: 1; }
+    .note { font-size: 13.5px; fill: #99a1ad; }
+    .mid { font-size: 13.5px; fill: #99a1ad; }
+  </style>
+
+  <rect width="1120" height="1040" fill="#0b0d10"/>
+  <text x="60" y="64" class="title">REVISE(newInfo) — the nine-step cycle</text>
+  <text x="60" y="96" class="sub">One entry point for transcripts, user decisions, guard results and repo scans. src/reasoning/revise.ts</text>
+
+  <!-- ring + direction -->
+  <circle cx="520" cy="580" r="330" fill="none" stroke="#232830" stroke-width="2" stroke-dasharray="5 7"/>
+  <g fill="#333a45">
+    <path d="M619.6 277.2 L633 270 L623.7 254.6"/>
+    <path d="M737.3 820.7 L732 833 L745.1 829.9"/>
+    <path d="M203 647.8 L195 637 L191.2 649.8"/>
+  </g>
+
+  <!-- centre -->
+  <circle cx="520" cy="580" r="124" fill="#12151a" stroke="#60a5fa" stroke-width="2"/>
+  <text x="520" y="566" font-size="42" font-weight="700" fill="#60a5fa" text-anchor="middle">REVISE()</text>
+  <text x="520" y="602" class="mid" text-anchor="middle">idempotent — run it twice,</text>
+  <text x="520" y="626" class="mid" text-anchor="middle">the second run writes nothing</text>
+
+  <!-- 1 EXTRACT (top, -90deg) -->
+  <g>
+    <circle cx="520" cy="250" r="46" fill="#12151a" stroke="#4ade80" stroke-width="2.5"/>
+    <text x="520" y="262" class="num" fill="#4ade80" text-anchor="middle">1</text>
+    <text x="520" y="158" class="step" fill="#4ade80" text-anchor="middle">EXTRACT</text>
+    <text x="520" y="180" class="note" text-anchor="middle">what the new information says</text>
+  </g>
+
+  <!-- 2 RESOLVE (-50deg) -->
+  <g>
+    <circle cx="732" cy="327" r="46" fill="#12151a" stroke="#4ade80" stroke-width="2.5"/>
+    <text x="732" y="339" class="num" fill="#4ade80" text-anchor="middle">2</text>
+    <text x="792" y="303" class="step" fill="#4ade80">RESOLVE</text>
+    <text x="792" y="325" class="note">which existing node it means</text>
+  </g>
+
+  <!-- 3 ASSERT (-10deg) -->
+  <g>
+    <circle cx="845" cy="522" r="46" fill="#12151a" stroke="#4ade80" stroke-width="2.5"/>
+    <text x="845" y="534" class="num" fill="#4ade80" text-anchor="middle">3</text>
+    <text x="908" y="518" class="step" fill="#4ade80">ASSERT</text>
+    <text x="908" y="540" class="note">label graph · find unsound</text>
+  </g>
+
+  <!-- 4 DETECT (30deg) -->
+  <g>
+    <circle cx="806" cy="745" r="46" fill="#12151a" stroke="#fbbf24" stroke-width="2.5"/>
+    <text x="806" y="757" class="num" fill="#fbbf24" text-anchor="middle">4</text>
+    <text x="858" y="815" class="step" fill="#fbbf24">DETECT</text>
+    <text x="858" y="837" class="note">gates (a) (b) (c) — all three run</text>
+  </g>
+
+  <!-- 5 BACKTRACK (70deg) -->
+  <g>
+    <circle cx="633" cy="890" r="46" fill="#12151a" stroke="#fbbf24" stroke-width="2.5"/>
+    <text x="633" y="902" class="num" fill="#fbbf24" text-anchor="middle">5</text>
+    <text x="633" y="972" class="step" fill="#fbbf24" text-anchor="middle">BACKTRACK</text>
+    <text x="633" y="994" class="note" text-anchor="middle">the minimal set of assumptions</text>
+  </g>
+
+  <!-- 6 CASCADE (110deg) -->
+  <g>
+    <circle cx="407" cy="890" r="46" fill="#12151a" stroke="#fbbf24" stroke-width="2.5"/>
+    <text x="407" y="902" class="num" fill="#fbbf24" text-anchor="middle">6</text>
+    <text x="355" y="972" class="step" fill="#fbbf24" text-anchor="end">CASCADE</text>
+    <text x="355" y="994" class="note" text-anchor="end">stop at independent support</text>
+  </g>
+
+  <!-- 7 ADJUDICATE (150deg) -->
+  <g>
+    <circle cx="234" cy="745" r="46" fill="#12151a" stroke="#a78bfa" stroke-width="2.5"/>
+    <text x="234" y="757" class="num" fill="#a78bfa" text-anchor="middle">7</text>
+    <text x="172" y="741" class="step" fill="#a78bfa" style="text-anchor:end">ADJUDICATE</text>
+    <text x="172" y="763" class="note" style="text-anchor:end">Hansson — may refuse</text>
+  </g>
+
+  <!-- 8 PROPOSE (190deg) -->
+  <g>
+    <circle cx="195" cy="522" r="46" fill="#12151a" stroke="#a78bfa" stroke-width="2.5"/>
+    <text x="195" y="534" class="num" fill="#a78bfa" text-anchor="middle">8</text>
+    <text x="133" y="486" class="step" fill="#a78bfa" style="text-anchor:end">PROPOSE</text>
+    <text x="133" y="508" class="note" style="text-anchor:end">never auto-applied</text>
+  </g>
+
+  <!-- 9 COMMIT (230deg) -->
+  <g>
+    <circle cx="308" cy="327" r="46" fill="#12151a" stroke="#94a3b8" stroke-width="2.5"/>
+    <text x="308" y="339" class="num" fill="#94a3b8" text-anchor="middle">9</text>
+    <text x="246" y="291" class="step" fill="#94a3b8" style="text-anchor:end">COMMIT</text>
+    <text x="246" y="313" class="note" style="text-anchor:end">event drafts — the store appends</text>
+  </g>
+
+  <text x="520" y="1030" font-size="14.5" fill="#6a7280" text-anchor="middle">Nothing outside revise.ts orders these steps — the sequence is the algorithm.</text>
+</svg>

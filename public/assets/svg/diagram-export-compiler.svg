@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 760" width="1400" height="760" role="img" aria-label="Export compiler: one graph to five artifacts">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .st { font-size: 16.5px; font-weight: 700; fill: #e6e9ee; text-anchor: middle; }
+    .sd { font-size: 13.5px; fill: #99a1ad; text-anchor: middle; }
+    .file { font-size: 15.5px; font-weight: 700; font-family: 'Cascadia Mono','SF Mono',Consolas,monospace; }
+  </style>
+
+  <rect width="1400" height="760" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">One graph → canonical form → five artifacts, single pass</text>
+  <text x="70" y="94" class="sub">Emitters are pure functions of the CIF and never read the graph. src/export/compiler.ts</text>
+
+  <!-- graph input -->
+  <g transform="translate(70,180)">
+    <rect width="250" height="200" rx="14" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="125" y="44" class="st">decision graph</text>
+    <g transform="translate(0,60)">
+      <circle cx="70" cy="20" r="14" fill="none" stroke="#4ade80" stroke-width="3"/>
+      <circle cx="120" cy="20" r="14" fill="none" stroke="#4ade80" stroke-width="3"/>
+      <path d="M70 34 L86 66 M120 34 L104 66" stroke="#4ade80" stroke-width="2.4" fill="none"/>
+      <path d="M70 34 L104 66" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="5 4" fill="none"/>
+      <rect x="76" y="66" width="40" height="40" rx="11" fill="#4ade80"/>
+    </g>
+    <text x="125" y="196" font-size="13" fill="#6a7280" text-anchor="middle">premises · decisions · guards</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M320 280 L390 280"/><path d="M378 274 L394 280 L378 286"/>
+  </g>
+
+  <!-- CIF -->
+  <g transform="translate(390,150)">
+    <rect width="300" height="260" rx="14" fill="#0e1620" stroke="#60a5fa" stroke-width="2.5"/>
+    <text x="150" y="48" font-size="20" font-weight="700" fill="#60a5fa" text-anchor="middle">CIF</text>
+    <text x="150" y="74" font-size="14" fill="#99a1ad" text-anchor="middle">canonical intermediate form</text>
+    <line x1="24" y1="94" x2="276" y2="94" stroke="#232830" stroke-width="2"/>
+    <g font-size="14" fill="#99a1ad">
+      <text x="30" y="126">MUST / MUST NOT + applies_to</text>
+      <text x="30" y="156">Because — premise IDs</text>
+      <text x="30" y="186">Rejected — do not re-propose</text>
+      <text x="30" y="216">Verify — compiled from guards</text>
+      <text x="30" y="246">Status · entrenchment · provenance</text>
+    </g>
+  </g>
+
+  <!-- gates to the right of CIF -->
+  <g transform="translate(390,440)">
+    <rect width="300" height="110" rx="12" fill="#1a1013" stroke="#f87171" stroke-width="2"/>
+    <text x="150" y="40" font-size="16" font-weight="700" fill="#f87171" text-anchor="middle">consistency gate</text>
+    <text x="150" y="68" font-size="13.5" fill="#99a1ad" text-anchor="middle">blocks a self-contradictory export</text>
+    <text x="150" y="90" font-size="13.5" fill="#99a1ad" text-anchor="middle">excludes OUT · annotates contested</text>
+  </g>
+  <g transform="translate(390,576)">
+    <rect width="300" height="110" rx="12" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="150" y="40" font-size="16" font-weight="700" fill="#e6e9ee" text-anchor="middle">priority + budget</text>
+    <text x="150" y="68" font-size="13.5" fill="#99a1ad" text-anchor="middle">two-tier emission · ~200-line target</text>
+    <text x="150" y="90" font-size="13.5" fill="#99a1ad" text-anchor="middle">soundness .35 · entrenchment .25</text>
+  </g>
+  <g fill="none" stroke="#333a45" stroke-width="2" stroke-linecap="round">
+    <path d="M540 410 L540 440"/><path d="M534 428 L540 442 L546 428"/>
+    <path d="M540 550 L540 576"/><path d="M534 564 L540 578 L546 564"/>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M690 280 L760 280"/><path d="M748 274 L764 280 L748 286"/>
+  </g>
+
+  <!-- emitters -->
+  <g>
+    <g transform="translate(760,150)">
+      <rect width="270" height="80" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="24" y="36" class="file" fill="#4ade80">CLAUDE.md</text>
+      <text x="24" y="62" font-size="13.5" fill="#99a1ad">agent context · MUST + verify</text>
+    </g>
+    <g transform="translate(760,244)">
+      <rect width="270" height="80" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="24" y="36" class="file" fill="#4ade80">AGENTS.md</text>
+      <text x="24" y="62" font-size="13.5" fill="#99a1ad">cross-agent standard</text>
+    </g>
+    <g transform="translate(760,338)">
+      <rect width="270" height="80" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="24" y="36" class="file" fill="#4ade80">.cursorrules</text>
+      <text x="24" y="62" font-size="13.5" fill="#99a1ad">line-budgeted rules</text>
+    </g>
+    <g transform="translate(760,432)">
+      <rect width="270" height="80" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="24" y="36" class="file" fill="#4ade80">DECISIONS.md</text>
+      <text x="24" y="62" font-size="13.5" fill="#99a1ad">rejected — do not re-propose</text>
+    </g>
+    <g transform="translate(760,526)">
+      <rect width="270" height="80" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="24" y="36" class="file" fill="#4ade80">ci.yml + runner</text>
+      <text x="24" y="62" font-size="13.5" fill="#99a1ad">blocking guard workflow</text>
+    </g>
+  </g>
+  <g fill="none" stroke="#333a45" stroke-width="2" stroke-linecap="round">
+    <path d="M760 190 L736 190 L736 280 L760 280"/>
+    <path d="M736 384 L760 384"/><path d="M748 378 L762 384 L748 390"/>
+    <path d="M736 478 L760 478"/><path d="M748 472 L762 478 L748 484"/>
+    <path d="M736 572 L760 572"/><path d="M748 566 L762 572 L748 578"/>
+    <path d="M736 280 L760 280"/><path d="M748 274 L762 280 L748 286"/>
+  </g>
+
+  <!-- integrity stamp -->
+  <g transform="translate(1070,150)">
+    <rect width="270" height="170" rx="14" fill="#12151a" stroke="#a78bfa" stroke-width="2"/>
+    <text x="135" y="44" font-size="17" font-weight="700" fill="#a78bfa" text-anchor="middle">integrity stamp</text>
+    <text x="135" y="76" font-size="14" fill="#99a1ad" text-anchor="middle">head hash of the source log</text>
+    <text x="135" y="104" font-size="14" fill="#99a1ad" text-anchor="middle">round-trip re-import verifies</text>
+    <rect x="30" y="122" width="210" height="30" rx="8" fill="#0b0d10" stroke="#333a45"/>
+    <text x="135" y="143" font-size="13" font-family="'Cascadia Mono','SF Mono',Consolas,monospace" fill="#6a7280" text-anchor="middle">auditability — never security</text>
+  </g>
+
+  <g transform="translate(1070,350)">
+    <rect width="270" height="170" rx="14" fill="#12151a" stroke="#4ade80" stroke-width="2"/>
+    <text x="135" y="44" font-size="17" font-weight="700" fill="#4ade80" text-anchor="middle">six agent-optimised</text>
+    <text x="135" y="68" font-size="17" font-weight="700" fill="#4ade80" text-anchor="middle">properties per record</text>
+    <text x="135" y="104" font-size="14" fill="#99a1ad" text-anchor="middle">incl. verifiable and</text>
+    <text x="135" y="128" font-size="14" fill="#99a1ad" text-anchor="middle">non-conflicting — no ADR</text>
+    <text x="135" y="152" font-size="14" fill="#99a1ad" text-anchor="middle">tool delivers those free</text>
+  </g>
+
+  <g transform="translate(1070,550)">
+    <rect width="270" height="136" rx="14" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="135" y="44" font-size="17" font-weight="700" fill="#e6e9ee" text-anchor="middle">round-trip</text>
+    <text x="135" y="76" font-size="14" fill="#99a1ad" text-anchor="middle">export → import reproduces</text>
+    <text x="135" y="100" font-size="14" fill="#99a1ad" text-anchor="middle">identical state and head hash</text>
+    <text x="135" y="124" font-size="13.5" fill="#6a7280" text-anchor="middle">merged as a refinement</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2" stroke-linecap="round">
+    <path d="M1030 190 L1070 190"/>
+    <path d="M1030 435 L1070 435"/>
+    <path d="M1030 618 L1070 618"/>
+  </g>
+</svg>
