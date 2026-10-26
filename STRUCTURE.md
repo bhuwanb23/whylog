@@ -848,7 +848,8 @@ READY, 2 of 4 demo-killers passing). `demo:verify` stops at the same place indep
    canonical timeline order never typechecked at all.
 
 **One deliberate non-change:** `EVALUATION.md` and `pitch/03-metrics-card.md` keep their `▢▢▢`
-placeholders. The baseline is a *diagnostic* (decision F1 0.083, retrieval 0.000, guard synthesis 0%,
+placeholders. *(Superseded by §18.12 and §18.13 — both documents are now filled from the generated
+report. The sentence is kept because this log records the state as it was at each pass.)* The baseline is a *diagnostic* (decision F1 0.083, retrieval 0.000, guard synthesis 0%,
 **0 non-empty OUT-lists**), and printing it as a result would be worse than printing nothing. Gate G6
 is met when the numbers are worth claiming, not when they exist.
 
@@ -891,7 +892,8 @@ run.
 
 `EVALUATION.md` and the pitch metrics card **still hold their `▢▢▢` placeholders**: L2 at 1.000 over
 **n=1** demonstrates that the mechanism fires, which is not a rate, and G6 asks for numbers worth
-claiming.
+claiming. *(Superseded by §18.13 — the placeholders are filled, and that L2 = 1.000 turned out to be a
+vacuous pass: the decision was already OUT before the intervention. L2 and L3 now report untestable.)*
 
 ### 18.11 The test suite — 172 tests, 13 files, all green
 
@@ -923,3 +925,102 @@ Two tests are deliberately **not** green-as-usual:
   the bug exists and starts FAILING the moment it is fixed, which is the reminder to delete it.
 - The e2e suite asserts `report.demoable === true`, so a regression in any automatic demo check turns
   CI red rather than waiting to be discovered on stage.
+
+---
+
+### 18.12 The lint pass and the first ablation — `npm run verify` exits 0, and the ablation measured nothing
+
+Full detail in `notes/LINT-PASS.md`. The deviations that change how this repo is read:
+
+**Biome had never been run.** It reported 1550 errors. Five rules are now **off** and four a11y rules are
+**warn**, each with a reason recorded here rather than in `biome.json`, because Biome's schema rejects
+unknown keys inside `linter.rules`:
+
+- `style/useTemplate` — the `+` → template rewrite is not purely syntactic; numeric operands change
+  meaning.
+- `complexity/useLiteralKeys` — mutually exclusive with `noPropertyAccessFromIndexSignature`. Every bracket
+  access it objects to exists *because* that flag forbids the dot form.
+- `complexity/noForEach` — the discarded return value is deliberate.
+- `style/noNonNullAssertion` — `noUncheckedIndexedAccess` makes `!` after a bounds check correct, not a
+  smell.
+- `complexity/useOptionalChain` — its unsafe fix rewrites `x[i]!.p` to `x[i]?.p`, which the same compiler
+  flag then rejects. The rule fights the tsconfig.
+- a11y `useSemanticElements` / `useKeyWithClickEvents` / `noAutofocus` /
+  `noNoninteractiveElementToInteractiveRole` — **demoted, not fixed**. The graph nodes use
+  `div role="button"` as a layout choice and the demo relies on autofocus. Recorded so the demotion is a
+  decision on the record.
+
+**`--write --unsafe` must not be blanket-applied.** It took errors 53 → 9 and `tsc` 0 → **31** in the same
+run, by stripping every non-null assertion. The test suite stayed green at 172/172 while the types were
+broken — a passing suite does not imply a compiling project.
+
+**`chunkTurns` had a defaulted parameter before a required one**: `(turns, budget = DEFAULT, normalized)`.
+Now `(turns, normalized, budget = DEFAULT)`, with three call sites updated. Two of them are in
+`tests/integration/full-pipeline.test.ts`, and they are what caught the reorder.
+
+**`src/eval/ablation/` gained `WIRED_TOGGLES`, `unwiredToggles()` and a `not-wired` verdict.** This is the
+significant one. The first ablation run returned `+0.000` for every switch on every metric, because
+`eval/harness.ts` reads only **3 of the 11 declared toggles** — `noiseCollapse`, `voting`,
+`semanticContradiction`. The other eight, including `premiseInvalidation` (gate (c), the component the
+product exists for), are declared and never read. Both parameter sweeps *are* wired.
+
+The verdict is evaluated **before** any delta is interpreted, so an unwired switch can never be reported
+as "a small effect". The report now states that it tested **5 of 15** declared hypotheses. Consequence:
+the "highlight row" in `pitch/03-metrics-card.md` is not available, and the card says so instead of
+carrying a placeholder that implies the number is merely pending.
+
+**Four stale statements corrected.** `LIMITATIONS.md` §10 ("Nothing has been executed"), the
+`EVALUATION.md` header ("No number appears in this document") and line 276, and all 15 `▢▢▢`
+placeholders in the metrics card. G6 is now recorded as **partially met**: design claims have diagrams,
+quality claims have numbers whose denominators are too small to quote alone.
+
+---
+
+### 18.13 The wiring pass — all eleven toggles live, and the graph had no IN nodes
+
+Full detail in `notes/WIRING-PASS.md`. The deviations that change how this repo is read:
+
+**Every ablation toggle is now consumed.** The eight that were declared and never read are wired at the
+module that owns the behaviour — `GateOptions.skipStructural` / `.skipPremiseInvalidation`,
+`ReviseInput.disableCascade`, `AdjudicationInput.disableEntrenchment`, `DecisionContext.negationCues` /
+`.modalityFilter`, `QueryOptions.levels`, `RetrieveInput.skipRerank`. `WIRED_TOGGLES` and the `not-wired`
+verdict are **kept** although the set is now complete: they are the check that catches the next toggle
+somebody declares without wiring.
+
+**Three dead options found while wiring.** `QueryOptions.levels` was read by nobody. The harness's second
+`revise` call passed only `cascadeDepthCap`. `pipeline.ts` accepted the two extraction switches and dropped
+them when building the request.
+
+**The ablation audit's verdict logic was inverted** and is now corrected in `eval/ablation/table.ts`.
+`delta` is (ablated − baseline), so a load-bearing component yields a *negative* delta; `confirmed` tested
+`delta >= threshold`, which is the case where removing the component made things better. The two kinds of
+falsification are now reported separately.
+
+**The eval harness models a review step.** It bulk-confirms each transcript's premises before the revision
+pass. Before this, no premise was ever confirmed, so no justification was valid, so **the graph contained
+zero IN nodes** — `decisions IN 0 / OUT 27 / UNKNOWN 7`. Most of the benchmark's zeros were that, not weak
+algorithms. The harness also gained `approveDecisions`, which the demo seed sets and the benchmark does
+not: the benchmark measures the un-triaged extractor, the demo narrates a user who triaged.
+
+**Gate (a) requires at least one accepted side.** `reasoning/gates/structural.ts` no longer raises a
+contradiction between two `proposed` decisions. Two unreviewed guesses disagreeing is the extractor's
+noise, not a conflict about the project. `findContradictors` is exempt — its newcomer is being put forward
+by a human, so the check would always pass and the Hansson screening would disappear. Measured effect:
+false-positive rate **138.2 → 11.8** per 100 decisions, contradiction precision **1.000**.
+
+**A structural refusal was added to `retrieval/answer.ts`.** The score-based refusal cannot fire on this
+corpus and measurement shows why: unanswerable questions retrieve at 0.348/0.346 while answerable ones
+retrieve at 0.348/0.350 — the distributions overlap, so no `TOPICALITY_FLOOR` separates them. The new
+signal is structural: the question resolved to a variable and nothing retrieved occupies it. It does not
+fire on this corpus either, because spurious nodes occupy every variable; it is correct and kept, not
+claimed as a fix.
+
+**`plantWasIntervened()` added to `eval/metrics/resolve.ts`.** An L2/L3 plant is now testable only if every
+one of its falsification steps was actually applied, and a plant with no falsification step is untestable
+rather than trivially testable. Without this, switching gate (c) OFF reported L2 = **1.000** — a vacuous
+pass in which a decision that was already OUT counted as a detection. **Phase 7.3's "at least one
+falsified hypothesis" is NOT met**; the report says so.
+
+**Documents updated to match:** `EVALUATION.md` header, `LIMITATIONS.md` §10 and all thirteen rows of
+`pitch/03-metrics-card.md` including its highlight row, which now explains why the gate-(c) ablation is
+unavailable rather than implying the number is pending.

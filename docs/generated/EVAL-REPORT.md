@@ -1,6 +1,6 @@
 # DecisionMemEval — evaluation report
 
-Generated 2026-10-24T12:13:59.627Z. Do not edit by hand: `npm run eval:report` regenerates it.
+Generated 2026-10-26T03:35:13.706Z. Do not edit by hand: `npm run eval:report` regenerates it.
 
 Corpus 0.1.0 · engine local/cue-extractor-v1 · 12 transcripts
 
@@ -13,10 +13,10 @@ size, its comparator where one is published, and a statement of what it does not
 - **Premise extraction P / R / F1**: 0.193 (n=16)
 - **Alternative extraction precision**: 0.000 (n=8)
 - **Contradiction recall (L1 pairwise)**: 0.500 (n=4)
-- **Premise-invalidation recall (L2 non-monotonic)**: 1.000 (n=1)
-- **Cascade correctness (L3 propagation)**: 0.500 (n=2)
+- **Premise-invalidation recall (L2 non-monotonic)**: 0.000 (n=1)
+- **Cascade correctness (L3 propagation)**: 0.000 (n=2)
 - **Survivor preservation**: 0.000 (n=2)
-- **False-positive rate per 100 decisions**: 102.9 per 100 (lower is better) (n=34)
+- **False-positive rate per 100 decisions**: 11.8 per 100 (lower is better) (n=34)
 - **Answer groundedness**: 0.000 (n=8)
 - **Retrieval precision@5**: 0.050 (n=8)
 - **Retrieval MRR**: 0.083 (n=6)
@@ -32,10 +32,10 @@ Decision extraction P / R / F1                    0.226     19  RecovAr (docs/05
 Premise extraction P / R / F1                     0.193     16  NONE PUBLISHED
 Alternative extraction precision                  0.000      8  ARGUS (arXiv:2604.10345)
 Contradiction recall (L1 pairwise)                0.500      4  Kantara (arXiv:2506.11005)
-Premise-invalidation recall (L2 non-monotonic)    1.000      1  NONE PUBLISHED
-Cascade correctness (L3 propagation)              0.500      2  NONE PUBLISHED
+Premise-invalidation recall (L2 non-monotonic)    0.000      1  NONE PUBLISHED
+Cascade correctness (L3 propagation)              0.000      2  NONE PUBLISHED
 Survivor preservation                             0.000      2  NONE PUBLISHED
-False-positive rate per 100 decisions         102.9/100     34  ARGUS (arXiv:2604.10345)
+False-positive rate per 100 decisions          11.8/100     34  ARGUS (arXiv:2604.10345)
 Answer groundedness                               0.000      8  RepoRationale
 Retrieval precision@5                             0.050      8  agentmemory
 Retrieval MRR                                     0.083      6  NONE PUBLISHED
@@ -82,7 +82,7 @@ Comparator: ARGUS (arXiv:2604.10345) — 15.4% precision on alternatives, alpha 
 
 **0.500** · n=4 · P 1.000 / R 0.500 / F1 0.667 (TP 2, FP 0, FN 2)
 
-2 of 4 planted L1 cases produced the expected verdict. By gate: 11 structural, 0 semantic, 30 premise. Kantara diagnostics: 0 M1, 0 M2.
+2 of 4 planted L1 cases produced the expected verdict. By gate: 0 structural, 0 semantic, 12 premise. Kantara diagnostics: 0 M1, 0 M2.
 
 Comparator: Kantara (arXiv:2506.11005) — Reported 396 contradictory pairs found over the Linux kernel at F1 0.70–0.75, but published COUNTS rather than recall over a planted set
 
@@ -90,9 +90,9 @@ Comparator: Kantara (arXiv:2506.11005) — Reported 396 contradictory pairs foun
 
 #### Premise-invalidation recall (L2 non-monotonic)
 
-**1.000** · n=1
+**0.000** · n=1
 
-1 of 1 decision(s) that should have gone unsound when their premise was falsified actually did. 9 justification(s) carry a non-empty OUT-list, which is what makes the graph non-monotonic at all. 30 premise-gate record(s) were raised.
+0 of 1 decision(s) that should have gone unsound when their premise was falsified actually did. 9 justification(s) carry a non-empty OUT-list, which is what makes the graph non-monotonic at all. 12 premise-gate record(s) were raised.
 
 Comparator: **none published.** The absence is the finding — see the honest note.
 
@@ -100,9 +100,9 @@ Comparator: **none published.** The absence is the finding — see the honest no
 
 #### Cascade correctness (L3 propagation)
 
-**0.500** · n=2
+**0.000** · n=2
 
-1 of 2 plant(s) were FULLY correct — every expected flip happened and no survivor was retracted. 0 over-retraction(s) across 2 expected survivor(s).
+0 of 2 plant(s) were FULLY correct — every expected flip happened and no survivor was retracted. 0 over-retraction(s) across 2 expected survivor(s).
 
 Comparator: **none published.** The absence is the finding — see the honest note.
 
@@ -120,9 +120,9 @@ Comparator: **none published.** The absence is the finding — see the honest no
 
 #### False-positive rate per 100 decisions
 
-**102.9 per 100 decisions** · n=34
+**11.8 per 100 decisions** · n=34
 
-102.9 unexpected interruption(s) per 100 decisions (9 contradiction(s) and 26 unexplained retraction(s) over 34 decisions). 0 refinement verdict(s) were correctly NOT surfaced as conflicts.
+11.8 unexpected interruption(s) per 100 decisions (0 contradiction(s) and 4 unexplained retraction(s) over 34 decisions). 0 refinement verdict(s) were correctly NOT surfaced as conflicts.
 
 Comparator: ARGUS (arXiv:2604.10345) — FP:FN 13:1 — 155 false positives against 12 false negatives on alternatives
 
@@ -254,8 +254,8 @@ Alternative FP:FN ratio — 34:8 (4.3 FP per FN) (ARGUS published 13:1).
 
 | plant | testable | expected flips | flipped | missed | survivors kept | over-retracted | correct |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| L2-premise-falsified | yes | 1 | 1 | 0 | 0 | 0 | ✓ |
-| L3-shared-premise | yes | 1 | 0 | 0 | 0 | 0 | ✗ |
+| L2-premise-falsified | NO | 1 | 0 | 1 | 0 | 0 | ✗ |
+| L3-shared-premise | NO | 1 | 0 | 0 | 0 | 0 | ✗ |
 
 **Plant keys with no runtime node** (3). These plants are scored as
 FAILED rather than skipped — skipping would make cascade correctness improve as extraction worsens:
@@ -264,20 +264,16 @@ FAILED rather than skipped — skipping would make cascade correctness improve a
 - L3-shared-premise -> l03/d2
 - L3-shared-premise -> l03/d3
 
-Contradiction records by gate: 11 structural, 0 semantic, 30 premise. Kantara diagnostics: 0 M1, 0 M2.
+Contradiction records by gate: 0 structural, 0 semantic, 12 premise. Kantara diagnostics: 0 M1, 0 M2.
 
 Justifications carrying a non-empty OUT-list: 9 of 34 decisions. Zero means the graph is monotonic and L2 cannot score.
 
-Unexpected interruptions (the false-positive numerator), first 8:
+Unexpected interruptions (the false-positive numerator), first 4:
 
-- structural/contradiction · WLD-0009 vs WLD-0011 · WLD-0009 and WLD-0011 are both live and IN on HOSTING, and "local-only" and "vercel" are a
-- structural/contradiction · WLD-0009 vs WLD-0012 · WLD-0009 and WLD-0012 are both live and IN on HOSTING, and "local-only" and "vercel" are a
-- structural/contradiction · WLD-0027 vs WLD-0029 · WLD-0027 and WLD-0029 are both live and IN on DATABASE with different values: "postgres" a
-- structural/contradiction · WLD-0027 vs WLD-0031 · WLD-0027 and WLD-0031 are both live and IN on DATABASE with different values: "postgres" a
-- structural/contradiction · WLD-0026 vs WLD-0032 · WLD-0026 and WLD-0032 are both live and IN on OTHER with different values: "now" and "clau
-- structural/contradiction · WLD-0026 vs WLD-0033 · WLD-0026 and WLD-0033 are both live and IN on OTHER with different values: "now" and "agen
-- structural/contradiction · WLD-0032 vs WLD-0033 · WLD-0032 and WLD-0033 are both live and IN on OTHER with different values: "claude.md" and
-- structural/contradiction · WLD-0032 vs WLD-0034 · WLD-0032 and WLD-0034 are both live and IN on OTHER with different values: "claude.md" and
+- retraction · WLD-0017 (SCOPE=single-user) -> OUT
+- retraction · WLD-0026 (OTHER=now) -> OUT
+- retraction · WLD-0027 (DATABASE=postgres) -> OUT
+- retraction · WLD-0034 (OTHER=now) -> OUT
 
 ### Questions
 
@@ -327,15 +323,16 @@ HARDENING PASS — 7.4
 
 NOT READY: see the failures below. A partially hardened demo is not a demo that can be given.
 
-THE FOUR DEMO-KILLERS (3/4 passing)
+THE FOUR DEMO-KILLERS (2/4 passing)
 
   PASS  Cascade over-retraction
           visible as: One premise is falsified and decisions that share nothing with it lose their label. The graph looks like it is deleting the user's history rather than maintaining it.
           evidence:   0 over-retraction(s) across 2 expected survivor(s); survivor preservation 0.000.
 
-  PASS  False premise resolution
+  FAIL  False premise resolution
           visible as: The presenter says 'nothing contradicted me, I never said the word database, the world moved and the log noticed' — and the log has not noticed. There is no recovery from this one, because it is the claim the whole demo is built around.
-          evidence:   demo1/d1 went unsound as expected. Non-empty OUT-lists in the graph: 9.
+          evidence:   UNTESTED on this corpus, not failed: its falsification step was never applied — the premise it needs was not extracted. The mechanism IS verified elsewhere: demo beat 5 (`l2-unsound`) reports VERIFIED on the seeded fixture pair, and `tests/integration/gate-c-cascade.test.ts` exercises the full cascade. What the benchmark cannot do is rate it.. Non-empty OUT-lists in the graph: 9.
+          on stage:   Fall back to the scripted fixture pair (`fixtures/demo-transcript.txt` then `fixtures/demo-transcript-2.txt`) imported through the UI rather than the corpus, and drive the falsification by hand from the Reasoning view. It is a weaker claim — a human pointing at the premise instead of the transcript implying it — and it must be described as such on stage.
 
   FAIL  Hypotheticals becoming nodes
           visible as: A speculative question appears in the decision graph as a decision. Reading the node aloud is enough to end the demo, and the audience will do it without being invited to.
@@ -354,7 +351,7 @@ check and no argument is the dangerous category — it reads as covered and is c
   pass    [docs/02 §7] Over-retraction — a cascade takes more than it should
            0 over-retraction(s); 2 survivor(s) expected.
   pass    [docs/02 §7] Under-retraction — a cascade stops too early
-           0 expected flip(s) missed.
+           1 expected flip(s) missed.
   pass    [docs/02 §7] Circular justification — a decision supports its own premise
            no node reached a circular label.
   pass    [docs/02 §7] Unfounded belief — a node IN with no path to an asserted premise

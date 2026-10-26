@@ -187,27 +187,52 @@ agents and humans to read**, not a serialisation format — `substrate/portabili
 
 ---
 
-## 10. Nothing has been executed
+## 10. The evaluation has been run once, on a corpus too small to generalise from
 
-**The constraint.** The governing build constraint was no installs and no long-running commands in this
-environment. `npm run eval`, `npm run eval:ablation`, `npm run eval:report` and `npm run demo:verify` have
-all been written and **none has been run**.
+**The constraint.** This section used to read "Nothing has been executed". That was true, and it is now
+false: `npm run eval`, `npm run eval:report`, `npm run eval:ablation` and `npm run demo:verify` have all
+been run, and `docs/generated/EVAL-REPORT.md` holds real output. What replaced the constraint is a worse
+one — the runs are real but the sample is not big enough to carry the weight put on it.
 
-**The consequence.** There are no results. `EVALUATION.md` describes the method and contains no numbers;
-the metrics card in `pitch/` carries placeholders. Gate G6 ("every claim backed by a number or a diagram")
-is **not yet met** — it is met the first time `npm run eval:report` runs and the placeholders are replaced.
+**The consequence.** Three of the thirteen metrics cannot be measured at all on this corpus.
+Premise-invalidation recall (**n=1**), cascade correctness (**n=2**) and survivor preservation (**n=2**)
+are reported as **untestable**, not as zeros and not as passes: the corpus has exactly one falsification
+step, it needs a premise with predicate `scale.max_users` that the extractor never produces, and the two
+expected survivors do not resolve to nodes. A metric over one plant would only ever measure whether a
+mechanism fires; here it cannot even do that.
+Guard precision is 0.000 over **n=0** — it is unmeasured, not bad, because the fixture repository with
+seeded violations that the metric needs was never built. The corpus is **12 transcripts where Phase 7.1
+specified 30**, and only the keyless local engine has ever been measured; the LLM path is reachable and
+unrun.
 
-**What is verified instead.** `scripts/check_structure.py` — 274 source files, imports resolve, named
-exports exist, no cycles, brackets balance, event vocabulary agrees, no forbidden patterns. That is a
-structural guarantee and it is not a correctness guarantee. It cannot see that an identifier is used
-without being declared, which is how ten real compile errors survived Phases 2–6 before a string-aware scan
-found them.
+**What this means for Gate G6.** G6 asks that every claim be backed by a number or a diagram. Design
+claims are backed by diagrams. Quality claims are now backed by numbers that are too small to quote
+without their denominators, so G6 is **partially met and must not be claimed as met**. The report prints
+its own `n` column next to every value for exactly this reason.
 
-**What would close it.** One command, on a machine with dependencies installed:
+**What is verified instead.** `npm run verify` passes end to end — `tsc -b` at 0 errors over `src/`,
+`tests/` and `scripts/`; `biome check` at 0 errors; `scripts/check_structure.py` over 274 files; and 172
+tests across 13 files. `npm run demo:verify` passes all seven automatic checks over three identical dry
+runs. Those are correctness guarantees about the mechanism. They say nothing about how well it extracts
+from a transcript it has not seen, which is what the metrics are for, and the metrics are under-powered.
 
-```
-npm install && npm run eval:report && npm run eval:ablation -- --out ablation-report.md && npm run demo:verify
-```
+---
 
-Until that runs, every claim in this repository about *quality* is a claim about design, and should be
-presented as one.
+## Gate status, as of the wiring pass
+
+`plan/OVERVIEW.md` §5.2 defines the six milestone gates and deliberately records no results — the plan is
+plan-only. This is the single place their current status is stated, and it supersedes the scattered
+"G1–G5 ✅" claims in the phase notes, which were written before anything had been executed.
+
+| Gate | Status | What the evidence actually shows |
+|---|---|---|
+| **G1 — Walking skeleton** | **MET** | Messy transcripts become reviewed, structured, persisted decisions with verbatim snippets. Covered by `tests/integration/full-pipeline.test.ts` and demo beats 1–2. |
+| **G2 — It reasons** | **MET, on fixtures** | Gate (c) fires and cascades: 9 justifications carry a non-empty OUT-list, 12 premise-gate records raised, `tests/integration/gate-c-cascade.test.ts` green, demo beat 5 (`l2-unsound`) VERIFIED. **Not met on the benchmark corpus** — see G6. |
+| **G3 — It answers** | **PARTIALLY MET** | Answers carry citations that resolve within the run and never exceed the 3-search budget (0 of 8 over). **The refusal half fails**: 0 of 2 unanswerable questions refused, and 0 of 8 answers carried the expected verdict. Measured cause in `notes/WIRING-PASS.md` §4 — the unanswerable questions retrieve at 0.348/0.346 while answerable ones retrieve at 0.348/0.350, so no threshold separates them. |
+| **G4 — It verifies** | **MET, structurally** | 93 guards synthesised, determinism 100%, `npm run guards:ci` exits 0 and emits a runnable workflow. **Guard precision is unmeasured (n = 0)** — a transcript corpus contains no repository state, so no violation can be seeded. |
+| **G5 — It closes the loop** | **MET** | Exports carry MUST/MUST NOT, `applies_to`, rejected alternatives and a runnable verify command; round-trip covered by `tests/integration/round-trip.test.ts`. |
+| **G6 — It is defensible** | **NOT MET** | Design claims have diagrams. Quality claims now have real numbers, but three of thirteen metrics are **untestable** on this corpus, guard precision has no denominator, only the keyless engine has ever been measured, and the ablation reports **0 confirmed / 0 falsified / 8 below floor / 5 untestable**. Phase 7.3's "at least one falsified hypothesis" is not satisfied. |
+
+**The honest one-line summary:** the mechanism is built, type-checked, tested and demonstrable; the
+*benchmark* cannot yet defend the quality claims, because twelve transcripts with a hand-labelled ground
+truth written by the extractor's author cannot separate a weak component from an unmeasurable one.

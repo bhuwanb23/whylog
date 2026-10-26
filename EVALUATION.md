@@ -2,17 +2,28 @@
 
 How the system is measured, what the measurements mean, and what they do not establish.
 
-> **No number appears in this document.**
+> **The numbers now exist, and they are not good.**
 >
-> That is deliberate. The suite has been written and has never been executed in this environment: the
-> governing constraint on this build was no installs and no long-running commands, so `npm run eval` has
-> not been run. Every figure below is a placeholder that the generator fills in.
+> This document describes the method. The results live in `docs/generated/EVAL-REPORT.md`, which is
+> written by `npm run eval:report` and is regenerated, never hand-edited. As of the first real run
+> (corpus 0.1.0, engine `local/cue-extractor-v1`, 12 transcripts): decision-extraction F1 **0.226**,
+> false-positive rate **11.8 per 100 decisions** with contradiction precision **1.000**, premise-
+> invalidation recall and cascade correctness both **untestable** on this corpus, guard precision
+> **unmeasured** (n=0), answer-groundedness verdict accuracy **0.000**.
 >
-> Inventing plausible-looking metrics would be the single most damaging thing this document could do. A
-> benchmark whose published numbers were never produced is worse than no benchmark, because it lends the
+> Read those against their denominators before quoting any of them. L2 and L3 are reported as
+> **untestable** rather than as zeros: the corpus's single falsification step needs a premise the
+> extractor never produces, so there is nothing to attribute a flip to. An earlier revision of this
+> document quoted L2 = 1.000, which turned out to be a vacuous pass — the decision was already OUT
+> before the intervention, so a standing breakage was being counted as a detection. Gate G6 is not met
+> by either number.
+>
+> The paragraph below this one used to say "no number appears in this document". That was true and is now
+> stale, so it is replaced rather than left to mislead. What has *not* changed is the reason it was
+> written: inventing plausible-looking metrics is the single most damaging thing this document could do.
+> A benchmark whose published numbers were never produced is worse than no benchmark, because it lends the
 > shape of rigour to a claim that has no content — and it is exactly the failure `docs/07` accuses every
-> surveyed system of.
->
+> surveyed system of. Every figure quoted here came from a run whose command is recorded in the report.>
 > **Run `npm run eval:report`.** It writes `docs/generated/EVAL-REPORT.md`. This document describes the
 > method; that file carries the results. They are kept apart so the method can be read and criticised
 > before anyone trusts a number, and so regenerating results never requires editing prose.
@@ -266,6 +277,6 @@ artefact.
    structural properties that *are* testable are reported in its place and labelled as such.
 4. **The local engine is the only one measured.** Every number is keyless by design. The LLM path's gate
    (b) recall and voting behaviour are unmeasured, not measured-and-good.
-5. **Nothing has been executed.** See the note at the top of this document.
+5. **One run, one engine, twelve transcripts.** The suite has been executed and the numbers are real, but three metrics have a denominator of 1 or 2 and guard precision has none at all. See the note at the top and `LIMITATIONS.md` §10.
 
 Each of these is expanded in `LIMITATIONS.md`.
