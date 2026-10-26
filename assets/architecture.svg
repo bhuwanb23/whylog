@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WhyLog Architecture Diagram - 5 Layer Architecture -->
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #1a1a2e; }
+      .layer { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; fill: #2d3436; }
+      .desc { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 13px; fill: #666666; }
+      .arrow { fill: #e94560; marker-end: url(#arrowhead); }
+      .layer-bg { fill: #f5f5f5; opacity: 0.8; }
+      .node { fill: #4a90e2; stroke: #2c5aa0; stroke-width: 2; rx: 4; ry: 4; }
+      .node-light { fill: #f5f5f5; stroke: #ccc; stroke-width: 1; rx: 3; ry: 3; }
+      .conn { stroke: #888; stroke-width: 1; fill: none; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#e94560">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="500" y="40" text-anchor="middle" class="title">WhyLog — Decision Truth Maintenance System</text>
+  
+  <!-- L5: Presentation -->
+  <g transform="translate(100, 50)">
+    <rect x="0" y="0" width="180" height="80" class="layer-bg" rx="8"/>
+    <text x="90" y="30" text-anchor="middle" class="layer">L5: Presentation</text>
+    <text x="90" y="50" text-anchor="middle" class="desc">Timeline · Ask · Health · Export · Lattice</text>
+  </g>
+  
+  <!-- L4: Synthesis -->
+  <g transform="translate(350, 50)">
+    <rect x="0" y="0" width="180" height="80" class="layer-bg" rx="8"/>
+    <text x="90" y="30" text-anchor="middle" class="layer">L4: Synthesis</text>
+    <text x="90" y="50" text-anchor="middle" class="desc">answer() · guards · revision · export compiler</text>
+  </g>
+  
+  <!-- L3: Retrieval -->
+  <g transform="translate(600, 50)">
+    <rect x="0" y="0" width="180" height="80" class="layer-bg" rx="8"/>
+    <text x="90" y="30" text-anchor="middle" class="layer">L3: Retrieval</text>
+    <text x="90" y="50" text-anchor="middle" class="desc">4-level index · RRF · rerank · evidence contract</text>
+  </g>
+  
+  <!-- L2: Reasoning -->
+  <g transform="translate(850, 50)">
+    <rect x="0" y="0" width="180" height="80" class="layer-bg" rx="8"/>
+    <text x="90" y="30" text-anchor="middle" class="layer">L2: Reasoning</text>
+    <text x="90" y="50" text-anchor="middle" class="desc">JTMS · 3-gates · backtrack · cascade · entrenchment</text>
+  </g>
+  
+  <!-- L1: Extraction -->
+  <g transform="translate(150, 200)">
+    <rect x="0" y="0" width="180" height="80" class="layer-bg" rx="8"/>
+    <text x="90" y="30" text-anchor="middle" class="layer">L1: Extraction</text>
+    <text x="90" y="50" text-anchor="middle" class="desc">transcript → decisions · premises · alternatives · provenance</text>
+  </g>
+  
+  <!-- L0: Substrate -->
+  <g transform="translate(150, 400)">
+    <rect x="0" y="0" width="180" height="80" class="layer-bg" rx="8"/>
+    <text x="90" y="30" text-anchor="middle" class="layer">L0: Substrate</text>
+    <text x="90" y="50" text-anchor="middle" class="desc">event log · hash chain · ontology · persist</text>
+  </g>
+  
+  <!-- AI Seam (vertical arrow) -->
+  <g transform="translate(300, 150)">
+    <path d="M0 40 V560" class="arrow"/>
+    <text x="10" y="30" class="desc">AI Seam: LLM & Local implementations</text>
+  </g>
+  
+  <!-- Connections -->
+  <g fill="none" stroke="#888" stroke-width="2">
+    <!-- L0 → L1 -->
+    <path d="M190 130 C250 120 350 120 400 130"/>
+    <!-- L1 → L2 -->
+    <path d="M330 280 C400 270 500 270 550 280"/>
+    <!-- L2 → L3 -->
+    <path d="M600 130 C650 120 750 120 800 130"/>
+    <!-- L3 → L4 -->
+    <path d="M450 130 C500 120 550 120 600 130"/>
+    <!-- L4 → L5 -->
+    <path d="M300 130 C350 120 400 120 450 130"/>
+  </g>
+  
+  <!-- Invariants note -->
+  <g transform="translate(500, 520)">
+    <rect x="0" y="0" width="250" height="60" class="layer-bg" rx="6"/>
+    <text x="125" y="30" text-anchor="middle" class="smaller">I1-I4: Non-negotiable invariants govern all transformations</text>
+  </g>
+</svg>
