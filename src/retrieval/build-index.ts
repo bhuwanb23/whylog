@@ -47,12 +47,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Actor, DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
-import type { NewEvent } from "@/types/events";
-import type { IndexArtifacts } from "@/types/retrieval";
-import type { GraphState } from "@/substrate/graph-state";
 import type { WhyLogEngine } from "@/ai/types";
+import { nowISO } from "@/lib/format";
+import { hashStable } from "@/lib/hash";
+import type { GraphState } from "@/substrate/graph-state";
 import {
+  type StalenessReport,
+  type StoredIndexBlob,
   assemble,
   emptyBlob,
   estimateBlobBytes,
@@ -61,8 +62,6 @@ import {
   sameSpace,
   saveBlob,
   staleness,
-  type StalenessReport,
-  type StoredIndexBlob,
 } from "@/substrate/index-artifacts";
 import {
   buildPremiseIndex,
@@ -70,8 +69,9 @@ import {
   buildStructuralIndex,
   questionsFor,
 } from "@/substrate/projections/indexes";
-import { hashStable } from "@/lib/hash";
-import { nowISO } from "@/lib/format";
+import type { Actor, DecisionId, EngineId, ISODateString, PremiseId } from "@/types/common";
+import type { NewEvent } from "@/types/events";
+import type { IndexArtifacts } from "@/types/retrieval";
 import { l1Text } from "./index-levels/l1-dense";
 import { l2Text } from "./index-levels/l2-questions";
 
@@ -234,7 +234,10 @@ async function embedChanged(
      * decision edited in a way that does not change its questions does not re-embed them. */
     const questionText = l2Text(questionsFor(decision));
     questions[decision.id] = questionText;
-    if (blob.questions[decision.id] !== questionText || blob.questionVectors[decision.id] === undefined) {
+    if (
+      blob.questions[decision.id] !== questionText ||
+      blob.questionVectors[decision.id] === undefined
+    ) {
       pendingQuestions.push({ id: decision.id, text: questionText });
     }
   }
@@ -453,7 +456,11 @@ export function describeBuild(report: BuildReport): string {
     lines.push("  STALE: " + report.staleness.reason);
   }
   if (!report.saved && report.saveError !== null) {
-    lines.push("  NOT SAVED: " + report.saveError + " — the index works this session and is rebuilt next load.");
+    lines.push(
+      "  NOT SAVED: " +
+        report.saveError +
+        " — the index works this session and is rebuilt next load.",
+    );
   }
 
   return lines.join("\n");

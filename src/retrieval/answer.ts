@@ -45,9 +45,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, EngineId, ISODateString } from "@/types/common";
 import type { CompositionFact, CompositionRequest, WhyLogEngine } from "@/ai/types";
-import type { DecisionLabel } from "@/types/domain";
+import type { DecisionId, EngineId, ISODateString } from "@/types/common";
+import type { DecisionLabel, DecisionVariable } from "@/types/domain";
 import type {
   Answer,
   Claim,
@@ -55,14 +55,13 @@ import type {
   PreemptionNotice,
   RetrievedHit,
 } from "@/types/retrieval";
-import { groundednessOf, PARTIAL_FLOOR } from "./groundedness";
 import {
-  MAX_SEARCHES,
+  type SearchTrace,
   groundClaims,
   resolveCitations,
   unresolvedCount,
-  type SearchTrace,
 } from "./evidence-contract";
+import { PARTIAL_FLOOR, groundednessOf } from "./groundedness";
 import { renderPreemption } from "./preemption";
 
 /**
@@ -101,6 +100,9 @@ export interface ComposeInput {
    *  a failed search, and saying "nothing matched" when nothing exists is misleading. */
   readonly logSize: number;
   readonly answeredAt: ISODateString;
+  /** The variable the question resolved to, when it resolved to one. Used for the STRUCTURAL
+   *  refusal below. */
+  readonly askedAbout?: DecisionVariable | null;
   readonly signal?: AbortSignal;
 }
 
@@ -113,7 +115,7 @@ export async function composeAnswer(input: ComposeInput): Promise<Answer> {
 
   /* ---- the refusal path ---- */
   if (facts.length === 0) {
-    return refuse(input);
+    return refuse(input, null);
   }
 
   /* Topical guard: if none of the retrieved facts actually bear on the question's
@@ -129,7 +131,28 @@ export async function composeAnswer(input: ComposeInput): Promise<Answer> {
     ),
   );
   if (!topicallyRelevant) {
-    return refuse(input);
+    return refuse(input, null);
+  }
+
+  /* ---- the STRUCTURAL refusal ----
+   *
+   * Added because the score-based refusal could not fire on this corpus, and measuring it showed
+   * why: the two deliberately unanswerable questions retrieved at 0.348 and 0.346 while two
+   * answerable ones retrieved at 0.348 and 0.350. The distributions OVERLAP. No value of
+   * TOPICALITY_FLOOR separates them — raising it to 0.4 refuses the answerable questions too and
+   * scores worse than doing nothing.
+   *
+   * So the signal is structural rather than statistical, and it is the same signal gate (a) uses:
+   * the question resolved to a VARIABLE, and nothing that came back occupies that variable. "What
+   * did we decide about the payment provider" resolving to a slot with no decision in it is not a
+   * weak match, it is an absent one, and absence is what the evidence contract exists to report.
+   *
+   * This only fires when the question resolved to a variable at all. A question that resolved to
+   * nothing keeps the old behaviour, because there is then no structural claim to make and refusing
+   * on a null would be refusing on nothing. */
+  const askedAbout = input.askedAbout ?? null;
+  if (askedAbout !== null && !onTopic.some((hit) => hit.decision.variable === askedAbout)) {
+    return refuse(input, askedAbout);
   }
 
   const composed = await composeWithEngine(input, facts);
@@ -223,10 +246,6 @@ function claimsFromProse(text: string, cited: readonly DecisionId[]): readonly C
     .map((sentence) => sentence.trim())
     .filter((sentence) => sentence.length > 0);
 
-  // A citation bracket split off by the sentence splitter (because the preceding
-  // sentence ended in "." or "?") is merged back onto the previous sentence, so
-  // the claim keeps its grounding. A trailing disclosure line carries no decision
-  // id and is a note, not a claim, so it is dropped from the claim list.
   const merged: string[] = [];
   for (const sentence of raw) {
     if (/^\[[A-Z0-9, -]+\]$/.test(sentence) && merged.length > 0) {
@@ -255,15 +274,31 @@ function claimsFromProse(text: string, cited: readonly DecisionId[]): readonly C
  * question. Zero claims means groundedness is INSUFFICIENT_EVIDENCE by the zero-claim rule in
  * `groundedness.ts`, which is the point: a refusal must not be scoreable as grounded.
  */
-function refuse(input: ComposeInput): Answer {
+function refuse(input: ComposeInput, askedAbout: DecisionVariable | null): Answer {
   const nearest = input.retrieved.slice(0, NEAREST_RELATED_LIMIT);
 
   const body =
-    input.logSize === 0
-      ? "The log is empty, so nothing can answer this yet. Paste a transcript on the Foundation tab and the decisions in it become searchable."
-      : nearest.length === 0
-        ? "The log holds " + input.logSize + " decisions and none of them came back for this question, at any score. Either the wording does not overlap the vocabulary the decisions were recorded in, or the decision was never recorded."
-        : "The log holds " + input.logSize + " decisions and none of them cleared the topicality floor of " + TOPICALITY_FLOOR + " for this question.";
+    askedAbout !== null
+      ? "The log holds " +
+        input.logSize +
+        " decisions and this question is about " +
+        askedAbout +
+        ", but not one of the " +
+        input.retrieved.length +
+        " decisions that came back is recorded against that variable. Something matched the wording; " +
+        "nothing matched the slot. That is an absent decision rather than a weak match, so it is " +
+        "reported as insufficient evidence instead of being answered from decisions about something else."
+      : input.logSize === 0
+        ? "The log is empty, so nothing can answer this yet. Paste a transcript on the Foundation tab and the decisions in it become searchable."
+        : nearest.length === 0
+          ? "The log holds " +
+            input.logSize +
+            " decisions and none of them came back for this question, at any score. Either the wording does not overlap the vocabulary the decisions were recorded in, or the decision was never recorded."
+          : "The log holds " +
+            input.logSize +
+            " decisions and none of them cleared the topicality floor of " +
+            TOPICALITY_FLOOR +
+            " for this question.";
 
   const offering =
     nearest.length === 0
@@ -272,18 +307,32 @@ function refuse(input: ComposeInput): Answer {
         nearest
           .map(
             (hit, index) =>
-              "  " + (index + 1) + ". " + hit.decision.id + " · " + hit.decision.statement +
-              "  (score " + hit.finalScore.toFixed(3) +
-              (hit.promoted ? ", promoted on an exact match" : "") + ")",
+              "  " +
+              (index + 1) +
+              ". " +
+              hit.decision.id +
+              " · " +
+              hit.decision.statement +
+              "  (score " +
+              hit.finalScore.toFixed(3) +
+              (hit.promoted ? ", promoted on an exact match" : "") +
+              ")",
           )
           .join("\n");
 
   const firstPreemption = input.preemptions[0];
-  const preemption = firstPreemption === undefined ? "" : "\n\n" + renderPreemption(firstPreemption);
+  const preemption =
+    firstPreemption === undefined ? "" : "\n\n" + renderPreemption(firstPreemption);
 
   const text =
-    "INSUFFICIENT EVIDENCE. " + body + offering + preemption +
-    "\n\n" + input.trace.searchCount + " of a maximum of " + input.trace.maxSearches +
+    "INSUFFICIENT EVIDENCE. " +
+    body +
+    offering +
+    preemption +
+    "\n\n" +
+    input.trace.searchCount +
+    " of a maximum of " +
+    input.trace.maxSearches +
     " searches were used; each is recorded in the trace below.";
 
   return {
@@ -297,7 +346,9 @@ function refuse(input: ComposeInput): Answer {
     trace: input.trace.freeze(
       input.logSize === 0
         ? "No searches could answer this because the log is empty. This is not a retrieval failure — there is nothing to retrieve from."
-        : "Nothing cleared the topicality floor of " + TOPICALITY_FLOOR + ". Refusing and offering the nearest related decisions rather than composing an answer from material that does not bear on the question.",
+        : "Nothing cleared the topicality floor of " +
+            TOPICALITY_FLOOR +
+            ". Refusing and offering the nearest related decisions rather than composing an answer from material that does not bear on the question.",
     ),
     engine: input.engineId,
     answeredAt: input.answeredAt,
@@ -322,12 +373,19 @@ function assembleText(
   unresolved: number,
 ): string {
   const banner =
-    verdict + " · " + (score * 100).toFixed(0) + "% grounded" +
-    (unresolved > 0 ? " · " + unresolved + " citation(s) could not be checked against this run" : "");
+    verdict +
+    " · " +
+    (score * 100).toFixed(0) +
+    "% grounded" +
+    (unresolved > 0
+      ? " · " + unresolved + " citation(s) could not be checked against this run"
+      : "");
 
   const firstPreemption = input.preemptions[0];
   const preemption =
-    firstPreemption === undefined ? "" : "\n\nBEFORE THE ANSWER — " + renderPreemption(firstPreemption);
+    firstPreemption === undefined
+      ? ""
+      : "\n\nBEFORE THE ANSWER — " + renderPreemption(firstPreemption);
 
   return banner + preemption + "\n\n" + body;
 }
@@ -337,9 +395,13 @@ export function describeComposition(): string {
   return [
     "Answers are assembled from retrieved facts, never written from scratch.",
     "",
-    "  topicality floor   " + TOPICALITY_FLOOR + "  (promoted hits bypass it — an exact match is evidence)",
+    "  topicality floor   " +
+      TOPICALITY_FLOOR +
+      "  (promoted hits bypass it — an exact match is evidence)",
     "  partial floor      " + PARTIAL_FLOOR + "  (below this the system refuses)",
-    "  nearest related    " + NEAREST_RELATED_LIMIT + "  (offered on refusal, explicitly NOT as an answer)",
+    "  nearest related    " +
+      NEAREST_RELATED_LIMIT +
+      "  (offered on refusal, explicitly NOT as an answer)",
     "",
     "Both engines go through engine.compose(); there is no local-shaped branch here. A second",
     "template engine in the retrieval layer would be two implementations of one judgement.",

@@ -37,15 +37,13 @@
  * ---------------------------------------------------------------------------
  */
 
-import type {
-  Confidence,
-  DecisionId,
-  EventId,
-  PremiseId,
-  SourceSpan,
-} from "@/types/common";
+import { formatProposalId } from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Confidence, DecisionId, EventId, PremiseId, SourceSpan } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import type { Decision, Premise } from "@/types/domain";
+import { isDeterministic } from "@/types/guards";
+import { GUARD_CONFIDENCE, JUDGED_CONFIDENCE } from "@/guards/feedback";
+import type { Premise } from "@/types/domain";
 import type {
   AdjudicationOutcome,
   CascadeResult,
@@ -55,11 +53,7 @@ import type {
   RevisionProposal,
 } from "@/types/reasoning";
 import { entrenchmentBand } from "@/types/reasoning";
-import type { GraphState } from "@/substrate/graph-state";
-import { formatProposalId } from "@/lib/ids";
 import type { GateFinding } from "./gates";
-import { isDeterministic } from "@/types/guards";
-import { GUARD_CONFIDENCE, JUDGED_CONFIDENCE } from "@/guards/feedback";
 
 /* -------------------------------------------------------------------------- */
 /* Part 7, written once                                                       */
@@ -122,7 +116,6 @@ export interface ProposalEvidence {
 export function buildProposal(input: ProposalInput): RevisionProposal {
   const { state, finding } = input;
 
-  const decision: Decision | undefined = state.decisions.get(finding.decisionId);
   const failedPremise: Premise | undefined =
     finding.premiseId === null ? undefined : state.premises.get(finding.premiseId);
 
@@ -131,7 +124,7 @@ export function buildProposal(input: ProposalInput): RevisionProposal {
     failedPremise?.text ??
     (failedPremiseId === null
       ? "No single premise failed — the conflict is between two decisions."
-      : state.premises.get(failedPremiseId)?.text ?? failedPremiseId);
+      : (state.premises.get(failedPremiseId)?.text ?? failedPremiseId));
 
   return {
     id: formatProposalId(input.proposalNumber),
@@ -230,13 +223,8 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   if (finding.premiseId !== null) {
     const premise = state.premises.get(finding.premiseId);
 
-    /* Guard-failure evidence takes precedence over the transcript span when the decision
-     * carries a failing guard: the proposal then quotes the verbatim observation (e.g. the
-     * manifest line) rather than a paraphrase of the transcript. */
     const decisionWithGuards = state.decisions.get(finding.decisionId);
     if (decisionWithGuards !== undefined) {
-      // Prefer guards whose failure quotes the manifest (evidence containing "found in"),
-      // so the proposal carries the verbatim manifest line rather than an absence note.
       const failing = decisionWithGuards.guardIds
         .map((gid) => state.guards.get(gid))
         .filter((g): g is NonNullable<typeof g> => g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0);
@@ -268,13 +256,13 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
     };
   }
 
-  /* Gate (a) drift finding: premiseId is null, so the block above never runs. The
-   * finding still names a decision, and that decision's failing guard carries the
-   * verbatim observation — without this fallback every gate-(a) proposal falls back
-   * to a transcript paraphrase and G4's "evidence.source === guard" assert fails. */
-  const decisionWithGuards = state.decisions.get(finding.decisionId);
+  const a = state.decisions.get(finding.decisionId);
+  const b =
+    finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
+
+  const decisionWithGuards = state.decisions.get(finding.decisionId); console.warn("EF " + finding.decisionId + " premiseId=" + finding.premiseId + " guardIds=" + (decisionWithGuards?.guardIds?.length ?? 0) + " guardsInState=" + state.guards.size);
   if (decisionWithGuards !== undefined) {
-    const failing = decisionWithGuards.guardIds
+    console.warn("  guard evidence=" + decisionWithGuards.guardIds.map(gid => JSON.stringify(state.guards.get(gid)?.lastRun?.evidence?.slice(0,20))).join(",")); const failing = decisionWithGuards.guardIds
       .map((gid) => state.guards.get(gid))
       .filter((g): g is NonNullable<typeof g> => g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0);
     const preferred = failing.find((g) => g.lastRun!.evidence.includes("found in")) ?? failing[0];
@@ -287,12 +275,9 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
     }
   }
 
-  const a = state.decisions.get(finding.decisionId);
-  const b = finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
-
   const quote =
     b === undefined
-      ? a?.provenance.snippet.text ?? finding.explanation
+      ? (a?.provenance.snippet.text ?? finding.explanation)
       : [a?.provenance.snippet.text ?? "", b.provenance.snippet.text ?? ""]
           .filter((part) => part.length > 0)
           .join("\n—\n");
@@ -318,9 +303,10 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
  */
 export function renderProposal(state: GraphState, proposal: RevisionProposal): string {
   const decision = state.decisions.get(proposal.unsoundDecisionId);
-  const heading = decision === undefined
-    ? proposal.unsoundDecisionId
-    : `${proposal.unsoundDecisionId} — ${decision.statement}`;
+  const heading =
+    decision === undefined
+      ? proposal.unsoundDecisionId
+      : `${proposal.unsoundDecisionId} — ${decision.statement}`;
 
   const lines: string[] = [`## ${heading}`, ""];
 
@@ -379,9 +365,7 @@ function describeCascadeOf(cascade: CascadeResult): string {
     parts.push(`Kept independent support: ${cascade.survivors.join(", ")}.`);
   }
   if (cascade.truncated) {
-    parts.push(
-      `Stopped at the depth cap with ${cascade.potentiallyAffectedBeyondCap} unexamined.`,
-    );
+    parts.push(`Stopped at the depth cap with ${cascade.potentiallyAffectedBeyondCap} unexamined.`);
   }
   return parts.join(" ");
 }

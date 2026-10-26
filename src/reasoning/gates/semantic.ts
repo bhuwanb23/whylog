@@ -46,16 +46,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, EngineId, PremiseId } from "@/types/common";
-import type { Decision, Premise } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import type { ClassificationResult, ContradictionVerdict } from "@/types/retrieval";
 import type {
   ClassificationRequest,
   DecisionSnapshot,
   PremiseSnapshot,
   WhyLogEngine,
 } from "@/ai/types";
+import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, EngineId, PremiseId } from "@/types/common";
+import type { Decision, Premise } from "@/types/domain";
+import type { ClassificationResult, ContradictionVerdict } from "@/types/retrieval";
 
 export interface SemanticHit {
   readonly gate: "semantic";
@@ -111,12 +111,20 @@ export async function detectSemantic(
     const request: ClassificationRequest = {
       decisionA: snapshotOf(a),
       decisionB: snapshotOf(b),
-      ...(pair.sharedPremises.length === 0 ? {} : { sharedPremises: pair.sharedPremises.map((id) => premiseSnapshot(state, id)).filter(notNull) }),
+      ...(pair.sharedPremises.length === 0
+        ? {}
+        : {
+            sharedPremises: pair.sharedPremises
+              .map((id) => premiseSnapshot(state, id))
+              .filter(notNull),
+          }),
       // Gate (a)'s answer is passed in so the semantic classifier cannot contradict
       // a table lookup without saying so. A model that overrules a deterministic
       // antonym match is a model that has found a bug in the ontology, and that
       // should be loud rather than quiet.
-      ...(pair.structuralVerdict === undefined ? {} : { structuralVerdict: pair.structuralVerdict }),
+      ...(pair.structuralVerdict === undefined
+        ? {}
+        : { structuralVerdict: pair.structuralVerdict }),
     };
 
     const result = await engine.classify(request);

@@ -51,9 +51,15 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { WhyLogEngine } from "@/ai/types";
+import { nowISO } from "@/lib/format";
+import { canonicalValueOf } from "@/ontology";
+import { VARIABLE_ORDER, variableKeywords, variableMeta } from "@/ontology/data/variables";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
+import { queryTerms, stalenessNotice, usableLevels } from "@/substrate/projections/indexes";
 import type { DecisionId, EngineId, PremiseId } from "@/types/common";
 import type { DecisionLabel, DecisionVariable } from "@/types/domain";
-import type { WhyLogEngine } from "@/ai/types";
 import type {
   Answer,
   FusedHit,
@@ -65,23 +71,16 @@ import type {
   RetrievedHit,
 } from "@/types/retrieval";
 import { DEFAULT_QUERY_OPTIONS } from "@/types/retrieval";
-import type { GraphState } from "@/substrate/graph-state";
-import { queryTerms, usableLevels, stalenessNotice } from "@/substrate/projections/indexes";
-import { canonicalValueOf } from "@/ontology";
-import { variableKeywords, variableMeta, VARIABLE_ORDER } from "@/ontology/data/variables";
-import { foldKey } from "@/ontology/canonicalize";
-import { nowISO } from "@/lib/format";
-import { searchL1, type DenseQuery } from "./index-levels/l1-dense";
+import { TOPICALITY_FLOOR, composeAnswer } from "./answer";
+import { SearchTrace, searchStep } from "./evidence-contract";
+import { type DenseQuery, searchL1 } from "./index-levels/l1-dense";
 import { searchL2 } from "./index-levels/l2-questions";
 import { searchL3 } from "./index-levels/l3-sparse";
-import { searchL4, type StructuralMatch } from "./index-levels/l4-structural";
-import { expandBySharedPremise, searchL5, type PremiseMatch } from "./index-levels/l5-premises";
-import { fuse, rank, RRF_K, type RankedList } from "./rrf";
-import { rerank, type RerankCandidate } from "./rerank";
-import { SearchTrace, searchStep } from "./evidence-contract";
+import { type StructuralMatch, searchL4 } from "./index-levels/l4-structural";
+import { type PremiseMatch, expandBySharedPremise, searchL5 } from "./index-levels/l5-premises";
 import { findPreemptions } from "./preemption";
-import { composeAnswer, TOPICALITY_FLOOR } from "./answer";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { type RerankCandidate, type RerankResult, rerank } from "./rerank";
+import { RRF_K, type RankedList, fuse, rank } from "./rrf";
 
 export { RRF_K } from "./rrf";
 export { TOPICALITY_FLOOR } from "./answer";
@@ -150,7 +149,8 @@ export function understandQuery(state: GraphState, question: string): Understood
     why.push(premiseIds.length + " premise(s) share vocabulary with the question");
   }
 
-  if (variable === null) why.push("no known variable or value appears in the question, so L4 cannot fire");
+  if (variable === null)
+    why.push("no known variable or value appears in the question, so L4 cannot fire");
 
   return {
     question,
@@ -206,6 +206,9 @@ export interface RetrieveInput {
   readonly engine: WhyLogEngine;
   readonly question: string;
   readonly options?: Partial<QueryOptions> | undefined;
+  /** Ablation: skip the second stage, so the raw RRF fusion order IS the answer order.
+   *  Absent means rerank, which is production behaviour. */
+  readonly skipRerank?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -230,7 +233,15 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
   const started = Date.now();
   const options: ResolvedQueryOptions = { ...DEFAULT_QUERY_OPTIONS, ...(input.options ?? {}) };
   const understood = understandQuery(input.state, input.question);
-  const levels = usableLevels(input.state);
+  /* `options.levels` restricts the usable set; it never adds to it. Before the ablation was
+   * wired this field was declared on QueryOptions and read by nobody, so asking for a subset
+   * of levels silently returned all of them. A level that is unusable for want of data stays
+   * unusable — restricting cannot conjure an index that was never built. */
+  const usable = usableLevels(input.state);
+  const levels =
+    options.levels === undefined
+      ? usable
+      : usable.filter((level) => options.levels?.includes(level) === true);
   const lists: RankedList[] = [];
   const perLevelScores = new Map<DecisionId, Map<IndexLevel, number>>();
 
@@ -260,8 +271,11 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
 
   /* ---- L4 + L5: exact evidence, promoted rather than fused. ---- */
   const structural = searchL4(input.artifacts, understood.variable, understood.value);
-  const premiseMatches = searchL5(input.artifacts, understood.premiseIds, "query-named", (id) =>
-    input.state.premises.get(id)?.text ?? id,
+  const premiseMatches = searchL5(
+    input.artifacts,
+    understood.premiseIds,
+    "query-named",
+    (id) => input.state.premises.get(id)?.text ?? id,
   );
 
   const l4Ranked = asRanked("L4", structural);
@@ -307,18 +321,31 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
   }
 
   /* ---- rerank: second stage, against the ORIGINAL query ---- */
-  const ranked = await rerank({
-    query: understood.question,
-    candidates,
-    artifacts: input.artifacts,
-    state: input.state,
-    engine: input.engine,
-    queryTerms: understood.terms,
-    queryPremises: understood.premiseIds,
-    topK: options.topK,
-    now: Date.now(),
-    ...(input.signal === undefined ? {} : { signal: input.signal }),
-  });
+  const ranked: RerankResult =
+    input.skipRerank === true
+      ? {
+          /* The candidate list is already in fusion order, with promoted exact matches
+           * appended — which is precisely "raw RRF order" as the answer order. `scored` is
+           * empty rather than fabricated: a run with the reranker off has no component
+           * scores to report, and inventing them would be inventing an explanation. */
+          order: candidates.map((candidate) => candidate.decisionId).slice(0, options.topK),
+          method: "none",
+          scored: [],
+          durationMs: 0,
+          engine: "reranker-disabled",
+        }
+      : await rerank({
+          query: understood.question,
+          candidates,
+          artifacts: input.artifacts,
+          state: input.state,
+          engine: input.engine,
+          queryTerms: understood.terms,
+          queryPremises: understood.premiseIds,
+          topK: options.topK,
+          now: Date.now(),
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
+        });
 
   const scoredBy = new Map(ranked.scored.map((entry) => [entry.candidate.decisionId, entry]));
   const rrfBy = new Map(fused.map((hit) => [hit.decisionId, hit]));
@@ -327,7 +354,11 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
   for (const [index, decisionId] of ranked.order.entries()) {
     if (!options.includeSuperseded) {
       const decision = input.state.decisions.get(decisionId);
-      if (decision !== undefined && (decision.status === "superseded" || decision.status === "archived")) continue;
+      if (
+        decision !== undefined &&
+        (decision.status === "superseded" || decision.status === "archived")
+      )
+        continue;
     }
 
     const decision = input.state.decisions.get(decisionId);
@@ -342,7 +373,10 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
       finalScore: scored?.total ?? fusedHit?.rrf ?? 0,
       rrf: fusedHit?.rrf ?? 0,
       ...(scored === undefined ? {} : { rerankScore: scored.total }),
-      matchedOn: fusedHit === undefined ? promotedLevelsOf(structural, premiseMatches, decisionId) : [...fusedHit.contributedBy],
+      matchedOn:
+        fusedHit === undefined
+          ? promotedLevelsOf(structural, premiseMatches, decisionId)
+          : [...fusedHit.contributedBy],
       promoted: promotedIds.has(decisionId),
     });
 
@@ -375,11 +409,18 @@ function record(
   }
 }
 
-function scoreOf(scores: Map<DecisionId, Map<IndexLevel, number>>, id: DecisionId, level: IndexLevel): number {
+function scoreOf(
+  scores: Map<DecisionId, Map<IndexLevel, number>>,
+  id: DecisionId,
+  level: IndexLevel,
+): number {
   return scores.get(id)?.get(level) ?? 0;
 }
 
-function denseScoreOf(scores: Map<DecisionId, Map<IndexLevel, number>>, id: DecisionId): number | null {
+function denseScoreOf(
+  scores: Map<DecisionId, Map<IndexLevel, number>>,
+  id: DecisionId,
+): number | null {
   const entry = scores.get(id);
   if (entry === undefined) return null;
   const l1 = entry.get("L1");
@@ -399,7 +440,10 @@ function rankOf(lists: readonly RankedList[], level: IndexLevel, id: DecisionId)
 /** L4/L5 matches carry no score of their own — an exact match is not a graded one. They enter
  *  the fusion at rank order of specificity (value matches before variable matches, which the
  *  search functions already produce) and are promoted regardless of score. */
-function asRanked(level: IndexLevel, matches: readonly { decisionId: DecisionId }[]): readonly RankedHit[] {
+function asRanked(
+  level: IndexLevel,
+  matches: readonly { decisionId: DecisionId }[],
+): readonly RankedHit[] {
   return rank(
     level,
     matches.map((match, index) => ({ id: match.decisionId, score: matches.length - index })),
@@ -448,7 +492,6 @@ export interface AskInput extends RetrieveInput {
  */
 export async function ask(input: AskInput): Promise<Answer> {
   const trace = new SearchTrace(input.maxSearches);
-  const options: ResolvedQueryOptions = { ...DEFAULT_QUERY_OPTIONS, ...(input.options ?? {}) };
   const answeredAt = nowISO();
 
   /* ---- search 1 ---- */
@@ -515,7 +558,12 @@ export async function ask(input: AskInput): Promise<Answer> {
   }
 
   /* ---- pre-emption: checked on every ask, not only on thin ones ---- */
-  const preemptions = findPreemptions(input.state, input.labels, input.question, first.understood.terms);
+  const preemptions = findPreemptions(
+    input.state,
+    input.labels,
+    input.question,
+    first.understood.terms,
+  );
 
   /* ---- compose under the contract ---- */
   const labels = new Map<DecisionId, DecisionLabel>();
@@ -539,6 +587,7 @@ export async function ask(input: AskInput): Promise<Answer> {
     preemptions,
     logSize: input.state.decisions.size,
     answeredAt,
+    askedAbout: first.understood.variable,
     ...(input.signal === undefined ? {} : { signal: input.signal }),
   });
 }
@@ -655,8 +704,11 @@ function premiseLines(
 
 export function describeRetrieval(result: RetrievalResult): string {
   const lines = [
-    "Levels available: " + result.levels.join(", ") +
-      (result.levelsUnavailable.length > 0 ? "  (unavailable: " + result.levelsUnavailable.join(", ") + ")" : ""),
+    "Levels available: " +
+      result.levels.join(", ") +
+      (result.levelsUnavailable.length > 0
+        ? "  (unavailable: " + result.levelsUnavailable.join(", ") + ")"
+        : ""),
     "Query read as: " + result.understood.explanation,
     "Fusion: RRF at k = " + RRF_K + " — ranks only, so no score calibration between levels.",
     "Rerank: " + result.method + ", scored against the ORIGINAL query.",
@@ -703,7 +755,14 @@ export {
   describeContract,
   resolveCitations,
 } from "./evidence-contract";
-export { classifyPair, classifyPairs, isClassifiable, describeRules, describeVerdict as describeContradictionVerdict, requestFor } from "./contradiction";
+export {
+  classifyPair,
+  classifyPairs,
+  isClassifiable,
+  describeRules,
+  describeVerdict as describeContradictionVerdict,
+  requestFor,
+} from "./contradiction";
 export { findPreemptions, renderPreemption, countPreemptions } from "./preemption";
 export { expandCitation, expandAll, renderExpansion, renderInline } from "./citations";
 export { buildIndex, describeBuild, type BuildReport } from "./build-index";

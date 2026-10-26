@@ -76,7 +76,7 @@ export function groundednessOf(
       notes: ["The answer makes no claims at all, so there is nothing to ground."],
       assessment:
         "No claims were made. 0/0 is not treated as perfectly grounded — that would make " +
-        "\"say nothing\" the optimal answer, and an empty answer reported as GROUNDED is the " +
+        '"say nothing" the optimal answer, and an empty answer reported as GROUNDED is the ' +
         "single most misleading thing this layer could produce.",
     };
   }
@@ -102,7 +102,15 @@ export function groundednessOf(
           claim.citations.join(", ") +
           ", none of which resolved to a decision retrieved in this run";
 
-    notes.push("Claim " + (index + 1) + ' — "' + truncate(claim.text) + '" — is not grounded because ' + why + ".");
+    notes.push(
+      "Claim " +
+        (index + 1) +
+        ' — "' +
+        truncate(claim.text) +
+        '" — is not grounded because ' +
+        why +
+        ".",
+    );
   }
 
   const score = grounded / claims.length;
@@ -134,7 +142,10 @@ function assess(
 
   switch (verdict) {
     case "GROUNDED":
-      return fraction + " resolve to decisions retrieved in this run. Every claim in this answer points at something the log contains.";
+      return (
+        fraction +
+        " resolve to decisions retrieved in this run. Every claim in this answer points at something the log contains."
+      );
     case "PARTIAL":
       return (
         fraction +
@@ -153,16 +164,24 @@ function assess(
 export function describeVerdict(verdict: GroundednessVerdict): string {
   switch (verdict) {
     case "GROUNDED":
-      return "GROUNDED (>= " + (GROUNDED_FLOOR * 100).toFixed(0) + "%) — every claim maps to at least one retrieved decision and all citations resolve.";
+      return (
+        "GROUNDED (>= " +
+        (GROUNDED_FLOOR * 100).toFixed(0) +
+        "%) — every claim maps to at least one retrieved decision and all citations resolve."
+      );
     case "PARTIAL":
       return (
-        "PARTIAL (" + (PARTIAL_FLOOR * 100).toFixed(0) + "-" + (GROUNDED_FLOOR * 100).toFixed(0) +
+        "PARTIAL (" +
+        (PARTIAL_FLOOR * 100).toFixed(0) +
+        "-" +
+        (GROUNDED_FLOOR * 100).toFixed(0) +
         "%) — some claims grounded, some inferred. The inferred part is marked, because a reader cannot tell which claim was invented unless the answer says."
       );
     case "INSUFFICIENT_EVIDENCE":
       return (
-        "INSUFFICIENT_EVIDENCE (< " + (PARTIAL_FLOOR * 100).toFixed(0) +
-        "%) — refuse, state what is missing, then offer the nearest related decisions. \"I don\'t know\" is a first-class answer here, not a failure mode."
+        "INSUFFICIENT_EVIDENCE (< " +
+        (PARTIAL_FLOOR * 100).toFixed(0) +
+        '%) — refuse, state what is missing, then offer the nearest related decisions. "I don\'t know" is a first-class answer here, not a failure mode.'
       );
   }
 }
@@ -174,8 +193,14 @@ export function describeThresholds(): string {
     "Groundedness = |claims with >= 1 resolving citation| / |total claims|.",
     "",
     "  >= " + GROUNDED_FLOOR + "        GROUNDED",
-    "  " + PARTIAL_FLOOR + " .. " + GROUNDED_FLOOR + "    PARTIAL   (inferred claims are marked by name)",
-    "  <  " + PARTIAL_FLOOR + "        INSUFFICIENT_EVIDENCE   (refuse, then offer nearest related)",
+    "  " +
+      PARTIAL_FLOOR +
+      " .. " +
+      GROUNDED_FLOOR +
+      "    PARTIAL   (inferred claims are marked by name)",
+    "  <  " +
+      PARTIAL_FLOOR +
+      "        INSUFFICIENT_EVIDENCE   (refuse, then offer nearest related)",
     "",
     "Zero claims is INSUFFICIENT_EVIDENCE, never GROUNDED: 0/0 is not 1.",
     "A claim is grounded iff at least one of ITS OWN citations resolved in this run.",

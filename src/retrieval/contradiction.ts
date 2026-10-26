@@ -63,14 +63,14 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, EngineId } from "@/types/common";
-import { asConfidence } from "@/types/common";
-import type { DecisionSnapshot, ClassificationRequest } from "@/ai/types";
-import type { DecisionStatus } from "@/types/domain";
-import type { ClassificationResult, ContradictionVerdict } from "@/types/retrieval";
+import type { ClassificationRequest, DecisionSnapshot } from "@/ai/types";
 import { areAntonyms, canonicalValueOf } from "@/ontology";
 import { foldKey } from "@/ontology/canonicalize";
-import { negationBetween, type NegationScopeVerdict } from "./negation";
+import type { DecisionId, EngineId } from "@/types/common";
+import { asConfidence } from "@/types/common";
+import type { DecisionStatus } from "@/types/domain";
+import type { ClassificationResult, ContradictionVerdict } from "@/types/retrieval";
+import { type NegationScopeVerdict, negationBetween } from "./negation";
 
 /** Which rule fired. Carried on every verdict because the explanation has to name the rule
  *  that decided it — a verdict without its rule is an assertion, not a diagnosis. */
@@ -114,8 +114,14 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
         verdict: "contradiction",
         rule: "antonym-pair",
         explanation:
-          "Both settle " + a.variable + ', one on "' + canonicalA + '" and one on "' + canonicalB +
-          '", and the ontology declares those mutually exclusive. ' + (antonym.why ?? ""),
+          "Both settle " +
+          a.variable +
+          ', one on "' +
+          canonicalA +
+          '" and one on "' +
+          canonicalB +
+          '", and the ontology declares those mutually exclusive. ' +
+          (antonym.why ?? ""),
         confidence: 0.95,
         negation: null,
       };
@@ -135,8 +141,14 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
         verdict: "contradiction",
         rule: "negation-scope",
         explanation:
-          'Both settle ' + a.variable + ' on "' + canonicalA + '", but one of them negates it within scope ("' +
-          negation.cue + '"). ' + negation.reason +
+          "Both settle " +
+          a.variable +
+          ' on "' +
+          canonicalA +
+          '", but one of them negates it within scope ("' +
+          negation.cue +
+          '"). ' +
+          negation.reason +
           " The choice agrees and the reasoning does not, which is a contradiction in the justification rather than in the decision.",
         confidence: 0.6,
         negation,
@@ -146,7 +158,7 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
     /* ---- rule 4: same variable, same value, new or changed rationale ---- */
     const rationaleA = (a.rationale ?? "").trim();
     const rationaleB = (b.rationale ?? "").trim();
-    const oneAdds = (rationaleA.length > 0) !== (rationaleB.length > 0);
+    const oneAdds = rationaleA.length > 0 !== rationaleB.length > 0;
     const differs =
       rationaleA.length > 0 && rationaleB.length > 0 && foldKey(rationaleA) !== foldKey(rationaleB);
 
@@ -155,7 +167,11 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
         verdict: "refinement",
         rule: "new-rationale",
         explanation:
-          'Both settle ' + a.variable + ' on "' + canonicalA + '" and agree. ' +
+          "Both settle " +
+          a.variable +
+          ' on "' +
+          canonicalA +
+          '" and agree. ' +
           (oneAdds
             ? "One records a reason the other does not, so this is an elaboration — merge them so the reason survives."
             : "They give different reasons for the same choice. Both may be true; merge rather than supersede."),
@@ -168,7 +184,11 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
       verdict: "neutral",
       rule: "no-rule",
       explanation:
-        'Both settle ' + a.variable + ' on "' + canonicalA + '" with no distinguishing rationale. Nothing to revise — this looks like one decision recorded twice.',
+        "Both settle " +
+        a.variable +
+        ' on "' +
+        canonicalA +
+        '" with no distinguishing rationale. Nothing to revise — this looks like one decision recorded twice.',
       confidence: 0.45,
       negation: null,
     };
@@ -183,8 +203,20 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
       verdict: "reversal",
       rule: "differing-value",
       explanation:
-        "Both settle " + a.variable + ', one on "' + older.value + '" (' + older.id + ", valid from " +
-        older.validFrom + ') and one on "' + newer.value + '" (' + newer.id + ", valid from " + newer.validFrom +
+        "Both settle " +
+        a.variable +
+        ', one on "' +
+        older.value +
+        '" (' +
+        older.id +
+        ", valid from " +
+        older.validFrom +
+        ') and one on "' +
+        newer.value +
+        '" (' +
+        newer.id +
+        ", valid from " +
+        newer.validFrom +
         "). The values are not a declared antonym pair, so this reads as a change of direction rather than a contradiction: the earlier decision was right under the conditions it was made in, and the later one replaces it.",
       confidence: 0.7,
       negation: null,
@@ -196,7 +228,11 @@ export function classifyPair(a: DecisionSnapshot, b: DecisionSnapshot): PairVerd
     verdict: "neutral",
     rule: "no-rule",
     explanation:
-      "Different variables (" + a.variable + " and " + b.variable + ") and no negation reaching a shared value. Topically related at most; logically compatible.",
+      "Different variables (" +
+      a.variable +
+      " and " +
+      b.variable +
+      ") and no negation reaching a shared value. Topically related at most; logically compatible.",
     confidence: 0.4,
     negation: null,
   };
@@ -294,7 +330,8 @@ export function classifyPairs(
   const out: ClassificationResult[] = [];
 
   for (const pair of pairs) {
-    const key = pair.a.id < pair.b.id ? pair.a.id + "\u0000" + pair.b.id : pair.b.id + "\u0000" + pair.a.id;
+    const key =
+      pair.a.id < pair.b.id ? pair.a.id + "\u0000" + pair.b.id : pair.b.id + "\u0000" + pair.a.id;
     if (seen.has(key)) continue;
     seen.add(key);
 

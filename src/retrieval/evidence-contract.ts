@@ -179,7 +179,10 @@ export function resolveCitations(
 
 /** A claim is only grounded if it cites something that resolved. Recomputed here rather than
  *  trusted from the composer, because the composer does not know what the run retrieved. */
-export function groundClaims(claims: readonly Claim[], resolving: ReadonlySet<DecisionId>): readonly Claim[] {
+export function groundClaims(
+  claims: readonly Claim[],
+  resolving: ReadonlySet<DecisionId>,
+): readonly Claim[] {
   return claims.map((claim) => ({
     text: claim.text,
     citations: claim.citations,
@@ -237,16 +240,27 @@ export function assessSufficiency(
 
   switch (reason) {
     case "STOPPED_SUFFICIENT":
-      return budget + ", " + score + ". Stopped because enough evidence was found, not because the budget ran out — a further search would have added candidates to rank, not changed the answer.";
+      return (
+        budget +
+        ", " +
+        score +
+        ". Stopped because enough evidence was found, not because the budget ran out — a further search would have added candidates to rank, not changed the answer."
+      );
     case "STOPPED_BOUNDED":
       return (
-        budget + ", " + score + ". STOPPED BECAUSE THE BUDGET RAN OUT, not because the log was exhausted. " +
+        budget +
+        ", " +
+        score +
+        ". STOPPED BECAUSE THE BUDGET RAN OUT, not because the log was exhausted. " +
         "The answer is short of evidence and says so. A narrower or differently worded question may resolve within three searches; " +
         "if it does not, the gap is in the log rather than in the query."
       );
     case "STOPPED_EMPTY":
       return (
-        budget + ", " + score + ". Searches ran and returned nothing on-topic. " +
+        budget +
+        ", " +
+        score +
+        ". Searches ran and returned nothing on-topic. " +
         "This is a real result, not a failure to try: the log does not appear to contain a decision answering this question. " +
         "The nearest related decisions are offered instead of an invented answer."
       );
@@ -265,16 +279,16 @@ export function describeContract(): string {
     "The evidence contract — four rules this answer was produced under:",
     "",
     "  1. AT MOST " + MAX_SEARCHES + " SEARCHES per question, each recorded in the trace below.",
-    "     The bound is not a performance optimisation. An unbounded search turns \"I could",
-    "     not find it\" into \"I have not looked hard enough yet\", and a system that can",
+    '     The bound is not a performance optimisation. An unbounded search turns "I could',
+    '     not find it" into "I have not looked hard enough yet", and a system that can',
     "     always look again never has to say it does not know.",
     "",
     "  2. A CITATION IS VALID ONLY IF IT POINTS TO A DECISION RETRIEVED IN THIS RUN.",
-    "     Not \"exists in the log\". Only what this run retrieved has been read, scored and",
+    '     Not "exists in the log". Only what this run retrieved has been read, scored and',
     "     ranked, so only those ids count as evidence. Anything else is shown as unresolved",
     "     and reported in the groundedness notes — never silently dropped, never counted.",
     "",
-    "  3. \"INSUFFICIENT EVIDENCE\" IS A FIRST-CLASS ANSWER. Below the partial floor the",
+    '  3. "INSUFFICIENT EVIDENCE" IS A FIRST-CLASS ANSWER. Below the partial floor the',
     "     system refuses, states what is missing, and offers the nearest related decisions.",
     "",
     "  4. THE RUN LEAVES A TRACE: what was searched, what came back, the top score, why each",
