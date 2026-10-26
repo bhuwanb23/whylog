@@ -20,17 +20,15 @@
 ---
 
 <p align="center">
-  <a href="media/whylog.mp4">
-    <img src="media/poster.jpg" alt="WhyLog — 60s launch film (click to play)" width="920" />
-  </a>
+  <video src="media/whylog.mp4" poster="media/poster.jpg" controls playsinline preload="metadata" width="920">
+    <a href="media/whylog.mp4"><img src="media/poster.jpg" alt="WhyLog — 60s film" width="920" /></a>
+  </video>
 </p>
 
 <p align="center">
-  <a href="media/whylog.mp4"><strong>▶ Watch the 60-second film</strong></a>
-  · 1920×1080 · no narration required
+  <a href="media/whylog.mp4"><strong>▶ 60-second film</strong></a>
+  · 1920×1080 · <a href="brag-output/share-copy.txt">share copy</a>
 </p>
-
-<video src="media/whylog.mp4" poster="media/poster.jpg" controls width="100%"></video>
 
 ---
 
