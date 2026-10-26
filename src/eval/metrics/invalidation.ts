@@ -45,8 +45,8 @@
 import type { EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
-import { plantIsTestable, type Resolver } from "./resolve";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, type MetricResult } from "./types";
+import { type Resolver, plantIsTestable, plantWasIntervened } from "./resolve";
+import { METRIC_NAMES, type MetricResult, describeEngineId } from "./types";
 
 export interface InvalidationOutcome {
   readonly metric: MetricResult;
@@ -74,7 +74,7 @@ export function scoreInvalidationRecall(
   const plants = corpus.plants.filter((plant) => plant.kind === "L2-premise");
 
   const perPlant = plants.map((plant) => {
-    const testable = plantIsTestable(run, plant.transcripts);
+    const testable = plantIsTestable(run, plant.transcripts) && plantWasIntervened(run, plant);
     const flipped: string[] = [];
     const notFlipped: string[] = [];
     const unresolvable: string[] = [];
@@ -89,15 +89,25 @@ export function scoreInvalidationRecall(
       /* "Unsound" is label OUT or UNFOUNDED. UNKNOWN is not a flip: it means the labeller could not
        * decide, and counting indecision as detection would let a system pass by refusing to commit. */
       const labelled = run.labels.get(id);
-      if (labelled !== undefined && (labelled.label === "OUT" || labelled.label === "UNFOUNDED")) flipped.push(key);
+      if (labelled !== undefined && (labelled.label === "OUT" || labelled.label === "UNFOUNDED"))
+        flipped.push(key);
       else notFlipped.push(key);
     }
 
-    return { plant: plant.id, testable, expectedUnsound: plant.expectUnsound, flipped, notFlipped, unresolvable };
+    return {
+      plant: plant.id,
+      testable,
+      expectedUnsound: plant.expectUnsound,
+      flipped,
+      notFlipped,
+      unresolvable,
+    };
   });
 
   const expected = perPlant.reduce((sum, entry) => sum + entry.expectedUnsound.length, 0);
-  const hit = perPlant.filter((entry) => entry.testable).reduce((sum, entry) => sum + entry.flipped.length, 0);
+  const hit = perPlant
+    .filter((entry) => entry.testable)
+    .reduce((sum, entry) => sum + entry.flipped.length, 0);
   const value = expected === 0 ? 0 : hit / expected;
 
   let outListPopulated = 0;
@@ -105,7 +115,9 @@ export function scoreInvalidationRecall(
     if (justification.outList.length > 0) outListPopulated += 1;
   }
 
-  const premiseGateRecords = run.state.contradictions.filter((record) => record.gate === "premise").length;
+  const premiseGateRecords = run.state.contradictions.filter(
+    (record) => record.gate === "premise",
+  ).length;
 
   return {
     perPlant,
@@ -119,15 +131,22 @@ export function scoreInvalidationRecall(
       detail: null,
       n: expected,
       perEngine: [{ engine: describeEngineId(engine), value, n: expected, detail: null }],
-      comparator: null, /* no comparator exists; COMPARATORS records that this is the finding */
+      comparator: null /* no comparator exists; COMPARATORS records that this is the finding */,
       gloss:
-        hit + " of " + expected + " decision(s) that should have gone unsound when their premise was falsified actually did. " +
-        outListPopulated + " justification(s) carry a non-empty OUT-list, which is what makes the graph non-monotonic at all. " +
-        premiseGateRecords + " premise-gate record(s) were raised.",
+        hit +
+        " of " +
+        expected +
+        " decision(s) that should have gone unsound when their premise was falsified actually did. " +
+        outListPopulated +
+        " justification(s) carry a non-empty OUT-list, which is what makes the graph non-monotonic at all. " +
+        premiseGateRecords +
+        " premise-gate record(s) were raised.",
       honestNote:
         "NO PUBLISHED COMPARATOR EXISTS — no surveyed system detects that a decision's premise became false without the " +
         "decision being mentioned, so there is no component to compare against and the absence is reported rather than " +
-        "filled with a borrowed number. n=" + expected + ", which is ONE planted case (demo1's SQLite decision falsified by " +
+        "filled with a borrowed number. n=" +
+        expected +
+        ", which is ONE planted case (demo1's SQLite decision falsified by " +
         "demo2). A single case supports the claim that the mechanism fires; it does not support any claim about a RATE, and " +
         "no rate should be quoted from this metric. Measured with NO harness intervention: the refutation must be extracted " +
         "from demo2's text and connected to demo1's premise by the reasoning layer, so a miss here may be an extraction " +
@@ -137,4 +156,3 @@ export function scoreInvalidationRecall(
     },
   };
 }
-

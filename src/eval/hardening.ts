@@ -30,8 +30,8 @@
 
 import type { DecisionId } from "@/types/common";
 import type { ResolvedCorpus } from "./corpus/labels";
-import type { ScoredRun } from "./metrics";
 import type { RunResult } from "./harness";
+import type { ScoredRun } from "./metrics";
 
 /* -------------------------------------------------------------------------- */
 /* The four demo-killers                                                      */
@@ -83,7 +83,12 @@ function overRetraction(scored: ScoredRun): DemoKiller {
     evidence:
       n === 0
         ? "VACUOUS: no survivors were expected in any plant that ran, so over-retraction is UNTESTED rather than absent."
-        : over + " over-retraction(s) across " + n + " expected survivor(s); survivor preservation " + value.toFixed(3) + ".",
+        : over +
+          " over-retraction(s) across " +
+          n +
+          " expected survivor(s); survivor preservation " +
+          value.toFixed(3) +
+          ".",
     mitigation:
       "Set cascade depth to 1 in Settings before the demo. It trades the three-level plant for a " +
       "two-level one and removes the possibility of a wide retraction on stage. Say the cap out loud " +
@@ -98,7 +103,7 @@ function overRetraction(scored: ScoredRun): DemoKiller {
  * If it does not, the entire pitch collapses to "a decision log with extra steps", because premise
  * invalidation is the only capability no competitor has.
  */
-function falsePremiseResolution(corpus: ResolvedCorpus, scored: ScoredRun): DemoKiller {
+function falsePremiseResolution(_corpus: ResolvedCorpus, scored: ScoredRun): DemoKiller {
   const l2 = scored.invalidation.perPlant.find((entry) => entry.plant === "L2-premise-falsified");
   const fires = l2 !== undefined && l2.testable && l2.flipped.length > 0;
 
@@ -106,11 +111,30 @@ function falsePremiseResolution(corpus: ResolvedCorpus, scored: ScoredRun): Demo
     l2 === undefined
       ? "the L2 plant is not in the corpus at all"
       : !l2.testable
-        ? "the L2 plant's transcripts failed to import, so it was never tested"
+        ? /* This string used to say "the transcripts failed to import", which was true when
+           * testability only depended on the import. `plantWasIntervened()` added a second
+           * condition — the falsification has to have actually been applied — and on corpus 0.1.0
+           * that is the condition that fails: the plant needs a premise the extractor never
+           * produces, so the harness records `applied: false` and there is nothing to attribute a
+           * flip to. Naming the wrong cause here would send whoever reads the report to debug an
+           * import that works. */
+          "UNTESTED on this corpus, not failed: " +
+          (l2.unresolvable.length > 0
+            ? "the decisions it watches (" +
+              l2.unresolvable.join(", ") +
+              ") do not resolve to nodes"
+            : "its falsification step was never applied — the premise it needs was not extracted") +
+          ". The mechanism IS verified elsewhere: demo beat 5 (`l2-unsound`) reports VERIFIED on the " +
+          "seeded fixture pair, and `tests/integration/gate-c-cascade.test.ts` exercises the full " +
+          "cascade. What the benchmark cannot do is rate it."
         : l2.flipped.length > 0
           ? l2.flipped.join(", ") + " went unsound as expected"
-          : "expected " + l2.expectedUnsound.join(", ") + " to go unsound; " +
-            (l2.notFlipped.length > 0 ? l2.notFlipped.join(", ") + " did not" : "none were resolvable") +
+          : "expected " +
+            l2.expectedUnsound.join(", ") +
+            " to go unsound; " +
+            (l2.notFlipped.length > 0
+              ? l2.notFlipped.join(", ") + " did not"
+              : "none were resolvable") +
             (l2.unresolvable.length > 0 ? "; unresolvable: " + l2.unresolvable.join(", ") : "");
 
   return {
@@ -121,7 +145,8 @@ function falsePremiseResolution(corpus: ResolvedCorpus, scored: ScoredRun): Demo
       "the log noticed' — and the log has not noticed. There is no recovery from this one, because it is " +
       "the claim the whole demo is built around.",
     passes: fires,
-    evidence: detail + ". Non-empty OUT-lists in the graph: " + scored.invalidation.outListPopulated + ".",
+    evidence:
+      detail + ". Non-empty OUT-lists in the graph: " + scored.invalidation.outListPopulated + ".",
     mitigation:
       "Fall back to the scripted fixture pair (`fixtures/demo-transcript.txt` then " +
       "`fixtures/demo-transcript-2.txt`) imported through the UI rather than the corpus, and drive the " +
@@ -149,11 +174,17 @@ function hypotheticalsAsNodes(scored: ScoredRun): DemoKiller {
       "enough to end the demo, and the audience will do it without being invited to.",
     passes: clean,
     evidence:
-      modality.wronglyPromoted.length + " non-decision(s) became nodes out of " + modality.declinesExpected +
+      modality.wronglyPromoted.length +
+      " non-decision(s) became nodes out of " +
+      modality.declinesExpected +
       " labelled declines. Adversarial tier: " +
       (adversarial === undefined
         ? "not present in the corpus"
-        : adversarial.wronglyPromoted + " wrongly promoted of " + adversarial.expected + " expected declines") + ".",
+        : adversarial.wronglyPromoted +
+          " wrongly promoted of " +
+          adversarial.expected +
+          " expected declines") +
+      ".",
     mitigation:
       "Filter the graph view to origin=human and modality=asserted before showing it. The hypothetical " +
       "nodes still exist in the log — nothing is deleted, invariant I1 — but they are not on screen, and " +
@@ -170,8 +201,7 @@ function hypotheticalsAsNodes(scored: ScoredRun): DemoKiller {
  */
 function dayOneGuardFailures(scored: ScoredRun): DemoKiller {
   const guards = scored.guards;
-  const violations =
-    guards.skippedCountedAsPass + guards.autoAccepted + guards.staleDisabledFlags;
+  const violations = guards.skippedCountedAsPass + guards.autoAccepted + guards.staleDisabledFlags;
 
   return {
     id: "day-one-guard-failures",
@@ -182,9 +212,17 @@ function dayOneGuardFailures(scored: ScoredRun): DemoKiller {
       "none because it has already consumed the user's trust.",
     passes: violations === 0,
     evidence:
-      guards.guards + " guard(s) synthesised across " + guards.decisionsTotal + " decisions (" +
-      (guards.synthesisRate * 100).toFixed(0) + "%). Invariant violations: " + guards.skippedCountedAsPass +
-      " skip(s) counted as pass, " + guards.autoAccepted + " auto-accepted, " + guards.staleDisabledFlags +
+      guards.guards +
+      " guard(s) synthesised across " +
+      guards.decisionsTotal +
+      " decisions (" +
+      (guards.synthesisRate * 100).toFixed(0) +
+      "%). Invariant violations: " +
+      guards.skippedCountedAsPass +
+      " skip(s) counted as pass, " +
+      guards.autoAccepted +
+      " auto-accepted, " +
+      guards.staleDisabledFlags +
       " stale disabled flag(s). All three must be zero.",
     mitigation:
       "Guards are PROPOSED, never auto-installed (Phase 4), so the day-one panel should show proposals " +
@@ -213,112 +251,255 @@ export interface FailureModeCheck {
  * The `argued` entries are not an escape hatch. Each one states what would be needed to make it
  * mechanical, which is how the roadmap in `docs/LIMITATIONS.md` is derived rather than invented.
  */
-export function checkFailureModes(corpus: ResolvedCorpus, scored: ScoredRun, run: RunResult): readonly FailureModeCheck[] {
+export function checkFailureModes(
+  _corpus: ResolvedCorpus,
+  scored: ScoredRun,
+  run: RunResult,
+): readonly FailureModeCheck[] {
   const checks: FailureModeCheck[] = [];
 
   /* ---- docs/02 §7: truth-maintenance failure modes ---- */
-  checks.push(mechanical("docs/02 §7", "Over-retraction — a cascade takes more than it should",
-    scored.cascade.overRetractions === 0 && scored.cascade.survivorsExpected > 0,
-    scored.cascade.overRetractions + " over-retraction(s); " + scored.cascade.survivorsExpected + " survivor(s) expected."));
+  checks.push(
+    mechanical(
+      "docs/02 §7",
+      "Over-retraction — a cascade takes more than it should",
+      scored.cascade.overRetractions === 0 && scored.cascade.survivorsExpected > 0,
+      scored.cascade.overRetractions +
+        " over-retraction(s); " +
+        scored.cascade.survivorsExpected +
+        " survivor(s) expected.",
+    ),
+  );
 
-  checks.push(mechanical("docs/02 §7", "Under-retraction — a cascade stops too early",
-    scored.cascade.perPlant.every((entry) => !entry.testable || entry.missedFlips.length === 0),
-    scored.cascade.perPlant.map((entry) => entry.missedFlips.length).reduce((a, b) => a + b, 0) + " expected flip(s) missed."));
+  checks.push(
+    mechanical(
+      "docs/02 §7",
+      "Under-retraction — a cascade stops too early",
+      scored.cascade.perPlant.every((entry) => !entry.testable || entry.missedFlips.length === 0),
+      scored.cascade.perPlant.map((entry) => entry.missedFlips.length).reduce((a, b) => a + b, 0) +
+        " expected flip(s) missed.",
+    ),
+  );
 
-  checks.push(mechanical("docs/02 §7", "Circular justification — a decision supports its own premise",
-    !scored.run.state.decisions.size || !hasCircularLabel(run),
-    hasCircularLabel(run) ? "at least one node is labelled circular" : "no node reached a circular label."));
+  checks.push(
+    mechanical(
+      "docs/02 §7",
+      "Circular justification — a decision supports its own premise",
+      !scored.run.state.decisions.size || !hasCircularLabel(run),
+      hasCircularLabel(run)
+        ? "at least one node is labelled circular"
+        : "no node reached a circular label.",
+    ),
+  );
 
-  checks.push(mechanical("docs/02 §7", "Unfounded belief — a node IN with no path to an asserted premise",
-    !scored.run.labels.size || scored.run.labels.size > 0 && !hasUnfoundedLabel(run),
-    hasUnfoundedLabel(run) ? "at least one node is labelled UNFOUNDED" : "no node reached an unfounded label."));
+  checks.push(
+    mechanical(
+      "docs/02 §7",
+      "Unfounded belief — a node IN with no path to an asserted premise",
+      !scored.run.labels.size || (scored.run.labels.size > 0 && !hasUnfoundedLabel(run)),
+      hasUnfoundedLabel(run)
+        ? "at least one node is labelled UNFOUNDED"
+        : "no node reached an unfounded label.",
+    ),
+  );
 
-  checks.push(mechanical("docs/02 §7", "Monotonic graph — no OUT-lists, so nothing can be retracted",
-    scored.invalidation.outListPopulated > 0,
-    scored.invalidation.outListPopulated + " justification(s) carry a non-empty OUT-list."));
+  checks.push(
+    mechanical(
+      "docs/02 §7",
+      "Monotonic graph — no OUT-lists, so nothing can be retracted",
+      scored.invalidation.outListPopulated > 0,
+      scored.invalidation.outListPopulated + " justification(s) carry a non-empty OUT-list.",
+    ),
+  );
 
-  checks.push(argued("docs/02 §7", "Entrenchment miscalibration — the wrong belief is contracted first",
-    "Entrenchment weights are declared in `reasoning/entrenchment.ts` and the ablation measures whether " +
-    "removing the ordering raises the false-positive rate. It does NOT measure whether the weights are " +
-    "right, because that needs a corpus with ground-truth entrenchment, which no public corpus has. " +
-    "Making it mechanical needs hand-labelled entrenchment rankings per decision."));
+  checks.push(
+    argued(
+      "docs/02 §7",
+      "Entrenchment miscalibration — the wrong belief is contracted first",
+      "Entrenchment weights are declared in `reasoning/entrenchment.ts` and the ablation measures whether " +
+        "removing the ordering raises the false-positive rate. It does NOT measure whether the weights are " +
+        "right, because that needs a corpus with ground-truth entrenchment, which no public corpus has. " +
+        "Making it mechanical needs hand-labelled entrenchment rankings per decision.",
+    ),
+  );
 
-  checks.push(argued("docs/02 §7", "Label oscillation — the fixpoint does not converge",
-    "`reasoning/labeller.ts` caps iterations and reports `fixpointReached`. Checking it needs a graph " +
-    "deep enough to oscillate, and the corpus's deepest plant is three levels. Mechanical once the corpus " +
-    "has a five-level plant."));
+  checks.push(
+    argued(
+      "docs/02 §7",
+      "Label oscillation — the fixpoint does not converge",
+      "`reasoning/labeller.ts` caps iterations and reports `fixpointReached`. Checking it needs a graph " +
+        "deep enough to oscillate, and the corpus's deepest plant is three levels. Mechanical once the corpus " +
+        "has a five-level plant.",
+    ),
+  );
 
-  checks.push(argued("docs/02 §7", "Nogood recorded against nodes that no longer exist",
-    "Nogoods reference premise ids; a nogood whose premises were never extracted is dead weight rather " +
-    "than a failure, and the corpus plants no nogoods at all. Mechanical once a nogood plant exists."));
+  checks.push(
+    argued(
+      "docs/02 §7",
+      "Nogood recorded against nodes that no longer exist",
+      "Nogoods reference premise ids; a nogood whose premises were never extracted is dead weight rather " +
+        "than a failure, and the corpus plants no nogoods at all. Mechanical once a nogood plant exists.",
+    ),
+  );
 
   /* ---- docs/03 §8: retrieval and contradiction failure modes ---- */
-  checks.push(mechanical("docs/03 §8", "Refinement surfaced as a conflict",
-    scored.falsePositives.refinementVerdicts >= 0 && !refinementRaisedAsConflict(run),
-    scored.falsePositives.refinementVerdicts + " refinement verdict(s), none expected to interrupt."));
+  checks.push(
+    mechanical(
+      "docs/03 §8",
+      "Refinement surfaced as a conflict",
+      scored.falsePositives.refinementVerdicts >= 0 && !refinementRaisedAsConflict(run),
+      scored.falsePositives.refinementVerdicts +
+        " refinement verdict(s), none expected to interrupt.",
+    ),
+  );
 
-  checks.push(mechanical("docs/03 §8", "Search budget exceeded — more than three searches",
-    scored.groundedness.searchBudgetViolations === 0,
-    scored.groundedness.searchBudgetViolations + " answer(s) exceeded the " + 3 + "-search budget."));
+  checks.push(
+    mechanical(
+      "docs/03 §8",
+      "Search budget exceeded — more than three searches",
+      scored.groundedness.searchBudgetViolations === 0,
+      scored.groundedness.searchBudgetViolations +
+        " answer(s) exceeded the " +
+        3 +
+        "-search budget.",
+    ),
+  );
 
-  checks.push(mechanical("docs/03 §8", "Empty answer scored as grounded (0/0 = 1)",
-    scored.groundedness.perQuestion.every((entry) => entry.claims > 0 || entry.groundedness === 0),
-    scored.groundedness.emptyAnswers + " empty answer(s), all scored 0 rather than 1."));
+  checks.push(
+    mechanical(
+      "docs/03 §8",
+      "Empty answer scored as grounded (0/0 = 1)",
+      scored.groundedness.perQuestion.every(
+        (entry) => entry.claims > 0 || entry.groundedness === 0,
+      ),
+      scored.groundedness.emptyAnswers + " empty answer(s), all scored 0 rather than 1.",
+    ),
+  );
 
-  checks.push(mechanical("docs/03 §8", "Answering a question the corpus cannot answer",
-    scored.groundedness.refusalsCorrect === scored.groundedness.refusalsExpected && scored.groundedness.refusalsExpected > 0,
-    scored.groundedness.refusalsCorrect + " of " + scored.groundedness.refusalsExpected + " unanswerable question(s) refused."));
+  checks.push(
+    mechanical(
+      "docs/03 §8",
+      "Answering a question the corpus cannot answer",
+      scored.groundedness.refusalsCorrect === scored.groundedness.refusalsExpected &&
+        scored.groundedness.refusalsExpected > 0,
+      scored.groundedness.refusalsCorrect +
+        " of " +
+        scored.groundedness.refusalsExpected +
+        " unanswerable question(s) refused.",
+    ),
+  );
 
-  checks.push(mechanical("docs/03 §8", "Citation that does not resolve within the run",
-    citationsResolve(run),
-    citationsResolve(run) ? "every cited decision id exists in the graph." : "at least one citation points at a decision the graph does not contain."));
+  checks.push(
+    mechanical(
+      "docs/03 §8",
+      "Citation that does not resolve within the run",
+      citationsResolve(run),
+      citationsResolve(run)
+        ? "every cited decision id exists in the graph."
+        : "at least one citation points at a decision the graph does not contain.",
+    ),
+  );
 
-  checks.push(argued("docs/03 §8", "Negation missed — 'not Postgres' read as a decision for Postgres",
-    "The ablation covers this: removing negation cues should damage decision-extraction precision by at " +
-    "least 0.2. It is argued rather than mechanical HERE because the baseline run cannot distinguish a " +
-    "correctly negated extraction from a lucky one; only the ablated pair can, and that lives in the " +
-    "delta table."));
+  checks.push(
+    argued(
+      "docs/03 §8",
+      "Negation missed — 'not Postgres' read as a decision for Postgres",
+      "The ablation covers this: removing negation cues should damage decision-extraction precision by at " +
+        "least 0.2. It is argued rather than mechanical HERE because the baseline run cannot distinguish a " +
+        "correctly negated extraction from a lucky one; only the ablated pair can, and that lives in the " +
+        "delta table.",
+    ),
+  );
 
-  checks.push(argued("docs/03 §8", "Embedding drift — vectors stale after a decision is edited",
-    "`retrieval/build-index.ts` hashes decision text and re-embeds on change. Checking it needs an edit " +
-    "event in the corpus followed by a retrieval query, and the corpus has no edits. Mechanical once an " +
-    "edit-then-query plant exists."));
+  checks.push(
+    argued(
+      "docs/03 §8",
+      "Embedding drift — vectors stale after a decision is edited",
+      "`retrieval/build-index.ts` hashes decision text and re-embeds on change. Checking it needs an edit " +
+        "event in the corpus followed by a retrieval query, and the corpus has no edits. Mechanical once an " +
+        "edit-then-query plant exists.",
+    ),
+  );
 
-  checks.push(argued("docs/03 §8", "Pre-emption fires without a stated rejection reason",
-    "Phase 3 requires `whyRejected` AND `confirmedByHuman` before an alternative enters the pre-emption " +
-    "index, and the harness never acts as a human, so the index should be empty throughout. That is " +
-    "argued from the code path rather than checked, because an empty index cannot be observed to misfire."));
+  checks.push(
+    argued(
+      "docs/03 §8",
+      "Pre-emption fires without a stated rejection reason",
+      "Phase 3 requires `whyRejected` AND `confirmedByHuman` before an alternative enters the pre-emption " +
+        "index, and the harness never acts as a human, so the index should be empty throughout. That is " +
+        "argued from the code path rather than checked, because an empty index cannot be observed to misfire.",
+    ),
+  );
 
   /* ---- docs/04 §8: guard failure modes ---- */
-  checks.push(mechanical("docs/04 §8", "A skip counted as a pass",
-    scored.guards.skippedCountedAsPass === 0,
-    scored.guards.skippedCountedAsPass + " skip(s) counted as a pass; must be 0."));
+  checks.push(
+    mechanical(
+      "docs/04 §8",
+      "A skip counted as a pass",
+      scored.guards.skippedCountedAsPass === 0,
+      scored.guards.skippedCountedAsPass + " skip(s) counted as a pass; must be 0.",
+    ),
+  );
 
-  checks.push(mechanical("docs/04 §8", "A guard accepted without a human (invariant I4)",
-    scored.guards.autoAccepted === 0,
-    scored.guards.autoAccepted + " guard(s) auto-accepted; must be 0."));
+  checks.push(
+    mechanical(
+      "docs/04 §8",
+      "A guard accepted without a human (invariant I4)",
+      scored.guards.autoAccepted === 0,
+      scored.guards.autoAccepted + " guard(s) auto-accepted; must be 0.",
+    ),
+  );
 
-  checks.push(mechanical("docs/04 §8", "Stale `disabledByDecisionLabel` after a label change",
-    scored.guards.staleDisabledFlags === 0,
-    scored.guards.staleDisabledFlags + " stale flag(s); must be 0. This is a regression check on a bug Phase 6 found and fixed."));
+  checks.push(
+    mechanical(
+      "docs/04 §8",
+      "Stale `disabledByDecisionLabel` after a label change",
+      scored.guards.staleDisabledFlags === 0,
+      scored.guards.staleDisabledFlags +
+        " stale flag(s); must be 0. This is a regression check on a bug Phase 6 found and fixed.",
+    ),
+  );
 
-  checks.push(mechanical("docs/04 §8", "`llm_judge` counted toward compliance",
-    scored.guards.judged >= 0 && scored.guards.determinismShare <= 1,
-    scored.guards.deterministic + " deterministic and " + scored.guards.judged + " judged guard(s); Phase 4 excludes judged guards from compliance by filtering on `isDeterministic`."));
+  checks.push(
+    mechanical(
+      "docs/04 §8",
+      "`llm_judge` counted toward compliance",
+      scored.guards.judged >= 0 && scored.guards.determinismShare <= 1,
+      scored.guards.deterministic +
+        " deterministic and " +
+        scored.guards.judged +
+        " judged guard(s); Phase 4 excludes judged guards from compliance by filtering on `isDeterministic`.",
+    ),
+  );
 
-  checks.push(argued("docs/04 §8", "A guard that passes on a project that violates its decision",
-    "This is guard precision, and it is NOT MEASURED: a transcript corpus contains no repository state, " +
-    "so no violation can be seeded. Mechanical once a fixture repository ships beside the corpus — " +
-    "roadmap work recorded in `docs/LIMITATIONS.md`."));
+  checks.push(
+    argued(
+      "docs/04 §8",
+      "A guard that passes on a project that violates its decision",
+      "This is guard precision, and it is NOT MEASURED: a transcript corpus contains no repository state, " +
+        "so no violation can be seeded. Mechanical once a fixture repository ships beside the corpus — " +
+        "roadmap work recorded in `docs/LIMITATIONS.md`.",
+    ),
+  );
 
-  checks.push(argued("docs/04 §8", "Guard scoped too broadly — fires on files the decision does not govern",
-    "Scoping comes from `appliesTo` globs and the decision's variable. Checking over-broad scoping needs " +
-    "a file tree to scope against, which is the same missing fixture repository as the entry above."));
+  checks.push(
+    argued(
+      "docs/04 §8",
+      "Guard scoped too broadly — fires on files the decision does not govern",
+      "Scoping comes from `appliesTo` globs and the decision's variable. Checking over-broad scoping needs " +
+        "a file tree to scope against, which is the same missing fixture repository as the entry above.",
+    ),
+  );
 
-  checks.push(argued("docs/04 §8", "`falsifiesPremiseId` attributed to the wrong premise",
-    "Phase 4 attributes a falsification only when EXACTLY ONE premise matches, so ambiguity is resolved " +
-    "by refusing rather than guessing. Checking the guess would require planting a guard failure with a " +
-    "known premise target, which again needs the fixture repository."));
+  checks.push(
+    argued(
+      "docs/04 §8",
+      "`falsifiesPremiseId` attributed to the wrong premise",
+      "Phase 4 attributes a falsification only when EXACTLY ONE premise matches, so ambiguity is resolved " +
+        "by refusing rather than guessing. Checking the guess would require planting a guard failure with a " +
+        "known premise target, which again needs the fixture repository.",
+    ),
+  );
 
   return checks;
 }
@@ -349,7 +530,9 @@ function refinementRaisedAsConflict(run: RunResult): boolean {
   /* A refinement verdict is only a failure if it produced a revision proposal. Recorded and left
    * alone, it is the correct behaviour: related decisions that add rationale to each other are the
    * commonest relationship in a real log and surfacing them as conflicts is what gets a tool uninstalled. */
-  return run.state.contradictions.some((record) => record.verdict === "refinement" && record.resolution === "accepted");
+  return run.state.contradictions.some(
+    (record) => record.verdict === "refinement" && record.resolution === "accepted",
+  );
 }
 
 function citationsResolve(run: RunResult): boolean {
@@ -406,8 +589,11 @@ export function renderHardening(report: HardeningReport): string {
 
   lines.push("HARDENING PASS — 7.4");
   lines.push("");
-  lines.push(report.ready ? "READY: every demo-killer check passes and every mechanical check passes." :
-    "NOT READY: see the failures below. A partially hardened demo is not a demo that can be given.");
+  lines.push(
+    report.ready
+      ? "READY: every demo-killer check passes and every mechanical check passes."
+      : "NOT READY: see the failures below. A partially hardened demo is not a demo that can be given.",
+  );
   lines.push("");
 
   lines.push("THE FOUR DEMO-KILLERS (" + (4 - report.killersFailing) + "/4 passing)");
@@ -420,10 +606,20 @@ export function renderHardening(report: HardeningReport): string {
     lines.push("");
   }
 
-  lines.push("DOCUMENTED FAILURE MODES (" + report.mechanicalTotal + " mechanical, " + report.arguedTotal + " argued)");
+  lines.push(
+    "DOCUMENTED FAILURE MODES (" +
+      report.mechanicalTotal +
+      " mechanical, " +
+      report.arguedTotal +
+      " argued)",
+  );
   lines.push("");
-  lines.push("Every failure mode in docs/02 §7, docs/03 §8 and docs/04 §8 appears below. A mode with no");
-  lines.push("check and no argument is the dangerous category — it reads as covered and is covered nowhere.");
+  lines.push(
+    "Every failure mode in docs/02 §7, docs/03 §8 and docs/04 §8 appears below. A mode with no",
+  );
+  lines.push(
+    "check and no argument is the dangerous category — it reads as covered and is covered nowhere.",
+  );
   lines.push("");
 
   for (const entry of report.failureModes) {
@@ -433,9 +629,16 @@ export function renderHardening(report: HardeningReport): string {
   }
 
   lines.push("");
-  lines.push(report.mechanicalFailing + " of " + report.mechanicalTotal + " mechanical checks failing.");
-  lines.push(report.arguedTotal + " modes are argued rather than checked; each states what would make it mechanical,");
-  lines.push("and that list is the source of the roadmap in docs/LIMITATIONS.md rather than an invented one.");
+  lines.push(
+    report.mechanicalFailing + " of " + report.mechanicalTotal + " mechanical checks failing.",
+  );
+  lines.push(
+    report.arguedTotal +
+      " modes are argued rather than checked; each states what would make it mechanical,",
+  );
+  lines.push(
+    "and that list is the source of the roadmap in docs/LIMITATIONS.md rather than an invented one.",
+  );
 
   return lines.join("\n");
 }

@@ -14,10 +14,10 @@ import { dirname, resolve as resolvePath } from "node:path";
 import { createLocalEngine, localEngineId } from "@/ai/local";
 import type { WhyLogEngine } from "@/ai/types";
 import type { EngineId } from "@/types/common";
-import { corpus, CORPUS_ROOT } from "./corpus/data";
+import { CORPUS_ROOT, corpus } from "./corpus/data";
 import { describeCorpus } from "./corpus/labels";
-import { describeLoad, loadCorpus, type LoadReport } from "./corpus/loader";
 import type { ResolvedCorpus } from "./corpus/labels";
+import { type LoadReport, describeLoad, loadCorpus } from "./corpus/loader";
 
 export interface CliContext {
   readonly corpus: ResolvedCorpus;
@@ -51,9 +51,17 @@ export function prepare(): CliContext {
 
   if (load.unresolved.length > 0) {
     blank();
-    line("ABORTING: " + load.unresolved.length + " label(s) quote text that is not in their transcript.");
-    line("Fix the corpus before scoring. The quotes are the ground truth; a quote that does not match is");
-    line("a ground truth that does not exist, and every recall number computed against it is wrong.");
+    line(
+      "ABORTING: " +
+        load.unresolved.length +
+        " label(s) quote text that is not in their transcript.",
+    );
+    line(
+      "Fix the corpus before scoring. The quotes are the ground truth; a quote that does not match is",
+    );
+    line(
+      "a ground truth that does not exist, and every recall number computed against it is wrong.",
+    );
     process.exitCode = 1;
     throw new Error("unresolved corpus labels");
   }
@@ -109,7 +117,8 @@ export function readArgs(argv: readonly string[]): Map<string, string> {
 
   const known = new Set(["out", "json", "engine", "only", "quick"]);
   for (const key of out.keys()) {
-    if (!known.has(key)) line("note: unknown flag --" + key + " ignored (known: " + [...known].join(", ") + ")");
+    if (!known.has(key))
+      line("note: unknown flag --" + key + " ignored (known: " + [...known].join(", ") + ")");
   }
 
   return out;

@@ -13,10 +13,10 @@
  */
 
 import { banner, blank, heading, line, readArgs, write } from "../cli";
+import { REQUIRED_DRY_RUNS, renderDryRuns, runDryRuns } from "./dryrun";
 import { buildSeed, describeReset, resetDemo } from "./kit";
 import { renderScript } from "./script";
 import { renderVerification, verifyDemo } from "./verify";
-import { REQUIRED_DRY_RUNS, renderDryRuns, runDryRuns } from "./dryrun";
 
 async function main(): Promise<void> {
   const args = readArgs(process.argv.slice(2));
@@ -36,8 +36,14 @@ async function main(): Promise<void> {
   heading("Seed");
   const seed = await buildSeed();
   line(
-    "built in " + (seed.durationMs / 1000).toFixed(1) + "s · " + seed.decisions + " decisions · " +
-    seed.premises + " premises · engine " + seed.engineId.kind,
+    "built in " +
+      (seed.durationMs / 1000).toFixed(1) +
+      "s · " +
+      seed.decisions +
+      " decisions · " +
+      seed.premises +
+      " premises · engine " +
+      seed.engineId.kind,
   );
   for (const warning of seed.warnings) line("  warning: " + warning);
 
@@ -50,7 +56,8 @@ async function main(): Promise<void> {
     line("STOPPING: a beat will visibly not work. Fix it or use the mitigation printed above.");
     line("Pass --force to run the dry runs anyway.");
     process.exitCode = 1;
-    if (args.has("out")) write(args.get("out") ?? "demo-verification.md", renderVerification(report));
+    if (args.has("out"))
+      write(args.get("out") ?? "demo-verification.md", renderVerification(report));
     return;
   }
 
@@ -62,16 +69,31 @@ async function main(): Promise<void> {
   if (args.has("out")) {
     write(
       args.get("out") ?? "demo-verification.md",
-      ["# Demo verification", "", "```", renderScript(), "", renderVerification(report), "", renderDryRuns(dry), "```", ""].join("\n"),
+      [
+        "# Demo verification",
+        "",
+        "```",
+        renderScript(),
+        "",
+        renderVerification(report),
+        "",
+        renderDryRuns(dry),
+        "```",
+        "",
+      ].join("\n"),
     );
   }
 
   blank();
-  line(dry.passed ? "DEMO IS READY." : "DEMO IS NOT READY — see the divergences and failures above.");
+  line(
+    dry.passed ? "DEMO IS READY." : "DEMO IS NOT READY — see the divergences and failures above.",
+  );
   if (!dry.passed) process.exitCode = 1;
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write("\n" + (error instanceof Error ? error.stack ?? error.message : String(error)) + "\n");
+  process.stderr.write(
+    "\n" + (error instanceof Error ? (error.stack ?? error.message) : String(error)) + "\n",
+  );
   process.exitCode = 1;
 });

@@ -73,7 +73,14 @@ export {
   unusualMetrics,
 } from "./metrics";
 export type { ScoredRun } from "./metrics";
-export { COMPARATORS, METRIC_NAMES, UNUSUAL_METRICS, meanReciprocalRank, precisionAtK, precisionRecall } from "./metrics/types";
+export {
+  COMPARATORS,
+  METRIC_NAMES,
+  UNUSUAL_METRICS,
+  meanReciprocalRank,
+  precisionAtK,
+  precisionRecall,
+} from "./metrics/types";
 export type { EngineMetric, MetricId, MetricResult, PrecisionRecall } from "./metrics/types";
 export { MATCH_RULE, align, overlapOf } from "./metrics/match";
 export type { Alignment, AlignedPair, Span } from "./metrics/match";
@@ -93,7 +100,12 @@ export {
 export type { Ablation, AblationConfig, SweptParams } from "./ablation/toggles";
 export { describeStudy, runAblation } from "./ablation/run";
 export type { AblationOutcome, AblationStudy, StudyOptions } from "./ablation/run";
-export { TABLE_METRICS, buildDeltaRows, renderAblationTable, renderPredictionAudit } from "./ablation/table";
+export {
+  TABLE_METRICS,
+  buildDeltaRows,
+  renderAblationTable,
+  renderPredictionAudit,
+} from "./ablation/table";
 export type { DeltaRow, PredictionVerdict, VerdictKind } from "./ablation/table";
 
 /* --- hardening (7.4) --- */

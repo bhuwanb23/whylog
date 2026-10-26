@@ -33,13 +33,15 @@
  * ---------------------------------------------------------------------------
  */
 
-import type {
-  AlternativeCandidate,
-  DecisionCandidate,
-  PremiseCandidate,
-} from "@/ai/types";
+import type { AlternativeCandidate, DecisionCandidate, PremiseCandidate } from "@/ai/types";
+import type { WhyLogEngine } from "@/ai/types";
+import { PLACEHOLDER_EVENT_ID } from "@/extraction/commit";
 import { runExtraction } from "@/extraction/pipeline";
+import { isDerivedPremise } from "@/extraction/review";
 import { DEFAULT_VOTING } from "@/extraction/voting";
+import { synthesiseAll } from "@/guards";
+import { guardStatusMap } from "@/guards/feedback";
+import { monotonicNow, nowISO } from "@/lib/format";
 import {
   formatAlternativeId,
   formatDecisionId,
@@ -47,19 +49,19 @@ import {
   formatPremiseId,
   formatTranscriptId,
 } from "@/lib/ids";
-import { monotonicNow, nowISO } from "@/lib/format";
-import { revise, type ReviseResult } from "@/reasoning/revise";
 import { label } from "@/reasoning/labeller";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { type ReviseResult, revise } from "@/reasoning/revise";
 import { ask } from "@/retrieval";
 import { buildIndex } from "@/retrieval/build-index";
 import { appendBatch, emptyLog, fold } from "@/substrate";
 import type { EventLog } from "@/substrate/event-log";
 import { validationMessage } from "@/substrate/event-validation";
+import type { GraphState } from "@/substrate/graph-state";
 import { asISO } from "@/types/common";
 import type {
   Actor,
   AlternativeId,
-  Confidence,
   DecisionId,
   EngineId,
   EpisodeId,
@@ -67,20 +69,13 @@ import type {
   PremiseId,
   TranscriptId,
 } from "@/types/common";
-import type { AnyEvent, EventType, NewEvent } from "@/types/events";
 import type { Justification } from "@/types/domain";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import type { Answer } from "@/types/retrieval";
 import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import type { WhyLogEngine } from "@/ai/types";
+import type { AnyEvent, EventType, NewEvent } from "@/types/events";
 import type { Guard } from "@/types/guards";
-import { guardStatusMap } from "@/guards/feedback";
-import { synthesiseAll } from "@/guards";
-import { PLACEHOLDER_EVENT_ID } from "@/extraction/commit";
-import { isDerivedPremise } from "@/extraction/review";
-import type { LabelledQuestion, ResolvedCorpus, ResolvedTranscript } from "./corpus/labels";
+import type { Answer } from "@/types/retrieval";
 import type { AblationConfig, SweptParams } from "./ablation/toggles";
+import type { LabelledQuestion, ResolvedCorpus, ResolvedTranscript } from "./corpus/labels";
 
 /* -------------------------------------------------------------------------- */
 /* Shapes                                                                     */
@@ -93,6 +88,12 @@ export interface RunConfig {
   /** Every toggle, present and named, even when all are at their baseline value. A config that
    *  omits its toggles cannot be reproduced from its report. */
   readonly toggles: AblationConfig;
+  /** Approve each transcript's extracted decisions as part of the review step, so the gates run
+   *  over a TRIAGED graph. Off for the benchmark — it measures what the extractor produced before
+   *  anybody looked at it, and gate (a) is deliberately silent between two unreviewed proposals.
+   *  On for the demo seed, which narrates a user who accepted what they imported: a decision
+   *  nobody accepted cannot be reversed, and beat 3 is a reversal. */
+  readonly approveDecisions?: boolean;
   /** The swept parameters, separate from the toggles for the reason given in `ablation/toggles.ts`:
    *  a toggle answers "does this matter", a parameter answers "is this value right". */
   readonly params: SweptParams;
@@ -196,7 +197,10 @@ function commitRevision(
   );
 
   if (!committed.ok) {
-    return { ...unchanged, failure: "revision-rejected: " + validationMessage(committed.validation) };
+    return {
+      ...unchanged,
+      failure: "revision-rejected: " + validationMessage(committed.validation),
+    };
   }
 
   return {
@@ -252,6 +256,8 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
          * unmeasurable keyless — the local engine reports capabilities().voting === false — but
          * an LLM run now genuinely exercises it. */
         ...(config.toggles.voting ? { voting: DEFAULT_VOTING } : {}),
+        ...(config.toggles.negationCues ? {} : { negationCues: false }),
+        ...(config.toggles.modalityFilter ? {} : { modalityFilter: false }),
       },
     );
 
@@ -309,7 +315,9 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       decisionIdByIndex.set(indexOfDecision(run.decisions, candidate), id);
       drafts.push(
         decisionProposed(id, transcriptId, candidate, config.engineId, {
-          premiseIds: candidate.premiseRefs.map((ref) => premiseIdByIndex.get(ref)).filter(isDefined),
+          premiseIds: candidate.premiseRefs
+            .map((ref) => premiseIdByIndex.get(ref))
+            .filter(isDefined),
         }),
       );
     }
@@ -341,7 +349,8 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         const premiseId = premiseIdByIndex.get(ref);
         if (premiseId === undefined) continue;
         const source = run.premises[ref];
-        if (source !== undefined && isDerivedPremise(source.predicate, source.text)) outList.push(premiseId);
+        if (source !== undefined && isDerivedPremise(source.predicate, source.text))
+          outList.push(premiseId);
         else inList.push(premiseId);
       }
 
@@ -351,7 +360,9 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       if (inList.length === 0 && outList.length === 0) continue;
 
       justificationSeq += 1;
-      const justificationId = formatJustificationId(state.counters.justifications + justificationSeq);
+      const justificationId = formatJustificationId(
+        state.counters.justifications + justificationSeq,
+      );
       const occurredAt = asISO(transcript.occurredAt);
       const justification: Justification = {
         id: justificationId,
@@ -430,6 +441,93 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
     log = appended.log;
     state = fold(log.events, { engine: config.engineId, now: clock.next() });
 
+    /* ---- THE REVIEW STEP ----
+     *
+     * Without this block the entire benchmark measured a graph nobody had accepted, and every number
+     * downstream of the labels was structurally zero rather than empirically low.
+     *
+     * A premise is UNKNOWN until a human confirms it (I4: the system proposes, the human disposes).
+     * A justification is valid only when every node in its IN-list is IN, so with every premise
+     * UNKNOWN no justification is valid, and the labeller marks every decision OUT. The first
+     * instrumented run of this harness produced:
+     *
+     *     decisions 34 -> IN 0, OUT 27, UNKNOWN 7
+     *     premises  98 -> IN 0, OUT 21, UNKNOWN 77
+     *
+     * Not one IN node in the graph. That is why the false-positive metric reported 26 "unexplained
+     * retractions" (they were every decision in the corpus), why survivor preservation was 0.000
+     * (nothing can survive when nothing was ever standing), why precision@5 was 0.050 and why answer
+     * groundedness scored 0.000 — all four were measuring an unreviewed graph, not a weak system.
+     *
+     * `tests/helpers/events.ts` states the rule this harness was breaking: "Fixtures that test gate
+     * (c) must start from a REVIEWED graph or they test a graph nobody has accepted yet."
+     *
+     * WHAT IS BEING MODELLED. The harness stands in for the reviewer, exactly as the demo seed does.
+     * It confirms everything the extractor produced, which is the bulk-approve path the Review view
+     * offers. That is a real cost and it is not hidden: a premise the extractor invented becomes an
+     * IN node, and if it later contradicts something the false-positive metric will count the
+     * interruption. Confirming only the premises the corpus labels would leak ground truth into the
+     * run and make the extraction metrics meaningless, so it is deliberately not done. */
+    if (config.approveDecisions === true && decisionIds.length > 0) {
+      const approved = appendBatch(
+        log,
+        decisionIds.map((decisionId) => ({
+          draft: {
+            type: "DecisionApproved" as const,
+            payload: { decisionId, viaBulkApprove: true },
+            actor: { kind: "human" as const },
+            reason:
+              "Demo seed review step: bulk-approving this transcript's decisions so gate (a) runs " +
+              "over a triaged graph. A human actor, because approval is the disposition step in I4 " +
+              "and stamping it as the system would record the graph as having accepted itself.",
+          },
+          context: {
+            now: clock.next(),
+            actor: { kind: "human" as const },
+            reason: "Demo seed bulk approval.",
+          },
+        })),
+      );
+      if (approved.ok) {
+        log = approved.log;
+        state = fold(log.events, { engine: config.engineId, now: clock.next() });
+      } else {
+        revisionFailures.push(
+          "decision-approve-rejected: " + validationMessage(approved.validation),
+        );
+      }
+    }
+
+    if (premiseIds.length > 0) {
+      const confirmed = appendBatch(
+        log,
+        premiseIds.map((premiseId) => ({
+          draft: {
+            type: "PremiseConfirmed" as const,
+            payload: { premiseId },
+            actor: ACTOR,
+            reason:
+              "Eval harness review step: bulk-accepting the extraction so the reasoning layer is " +
+              "measured on a graph somebody has accepted, not one nobody has.",
+          },
+          context: {
+            now: clock.next(),
+            actor: ACTOR,
+            reason:
+              "Eval harness review step (context): bulk-accepting this transcript's premises.",
+          },
+        })),
+      );
+      if (confirmed.ok) {
+        log = confirmed.log;
+        state = fold(log.events, { engine: config.engineId, now: clock.next() });
+      } else {
+        revisionFailures.push(
+          "premise-confirm-rejected: " + validationMessage(confirmed.validation),
+        );
+      }
+    }
+
     /* The revision pass runs even when nothing was extracted, because "no contradiction raised" is a
      * result and must be measured against the same baseline as "one was". */
     const revised = await revise({
@@ -438,8 +536,14 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       actor: ACTOR,
       now: clock.next(),
       guards: guardStatusMap(state),
-      ...(config.params.cascadeDepthCap === null ? {} : { cascadeDepthCap: config.params.cascadeDepthCap }),
+      ...(config.params.cascadeDepthCap === null
+        ? {}
+        : { cascadeDepthCap: config.params.cascadeDepthCap }),
       ...(config.toggles.semanticContradiction ? {} : { skipSemantic: true }),
+      ...(config.toggles.structuralContradiction ? {} : { skipStructural: true }),
+      ...(config.toggles.premiseInvalidation ? {} : { skipPremiseInvalidation: true }),
+      ...(config.toggles.cascade ? {} : { disableCascade: true }),
+      ...(config.toggles.entrenchment ? {} : { disableEntrenchment: true }),
     });
 
     const afterImport = commitRevision(
@@ -476,17 +580,47 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
    * cascade result that was never tested. */
   const interventions: InterventionOutcome[] = [];
 
-  for (const plant of corpus.plants) {
+  /* Gate (c) off has to mean two things at once, or the ablation measures nothing. Skipping the
+   * gate alone is not enough: the harness PLANTS the PremiseInvalidated events, so the premise
+   * would still go OUT through the fold and the labeller would still retract its dependents —
+   * the world would still have told the log, just by a different door. So the interventions are
+   * not applied either, and each one is recorded as unapplied with the reason, because an
+   * intervention that never happened is not the same as one that happened and did nothing. */
+  if (!config.toggles.premiseInvalidation) {
+    for (const plant of corpus.plants) {
+      for (const step of plant.falsify ?? []) {
+        interventions.push({
+          plant: plant.id,
+          predicate: step.predicate,
+          applied: false,
+          premiseId: null,
+          reason:
+            "Not applied: the premiseInvalidation toggle is OFF for this configuration, so the " +
+            "invalidation is never planted and gate (c) is never consulted. L2 and L3 have no " +
+            "denominator in this row by construction.",
+        });
+      }
+    }
+  }
+
+  for (const plant of config.toggles.premiseInvalidation ? corpus.plants : []) {
     for (const step of plant.falsify ?? []) {
       const owner = transcripts.find((entry) => entry.transcript.id === step.transcript);
       if (owner === undefined) {
-        interventions.push({ plant: plant.id, predicate: step.predicate, applied: false, premiseId: null, reason: "transcript not imported" });
+        interventions.push({
+          plant: plant.id,
+          predicate: step.predicate,
+          applied: false,
+          premiseId: null,
+          reason: "transcript not imported",
+        });
         continue;
       }
 
-      const target = [...state.premises.values()].find((premise) =>
-        premise.predicate === step.predicate &&
-        premise.evidence.some((evidence) => evidence.span?.transcriptId === owner.runtimeId),
+      const target = [...state.premises.values()].find(
+        (premise) =>
+          premise.predicate === step.predicate &&
+          premise.evidence.some((evidence) => evidence.span?.transcriptId === owner.runtimeId),
       );
 
       if (target === undefined) {
@@ -495,7 +629,8 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
           predicate: step.predicate,
           applied: false,
           premiseId: null,
-          reason: "no extracted premise with that predicate in that transcript — the cascade is UNTESTED, not passed",
+          reason:
+            "no extracted premise with that predicate in that transcript — the cascade is UNTESTED, not passed",
         });
         continue;
       }
@@ -516,7 +651,13 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       ]);
 
       if (!falsified.ok) {
-        interventions.push({ plant: plant.id, predicate: step.predicate, applied: false, premiseId: target.id, reason: "append rejected: " + validationMessage(falsified.validation) });
+        interventions.push({
+          plant: plant.id,
+          predicate: step.predicate,
+          applied: false,
+          premiseId: target.id,
+          reason: "append rejected: " + validationMessage(falsified.validation),
+        });
         continue;
       }
 
@@ -529,7 +670,14 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         actor: ACTOR,
         now: clock.next(),
         guards: guardStatusMap(state),
-        ...(config.params.cascadeDepthCap === null ? {} : { cascadeDepthCap: config.params.cascadeDepthCap }),
+        ...(config.params.cascadeDepthCap === null
+          ? {}
+          : { cascadeDepthCap: config.params.cascadeDepthCap }),
+        ...(config.toggles.semanticContradiction ? {} : { skipSemantic: true }),
+        ...(config.toggles.structuralContradiction ? {} : { skipStructural: true }),
+        ...(config.toggles.premiseInvalidation ? {} : { skipPremiseInvalidation: true }),
+        ...(config.toggles.cascade ? {} : { disableCascade: true }),
+        ...(config.toggles.entrenchment ? {} : { disableEntrenchment: true }),
       });
       const afterIntervention = commitRevision(
         log,
@@ -543,7 +691,13 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       proposalsRaised += afterIntervention.proposals;
       if (afterIntervention.failure !== null) revisionFailures.push(afterIntervention.failure);
 
-      interventions.push({ plant: plant.id, predicate: step.predicate, applied: true, premiseId: target.id, reason: step.reason });
+      interventions.push({
+        plant: plant.id,
+        predicate: step.predicate,
+        applied: true,
+        premiseId: target.id,
+        reason: step.reason,
+      });
     }
   }
 
@@ -571,7 +725,11 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       log,
       synthesised.drafts.map((draft) => ({
         draft,
-        context: { now: clock.next(), actor: ACTOR, reason: "Eval harness compiling guards from decisions" },
+        context: {
+          now: clock.next(),
+          actor: ACTOR,
+          reason: "Eval harness compiling guards from decisions",
+        },
       })),
     );
 
@@ -579,7 +737,9 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
       log = guardsCommitted.log;
       state = fold(log.events, { engine: config.engineId, now: clock.next() });
     } else {
-      revisionFailures.push("guard-synthesis-rejected: " + validationMessage(guardsCommitted.validation));
+      revisionFailures.push(
+        "guard-synthesis-rejected: " + validationMessage(guardsCommitted.validation),
+      );
     }
   }
 
@@ -608,6 +768,12 @@ export async function runConfig(corpus: ResolvedCorpus, config: RunConfig): Prom
         engineId: config.engineId,
         question: question.question,
         ...(config.params.maxSearches === null ? {} : { maxSearches: config.params.maxSearches }),
+        ...(config.toggles.reranking ? {} : { skipRerank: true }),
+        /* Dense is L1 (statement embeddings) and L2 (HyPE questions, also embedded). Off leaves
+         * L3 sparse/BM25, L4 structural and L5 premises — a genuine lexical-only baseline. The
+         * toggle's own doc comment used to say "L3", which is the sparse level; it was wrong and
+         * has been corrected in toggles.ts. */
+        ...(config.toggles.denseRetrieval ? {} : { options: { levels: ["L3", "L4", "L5"] } }),
       });
       questions.push({ question, answer, error: null, durationMs: monotonicNow() - qStart });
     } catch (error) {
@@ -679,7 +845,9 @@ function decisionProposed(
       value: candidate.value,
       statement: candidate.statement,
       ...(candidate.rationale === undefined ? {} : { rationale: candidate.rationale }),
-      ...(candidate.acceptedDownside === undefined ? {} : { acceptedDownside: candidate.acceptedDownside }),
+      ...(candidate.acceptedDownside === undefined
+        ? {}
+        : { acceptedDownside: candidate.acceptedDownside }),
       origin: candidate.origin,
       modality: candidate.modality,
       confidence: candidate.confidence,
@@ -757,11 +925,16 @@ function formatEpisodeId(transcriptId: TranscriptId, offset: number): string {
 }
 
 function indexOfDecision(all: readonly DecisionCandidate[], one: DecisionCandidate): number {
-  return all.findIndex((candidate) => candidate.snippet.start === one.snippet.start && candidate.value === one.value);
+  return all.findIndex(
+    (candidate) => candidate.snippet.start === one.snippet.start && candidate.value === one.value,
+  );
 }
 
 function indexOfPremise(all: readonly PremiseCandidate[], one: PremiseCandidate): number {
-  return all.findIndex((candidate) => candidate.snippet.start === one.snippet.start && candidate.predicate === one.predicate);
+  return all.findIndex(
+    (candidate) =>
+      candidate.snippet.start === one.snippet.start && candidate.predicate === one.predicate,
+  );
 }
 
 function isDefined<T>(value: T | undefined): value is T {
@@ -825,13 +998,15 @@ export function eventsOf(run: RunResult): readonly AnyEvent[] {
  *  actually a crash. */
 export function describeFailures(run: RunResult): string {
   const failed = run.transcripts.filter((entry) => !entry.ok);
-  if (failed.length === 0) return "All " + run.transcripts.length + " transcripts imported without failure.";
+  if (failed.length === 0)
+    return "All " + run.transcripts.length + " transcripts imported without failure.";
 
   const lines = [
     failed.length + " of " + run.transcripts.length + " transcript(s) FAILED to import.",
     "Metrics below are computed over what survived. A failure is scored as producing nothing,",
     "which is a real result, but it is not the same result as low recall:",
   ];
-  for (const entry of failed) lines.push("  " + entry.transcript.id + " · " + (entry.failure ?? "unknown"));
+  for (const entry of failed)
+    lines.push("  " + entry.transcript.id + " · " + (entry.failure ?? "unknown"));
   return lines.join("\n");
 }

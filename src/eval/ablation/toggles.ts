@@ -63,8 +63,9 @@ export interface AblationConfig {
   readonly voting: boolean;
 
   /* ---- retrieval ---- */
-  /** Dense retrieval (L3, local embeddings). Off leaves BM25, the premise index and the generated
-   *  questions — a lexical-only baseline. */
+  /** Dense retrieval — **L1** (statement embeddings) and **L2** (HyPE questions, which are also
+   *  embedded). Off leaves L3 sparse/BM25, L4 structural and L5 premises: a lexical-only baseline.
+   *  This comment used to say "L3", which is the sparse level — the opposite of what was meant. */
   readonly denseRetrieval: boolean;
   /** Reranking after fusion. Off means raw RRF order is the answer order. */
   readonly reranking: boolean;
@@ -142,9 +143,63 @@ export const DEFAULT_PARAMS: SweptParams = { cascadeDepthCap: null, maxSearches:
  * `NOISE_FLOOR` is exported separately so the audit can say "below the floor" rather than "no effect",
  * which are different claims: the first is about the measurement, the second is about the component.
  */
+/**
+ * Which of the eleven toggles `eval/harness.ts` consumes. **All eleven, as of the wiring pass.**
+ *
+ * This set exists because the first real run of the ablation returned a delta of exactly +0.000 for
+ * every switch on every metric. Fifteen configurations cannot produce bit-identical scores unless the
+ * switches do nothing, and reading the harness confirmed it: three toggles were threaded into the
+ * pipeline and eight were declared here and never read. A declared switch is not an implemented one.
+ *
+ * The eight are now wired, each at the module that owns the behaviour rather than by branching in the
+ * harness:
+ *
+ *   structuralContradiction -> `GateOptions.skipStructural`            (reasoning/gates/index.ts)
+ *   premiseInvalidation     -> `GateOptions.skipPremiseInvalidation`, AND the harness stops planting
+ *                              the `PremiseInvalidated` interventions — skipping the gate alone would
+ *                              not have been enough, because the planted event puts the premise OUT
+ *                              through the fold and the labeller retracts its dependents regardless.
+ *   cascade                 -> `ReviseInput.disableCascade`            (reasoning/revise.ts)
+ *   entrenchment            -> `AdjudicationInput.disableEntrenchment` (reasoning/adjudication.ts)
+ *   negationCues            -> `DecisionContext.negationCues`          (extraction/decisions.ts)
+ *   modalityFilter          -> `DecisionContext.modalityFilter`        (extraction/decisions.ts)
+ *   denseRetrieval          -> `QueryOptions.levels` minus L1/L2       (retrieval/index.ts)
+ *   reranking               -> `RetrieveInput.skipRerank`              (retrieval/index.ts)
+ *
+ * Two dead options were found and fixed on the way: `QueryOptions.levels` was declared and read by
+ * nobody, and the second `revise` call in the harness (the post-intervention one) passed only
+ * `cascadeDepthCap`, so every reasoning switch was inert there even where it was wired elsewhere.
+ *
+ * The `not-wired` verdict below is retained. It is now unreachable for these eleven, but it is the
+ * check that catches the next toggle somebody declares without wiring — and that is how this file
+ * came to be wrong in the first place.
+ */
+export const WIRED_TOGGLES: ReadonlySet<keyof AblationConfig> = new Set<keyof AblationConfig>([
+  "structuralContradiction",
+  "semanticContradiction",
+  "premiseInvalidation",
+  "cascade",
+  "entrenchment",
+  "negationCues",
+  "modalityFilter",
+  "noiseCollapse",
+  "voting",
+  "denseRetrieval",
+  "reranking",
+]);
+
+/** The toggles this ablation turns off that the harness would ignore. Empty means the row is real. */
+export function unwiredToggles(ablation: Ablation): readonly (keyof AblationConfig)[] {
+  return (Object.keys(ablation.toggles) as (keyof AblationConfig)[]).filter(
+    (key) => ablation.toggles[key] === false && !WIRED_TOGGLES.has(key),
+  );
+}
+
 export const NOISE_FLOOR = 0.05;
 
-export const EXPECTED_DAMAGE: Readonly<Record<keyof AblationConfig, readonly { metric: string; threshold: number }[]>> = {
+export const EXPECTED_DAMAGE: Readonly<
+  Record<keyof AblationConfig, readonly { metric: string; threshold: number }[]>
+> = {
   structuralContradiction: [{ metric: "contradiction-recall-l1", threshold: 0.5 }],
   /* Expected to matter LESS than the prose predicts on the local engine. Declared at the noise floor
    * so that "it did not matter" is a CONFIRMED prediction rather than a falsified one — the honest
@@ -193,60 +248,74 @@ export function ablationPlan(): readonly Ablation[] {
     expectsDamage: [],
   };
 
-  const predictions: Record<keyof AblationConfig, { label: string; predicts: string; subsystem: Ablation["subsystem"] }> = {
+  const predictions: Record<
+    keyof AblationConfig,
+    { label: string; predicts: string; subsystem: Ablation["subsystem"] }
+  > = {
     structuralContradiction: {
       label: "No gate (a) — structural contradiction",
-      predicts: "L1 pairwise contradiction detection falls to zero on the planted pair. Nothing else moves: gate (a) is the only producer of same-variable/different-value conflicts.",
+      predicts:
+        "L1 pairwise contradiction detection falls to zero on the planted pair. Nothing else moves: gate (a) is the only producer of same-variable/different-value conflicts.",
       subsystem: "gate",
     },
     semanticContradiction: {
       label: "No gate (b) — semantic contradiction",
-      predicts: "On the LOCAL engine this should move nothing, because the local engine does not vote and gate (b) only recalls conflicts that are lexically dissimilar. If it moves a lot, the prediction is wrong and that is the finding.",
+      predicts:
+        "On the LOCAL engine this should move nothing, because the local engine does not vote and gate (b) only recalls conflicts that are lexically dissimilar. If it moves a lot, the prediction is wrong and that is the finding.",
       subsystem: "gate",
     },
     premiseInvalidation: {
       label: "No gate (c) — premise invalidation",
-      predicts: "L2 premise-level detection and L3 cascade correctness both fall to zero, and survivor preservation becomes vacuous. Expected to be the largest single delta in the table.",
+      predicts:
+        "L2 premise-level detection and L3 cascade correctness both fall to zero, and survivor preservation becomes vacuous. Expected to be the largest single delta in the table.",
       subsystem: "gate",
     },
     cascade: {
       label: "No backtracking cascade",
-      predicts: "L3 cascade correctness falls; the shared-premise transcript loses its dependent retraction. Survivor preservation should be UNAFFECTED, because survivors are only at risk when a cascade runs — if this toggle damages survivors, the cascade is over-retracting.",
+      predicts:
+        "L3 cascade correctness falls; the shared-premise transcript loses its dependent retraction. Survivor preservation should be UNAFFECTED, because survivors are only at risk when a cascade runs — if this toggle damages survivors, the cascade is over-retracting.",
       subsystem: "reasoning",
     },
     entrenchment: {
       label: "No Hansson entrenchment ordering",
-      predicts: "False-positive rate rises on the negotiated transcript: without requiring the newcomer to outrank every contradictor, low-confidence restatements supersede settled decisions.",
+      predicts:
+        "False-positive rate rises on the negotiated transcript: without requiring the newcomer to outrank every contradictor, low-confidence restatements supersede settled decisions.",
       subsystem: "reasoning",
     },
     negationCues: {
       label: "No negation cue recognition",
-      predicts: "Decision extraction precision falls hard on every transcript containing 'not X' — expected to be the largest extraction delta, and the clearest demonstration that the ontology is load-bearing.",
+      predicts:
+        "Decision extraction precision falls hard on every transcript containing 'not X' — expected to be the largest extraction delta, and the clearest demonstration that the ontology is load-bearing.",
       subsystem: "extraction",
     },
     modalityFilter: {
       label: "No modality filtering",
-      predicts: "Modality precision falls to near zero and the hypotheticals transcript grows spurious nodes. Survivor preservation should be unaffected.",
+      predicts:
+        "Modality precision falls to near zero and the hypotheticals transcript grows spurious nodes. Survivor preservation should be unaffected.",
       subsystem: "extraction",
     },
     noiseCollapse: {
       label: "No tool-output collapsing",
-      predicts: "Precision falls on the messy tool-output transcript only. Clean transcripts should be unchanged, which is itself a check that the toggle is scoped correctly.",
+      predicts:
+        "Precision falls on the messy tool-output transcript only. Clean transcripts should be unchanged, which is itself a check that the toggle is scoped correctly.",
       subsystem: "extraction",
     },
     voting: {
       label: "No three-run voting",
-      predicts: "NOTHING moves on the local engine, because the local engine reports voting as unsupported and the pipeline ignores the option. This toggle is expected to be unmeasurable keyless, and the table should say so rather than report a zero delta as a finding.",
+      predicts:
+        "NOTHING moves on the local engine, because the local engine reports voting as unsupported and the pipeline ignores the option. This toggle is expected to be unmeasurable keyless, and the table should say so rather than report a zero delta as a finding.",
       subsystem: "extraction",
     },
     denseRetrieval: {
       label: "No dense retrieval (lexical only)",
-      predicts: "Retrieval recall falls on paraphrased questions and holds on keyword-matched ones. Groundedness should fall, because fewer relevant decisions reach the composer.",
+      predicts:
+        "Retrieval recall falls on paraphrased questions and holds on keyword-matched ones. Groundedness should fall, because fewer relevant decisions reach the composer.",
       subsystem: "retrieval",
     },
     reranking: {
       label: "No reranking (raw RRF order)",
-      predicts: "Retrieval MRR and precision@1 fall while recall@5 holds — reranking reorders, it does not retrieve. If recall falls too, the reranker is discarding candidates rather than reordering them, which would be a bug.",
+      predicts:
+        "Retrieval MRR and precision@1 fall while recall@5 holds — reranking reorders, it does not retrieve. If recall falls too, the reranker is discarding candidates rather than reordering them, which would be a bug.",
       subsystem: "retrieval",
     },
   };
@@ -272,7 +341,8 @@ export function parameterPlan(): readonly Ablation[] {
       label: "Cascade depth capped at 1",
       toggles: FULL,
       params: { cascadeDepthCap: 1, maxSearches: null },
-      predicts: "L3 cascade correctness falls on the three-level plant; false positives fall too. Tests whether depth is trading recall for precision.",
+      predicts:
+        "L3 cascade correctness falls on the three-level plant; false positives fall too. Tests whether depth is trading recall for precision.",
       subsystem: "reasoning",
       expectsDamage: [{ metric: "cascade-correctness-l3", threshold: NOISE_FLOOR }],
     },
@@ -281,7 +351,8 @@ export function parameterPlan(): readonly Ablation[] {
       label: "Cascade depth capped at 3",
       toggles: FULL,
       params: { cascadeDepthCap: 3, maxSearches: null },
-      predicts: "No change from baseline on this corpus, because the deepest plant is three levels. A sweep that shows no change at the corpus's own depth is evidence the cap is not the binding constraint.",
+      predicts:
+        "No change from baseline on this corpus, because the deepest plant is three levels. A sweep that shows no change at the corpus's own depth is evidence the cap is not the binding constraint.",
       subsystem: "reasoning",
       expectsDamage: [],
     },
@@ -290,7 +361,8 @@ export function parameterPlan(): readonly Ablation[] {
       label: "Evidence contract limited to one search",
       toggles: FULL,
       params: { cascadeDepthCap: null, maxSearches: 1 },
-      predicts: "Groundedness and retrieval recall fall on the shared-premise question, which needs the second search to expand through a premise. Is the three-search budget earning its cost?",
+      predicts:
+        "Groundedness and retrieval recall fall on the shared-premise question, which needs the second search to expand through a premise. Is the three-search budget earning its cost?",
       subsystem: "retrieval",
       expectsDamage: [{ metric: "answer-groundedness", threshold: NOISE_FLOOR }],
     },

@@ -13,8 +13,8 @@
  * as a count on the node, so collapsing them hides edges without hiding information.
  */
 
-import type { ReactElement } from "react";
 import { LABEL_BACKGROUND, LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import type { ReactElement } from "react";
 import type { LatticeNode } from "./LatticeLayout";
 
 export const DECISION_WIDTH = 112;
@@ -38,7 +38,11 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
     <g
       transform={"translate(" + props.node.x + "," + props.node.y + ")"}
       onClick={() => props.onSelect(props.node.id)}
-      style={{ cursor: "pointer", opacity: props.dimmed ? 0.22 : 1, transition: "opacity 220ms ease" }}
+      style={{
+        cursor: "pointer",
+        opacity: props.dimmed ? 0.22 : 1,
+        transition: "opacity 220ms ease",
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
@@ -49,10 +53,20 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
       }}
     >
       <title>
-        {props.node.id + " · " + props.node.text + "\nlabel " + props.node.label + " — " + LABEL_MEANING[props.node.label] +
-          "\nlifecycle " + props.status +
+        {props.node.id +
+          " · " +
+          props.node.text +
+          "\nlabel " +
+          props.node.label +
+          " — " +
+          LABEL_MEANING[props.node.label] +
+          "\nlifecycle " +
+          props.status +
           (props.node.collapsedPremises.length > 0
-            ? "\n" + props.node.collapsedPremises.length + " premise(s) collapsed into this card: " + props.node.collapsedPremises.join(", ")
+            ? "\n" +
+              props.node.collapsedPremises.length +
+              " premise(s) collapsed into this card: " +
+              props.node.collapsedPremises.join(", ")
             : "")}
       </title>
 
@@ -84,7 +98,12 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
         strokeDasharray={props.node.label === "UNFOUNDED" ? "4 3" : ""}
       />
 
-      <text textAnchor="middle" dy={-3} className="mono" style={{ fontSize: 9, fill: "var(--text-faint)" }}>
+      <text
+        textAnchor="middle"
+        dy={-3}
+        className="mono"
+        style={{ fontSize: 9, fill: "var(--text-faint)" }}
+      >
         {props.node.id}
       </text>
 

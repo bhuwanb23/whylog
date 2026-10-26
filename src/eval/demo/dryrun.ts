@@ -31,7 +31,7 @@
 
 import type { SeedResult } from "./kit";
 import { buildSeed } from "./kit";
-import { verifyDemo, type VerificationReport } from "./verify";
+import { type VerificationReport, verifyDemo } from "./verify";
 
 export const REQUIRED_DRY_RUNS = 3;
 
@@ -111,7 +111,9 @@ export async function runDryRuns(count: number = REQUIRED_DRY_RUNS): Promise<Dry
     allDemoable: runs.every((run) => run.verification !== null && run.verification.demoable),
     /* Passing requires determinism AND demoability across all three. A demo that works differently each
      * time is not a demo that can be relied on, even if each individual run looked fine. */
-    passed: divergences.length === 0 && runs.every((run) => run.verification !== null && run.verification.demoable),
+    passed:
+      divergences.length === 0 &&
+      runs.every((run) => run.verification !== null && run.verification.demoable),
   };
 }
 
@@ -133,8 +135,15 @@ function fingerprintOf(seed: SeedResult, durationMs: number): DryRunFingerprint 
 
 function emptyFingerprint(durationMs: number): DryRunFingerprint {
   return {
-    decisions: 0, premises: 0, alternatives: 0, guards: 0, contradictions: 0, justifications: 0,
-    decisionIds: [], labels: [], durationMs,
+    decisions: 0,
+    premises: 0,
+    alternatives: 0,
+    guards: 0,
+    contradictions: 0,
+    justifications: 0,
+    decisionIds: [],
+    labels: [],
+    durationMs,
   };
 }
 
@@ -151,7 +160,12 @@ function compare(runs: readonly DryRun[]): readonly string[] {
     if (first.error !== null) continue;
 
     const fields: (keyof DryRunFingerprint)[] = [
-      "decisions", "premises", "alternatives", "guards", "contradictions", "justifications",
+      "decisions",
+      "premises",
+      "alternatives",
+      "guards",
+      "contradictions",
+      "justifications",
     ];
 
     for (const field of fields) {
@@ -163,16 +177,24 @@ function compare(runs: readonly DryRun[]): readonly string[] {
     }
 
     if (first.fingerprint.labels.join("|") !== run.fingerprint.labels.join("|")) {
-      const differing = run.fingerprint.labels.filter((entry) => !first.fingerprint.labels.includes(entry));
+      const differing = run.fingerprint.labels.filter(
+        (entry) => !first.fingerprint.labels.includes(entry),
+      );
       out.push(
-        "LABELS DIVERGED between run 1 and run " + run.n + " — the same input produced different " +
-        "epistemic states. Counts alone would not have caught this. Differing: " +
-        (differing.length === 0 ? "(reordered only)" : differing.slice(0, 6).join(", ")),
+        "LABELS DIVERGED between run 1 and run " +
+          run.n +
+          " — the same input produced different " +
+          "epistemic states. Counts alone would not have caught this. Differing: " +
+          (differing.length === 0 ? "(reordered only)" : differing.slice(0, 6).join(", ")),
       );
     }
 
     if (first.fingerprint.decisionIds.join("|") !== run.fingerprint.decisionIds.join("|")) {
-      out.push("IDS DIVERGED between run 1 and run " + run.n + " — a counter depends on something other than the input.");
+      out.push(
+        "IDS DIVERGED between run 1 and run " +
+          run.n +
+          " — a counter depends on something other than the input.",
+      );
     }
   }
 
@@ -186,8 +208,17 @@ export function renderDryRuns(report: DryRunReport): string {
   lines.push(report.passed ? "PASSED: deterministic and demoable across all runs." : "NOT PASSED.");
   lines.push("");
 
-  lines.push("Run".padEnd(5) + "dec".padStart(5) + "prem".padStart(6) + "alt".padStart(5) +
-    "grd".padStart(5) + "contra".padStart(8) + "just".padStart(6) + "  verified/manual/failed".padEnd(26) + "secs");
+  lines.push(
+    "Run".padEnd(5) +
+      "dec".padStart(5) +
+      "prem".padStart(6) +
+      "alt".padStart(5) +
+      "grd".padStart(5) +
+      "contra".padStart(8) +
+      "just".padStart(6) +
+      "  verified/manual/failed".padEnd(26) +
+      "secs",
+  );
   lines.push("-".repeat(78));
 
   for (const run of report.runs) {
@@ -199,15 +230,21 @@ export function renderDryRuns(report: DryRunReport): string {
     }
     lines.push(
       String(run.n).padEnd(5) +
-      String(f.decisions).padStart(5) + String(f.premises).padStart(6) + String(f.alternatives).padStart(5) +
-      String(f.guards).padStart(5) + String(f.contradictions).padStart(8) + String(f.justifications).padStart(6) +
-      ("  " + v.verified + "/" + v.manual + "/" + v.failed).padEnd(26) +
-      (f.durationMs / 1000).toFixed(1),
+        String(f.decisions).padStart(5) +
+        String(f.premises).padStart(6) +
+        String(f.alternatives).padStart(5) +
+        String(f.guards).padStart(5) +
+        String(f.contradictions).padStart(8) +
+        String(f.justifications).padStart(6) +
+        ("  " + v.verified + "/" + v.manual + "/" + v.failed).padEnd(26) +
+        (f.durationMs / 1000).toFixed(1),
     );
   }
 
   lines.push("");
-  lines.push("Timings are shown but NOT compared: they vary with machine load, and treating a slow run as");
+  lines.push(
+    "Timings are shown but NOT compared: they vary with machine load, and treating a slow run as",
+  );
   lines.push("non-determinism teaches the presenter to ignore this report.");
 
   if (report.divergences.length > 0) {
@@ -216,11 +253,15 @@ export function renderDryRuns(report: DryRunReport): string {
     for (const divergence of report.divergences) lines.push("  " + divergence);
   } else {
     lines.push("");
-    lines.push("No divergences. Runs 2 and 3 started from whatever run 1 left in storage and produced");
+    lines.push(
+      "No divergences. Runs 2 and 3 started from whatever run 1 left in storage and produced",
+    );
     lines.push("identical node counts, identical labels and identical ids.");
   }
 
-  const warnings = report.runs.flatMap((run) => run.warnings.map((warning) => "run " + run.n + ": " + warning));
+  const warnings = report.runs.flatMap((run) =>
+    run.warnings.map((warning) => "run " + run.n + ": " + warning),
+  );
   if (warnings.length > 0) {
     lines.push("");
     lines.push("WARNINGS:");

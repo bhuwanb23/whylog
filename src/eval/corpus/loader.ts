@@ -68,7 +68,12 @@ export function loadCorpus(corpus: Corpus, root: string): LoadReport {
     for (const decision of transcript.decisions) {
       const span = findSpan(raw, decision.quote);
       if (span === null) {
-        unresolved.push({ transcript: transcript.id, kind: "decision", key: decision.key, quote: decision.quote });
+        unresolved.push({
+          transcript: transcript.id,
+          kind: "decision",
+          key: decision.key,
+          quote: decision.quote,
+        });
         continue;
       }
       resolvedCount += 1;
@@ -79,7 +84,12 @@ export function loadCorpus(corpus: Corpus, root: string): LoadReport {
     for (const premise of transcript.premises) {
       const span = findSpan(raw, premise.quote);
       if (span === null) {
-        unresolved.push({ transcript: transcript.id, kind: "premise", key: premise.key, quote: premise.quote });
+        unresolved.push({
+          transcript: transcript.id,
+          kind: "premise",
+          key: premise.key,
+          quote: premise.quote,
+        });
         continue;
       }
       resolvedCount += 1;
@@ -90,7 +100,12 @@ export function loadCorpus(corpus: Corpus, root: string): LoadReport {
     for (const alternative of transcript.alternatives) {
       const span = findSpan(raw, alternative.quote);
       if (span === null) {
-        unresolved.push({ transcript: transcript.id, kind: "alternative", key: alternative.key, quote: alternative.quote });
+        unresolved.push({
+          transcript: transcript.id,
+          kind: "alternative",
+          key: alternative.key,
+          quote: alternative.quote,
+        });
         continue;
       }
       resolvedCount += 1;
@@ -181,24 +196,36 @@ function normaliseWithMap(text: string): { text: string; indexes: number[] } {
  *  produces numbers that mean something other than what they appear to. */
 export function describeLoad(report: LoadReport): string {
   const lines = [
-    "Corpus load: " + report.corpus.transcripts.length + " transcript(s), " + report.resolved + " label(s) resolved to character spans.",
+    "Corpus load: " +
+      report.corpus.transcripts.length +
+      " transcript(s), " +
+      report.resolved +
+      " label(s) resolved to character spans.",
   ];
 
   if (report.missingFiles.length > 0) {
     lines.push("");
-    lines.push("MISSING FILES (" + report.missingFiles.length + ") — these transcripts were skipped entirely:");
+    lines.push(
+      "MISSING FILES (" +
+        report.missingFiles.length +
+        ") — these transcripts were skipped entirely:",
+    );
     for (const file of report.missingFiles) lines.push("  " + file);
   }
 
   if (report.unresolved.length > 0) {
     lines.push("");
     lines.push(
-      "UNRESOLVED LABELS (" + report.unresolved.length + ") — the quote is not a literal substring of the transcript.",
+      "UNRESOLVED LABELS (" +
+        report.unresolved.length +
+        ") — the quote is not a literal substring of the transcript.",
       "These are EXCLUDED from scoring and reported rather than dropped, because a label that silently",
       "vanishes lowers recall for a reason nobody can see:",
     );
     for (const entry of report.unresolved) {
-      lines.push("  " + entry.transcript + " · " + entry.kind + " " + entry.key + ' · "' + entry.quote + '"');
+      lines.push(
+        "  " + entry.transcript + " · " + entry.kind + " " + entry.key + ' · "' + entry.quote + '"',
+      );
     }
   } else {
     lines.push("Every label resolved. The ground truth is verifiable against the transcripts.");

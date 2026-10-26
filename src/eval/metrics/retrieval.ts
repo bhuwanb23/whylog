@@ -44,7 +44,14 @@ import type { DecisionId, EngineId } from "@/types/common";
 import type { ResolvedCorpus } from "../corpus/labels";
 import type { RunResult } from "../harness";
 import type { Resolver } from "./resolve";
-import { COMPARATORS, METRIC_NAMES, describeEngineId, meanReciprocalRank, precisionAtK, type MetricResult } from "./types";
+import {
+  COMPARATORS,
+  METRIC_NAMES,
+  type MetricResult,
+  describeEngineId,
+  meanReciprocalRank,
+  precisionAtK,
+} from "./types";
 
 const K = 5;
 
@@ -62,7 +69,7 @@ export interface RetrievalOutcome {
 }
 
 export function scoreRetrieval(
-  corpus: ResolvedCorpus,
+  _corpus: ResolvedCorpus,
   run: RunResult,
   resolver: Resolver,
   engine: EngineId,
@@ -72,7 +79,8 @@ export function scoreRetrieval(
       .map((key) => resolver.decision(key))
       .filter((id): id is DecisionId => id !== null);
 
-    const retrieved = entry.answer === null ? [] : entry.answer.retrieved.slice(0, K).map((hit) => hit.decisionId);
+    const retrieved =
+      entry.answer === null ? [] : entry.answer.retrieved.slice(0, K).map((hit) => hit.decisionId);
     const relevantFound = retrieved.filter((id) => relevantIds.includes(id)).length;
 
     const firstRelevantRank = (() => {
@@ -107,7 +115,9 @@ export function scoreRetrieval(
   );
   const achievableValue = perQuestion.length === 0 ? 0 : achievable / perQuestion.length;
 
-  const ranks = perQuestion.filter((entry) => !entry.unanswerable).map((entry) => entry.firstRelevantRank);
+  const ranks = perQuestion
+    .filter((entry) => !entry.unanswerable)
+    .map((entry) => entry.firstRelevantRank);
   const mrrValue = meanReciprocalRank(ranks);
 
   const detail = {
@@ -127,15 +137,31 @@ export function scoreRetrieval(
       value: precisionValue,
       detail,
       n: perQuestion.length,
-      perEngine: [{ engine: describeEngineId(engine), value: precisionValue, n: perQuestion.length, detail }],
+      perEngine: [
+        { engine: describeEngineId(engine), value: precisionValue, n: perQuestion.length, detail },
+      ],
       comparator: COMPARATORS["retrieval-precision"] ?? null,
       gloss:
-        relevantInTopK + " relevant result(s) across " + slots + " top-" + K + " slots = " +
-        (precisionValue * 100).toFixed(1) + "%. The achievable ceiling on these questions is " +
-        (achievableValue * 100).toFixed(1) + "%, because " + perQuestion.filter((entry) => entry.relevant.length < K).length +
-        " question(s) have fewer than " + K + " relevant decisions in the whole corpus.",
+        relevantInTopK +
+        " relevant result(s) across " +
+        slots +
+        " top-" +
+        K +
+        " slots = " +
+        (precisionValue * 100).toFixed(1) +
+        "%. The achievable ceiling on these questions is " +
+        (achievableValue * 100).toFixed(1) +
+        "%, because " +
+        perQuestion.filter((entry) => entry.relevant.length < K).length +
+        " question(s) have fewer than " +
+        K +
+        " relevant decisions in the whole corpus.",
       honestNote:
-        "precision@" + K + " over " + perQuestion.length + " questions, one of which is deliberately UNANSWERABLE and " +
+        "precision@" +
+        K +
+        " over " +
+        perQuestion.length +
+        " questions, one of which is deliberately UNANSWERABLE and " +
         "contributes a guaranteed zero rather than being dropped — dropping it would inflate the score by deleting the " +
         "hardest case. The achievable ceiling is printed beside the value because most questions have one or two relevant " +
         "decisions in a twelve-transcript corpus, so a perfect system scores well under 1.0 and the raw number must not be " +
@@ -148,14 +174,25 @@ export function scoreRetrieval(
       value: mrrValue,
       detail: null,
       n: ranks.length,
-      perEngine: [{ engine: describeEngineId(engine), value: mrrValue, n: ranks.length, detail: null }],
+      perEngine: [
+        { engine: describeEngineId(engine), value: mrrValue, n: ranks.length, detail: null },
+      ],
       comparator: null,
       gloss:
-        "MRR " + mrrValue.toFixed(3) + " over " + ranks.length + " answerable question(s). " +
-        ranks.filter((rank) => rank === null).length + " returned no relevant decision in the top " + K + " at all.",
+        "MRR " +
+        mrrValue.toFixed(3) +
+        " over " +
+        ranks.length +
+        " answerable question(s). " +
+        ranks.filter((rank) => rank === null).length +
+        " returned no relevant decision in the top " +
+        K +
+        " at all.",
       honestNote:
         "MRR is reported because precision@5 cannot distinguish 'ranked fifth' from 'never retrieved', and those are " +
-        "different failures with different fixes. n=" + ranks.length + " — the unanswerable question is EXCLUDED from MRR " +
+        "different failures with different fixes. n=" +
+        ranks.length +
+        " — the unanswerable question is EXCLUDED from MRR " +
         "(where it can only contribute a structural zero) but INCLUDED in precision@5, which is an inconsistency in " +
         "convention made deliberately and stated here rather than hidden: MRR answers 'when there is an answer, how high " +
         "is it', and the unanswerable question has no answer to rank. A query with no relevant result contributes 0 under " +

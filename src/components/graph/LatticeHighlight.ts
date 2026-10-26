@@ -16,9 +16,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
-import type { GraphState } from "@/substrate/graph-state";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId, PremiseId } from "@/types/common";
 import type { LatticeLayout } from "./LatticeLayout";
 
 export interface Highlight {

@@ -27,11 +27,37 @@ import type { LatticeEdge, LatticeNode } from "./LatticeLayout";
 export const EDGE_VISUAL: Readonly<
   Record<LatticeEdge["kind"], { stroke: string; width: number; dash: string; label: string }>
 > = {
-  supports: { stroke: "var(--label-in)", width: 1.6, dash: "", label: "supports — IN-list, load-bearing" },
-  excludes: { stroke: "var(--label-unknown)", width: 1.6, dash: "6 4", label: "excludes — OUT-list, NON-MONOTONIC. If this premise becomes true the decision is invalidated. This is what gate (c) fires on." },
-  "depends-on": { stroke: "var(--edge-cascade)", width: 1.4, dash: "", label: "depends on — a cascade path" },
-  supersedes: { stroke: "var(--edge-supersede)", width: 1.2, dash: "2 4", label: "supersedes — history" },
-  conflicts: { stroke: "var(--edge-conflict)", width: 1.8, dash: "5 3", label: "conflicts — the only red in the system. An action is available." },
+  supports: {
+    stroke: "var(--label-in)",
+    width: 1.6,
+    dash: "",
+    label: "supports — IN-list, load-bearing",
+  },
+  excludes: {
+    stroke: "var(--label-unknown)",
+    width: 1.6,
+    dash: "6 4",
+    label:
+      "excludes — OUT-list, NON-MONOTONIC. If this premise becomes true the decision is invalidated. This is what gate (c) fires on.",
+  },
+  "depends-on": {
+    stroke: "var(--edge-cascade)",
+    width: 1.4,
+    dash: "",
+    label: "depends on — a cascade path",
+  },
+  supersedes: {
+    stroke: "var(--edge-supersede)",
+    width: 1.2,
+    dash: "2 4",
+    label: "supersedes — history",
+  },
+  conflicts: {
+    stroke: "var(--edge-conflict)",
+    width: 1.8,
+    dash: "5 3",
+    label: "conflicts — the only red in the system. An action is available.",
+  },
 };
 
 export interface EdgeProps {
@@ -74,7 +100,9 @@ export function LatticeEdgeView(props: EdgeProps): ReactElement {
 
 function curve(x1: number, y1: number, x2: number, y2: number): string {
   const midY = (y1 + y2) / 2;
-  return "M " + x1 + " " + y1 + " C " + x1 + " " + midY + ", " + x2 + " " + midY + ", " + x2 + " " + y2;
+  return (
+    "M " + x1 + " " + y1 + " C " + x1 + " " + midY + ", " + x2 + " " + midY + ", " + x2 + " " + y2
+  );
 }
 
 /** The edge legend. Rendered beside the lattice, because five line styles nobody can look up is
@@ -85,7 +113,11 @@ export function EdgeLegend(): ReactElement {
       {(Object.keys(EDGE_VISUAL) as LatticeEdge["kind"][]).map((kind) => {
         const visual = EDGE_VISUAL[kind];
         return (
-          <span key={kind} style={{ display: "inline-flex", gap: 6, alignItems: "center" }} title={visual.label}>
+          <span
+            key={kind}
+            style={{ display: "inline-flex", gap: 6, alignItems: "center" }}
+            title={visual.label}
+          >
             <svg width="26" height="8" aria-hidden="true">
               <line
                 x1="0"

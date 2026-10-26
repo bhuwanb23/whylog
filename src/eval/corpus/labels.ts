@@ -330,7 +330,8 @@ export interface ResolvedAlternative extends Omit<LabelledAlternative, "quote"> 
   readonly transcript: string;
 }
 
-export interface ResolvedTranscript extends Omit<LabelledTranscript, "decisions" | "premises" | "alternatives"> {
+export interface ResolvedTranscript
+  extends Omit<LabelledTranscript, "decisions" | "premises" | "alternatives"> {
   readonly raw: string;
   readonly decisions: readonly ResolvedDecision[];
   readonly premises: readonly ResolvedPremise[];
