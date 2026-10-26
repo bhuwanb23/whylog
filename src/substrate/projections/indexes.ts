@@ -24,12 +24,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import { type SparseCorpus, type SparseDocument, buildCorpus } from "@/lib/bm25";
 import { contentTokens, tokenise } from "@/lib/text";
-import { buildCorpus, type SparseCorpus, type SparseDocument } from "@/lib/bm25";
+import { canonicalPredicate, canonicalValueOf } from "@/ontology/canonicalize";
 import type { DecisionId, PremiseId } from "@/types/common";
 import type { Decision, Premise } from "@/types/domain";
 import type { PremiseIndex, StructuralIndex } from "@/types/retrieval";
-import { canonicalValueOf, canonicalPredicate } from "@/ontology/canonicalize";
 import type { GraphState } from "../graph-state";
 
 /* -------------------------------------------------------------------------- */
@@ -64,10 +64,7 @@ export function buildStructuralIndex(state: GraphState): StructuralIndex {
   return { variableIndex, valueIndex };
 }
 
-export function lookupByVariable(
-  index: StructuralIndex,
-  variable: string,
-): readonly DecisionId[] {
+export function lookupByVariable(index: StructuralIndex, variable: string): readonly DecisionId[] {
   return index.variableIndex.get(variable) ?? [];
 }
 
@@ -198,7 +195,11 @@ export function buildSparseCorpus(state: GraphState): SparseCorpus {
 }
 
 /** Terms for a query, folded the same way documents were. */
-export function queryTerms(state: GraphState, query: string, variable?: string): readonly string[] {
+export function queryTerms(
+  _state: GraphState,
+  query: string,
+  variable?: string,
+): readonly string[] {
   const tokens = tokenise(query);
   const out = new Set<string>();
 

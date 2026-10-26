@@ -25,12 +25,12 @@
 
 import { nowISO } from "@/lib/format";
 import type { ISODateString } from "@/types/common";
-import type { IntegrityStamp, StampVerification } from "@/types/export";
 import { isWorldObservable } from "@/types/domain";
+import type { IntegrityStamp, StampVerification } from "@/types/export";
 import type { GraphState } from "./graph-state";
 import { GENESIS_HASH, linkHash } from "./hash-chain";
-import { SCHEMA_VERSION } from "./schema";
 import { compliance, coverage, soundness } from "./projections/metrics";
+import { SCHEMA_VERSION } from "./schema";
 
 /**
  * Build the stamp for the current state.

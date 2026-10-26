@@ -28,49 +28,48 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
+import { DEFAULT_CONFIG, engineIdOf, readConfig } from "@/ai/config";
+import { type ActiveEngine, getEngine, invalidateEngine } from "@/ai/engine";
 import { nowISO } from "@/lib/format";
-import { ok, err, type Result } from "@/lib/result";
-import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
-import type { AnyEvent, EventType, EventPayloadMap, NewEvent } from "@/types/events";
+import { type Result, err, ok } from "@/lib/result";
 import {
-  append as appendToLog,
+  type EventLog,
   appendBatch as appendBatchToLog,
   appendSealed,
+  append as appendToLog,
   emptyLog,
   loadLog as sealLog,
   verify as verifyLog,
-  type EventLog,
 } from "@/substrate/event-log";
 import { validationMessage } from "@/substrate/event-validation";
 import type { GraphState } from "@/substrate/graph-state";
 import { emptyState } from "@/substrate/graph-state";
-import { fold, rebuild, type FoldOptions } from "@/substrate/materialize";
+import type { ChainVerification } from "@/substrate/hash-chain";
+import { type FoldOptions, fold, rebuild } from "@/substrate/materialize";
 import {
+  type StorageReport,
+  isPersistent,
   loadLog as loadStoredLog,
+  reclaimSpace,
   saveEvents,
   report as storageReport,
-  isPersistent,
-  reclaimSpace,
   wipeAll,
-  type StorageReport,
 } from "@/substrate/persistence";
 import {
+  type ImportOutcome,
+  type PortableLog,
+  describeImportOutcome,
+  describeRejection,
   exportLog,
   importLog,
   reseal,
   serializeLog,
-  describeImportOutcome,
-  describeRejection,
-  type ImportOutcome,
-  type PortableLog,
 } from "@/substrate/portability";
-import type { ChainVerification } from "@/substrate/hash-chain";
-import { label } from "@/reasoning/labeller";
 import { SCHEMA_VERSION } from "@/substrate/schema";
-import { getEngine, invalidateEngine, type ActiveEngine } from "@/ai/engine";
-import { DEFAULT_CONFIG, engineIdOf, readConfig } from "@/ai/config";
-import { initialSettings, type SettingsState } from "./settings";
+import type { Actor, EngineId, EventId, ISODateString } from "@/types/common";
+import type { AnyEvent, EventPayloadMap, EventType, NewEvent } from "@/types/events";
+import { create } from "zustand";
+import { type SettingsState, initialSettings } from "./settings";
 
 /* -------------------------------------------------------------------------- */
 /* Shape                                                                      */
@@ -198,10 +197,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         engine: resolved,
         engineId: resolved.id,
         storage: storageReport(),
-        notices: [
-          ...notices,
-          notice("error", "Stored log could not be read", stored.error, at),
-        ],
+        notices: [...notices, notice("error", "Stored log could not be read", stored.error, at)],
       });
       return;
     }
@@ -283,7 +279,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
   /* ---------------- record ---------------- */
 
   record: (draft, context) => {
-    const { log, state, status } = get();
+    const { log, status } = get();
     const at = nowISO() as ISODateString;
 
     if (status === "degraded") {
@@ -375,65 +371,11 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
 
     if (!outcome.ok) return err(validationMessage(outcome.validation));
 
-    let workingLog = outcome.log;
-    let workingEvents = outcome.events;
-    let nextState = fold(workingLog.events, foldOptions(get().engineId, at));
-
-    /* ------------------------------------------------------------------
-     * Post-commit relabel. The fold's DecisionApproved handler stores an
-     * unconditionally-IN label, so a justification whose out-list premise is
-     * IN (the JTMS-invalid case) drifts from the labeller. Left uncorrected,
-     * guards read a stale IN/OUT and skip. Diff the pure labeller against the
-     * stored labels and append the corrective LabelChanged drafts in the SAME
-     * batch, then re-fold so the log — not just the cache — records the flip.
-     * This is REVISE's ASSERT step, run on every commit rather than only at
-     * boot/revise, so the authoritative label lives in the log.
-     * ------------------------------------------------------------------ */
-    const drift = label(nextState).changed;
-    if (drift.length > 0) {
-      const relabelDrafts = drift.map(
-        (c): NewEvent<"LabelChanged"> => ({
-          type: "LabelChanged",
-          payload: {
-            nodeId: c.id,
-            from: c.from,
-            to: c.to,
-            ...(c.reason.kind === "all-justifications-invalid" && c.reason.failedPremiseId
-              ? { triggerPremiseId: c.reason.failedPremiseId }
-              : {}),
-            ...(c.reason.kind === "valid-justification"
-              ? { invalidJustificationId: c.reason.justificationId }
-              : {}),
-            gate: "cascade",
-          },
-          actor,
-          reason: `Post-commit relabel: ${c.id} moved from ${c.from} to ${c.to} (${c.reason.kind.replace(/-/g, " ")}).`,
-          ...(at === undefined ? {} : { at: at as ISODateString }),
-        }),
-      );
-      const relabelOutcome = appendBatchToLog(
-        workingLog,
-        relabelDrafts.map((draft) => ({
-          draft: {
-            type: draft.type,
-            payload: draft.payload as EventPayloadMap[EventType],
-            actor: draft.actor,
-            reason: draft.reason,
-          },
-          context: { now: at, actor, reason: draft.reason },
-        })),
-      );
-      if (relabelOutcome.ok) {
-        workingLog = relabelOutcome.log;
-        workingEvents = [...workingEvents, ...relabelOutcome.events];
-        nextState = fold(workingLog.events, foldOptions(get().engineId, at));
-      }
-    }
-
-    const saved = saveEvents(workingLog.events, workingLog.headHash, at);
+    const nextState = fold(outcome.log.events, foldOptions(get().engineId, at));
+    const saved = saveEvents(outcome.log.events, outcome.log.headHash, at);
 
     set((current) => ({
-      log: workingLog,
+      log: outcome.log,
       state: nextState,
       status: current.status === "empty" ? "loaded" : current.status,
       pristine: false,
@@ -443,7 +385,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
         : [...current.notices, notice("error", "Recorded but not saved", saved.error, at)],
     }));
 
-    return ok(workingEvents.map((e) => e.id));
+    return ok(outcome.events.map((e) => e.id));
   },
 
   /* ---------------- rebuild ---------------- */
@@ -453,10 +395,7 @@ export const useWhyLog = create<WhyLogState>()((set, get) => ({
     const { log } = get();
     // Throw the cache away and re-fold from the log. Safe by construction: the
     // projections are derived and the log is untouched.
-    const state = rebuild(
-      get().state,
-      foldOptions(get().engineId, at),
-    );
+    const state = rebuild(get().state, foldOptions(get().engineId, at));
     set((current) => ({
       state,
       notices: [

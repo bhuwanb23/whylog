@@ -12,9 +12,9 @@
  * ordered by VALID time, never by learned time. See src/substrate/bi-temporal.ts.
  */
 
-import { compare, byValidDesc, byIdAsc, formatInterval, isOpen } from "../bi-temporal";
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import type { Decision, DecisionLabel, DecisionStatus, DecisionVariable } from "@/types/domain";
+import { byIdAsc, byValidDesc, compare, formatInterval, isOpen } from "../bi-temporal";
 import type { GraphState } from "../graph-state";
 
 export type DecisionSort = "valid-desc" | "valid-asc" | "id" | "entrenchment";
@@ -25,7 +25,10 @@ export function getDecision(state: GraphState, id: DecisionId): Decision | null 
   return state.decisions.get(id) ?? null;
 }
 
-export function allDecisions(state: GraphState, sort: DecisionSort = "valid-desc"): readonly Decision[] {
+export function allDecisions(
+  state: GraphState,
+  sort: DecisionSort = "valid-desc",
+): readonly Decision[] {
   const out = [...state.decisions.values()];
   switch (sort) {
     case "valid-desc":
@@ -132,10 +135,7 @@ export function supersessionChain(state: GraphState, id: DecisionId): readonly D
 }
 
 /** What was true at a given VALID time. The time machine's decision view. */
-export function decisionsAsOf(
-  state: GraphState,
-  at: ISODateString,
-): readonly Decision[] {
+export function decisionsAsOf(state: GraphState, at: ISODateString): readonly Decision[] {
   return allDecisions(state).filter((d) => {
     if (d.temporal.valid > at) return false;
     if (d.temporal.invalidFrom !== undefined && d.temporal.invalidFrom <= at) return false;
@@ -150,9 +150,7 @@ export function decisionsForPath(
   path: string,
   matchesGlob: (path: string, glob: string) => boolean,
 ): readonly Decision[] {
-  return liveDecisions(state).filter((d) =>
-    d.appliesTo.some((glob) => matchesGlob(path, glob)),
-  );
+  return liveDecisions(state).filter((d) => d.appliesTo.some((glob) => matchesGlob(path, glob)));
 }
 
 /** A one-line summary for lists and exports. */

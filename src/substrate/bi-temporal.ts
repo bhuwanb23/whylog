@@ -143,13 +143,19 @@ export function matchesAsOf(window: ValidityWindow, filter: AsOfFilter): boolean
 
 /** Newest-first by VALID time. The timeline order, the default search order,
  *  and the recency input to entrenchment. */
-export function byValidDesc<T extends { temporal: { readonly valid: ISODateString } }>(a: T, b: T): number {
+export function byValidDesc<T extends { temporal: { readonly valid: ISODateString } }>(
+  a: T,
+  b: T,
+): number {
   if (a.temporal.valid === b.temporal.valid) return 0;
   return a.temporal.valid < b.temporal.valid ? 1 : -1;
 }
 
 /** Oldest-first by VALID time. The order an export narrates in. */
-export function byValidAsc<T extends { temporal: { readonly valid: ISODateString } }>(a: T, b: T): number {
+export function byValidAsc<T extends { temporal: { readonly valid: ISODateString } }>(
+  a: T,
+  b: T,
+): number {
   if (a.temporal.valid === b.temporal.valid) return 0;
   return a.temporal.valid < b.temporal.valid ? -1 : 1;
 }
@@ -239,9 +245,13 @@ export function overlaps(a: ValidityWindow, b: ValidityWindow): boolean {
 /** Exponential decay with a 30-day half-life, in (0, 1]. 1.0 for a decision
  *  made today. Exported here rather than in reasoning/ because the input is a
  *  validity window, not an entrenchment breakdown. */
-export function recency(window: ValidityWindow, reference: ISODateString, halfLifeDays = 30): number {
+export function recency(
+  window: ValidityWindow,
+  reference: ISODateString,
+  halfLifeDays = 30,
+): number {
   const age = validAgeDays(window, reference);
-  return Math.pow(0.5, age / halfLifeDays);
+  return 0.5 ** (age / halfLifeDays);
 }
 
 /* -------------------------------------------------------------------------- */

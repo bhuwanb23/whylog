@@ -17,9 +17,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { compare, byValidDesc, byIdAsc, formatInterval, isOpen } from "@/substrate/bi-temporal";
-import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
-import type { Decision, DecisionLabel, DecisionVariable, Premise } from "@/types/domain";
+import { byIdAsc, byValidDesc, compare, formatInterval, isOpen } from "@/substrate/bi-temporal";
 import type { GraphState } from "@/substrate/graph-state";
 import { OTHER_VARIABLE_THRESHOLD } from "@/substrate/graph-state";
 import * as decisions from "@/substrate/projections/decisions";
@@ -27,6 +25,8 @@ import * as edges from "@/substrate/projections/edges";
 import * as justifications from "@/substrate/projections/justifications";
 import * as metrics from "@/substrate/projections/metrics";
 import * as premises from "@/substrate/projections/premises";
+import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
+import type { Decision, DecisionLabel, DecisionVariable, Premise } from "@/types/domain";
 
 /** The canonical timeline order: valid time descending, ties broken by id.
  *  Exported so a component cannot sort the same list differently by accident. */
@@ -69,17 +69,22 @@ export const NO_TIMELINE_FILTER: TimelineFilter = {
   text: "",
 };
 
-export function timeline(state: GraphState, filter: TimelineFilter = NO_TIMELINE_FILTER): readonly TimelineRow[] {
+export function timeline(
+  state: GraphState,
+  filter: TimelineFilter = NO_TIMELINE_FILTER,
+): readonly TimelineRow[] {
   const needle = filter.text.trim().toLowerCase();
 
   return decisions
     .allDecisions(state, "valid-desc")
     .filter((decision) => {
       if (!filter.includeClosed && !isOpen(decision.temporal)) return false;
-      if (filter.variables.length > 0 && !filter.variables.includes(decision.variable)) return false;
+      if (filter.variables.length > 0 && !filter.variables.includes(decision.variable))
+        return false;
       if (filter.labels.length > 0 && !filter.labels.includes(decision.label)) return false;
       if (needle.length > 0) {
-        const haystack = `${decision.statement} ${decision.value} ${decision.rationale ?? ""}`.toLowerCase();
+        const haystack =
+          `${decision.statement} ${decision.value} ${decision.rationale ?? ""}`.toLowerCase();
         if (!haystack.includes(needle)) return false;
       }
       return true;
@@ -103,7 +108,14 @@ export function timeline(state: GraphState, filter: TimelineFilter = NO_TIMELINE
 export function auditTrail(
   state: GraphState,
   limit = 200,
-): readonly { id: string; at: string; occurredAt: string; type: string; actor: string; reason: string }[] {
+): readonly {
+  id: string;
+  at: string;
+  occurredAt: string;
+  type: string;
+  actor: string;
+  reason: string;
+}[] {
   return state.events
     .slice(-limit)
     .reverse()
@@ -201,7 +213,12 @@ export function unresolvedContradictions(state: GraphState) {
 /* -------------------------------------------------------------------------- */
 
 export interface GraphData {
-  readonly nodes: readonly { id: DecisionId; variable: DecisionVariable; label: DecisionLabel; live: boolean }[];
+  readonly nodes: readonly {
+    id: DecisionId;
+    variable: DecisionVariable;
+    label: DecisionLabel;
+    live: boolean;
+  }[];
   readonly links: readonly edges.Edge[];
   readonly clusters: readonly (readonly DecisionId[])[];
   readonly largestCluster: number;
@@ -265,9 +282,7 @@ export function decisionDetail(state: GraphState, id: DecisionId) {
     live: isOpen(decision.temporal),
     history: state.events.filter(
       (event) =>
-        event.type === "LabelChanged" &&
-        (event.payload as { nodeId?: string }).nodeId === id,
+        event.type === "LabelChanged" && (event.payload as { nodeId?: string }).nodeId === id,
     ),
   };
 }
-

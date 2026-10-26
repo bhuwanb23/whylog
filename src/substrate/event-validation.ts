@@ -20,9 +20,9 @@
 
 import type { EventId, ISODateString } from "@/types/common";
 import {
-  STATE_CHANGING_EVENTS,
   type AnyEvent,
   type EventType,
+  STATE_CHANGING_EVENTS,
   type ValidationResult,
 } from "@/types/events";
 import type { EventPayloadMap } from "@/types/events";
@@ -150,7 +150,15 @@ const REQUIRED_PAYLOAD_KEYS: Readonly<Record<EventType, readonly string[]>> = {
   PremiseContested: ["premiseId"],
   DecisionSuperseded: ["oldDecisionId", "newDecisionId"],
   HumanOverride: ["proposalId", "overriddenDecisionId"],
-  GuardSynthesised: ["guardId", "decisionId", "kind", "spec", "severity", "rationale", "generatedBy"],
+  GuardSynthesised: [
+    "guardId",
+    "decisionId",
+    "kind",
+    "spec",
+    "severity",
+    "rationale",
+    "generatedBy",
+  ],
   GuardAccepted: ["guardId"],
   GuardRan: ["guardId", "result", "evidence", "ranAt"],
   GuardFailed: ["guardId", "result", "evidence", "ranAt", "firstFailedAt"],

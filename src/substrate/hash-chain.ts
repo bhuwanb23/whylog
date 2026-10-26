@@ -122,8 +122,6 @@ export function verifyChain(events: readonly AnyEvent[]): ChainVerification {
       });
     }
 
-    // Per-event content hash: detects a tampered event at its own index, not at
-    // the next one. `selfHash` is the hash of everything except prevHash/selfHash.
     const computedSelf = hashEvent(event);
     if (event.selfHash !== computedSelf) {
       report({
@@ -253,15 +251,15 @@ export function coerceEvent(
     }
   }
 
-   /* The ENVELOPE is validated above; the payload's type-specific shape is not — that is
-    * `payloadShapeOk`'s job, and portability runs the imported events through the same validation the
-    * append path does. Claiming AnyEvent here states what the log will hold, not what this function
-    * proved on its own. */
-   const coerced = candidate as unknown as AnyEvent;
-   if (typeof coerced.selfHash !== "string" || coerced.selfHash.length === 0) {
-     (coerced as { selfHash: string }).selfHash = hashEvent(coerced);
-   }
-   return { ok: true, event: coerced };
+  /* The ENVELOPE is validated above; the payload's type-specific shape is not — that is
+   * `payloadShapeOk`'s job, and portability runs the imported events through the same validation the
+   * append path does. Claiming AnyEvent here states what the log will hold, not what this function
+   * proved on its own. */
+  const coerced = candidate as unknown as AnyEvent;
+  if (typeof coerced.selfHash !== "string" || coerced.selfHash.length === 0) {
+    (coerced as { selfHash: string }).selfHash = hashEvent(coerced);
+  }
+  return { ok: true, event: coerced };
 }
 
 /** Human-readable summary of a verification, for the health panel. */
