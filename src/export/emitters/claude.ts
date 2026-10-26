@@ -14,9 +14,9 @@
  */
 
 import type { ExportCif, ExportRecord } from "@/types/export";
-import { renderRejectedBlock } from "../rejected-block";
 import { renderIndex } from "../budget";
-import { ANTI_RELITIGATION, renderStatus } from "../record";
+import { ANTI_RELITIGATION } from "../record";
+import { renderRejectedBlock } from "../rejected-block";
 import { renderRecord } from "./shared";
 
 export interface ClaudeOptions {
@@ -49,7 +49,9 @@ export function emitClaudeMd(cif: ExportCif, stampBlock: string, options?: Claud
     sections.push("");
 
     for (const record of cif.records) {
-      sections.push(renderRecord(record, { annotations: true, antiRelitigation: ANTI_RELITIGATION }));
+      sections.push(
+        renderRecord(record, { annotations: true, antiRelitigation: ANTI_RELITIGATION }),
+      );
       sections.push("");
     }
   }

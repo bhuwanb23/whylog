@@ -11,10 +11,10 @@
 import type { DecisionId } from "@/types/common";
 import type { ExportCif, ExportTarget } from "@/types/export";
 import { TARGET_FILENAMES } from "@/types/export";
-import { emitClaudeMd } from "./claude";
 import { emitAgentsMd } from "./agents";
+import { emitClaudeMd } from "./claude";
 import { emitCursorRules } from "./cursorrules";
-import { emitDecisionsMd, type DecisionNarrative } from "./decisions-md";
+import { type DecisionNarrative, emitDecisionsMd } from "./decisions-md";
 
 export interface EmitInput {
   readonly target: ExportTarget;
@@ -30,11 +30,16 @@ export interface EmitInput {
 /** The reader each target is written for. Shown in the export view, because "which file do I
  *  need?" is a question about the reader, not about the format. */
 export const TARGET_AUDIENCE: Readonly<Record<ExportTarget, string>> = {
-  "claude-md": "Claude Code, read at the start of every session. Kept under ~200 lines because longer files reduce adherence.",
-  "agents-md": "The cross-agent standard — a README for agents, used in 60,000+ projects. The default when you do not know which tool the next contributor will use.",
-  cursorrules: "Cursor, as project instructions. A flat imperative list; per-rule files under .cursor/rules/ are a v2 target.",
-  "decisions-md": "Humans. Full ADR form with context, consequences and alternatives — and the only target carrying superseded decisions, because a reversal is history a person needs and a rule an agent should not see.",
-  "ci-guards": "GitHub Actions. The Phase 4 runner, emitted alongside so the checks live where the code does.",
+  "claude-md":
+    "Claude Code, read at the start of every session. Kept under ~200 lines because longer files reduce adherence.",
+  "agents-md":
+    "The cross-agent standard — a README for agents, used in 60,000+ projects. The default when you do not know which tool the next contributor will use.",
+  cursorrules:
+    "Cursor, as project instructions. A flat imperative list; per-rule files under .cursor/rules/ are a v2 target.",
+  "decisions-md":
+    "Humans. Full ADR form with context, consequences and alternatives — and the only target carrying superseded decisions, because a reversal is history a person needs and a rule an agent should not see.",
+  "ci-guards":
+    "GitHub Actions. The Phase 4 runner, emitted alongside so the checks live where the code does.",
 };
 
 export function emit(input: EmitInput): string {
@@ -50,7 +55,12 @@ export function emit(input: EmitInput): string {
     case "cursorrules":
       return emitCursorRules(input.cif, input.stampBlock);
     case "decisions-md":
-      return emitDecisionsMd(input.cif, input.stampBlock, input.narratives ?? new Map(), input.projectName);
+      return emitDecisionsMd(
+        input.cif,
+        input.stampBlock,
+        input.narratives ?? new Map(),
+        input.projectName,
+      );
     case "ci-guards":
       /* Not a Markdown emitter. The CI target is the Phase 4 runner, compiled from the same graph
        * in the same pass — it needs guard records, not a CIF. Routing it through here would mean

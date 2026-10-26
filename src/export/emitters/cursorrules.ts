@@ -49,8 +49,16 @@ export function emitCursorRules(cif: ExportCif, stampBlock: string): string {
     lines.push("# Rejected — do not re-propose without superseding the record.");
     for (const entry of cif.rejected) {
       lines.push(
-        "# - " + entry.value + " (" + entry.decisionId + "): " + entry.why +
-          " [" + entry.premiseStatus + "]" + (entry.contested ? " UNDER REVIEW" : ""),
+        "# - " +
+          entry.value +
+          " (" +
+          entry.decisionId +
+          "): " +
+          entry.why +
+          " [" +
+          entry.premiseStatus +
+          "]" +
+          (entry.contested ? " UNDER REVIEW" : ""),
       );
     }
     lines.push("");
@@ -73,7 +81,13 @@ export function emitCursorRules(cif: ExportCif, stampBlock: string): string {
 function renderCursorRecord(record: ExportRecord): readonly string[] {
   const out: string[] = [];
 
-  out.push("# " + record.id + (record.appliesTo.length > 0 ? "  [" + record.appliesTo.join(", ") + "]" : "  [no scope recorded]"));
+  out.push(
+    "# " +
+      record.id +
+      (record.appliesTo.length > 0
+        ? "  [" + record.appliesTo.join(", ") + "]"
+        : "  [no scope recorded]"),
+  );
 
   if (record.becauseText.length > 0) out.push("# BECAUSE: " + record.becauseText);
   else out.push("# BECAUSE: no premise recorded — nothing can falsify this rule");
@@ -81,7 +95,12 @@ function renderCursorRecord(record: ExportRecord): readonly string[] {
   out.push(record.imperative);
 
   if (record.rejected.length > 0) {
-    out.push("# REJECTED: " + record.rejected.map((entry) => entry.value + (entry.why === undefined ? "" : " (" + entry.why + ")")).join(", "));
+    out.push(
+      "# REJECTED: " +
+        record.rejected
+          .map((entry) => entry.value + (entry.why === undefined ? "" : " (" + entry.why + ")"))
+          .join(", "),
+    );
   }
 
   if (record.verifyCommand !== undefined) out.push("# VERIFY: " + record.verifyCommand);
@@ -90,7 +109,8 @@ function renderCursorRecord(record: ExportRecord): readonly string[] {
   const flags: string[] = [];
   if (record.contestedPremise) flags.push("PREMISE CONTESTED");
   if (record.failingGuard) flags.push("VERIFY CURRENTLY FAILS");
-  if (record.guardsTotal > 0) flags.push("guards " + record.guardsPassing + "/" + record.guardsTotal);
+  if (record.guardsTotal > 0)
+    flags.push("guards " + record.guardsPassing + "/" + record.guardsTotal);
   if (flags.length > 0) out.push("# STATUS: " + flags.join(" · "));
 
   return out;

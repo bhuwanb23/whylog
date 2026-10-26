@@ -103,10 +103,19 @@ export function renderRecord(record: ExportRecord, options?: RenderOptions): str
 }
 
 /** The tier-2 one-liner. Same shape in every agent target, for the same reason. */
-export function renderIndexLine(id: string, imperative: string, appliesTo: readonly string[], seeAlso: string): string {
+export function renderIndexLine(
+  id: string,
+  imperative: string,
+  appliesTo: readonly string[],
+  seeAlso: string,
+): string {
   return (
-    "- " + id + " · " + imperative +
+    "- " +
+    id +
+    " · " +
+    imperative +
     (appliesTo.length > 0 ? " · " + appliesTo.join(", ") : "") +
-    " · see " + seeAlso
+    " · see " +
+    seeAlso
   );
 }

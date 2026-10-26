@@ -57,24 +57,30 @@
  * ---------------------------------------------------------------------------
  */
 
+import { compliance, coverage, evaluatedFromState } from "@/guards";
+import { nowISO } from "@/lib/format";
+import { formatExportId } from "@/lib/ids";
+import { label } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 import type { Actor } from "@/types/common";
 import type { DecisionId, ExportId, ISODateString } from "@/types/common";
-import type { EventType, NewEvent } from "@/types/events";
-import type { CompiledArtifact, ExportCif, ExportTarget, ExportWarning, IntegrityStamp } from "@/types/export";
-import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
 import type { Decision } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import { label } from "@/reasoning/labeller";
-import { formatExportId } from "@/lib/ids";
-import { nowISO } from "@/lib/format";
-import { compliance, coverage, evaluatedFromState } from "@/guards";
-import { buildCif, type CifResult } from "./cif";
-import { buildStamp, renderStamp } from "./stamp";
+import type { EventType, NewEvent } from "@/types/events";
+import type {
+  CompiledArtifact,
+  ExportCif,
+  ExportTarget,
+  ExportWarning,
+  IntegrityStamp,
+} from "@/types/export";
+import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
+import { emitCi } from "./ci";
+import { type CifResult, buildCif } from "./cif";
+import { type GateReport, annotationsFor, renderBlocked } from "./consistency-gate";
 import { emit, isDocumentTarget } from "./emitters";
 import type { DecisionNarrative } from "./emitters/decisions-md";
-import { emitCi } from "./ci";
+import { buildStamp, renderStamp } from "./stamp";
 import { RUNNER_PATH } from "./verify-command";
-import { annotationsFor, renderBlocked, type GateReport } from "./consistency-gate";
 
 export interface CompileInput {
   readonly state: GraphState;
@@ -137,12 +143,22 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
   });
 
   /* ---- the agent CIF: exclusions on, budget on ---- */
-  const agentResult: CifResult = buildCif(input.state, labels, stamp.headHash, generatedAt, complianceResult.score, coverageResult.score, {
-    ...(input.maxLines === undefined ? {} : { maxLines: input.maxLines }),
-    ...(input.includeOut === undefined ? {} : { includeOut: input.includeOut }),
-    ...(input.includeSuperseded === undefined ? {} : { includeSuperseded: input.includeSuperseded }),
-    ...(input.now === undefined ? {} : { now: input.now }),
-  });
+  const agentResult: CifResult = buildCif(
+    input.state,
+    labels,
+    stamp.headHash,
+    generatedAt,
+    complianceResult.score,
+    coverageResult.score,
+    {
+      ...(input.maxLines === undefined ? {} : { maxLines: input.maxLines }),
+      ...(input.includeOut === undefined ? {} : { includeOut: input.includeOut }),
+      ...(input.includeSuperseded === undefined
+        ? {}
+        : { includeSuperseded: input.includeSuperseded }),
+      ...(input.now === undefined ? {} : { now: input.now }),
+    },
+  );
 
   /* ---- the gate blocks before anything is rendered ---- */
   if (agentResult.blocked) {
@@ -163,14 +179,22 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
   }
 
   /* ---- the human CIF: no exclusions, no budget ---- */
-  const humanResult = buildCif(input.state, labels, stamp.headHash, generatedAt, complianceResult.score, coverageResult.score, {
-    includeOut: true,
-    includeSuperseded: true,
-    /* A human document is not read into a context window. Sizing the budget to the log guarantees
-     * everything lands inline rather than in an index that would point at itself. */
-    maxLines: Math.max(1000, input.state.decisions.size * 40),
-    ...(input.now === undefined ? {} : { now: input.now }),
-  });
+  const humanResult = buildCif(
+    input.state,
+    labels,
+    stamp.headHash,
+    generatedAt,
+    complianceResult.score,
+    coverageResult.score,
+    {
+      includeOut: true,
+      includeSuperseded: true,
+      /* A human document is not read into a context window. Sizing the budget to the log guarantees
+       * everything lands inline rather than in an index that would point at itself. */
+      maxLines: Math.max(1000, input.state.decisions.size * 40),
+      ...(input.now === undefined ? {} : { now: input.now }),
+    },
+  );
 
   const narratives = buildNarratives(input.state);
 
@@ -199,7 +223,17 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
       needsRunner = true;
     }
 
-    artifacts.push(finishArtifact(exportId, target, body, stamp, target === "decisions-md" ? humanResult : agentResult, agentResult.gate, cif));
+    artifacts.push(
+      finishArtifact(
+        exportId,
+        target,
+        body,
+        stamp,
+        target === "decisions-md" ? humanResult : agentResult,
+        agentResult.gate,
+        cif,
+      ),
+    );
   }
 
   /* ---- the CI target, same graph, same pass ---- */
@@ -226,14 +260,21 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
     if (needsRunner && !targets.includes("ci-guards")) {
       ciAddedBecause =
         "The CI runner was emitted even though it was not selected, because verify commands in the " +
-        "exported documents invoke " + RUNNER_PATH + ". Without it those commands would be " +
+        "exported documents invoke " +
+        RUNNER_PATH +
+        ". Without it those commands would be " +
         "instructions that fail.";
     }
   }
 
   /* ---- events ---- */
-  const totalLines = artifacts.reduce((total, artifact) => total + artifact.contents.split("\n").length, 0);
-  const emittedTargets = targets.filter((target) => artifacts.some((artifact) => artifact.target === target));
+  const totalLines = artifacts.reduce(
+    (total, artifact) => total + artifact.contents.split("\n").length,
+    0,
+  );
+  const emittedTargets = targets.filter((target) =>
+    artifacts.some((artifact) => artifact.target === target),
+  );
 
   const drafts: NewEvent<EventType>[] = [
     {
@@ -247,10 +288,17 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
       },
       actor: input.actor,
       reason:
-        "Compiled " + artifacts.length + " artifact(s) from log head " + stamp.headHash.slice(0, 12) +
-        ": " + agentResult.cif.stats.decisionsIncluded + " decision(s) inline, " +
-        agentResult.cif.stats.decisionsLinkedOut + " linked out, " +
-        agentResult.cif.stats.decisionsExcluded + " excluded. One pass over one graph, so the verify " +
+        "Compiled " +
+        artifacts.length +
+        " artifact(s) from log head " +
+        stamp.headHash.slice(0, 12) +
+        ": " +
+        agentResult.cif.stats.decisionsIncluded +
+        " decision(s) inline, " +
+        agentResult.cif.stats.decisionsLinkedOut +
+        " linked out, " +
+        agentResult.cif.stats.decisionsExcluded +
+        " excluded. One pass over one graph, so the verify " +
         "commands and the guard set cannot disagree.",
       at: generatedAt,
       occurredAt: generatedAt,
@@ -260,7 +308,9 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
       payload: { exportId, stamp },
       actor: input.actor,
       reason:
-        "Stamped with log head " + stamp.headHash.slice(0, 12) + " so each artifact can be tied back " +
+        "Stamped with log head " +
+        stamp.headHash.slice(0, 12) +
+        " so each artifact can be tied back " +
         "to the state that produced it and a later rewrite detected. Auditability, not security: the " +
         "hash is unsalted and the algorithm is in the source.",
       at: generatedAt,
@@ -334,7 +384,9 @@ function narrativeFor(decision: Decision): DecisionNarrative {
   return {
     ...(decision.yStatement === undefined ? {} : { yStatement: decision.yStatement }),
     ...(decision.rationale === undefined ? {} : { rationale: decision.rationale }),
-    ...(decision.acceptedDownside === undefined ? {} : { acceptedDownside: decision.acceptedDownside }),
+    ...(decision.acceptedDownside === undefined
+      ? {}
+      : { acceptedDownside: decision.acceptedDownside }),
     supersedes: decision.edges.supersedes,
     supersededBy: decision.edges.supersededBy,
     sharesPremiseWith: decision.edges.sharesPremiseWith,
@@ -372,7 +424,10 @@ function gateWarnings(gate: GateReport, cif: ExportCif): readonly ExportWarning[
 }
 
 /** The annotations the gate produced for one record, for the view to render beside it. */
-export function annotationsForResult(result: CompileResult, decisionId: DecisionId): readonly string[] {
+export function annotationsForResult(
+  result: CompileResult,
+  decisionId: DecisionId,
+): readonly string[] {
   return annotationsFor(result.gate, decisionId);
 }
 
@@ -383,13 +438,20 @@ export function describeCompile(result: CompileResult): string {
   }
 
   const lines = [
-    "Compiled " + result.artifacts.length + " artifact(s) in " + result.durationMs + " ms, one pass over one graph.",
+    "Compiled " +
+      result.artifacts.length +
+      " artifact(s) in " +
+      result.durationMs +
+      " ms, one pass over one graph.",
     "",
   ];
 
   for (const artifact of result.artifacts) {
     lines.push(
-      "  " + artifact.filename.padEnd(38) + artifact.contents.split("\n").length + " lines" +
+      "  " +
+        artifact.filename.padEnd(38) +
+        artifact.contents.split("\n").length +
+        " lines" +
         (artifact.warnings.length > 0 ? "  · " + artifact.warnings.length + " annotation(s)" : ""),
     );
   }
@@ -398,8 +460,15 @@ export function describeCompile(result: CompileResult): string {
   lines.push("  inline      " + result.agentCif.stats.decisionsIncluded);
   lines.push("  linked out  " + result.agentCif.stats.decisionsLinkedOut);
   lines.push("  excluded    " + result.agentCif.stats.decisionsExcluded);
-  lines.push("  budget      " + result.agentCif.stats.lineCount + " / " + result.artifacts[0]?.budget.maxLines +
-    (result.agentCif.stats.lineCount > (result.artifacts[0]?.budget.maxLines ?? 0) ? "  — OVER" : ""));
+  lines.push(
+    "  budget      " +
+      result.agentCif.stats.lineCount +
+      " / " +
+      result.artifacts[0]?.budget.maxLines +
+      (result.agentCif.stats.lineCount > (result.artifacts[0]?.budget.maxLines ?? 0)
+        ? "  — OVER"
+        : ""),
+  );
   lines.push("  compliance  " + Math.round(result.agentCif.stats.compliance * 100) + "%");
   lines.push("  coverage    " + Math.round(result.agentCif.stats.verifiableCoverage * 100) + "%");
   lines.push("  log head    " + result.stamp.headHash.slice(0, 12));

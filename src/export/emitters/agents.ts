@@ -14,8 +14,8 @@
 
 import type { ExportCif } from "@/types/export";
 import { renderIndex } from "../budget";
-import { renderRejectedBlock } from "../rejected-block";
 import { ANTI_RELITIGATION } from "../record";
+import { renderRejectedBlock } from "../rejected-block";
 import { renderRecord } from "./shared";
 
 export function emitAgentsMd(cif: ExportCif, stampBlock: string, projectName?: string): string {
@@ -31,10 +31,18 @@ export function emitAgentsMd(cif: ExportCif, stampBlock: string, projectName?: s
   sections.push("");
   sections.push("**How to use these rules:**");
   sections.push("");
-  sections.push("- A rule's `Applies to:` globs say whether it concerns the file you are editing. If none match, ignore it — it is here because the log holds it, not because your task needs it.");
-  sections.push("- A rule's `Because:` line lists the PREMISES it rests on, by ID. If one of those stops being true, the rule stops applying — that is a supersession, not a violation.");
-  sections.push("- A rule's `Verify:` line is runnable. If you are about to change code a rule governs, run it first and after.");
-  sections.push("- The `Rejected` section lists options already considered and turned down, with the reason and whether that reason still holds. Do not re-propose one without superseding the record.");
+  sections.push(
+    "- A rule's `Applies to:` globs say whether it concerns the file you are editing. If none match, ignore it — it is here because the log holds it, not because your task needs it.",
+  );
+  sections.push(
+    "- A rule's `Because:` line lists the PREMISES it rests on, by ID. If one of those stops being true, the rule stops applying — that is a supersession, not a violation.",
+  );
+  sections.push(
+    "- A rule's `Verify:` line is runnable. If you are about to change code a rule governs, run it first and after.",
+  );
+  sections.push(
+    "- The `Rejected` section lists options already considered and turned down, with the reason and whether that reason still holds. Do not re-propose one without superseding the record.",
+  );
   sections.push("");
 
   if (cif.records.length === 0) {
@@ -62,9 +70,17 @@ export function emitAgentsMd(cif: ExportCif, stampBlock: string, projectName?: s
   sections.push(
     "## Provenance",
     "",
-    "Compiled from log head `" + cif.headHash.slice(0, 12) + "\u2026` at " + cif.generatedAt +
-      ". " + cif.stats.decisionsIncluded + " decision(s) inline, " + cif.stats.decisionsLinkedOut +
-      " linked out, " + cif.stats.decisionsExcluded + " excluded. To change a rule, change the " +
+    "Compiled from log head `" +
+      cif.headHash.slice(0, 12) +
+      "\u2026` at " +
+      cif.generatedAt +
+      ". " +
+      cif.stats.decisionsIncluded +
+      " decision(s) inline, " +
+      cif.stats.decisionsLinkedOut +
+      " linked out, " +
+      cif.stats.decisionsExcluded +
+      " excluded. To change a rule, change the " +
       "decision in the log and re-export: editing this file directly will be detected as a stamp " +
       "mismatch and the edit will be lost on the next export.",
   );

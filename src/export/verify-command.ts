@@ -47,9 +47,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import { shellQuote } from "@/guards/eval/command";
 import type { DecisionId } from "@/types/common";
 import type { Guard } from "@/types/guards";
-import { shellQuote } from "@/guards/eval/command";
 
 /** The runner's path, matching `TARGET_FILENAMES["ci-guards"]`. One constant so the emitted
  *  command and the emitted file cannot disagree about where the file is. */
@@ -142,7 +142,9 @@ export function dependencyOneLiner(guards: readonly Guard[]): string {
     doubleQuote(
       "const p=require('./package.json');const r=p.dependencies||{};" +
         "const d=Object.assign({},r,p.devDependencies||{});" +
-        "process.exit(" + conditions.join("&&") + "?0:1)",
+        "process.exit(" +
+        conditions.join("&&") +
+        "?0:1)",
     )
   );
 }
@@ -165,7 +167,11 @@ export function explainGuard(guard: Guard): string {
     case "dependency_present":
       return spec.package + " must be installed";
     case "dependency_absent":
-      return spec.package + " must NOT be installed" + (spec.includeDev === true ? " (including devDependencies)" : "");
+      return (
+        spec.package +
+        " must NOT be installed" +
+        (spec.includeDev === true ? " (including devDependencies)" : "")
+      );
     case "path_glob_exists":
       return "a file matching " + spec.glob + " must exist";
     case "path_glob_absent":
@@ -177,7 +183,9 @@ export function explainGuard(guard: Guard): string {
     case "command_exit_zero":
       return shellQuote(spec.command) + " must exit 0";
     case "llm_judge":
-      return "a rubric verdict over " + spec.scopeGlobs.join(", ") + " (advisory — never fails a build)";
+      return (
+        "a rubric verdict over " + spec.scopeGlobs.join(", ") + " (advisory — never fails a build)"
+      );
   }
 }
 
@@ -190,9 +198,11 @@ export function renderVerify(verify: VerifyCommand | null): string {
   }
 
   return (
-    "Verify: " + verify.command +
+    "Verify: " +
+    verify.command +
     (verify.needsRunner ? "   (needs " + RUNNER_PATH + ", exported alongside)" : "") +
-    "\n        checks: " + verify.explains
+    "\n        checks: " +
+    verify.explains
   );
 }
 

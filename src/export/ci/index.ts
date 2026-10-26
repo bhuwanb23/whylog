@@ -22,11 +22,11 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { CompiledArtifact, ExportTarget, IntegrityStamp } from "@/types/export";
-import type { ExportId, ISODateString } from "@/types/common";
-import type { GraphState } from "@/substrate/graph-state";
+import { type CiExport, exportCi } from "@/guards";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { exportCi, type CiExport } from "@/guards";
+import type { GraphState } from "@/substrate/graph-state";
+import type { ExportId, ISODateString } from "@/types/common";
+import type { CompiledArtifact, ExportTarget, IntegrityStamp } from "@/types/export";
 import { RUNNER_PATH } from "../verify-command";
 import { emitRunner, emitWorkflow } from "./runner";
 
@@ -100,4 +100,3 @@ export function emitCi(input: CiInput, requiredByDocuments: boolean): CiResult {
 
   return { artifacts, export: exported, requiredByDocuments };
 }
-

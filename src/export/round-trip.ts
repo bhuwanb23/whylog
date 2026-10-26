@@ -36,12 +36,12 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import type { Actor } from "@/types/common";
 import type { EventType, NewEvent } from "@/types/events";
 import type { StampVerification } from "@/types/export";
-import type { GraphState } from "@/substrate/graph-state";
-import { parseStamp, verifyStamp, explainVerification } from "./stamp/verify";
+import { explainVerification, parseStamp, verifyStamp } from "./stamp/verify";
 
 /* -------------------------------------------------------------------------- */
 /* What a parsed Markdown record holds                                        */
@@ -149,7 +149,10 @@ export function parseDecisionsMd(contents: string): ParsedDocument {
     if (applies !== null && applies[1] !== undefined) {
       const value = applies[1].trim();
       if (!value.startsWith("(no globs")) {
-        current.appliesTo = value.split(",").map((glob) => glob.replace(/`/g, "").trim()).filter((glob) => glob.length > 0);
+        current.appliesTo = value
+          .split(",")
+          .map((glob) => glob.replace(/`/g, "").trim())
+          .filter((glob) => glob.length > 0);
       }
       continue;
     }
@@ -162,7 +165,8 @@ export function parseDecisionsMd(contents: string): ParsedDocument {
 
     const verify = /^Verified by:|^Verify:\s*(.+)$/.exec(line);
     if (verify !== null) {
-      if (verify[1] !== undefined && !verify[1].startsWith("none")) current.verifyCommand = verify[1].trim();
+      if (verify[1] !== undefined && !verify[1].startsWith("none"))
+        current.verifyCommand = verify[1].trim();
       section = "verify";
       continue;
     }
@@ -200,7 +204,11 @@ export function parseDecisionsMd(contents: string): ParsedDocument {
   for (const entry of rejectedTable) {
     const target = records.find((record) => record.id === entry.decisionId);
     if (target === undefined) {
-      unparsed.push("Rejected-alternative row naming " + entry.decisionId + ", which is not among the parsed records.");
+      unparsed.push(
+        "Rejected-alternative row naming " +
+          entry.decisionId +
+          ", which is not among the parsed records.",
+      );
     }
   }
 
@@ -212,9 +220,14 @@ export function parseDecisionsMd(contents: string): ParsedDocument {
   };
 }
 
-function parseRejectedRow(line: string): { value: string; decisionId: string; why: string | null } | null {
+function parseRejectedRow(
+  line: string,
+): { value: string; decisionId: string; why: string | null } | null {
   /* `| **Postgres** | WLD-0007 | deploy complexity | premise P-0005 still IN |` */
-  const cells = line.split("|").map((cell) => cell.trim()).filter((cell) => cell.length > 0);
+  const cells = line
+    .split("|")
+    .map((cell) => cell.trim())
+    .filter((cell) => cell.length > 0);
   if (cells.length < 3) return null;
   if (/^-+$/.test(cells[0] ?? "")) return null;
   if (cells[0] === "Alternative") return null;
@@ -226,7 +239,15 @@ function parseRejectedRow(line: string): { value: string; decisionId: string; wh
   return { value, decisionId, why: cells[2] ?? null };
 }
 
-type Section = "context" | "decision" | "consequences" | "alternatives" | "related" | "verify" | "rejected-table" | null;
+type Section =
+  | "context"
+  | "decision"
+  | "consequences"
+  | "alternatives"
+  | "related"
+  | "verify"
+  | "rejected-table"
+  | null;
 
 function sectionOf(line: string): Section {
   const text = line.toLowerCase();
@@ -299,11 +320,7 @@ export interface MergePlan {
  *   3. Neither            genuinely new. Proposed, never auto-committed: the system proposes and
  *                         the human disposes (invariant I4).
  */
-export function planMerge(
-  contents: string,
-  state: GraphState,
-  currentHeadHash: string,
-): MergePlan {
+export function planMerge(contents: string, state: GraphState, currentHeadHash: string): MergePlan {
   const parsed = parseDecisionsMd(contents);
   const verification = verifyStamp({ contents, currentHeadHash });
   const verificationNote = explainVerification(verification, "DECISIONS.md");
@@ -352,7 +369,8 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
   const byId = state.decisions.get(record.id as DecisionId);
 
   if (byId !== undefined) {
-    const sameScope = record.appliesTo.every((glob) => byId.appliesTo.includes(glob)) &&
+    const sameScope =
+      record.appliesTo.every((glob) => byId.appliesTo.includes(glob)) &&
       byId.appliesTo.every((glob) => record.appliesTo.includes(glob));
     const samePremises = record.premiseIds.every((id) => premiseIdsOf(state, byId.id).includes(id));
 
@@ -362,7 +380,8 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
         action: "identical",
         existing: byId.id,
         explanation:
-          record.id + " is already in the log with the same scope and the same premises. Nothing to do — importing it would create a duplicate node.",
+          record.id +
+          " is already in the log with the same scope and the same premises. Nothing to do — importing it would create a duplicate node.",
       };
     }
 
@@ -371,7 +390,8 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
       action: "refinement",
       existing: byId.id,
       explanation:
-        record.id + " is already in the log, but the file's copy differs — " +
+        record.id +
+        " is already in the log, but the file's copy differs — " +
         (sameScope ? "the premise set has changed" : "the scope has changed") +
         ". Merging as a refinement of the existing node rather than creating a second one: two nodes for one decision would break the shared-premise invariant and leave neither one's label correct.",
     };
@@ -383,8 +403,8 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
   for (const decision of state.decisions.values()) {
     if (decision.status === "superseded" || decision.status === "archived") continue;
 
-    const matchesValue = imperative.includes(decision.value.toLowerCase()) &&
-      decision.value.toLowerCase().length > 2;
+    const matchesValue =
+      imperative.includes(decision.value.toLowerCase()) && decision.value.toLowerCase().length > 2;
     const matchesStatement = imperative.includes(decision.statement.toLowerCase().slice(0, 24));
 
     if (matchesValue || matchesStatement) {
@@ -393,8 +413,13 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
         action: "refinement",
         existing: decision.id,
         explanation:
-          "No decision with id " + record.id + " exists here, but " + decision.id +
-          ' ("' + decision.statement + '") looks like the same decision under a different id. Merging into the existing node: creating a second one would put two live records for a single belief in the log, and the contradiction gates would then fire on a decision contradicting itself.',
+          "No decision with id " +
+          record.id +
+          " exists here, but " +
+          decision.id +
+          ' ("' +
+          decision.statement +
+          '") looks like the same decision under a different id. Merging into the existing node: creating a second one would put two live records for a single belief in the log, and the contradiction gates would then fire on a decision contradicting itself.',
       };
     }
   }
@@ -405,7 +430,8 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
     action: "new",
     existing: null,
     explanation:
-      record.id + " is not in this log and nothing here matches its content. It would be PROPOSED, not committed: the system proposes and the human disposes, so an imported decision lands in the review queue where it can be checked against the log that already exists.",
+      record.id +
+      " is not in this log and nothing here matches its content. It would be PROPOSED, not committed: the system proposes and the human disposes, so an imported decision lands in the review queue where it can be checked against the log that already exists.",
   };
 }
 
@@ -455,8 +481,13 @@ export function importedEvent(
       "Imported from a DECISIONS.md stamped at log head " +
       (plan.sourceHeadHash.length === 0 ? "(unstamped)" : plan.sourceHeadHash.slice(0, 12)) +
       (plan.verification.ok ? ", which matches this log" : ", which does not match this log") +
-      ": " + plan.counts.identical + " identical, " + plan.counts.refinement +
-      " merged as refinements, " + plan.counts.new + " proposed as new.",
+      ": " +
+      plan.counts.identical +
+      " identical, " +
+      plan.counts.refinement +
+      " merged as refinements, " +
+      plan.counts.new +
+      " proposed as new.",
     at,
   };
 }
@@ -478,7 +509,9 @@ export function describeMergePlan(plan: MergePlan): string {
   ];
 
   for (const entry of plan.entries.slice(0, 20)) {
-    lines.push("  " + entry.action.toUpperCase().padEnd(11) + entry.record.id + " — " + entry.explanation);
+    lines.push(
+      "  " + entry.action.toUpperCase().padEnd(11) + entry.record.id + " — " + entry.explanation,
+    );
   }
   if (plan.entries.length > 20) lines.push("  … " + (plan.entries.length - 20) + " more");
 
