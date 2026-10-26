@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 740" width="1400" height="740" role="img" aria-label="The three gates: structural, semantic, premise invalidation">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .g { font-size: 22px; font-weight: 700; }
+    .gt { font-size: 15px; fill: #99a1ad; }
+    .chip { font-size: 13px; font-weight: 600; }
+    .note { font-size: 13.5px; fill: #6a7280; }
+  </style>
+
+  <rect width="1400" height="740" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">Three gates, all three run — results are unioned, never short-circuited</text>
+  <text x="70" y="94" class="sub">A structural contradiction would hide a premise invalidation on the same decision — the two have different remedies.</text>
+
+  <!-- input -->
+  <g transform="translate(70,300)">
+    <rect width="220" height="140" rx="14" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="110" y="52" font-size="17" font-weight="700" fill="#e6e9ee" text-anchor="middle">newcomer</text>
+    <text x="110" y="80" font-size="14" fill="#99a1ad" text-anchor="middle">asserted or observed</text>
+    <text x="110" y="110" font-size="14" fill="#6a7280" text-anchor="middle">ASSERT → fold → label</text>
+  </g>
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M290 340 L380 210"/><path d="M368 222 L382 208 L366 206"/>
+    <path d="M290 370 L380 370"/><path d="M368 370 L384 370 L368 370"/>
+    <path d="M290 400 L380 530"/><path d="M366 526 L382 532 L374 516"/>
+  </g>
+
+  <!-- gate A -->
+  <g transform="translate(380,130)">
+    <rect width="380" height="160" rx="14" fill="#12151a" stroke="#4ade80" stroke-width="2"/>
+    <text x="24" y="44" class="g" fill="#4ade80">(a) STRUCTURAL</text>
+    <text x="24" y="76" class="gt">same variable · different value · antonym pair</text>
+    <rect x="24" y="94" width="150" height="30" rx="15" fill="#0b0d10" stroke="#333a45"/>
+    <text x="99" y="114" class="chip" fill="#4ade80" text-anchor="middle">O(1) · no model</text>
+    <text x="24" y="150" class="note">ontology antonyms scoped to a variable</text>
+  </g>
+
+  <!-- gate B -->
+  <g transform="translate(380,290)">
+    <rect width="380" height="160" rx="14" fill="#12151a" stroke="#60a5fa" stroke-width="2"/>
+    <text x="24" y="44" class="g" fill="#60a5fa">(b) SEMANTIC</text>
+    <text x="24" y="76" class="gt">retrieve candidates → classify → five verdicts</text>
+    <rect x="24" y="94" width="204" height="30" rx="15" fill="#0b0d10" stroke="#333a45"/>
+    <text x="126" y="114" class="chip" fill="#60a5fa" text-anchor="middle">similarity SELECTS only</text>
+    <text x="24" y="150" class="note">the classifier disposes — invariant I3</text>
+  </g>
+
+  <!-- gate C -->
+  <g transform="translate(380,450)">
+    <rect width="380" height="160" rx="14" fill="#0e1620" stroke="#fbbf24" stroke-width="2.5"/>
+    <text x="24" y="44" class="g" fill="#fbbf24">(c) PREMISE INVALIDATION ★</text>
+    <text x="24" y="76" class="gt">IN-list falsified · OUT-list satisfied</text>
+    <rect x="24" y="94" width="256" height="30" rx="15" fill="#0b0d10" stroke="#333a45"/>
+    <text x="152" y="114" class="chip" fill="#fbbf24" text-anchor="middle">non-monotonic · nobody else has it</text>
+    <text x="24" y="150" class="note">the world moved — no contradiction stated</text>
+  </g>
+
+  <!-- union -->
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M760 210 L880 330"/><path d="M866 320 L882 332 L866 340"/>
+    <path d="M760 370 L880 370"/><path d="M868 370 L884 370 L868 370"/>
+    <path d="M760 530 L880 410"/><path d="M866 420 L882 408 L866 400"/>
+  </g>
+
+  <g transform="translate(880,290)">
+    <rect width="200" height="160" rx="14" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="100" y="56" font-size="18" font-weight="700" fill="#e6e9ee" text-anchor="middle">UNION</text>
+    <text x="100" y="86" font-size="14" fill="#99a1ad" text-anchor="middle">de-duplicated by</text>
+    <text x="100" y="108" font-size="14" fill="#99a1ad" text-anchor="middle">(gate, decision,</text>
+    <text x="100" y="130" font-size="14" fill="#99a1ad" text-anchor="middle">other, premise)</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M1080 370 L1140 370"/><path d="M1128 370 L1144 370 L1128 370"/>
+  </g>
+
+  <g transform="translate(1140,270)">
+    <rect width="190" height="200" rx="14" fill="#12151a" stroke="#a78bfa" stroke-width="2"/>
+    <text x="95" y="50" font-size="18" font-weight="700" fill="#a78bfa" text-anchor="middle">PROPOSE</text>
+    <text x="95" y="84" font-size="14" fill="#99a1ad" text-anchor="middle">seven-part</text>
+    <text x="95" y="106" font-size="14" fill="#99a1ad" text-anchor="middle">revision</text>
+    <text x="95" y="140" font-size="14" fill="#99a1ad" text-anchor="middle">never</text>
+    <text x="95" y="162" font-size="14" fill="#99a1ad" text-anchor="middle">auto-applied</text>
+    <text x="95" y="188" font-size="13.5" fill="#6a7280" text-anchor="middle">you dispose</text>
+  </g>
+
+  <!-- verdict row -->
+  <g transform="translate(70,660)">
+    <text x="0" y="0" font-size="15" font-weight="700" fill="#e6e9ee">Gate (b) verdicts —</text>
+    <g transform="translate(190,-22)">
+      <rect width="140" height="34" rx="17" fill="#12151a" stroke="#f87171"/><text x="70" y="22" class="chip" fill="#f87171" text-anchor="middle">CONTRADICTS</text>
+      <rect x="152" width="140" height="34" rx="17" fill="#12151a" stroke="#60a5fa"/><text x="222" y="22" class="chip" fill="#60a5fa" text-anchor="middle">REVERSES</text>
+      <rect x="304" width="150" height="34" rx="17" fill="#12151a" stroke="#4ade80"/><text x="379" y="22" class="chip" fill="#4ade80" text-anchor="middle">REFINES</text>
+      <rect x="466" width="150" height="34" rx="17" fill="#12151a" stroke="#94a3b8"/><text x="541" y="22" class="chip" fill="#94a3b8" text-anchor="middle">DUPLICATE</text>
+      <rect x="628" width="150" height="34" rx="17" fill="#12151a" stroke="#6a7280"/><text x="703" y="22" class="chip" fill="#99a1ad" text-anchor="middle">NEUTRAL</text>
+    </g>
+    <text x="1330" y="0" font-size="14.5" fill="#6a7280" text-anchor="end">similarity never produces a verdict — invariant I3</text>
+  </g>
+</svg>

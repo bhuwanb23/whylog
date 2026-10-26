@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 640" width="1400" height="640" role="img" aria-label="Bi-temporal model: valid time versus learned time">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .axis { font-size: 19px; font-weight: 700; letter-spacing: 1.5; }
+    .note { font-size: 14.5px; fill: #99a1ad; }
+    .ev { font-size: 14.5px; font-weight: 600; fill: #e6e9ee; text-anchor: middle; }
+    .date { font-size: 13px; font-family: 'Cascadia Mono','SF Mono',Consolas,monospace; fill: #6a7280; text-anchor: middle; }
+  </style>
+
+  <rect width="1400" height="640" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">Two axes: when it was true, and when we found out</text>
+  <text x="70" y="94" class="sub">asOf(axis, t) materialises the graph at any point on either axis. src/substrate/bi-temporal.ts</text>
+
+  <!-- VALID TIME axis -->
+  <text x="70" y="196" class="axis" fill="#60a5fa">VALID TIME</text>
+  <text x="250" y="196" class="note">when the fact held in the world</text>
+  <line x1="90" y1="270" x2="1330" y2="270" stroke="#60a5fa" stroke-width="3"/>
+  <path d="M1318 260 L1334 270 L1318 280" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g>
+    <circle cx="260" cy="270" r="10" fill="#0b0d10" stroke="#4ade80" stroke-width="3"/>
+    <text x="260" y="240" class="ev">WLD-0007 decided</text>
+    <text x="260" y="306" class="date">03 Oct</text>
+
+    <circle cx="620" cy="270" r="10" fill="#0b0d10" stroke="#f87171" stroke-width="3"/>
+    <text x="620" y="240" class="ev">single_user becomes false</text>
+    <text x="620" y="306" class="date">14 Nov</text>
+
+    <circle cx="980" cy="270" r="10" fill="#0b0d10" stroke="#94a3b8" stroke-width="3"/>
+    <text x="980" y="240" class="ev">revision in force</text>
+    <text x="980" y="306" class="date">—</text>
+  </g>
+  <!-- validity window bracket -->
+  <g stroke="#60a5fa" stroke-width="2" fill="none">
+    <path d="M260 330 L260 344 L620 344 L620 330"/>
+  </g>
+  <text x="440" y="372" font-size="14" fill="#60a5fa" text-anchor="middle">the decision's window of validity — 03 Oct → 14 Nov</text>
+
+  <!-- LEARNED TIME axis -->
+  <text x="70" y="450" class="axis" fill="#fbbf24">LEARNED TIME</text>
+  <text x="290" y="450" class="note">when the log learned it</text>
+  <line x1="90" y1="520" x2="1330" y2="520" stroke="#fbbf24" stroke-width="3"/>
+  <path d="M1318 510 L1334 520 L1318 530" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g>
+    <circle cx="330" cy="520" r="10" fill="#0b0d10" stroke="#4ade80" stroke-width="3"/>
+    <text x="330" y="490" class="ev">extracted &amp; reviewed</text>
+    <text x="330" y="556" class="date">03 Oct</text>
+
+    <circle cx="820" cy="520" r="10" fill="#0b0d10" stroke="#f87171" stroke-width="3"/>
+    <text x="820" y="490" class="ev">observed: four users, deployed</text>
+    <text x="820" y="556" class="date">20 Nov — six weeks LATER</text>
+
+    <circle cx="1120" cy="520" r="10" fill="#0b0d10" stroke="#a78bfa" stroke-width="3"/>
+    <text x="1120" y="490" class="ev">REVISE() → proposal</text>
+    <text x="1120" y="556" class="date">20 Nov</text>
+  </g>
+
+  <!-- gap annotation -->
+  <g stroke="#333a45" stroke-width="2" stroke-dasharray="6 5" fill="none">
+    <path d="M620 344 L620 420 L820 420 L820 504"/>
+  </g>
+  <text x="720" y="410" font-size="14" fill="#99a1ad" text-anchor="middle">the gap: true on 14 Nov, learned on 20 Nov — the audit trail keeps both</text>
+
+  <text x="70" y="612" font-size="14.5" fill="#6a7280">Nothing is deleted: events record both times, so any earlier state can be replayed exactly as it was understood then.</text>
+</svg>

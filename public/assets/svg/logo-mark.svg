@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="WhyLog mark">
+  <!-- The bipartite premise lattice reduced to a mark.
+       Premise circles (open) sit above; the decision square (solid) rests on them.
+       Solid green = supports. Dashed amber = excludes (OUT-list). -->
+  <g transform="translate(20,20) scale(1.5625)">
+    <rect width="128" height="128" rx="28" fill="#0b0d10" stroke="#232830" stroke-width="2"/>
+    <path d="M40 58 L54 74 M88 58 L74 74" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M40 58 L74 74" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-dasharray="5 4" stroke-linecap="round"/>
+    <circle cx="40" cy="44" r="14" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+    <circle cx="88" cy="44" r="14" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+    <rect x="44" y="74" width="40" height="40" rx="11" fill="#4ade80"/>
+  </g>
+</svg>

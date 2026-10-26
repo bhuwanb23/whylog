@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 760" width="1400" height="760" role="img" aria-label="Guards as evidence: decision to guard to feedback loop">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .st { font-size: 16.5px; font-weight: 700; fill: #e6e9ee; text-anchor: middle; }
+    .sd { font-size: 13.5px; fill: #99a1ad; text-anchor: middle; }
+  </style>
+
+  <rect width="1400" height="760" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">Guards as evidence — a failure enters REVISE() like a transcript</text>
+  <text x="70" y="94" class="sub">implementation_cost stops being a guess: it becomes a measurement. Guards are proposed, never auto-installed.</text>
+
+  <!-- decision -->
+  <g transform="translate(70,140)">
+    <rect width="250" height="120" rx="14" fill="#12151a" stroke="#4ade80" stroke-width="2"/>
+    <text x="125" y="40" font-size="14" font-family="'Cascadia Mono','SF Mono',Consolas,monospace" fill="#6a7280" text-anchor="middle">WLD-0007</text>
+    <text x="125" y="70" font-size="17" font-weight="700" fill="#e6e9ee" text-anchor="middle">SQLite, not Postgres</text>
+    <text x="125" y="98" font-size="13.5" fill="#99a1ad" text-anchor="middle">rests on scale.single_user</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M320 200 L390 200"/><path d="M378 194 L394 200 L378 206"/>
+  </g>
+
+  <!-- synthesis -->
+  <g transform="translate(390,140)">
+    <rect width="260" height="120" rx="14" fill="#12151a" stroke="#60a5fa" stroke-width="2"/>
+    <text x="130" y="40" class="st" fill="#60a5fa">synthesise</text>
+    <text x="130" y="68" class="sd">8 guard kinds, ordered by</text>
+    <text x="130" y="90" class="sd">determinism — templates first</text>
+    <rect x="50" y="100" width="160" height="26" rx="13" fill="#0b0d10" stroke="#fbbf24"/>
+    <text x="130" y="118" font-size="12.5" font-weight="700" fill="#fbbf24" text-anchor="middle">PROPOSED ONLY</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M650 200 L720 200"/><path d="M708 194 L724 200 L708 206"/>
+  </g>
+
+  <!-- interpreter -->
+  <g transform="translate(720,140)">
+    <rect width="300" height="120" rx="14" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="150" y="40" class="st">in-browser interpreter</text>
+    <text x="150" y="68" class="sd">over a pasted virtual project</text>
+    <text x="150" y="92" class="sd">no shell · no network · no filesystem</text>
+    <text x="150" y="112" font-size="13" fill="#6a7280" text-anchor="middle">word-boundary matching · glob scoping</text>
+  </g>
+
+  <!-- fan out to outcomes -->
+  <g fill="none" stroke="#333a45" stroke-width="2.2" stroke-linecap="round">
+    <path d="M858 262 L548 302"/><path d="M558 290 L542 304 L562 308"/>
+    <path d="M870 260 L852 302"/><path d="M844 292 L850 308 L862 298"/>
+    <path d="M882 262 L1152 302"/><path d="M1140 292 L1158 306 L1160 288"/>
+  </g>
+
+  <!-- PASS -->
+  <g transform="translate(400,310)">
+    <rect width="280" height="76" rx="14" fill="#101812" stroke="#4ade80" stroke-width="2"/>
+    <text x="140" y="34" class="st" fill="#4ade80">PASS</text>
+    <text x="140" y="60" class="sd">corroboration, not just a green tick</text>
+  </g>
+  <!-- FAIL -->
+  <g transform="translate(710,310)">
+    <rect width="280" height="76" rx="14" fill="#1a1013" stroke="#f87171" stroke-width="2"/>
+    <text x="140" y="34" class="st" fill="#f87171">FAIL</text>
+    <text x="140" y="60" class="sd">first unresolved failure = drift</text>
+  </g>
+  <!-- SKIP -->
+  <g transform="translate(1020,310)">
+    <rect width="280" height="76" rx="14" fill="#14121b" stroke="#a78bfa" stroke-width="2"/>
+    <text x="140" y="34" class="st" fill="#a78bfa">SKIP</text>
+    <text x="140" y="60" class="sd">never counts as a pass</text>
+  </g>
+
+  <!-- PASS -> implementation_cost -->
+  <g fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round">
+    <path d="M540 386 L540 410"/><path d="M534 398 L540 414 L546 398"/>
+  </g>
+  <g transform="translate(400,416)">
+    <rect width="280" height="96" rx="14" fill="#12151a" stroke="#4ade80" stroke-width="2"/>
+    <text x="140" y="32" font-size="16" font-weight="700" fill="#4ade80" text-anchor="middle">implementation_cost</text>
+    <text x="140" y="58" font-size="13" fill="#99a1ad" text-anchor="middle">= measured, not guessed. Until guards</text>
+    <text x="140" y="78" font-size="13" fill="#99a1ad" text-anchor="middle">exist it is shown as "unknown", never "medium"</text>
+  </g>
+  <g fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round">
+    <path d="M540 512 L540 534"/><path d="M534 522 L540 538 L546 522"/>
+  </g>
+  <text x="694" y="466" font-size="13.5" fill="#6a7280">feeds entrenchment —</text>
+  <text x="694" y="486" font-size="13.5" fill="#6a7280">E(d) ≤ min premise E</text>
+
+  <!-- FAIL -> REVISE -->
+  <g fill="none" stroke="#f87171" stroke-width="2.8" stroke-linecap="round">
+    <path d="M850 386 L850 600 L844 600"/>
+    <path d="M856 592 L838 600 L856 608"/>
+  </g>
+
+  <!-- SKIP -> synthesise (dashed) -->
+  <g fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round">
+    <path d="M1160 310 L1160 286 L520 286 L520 268"/>
+    <path d="M514 280 L520 264 L526 280"/>
+  </g>
+  <text x="846" y="304" font-size="13.5" fill="#a78bfa" text-anchor="middle">unverifiable — a visible state, never a silent skip</text>
+
+  <!-- REVISE -->
+  <g transform="translate(400,540)">
+    <rect width="440" height="120" rx="14" fill="#0e1620" stroke="#60a5fa" stroke-width="2.5"/>
+    <text x="220" y="46" font-size="24" font-weight="700" fill="#60a5fa" text-anchor="middle">REVISE()</text>
+    <text x="220" y="78" font-size="14.5" fill="#99a1ad" text-anchor="middle">same nine-step cycle, same entry point</text>
+    <text x="220" y="100" font-size="14.5" fill="#99a1ad" text-anchor="middle">as a pasted transcript</text>
+  </g>
+
+  <!-- proposal -->
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M400 600 L326 600"/><path d="M340 594 L324 600 L340 606"/>
+  </g>
+  <g transform="translate(70,550)">
+    <rect width="250" height="100" rx="14" fill="#12151a" stroke="#232830"/>
+    <text x="125" y="40" class="st">proposal</text>
+    <text x="125" y="66" class="sd">seven parts · human approves</text>
+    <text x="125" y="88" class="sd">every action gets a reason</text>
+  </g>
+  <!-- proposal back to the graph -->
+  <g fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round">
+    <path d="M195 550 L195 282"/>
+    <path d="M189 296 L195 280 L201 296"/>
+  </g>
+  <text x="208" y="420" font-size="13" fill="#a78bfa">approved, then re-asserted</text>
+
+  <!-- health strip -->
+  <g transform="translate(70,712)">
+    <text x="0" y="0" font-size="15" font-weight="700" fill="#e6e9ee">Health —</text>
+    <g transform="translate(110,-24)">
+      <rect width="150" height="36" rx="8" fill="#12151a" stroke="#232830"/><text x="75" y="24" font-size="13.5" fill="#99a1ad" text-anchor="middle">decision compliance</text>
+      <rect x="162" width="150" height="36" rx="8" fill="#12151a" stroke="#232830"/><text x="237" y="24" font-size="13.5" fill="#99a1ad" text-anchor="middle">verifiable coverage</text>
+      <rect x="324" width="130" height="36" rx="8" fill="#12151a" stroke="#232830"/><text x="389" y="24" font-size="13.5" fill="#99a1ad" text-anchor="middle">log soundness</text>
+      <rect x="466" width="110" height="36" rx="8" fill="#12151a" stroke="#232830"/><text x="521" y="24" font-size="13.5" fill="#99a1ad" text-anchor="middle">drift age</text>
+      <rect x="588" width="150" height="36" rx="8" fill="#12151a" stroke="#232830"/><text x="663" y="24" font-size="13.5" fill="#99a1ad" text-anchor="middle">deterministic ratio</text>
+      <rect x="750" width="140" height="36" rx="8" fill="#12151a" stroke="#232830"/><text x="820" y="24" font-size="13.5" fill="#99a1ad" text-anchor="middle">agency ratio ★</text>
+    </g>
+    <text x="1260" y="36" font-size="13.5" fill="#6a7280" text-anchor="end">baseline + ratchet: initial failures freeze; only new ones fail CI</text>
+  </g>
+</svg>

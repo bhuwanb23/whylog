@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" role="img" aria-label="WhyLog five-layer architecture with the AI seam">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; letter-spacing: -0.5; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .layer { font-size: 21px; font-weight: 700; fill: #e6e9ee; letter-spacing: 1; }
+    .body { font-size: 16.5px; fill: #99a1ad; }
+    .seam { font-size: 15.5px; fill: #99a1ad; }
+  </style>
+
+  <rect width="1400" height="900" fill="#0b0d10"/>
+  <text x="70" y="66" class="title">WhyLog — five layers, information flows up only</text>
+  <text x="70" y="98" class="sub">L2 never reaches into L4. L0 knows nothing about decisions — only events. plan/OVERVIEW.md §2</text>
+
+  <!-- rows: x 70..1130, y start 140, h 110, gap 12 -->
+  <!-- L5 -->
+  <g transform="translate(70,140)">
+    <rect width="1060" height="110" rx="10" fill="#12151a" stroke="#232830"/>
+    <rect width="5" height="110" rx="2.5" fill="#a78bfa"/>
+    <text x="26" y="46" class="layer">L5 · PRESENTATION</text>
+    <text x="26" y="80" class="body">Timeline · Ask · Health · Premise Lattice · Time Machine · Export · Settings</text>
+    <text x="1034" y="46" class="body" text-anchor="end">React · Tailwind v4</text>
+  </g>
+  <!-- L4 -->
+  <g transform="translate(70,262)">
+    <rect width="1060" height="110" rx="10" fill="#12151a" stroke="#232830"/>
+    <rect width="5" height="110" rx="2.5" fill="#60a5fa"/>
+    <text x="26" y="46" class="layer">L4 · SYNTHESIS</text>
+    <text x="26" y="80" class="body">answers with groundedness verdicts · export compiler · guard synthesis · time travel</text>
+    <text x="1034" y="46" class="body" text-anchor="end">src/export · src/guards</text>
+  </g>
+  <!-- L3 -->
+  <g transform="translate(70,384)">
+    <rect width="1060" height="110" rx="10" fill="#12151a" stroke="#232830"/>
+    <rect width="5" height="110" rx="2.5" fill="#60a5fa"/>
+    <text x="26" y="46" class="layer">L3 · RETRIEVAL</text>
+    <text x="26" y="80" class="body">5 index levels → RRF (k=60) → rerank → contradiction classifier → evidence contract</text>
+    <text x="1034" y="46" class="body" text-anchor="end">src/retrieval</text>
+  </g>
+  <!-- L2 highlighted -->
+  <g transform="translate(70,506)">
+    <rect width="1060" height="110" rx="10" fill="#0e1620" stroke="#60a5fa" stroke-width="2"/>
+    <rect width="5" height="110" rx="2.5" fill="#60a5fa"/>
+    <text x="26" y="46" class="layer" fill="#60a5fa">L2 · REASONING ★</text>
+    <text x="250" y="46" font-size="15" font-weight="600" fill="#60a5fa">the differentiating layer</text>
+    <text x="26" y="80" class="body">JTMS labeller · 3 gates · backtracking · cascade · entrenchment · REVISE()</text>
+    <text x="1034" y="46" class="body" text-anchor="end">src/reasoning</text>
+  </g>
+  <!-- L1 -->
+  <g transform="translate(70,628)">
+    <rect width="1060" height="110" rx="10" fill="#12151a" stroke="#232830"/>
+    <rect width="5" height="110" rx="2.5" fill="#4ade80"/>
+    <text x="26" y="46" class="layer">L1 · EXTRACTION</text>
+    <text x="26" y="80" class="body">transcript → decisions + premises (IN/OUT) + rejected alternatives + provenance → human review</text>
+    <text x="1034" y="46" class="body" text-anchor="end">src/extraction</text>
+  </g>
+  <!-- L0 -->
+  <g transform="translate(70,750)">
+    <rect width="1060" height="110" rx="10" fill="#12151a" stroke="#232830"/>
+    <rect width="5" height="110" rx="2.5" fill="#94a3b8"/>
+    <text x="26" y="46" class="layer">L0 · SUBSTRATE</text>
+    <text x="26" y="80" class="body">append-only bi-temporal event log · hash chain · ontology · persistence · portability</text>
+    <text x="1034" y="46" class="body" text-anchor="end">src/substrate</text>
+  </g>
+
+  <!-- flow-up arrow -->
+  <g stroke="#333a45" stroke-width="2" fill="none">
+    <path d="M50 860 L50 152"/>
+    <path d="M44 164 L50 150 L56 164" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="38" y="885" class="seam" fill="#6a7280" transform="rotate(-90 38 885)">information flows up only</text>
+
+  <!-- AI seam -->
+  <g transform="translate(1170,140)">
+    <rect width="170" height="720" rx="12" fill="#12151a" stroke="#333a45" stroke-dasharray="6 5"/>
+    <text x="85" y="60" font-size="17" font-weight="700" fill="#fbbf24" text-anchor="middle">THE</text>
+    <text x="85" y="86" font-size="17" font-weight="700" fill="#fbbf24" text-anchor="middle">AI SEAM</text>
+    <line x1="24" y1="106" x2="146" y2="106" stroke="#232830" stroke-width="2"/>
+
+    <g transform="translate(24,132)">
+      <rect width="122" height="56" rx="8" fill="#0b0d10" stroke="#333a45"/>
+      <text x="61" y="34" font-size="15" font-weight="700" fill="#60a5fa" text-anchor="middle">LLM</text>
+    </g>
+    <text x="85" y="216" font-size="15" font-weight="700" fill="#6a7280" text-anchor="middle">or</text>
+    <g transform="translate(24,234)">
+      <rect width="122" height="56" rx="8" fill="#0b0d10" stroke="#333a45"/>
+      <text x="61" y="34" font-size="15" font-weight="700" fill="#4ade80" text-anchor="middle">LOCAL</text>
+    </g>
+
+    <text x="85" y="342" class="seam" text-anchor="middle">every L1–L4 op</text>
+    <text x="85" y="366" class="seam" text-anchor="middle">has two</text>
+    <text x="85" y="390" class="seam" text-anchor="middle">implementations</text>
+
+    <line x1="24" y1="416" x2="146" y2="416" stroke="#232830" stroke-width="2"/>
+    <text x="85" y="450" font-size="15" font-weight="700" fill="#e6e9ee" text-anchor="middle">selected at</text>
+    <text x="85" y="474" font-size="15" font-weight="700" fill="#e6e9ee" text-anchor="middle">runtime</text>
+    <text x="85" y="510" class="seam" text-anchor="middle">badged in the UI</text>
+    <text x="85" y="534" class="seam" text-anchor="middle">never mixed</text>
+    <text x="85" y="558" class="seam" text-anchor="middle">silently</text>
+
+    <line x1="24" y1="584" x2="146" y2="584" stroke="#232830" stroke-width="2"/>
+    <text x="85" y="620" font-size="15" font-weight="700" fill="#4ade80" text-anchor="middle">keyless by</text>
+    <text x="85" y="644" font-size="15" font-weight="700" fill="#4ade80" text-anchor="middle">default</text>
+    <text x="85" y="680" class="seam" text-anchor="middle">deterministic,</text>
+    <text x="85" y="704" class="seam" text-anchor="middle">offline</text>
+  </g>
+</svg>
