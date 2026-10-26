@@ -205,7 +205,9 @@ export function parseDecisionsMd(contents: string): ParsedDocument {
     const target = records.find((record) => record.id === entry.decisionId);
     if (target === undefined) {
       unparsed.push(
-        `Rejected-alternative row naming ${entry.decisionId}, which is not among the parsed records.`,
+        "Rejected-alternative row naming " +
+          entry.decisionId +
+          ", which is not among the parsed records.",
       );
     }
   }
@@ -377,7 +379,9 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
         record,
         action: "identical",
         existing: byId.id,
-        explanation: `${record.id} is already in the log with the same scope and the same premises. Nothing to do — importing it would create a duplicate node.`,
+        explanation:
+          record.id +
+          " is already in the log with the same scope and the same premises. Nothing to do — importing it would create a duplicate node.",
       };
     }
 
@@ -385,7 +389,11 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
       record,
       action: "refinement",
       existing: byId.id,
-      explanation: `${record.id} is already in the log, but the file's copy differs — ${sameScope ? "the premise set has changed" : "the scope has changed"}. Merging as a refinement of the existing node rather than creating a second one: two nodes for one decision would break the shared-premise invariant and leave neither one's label correct.`,
+      explanation:
+        record.id +
+        " is already in the log, but the file's copy differs — " +
+        (sameScope ? "the premise set has changed" : "the scope has changed") +
+        ". Merging as a refinement of the existing node rather than creating a second one: two nodes for one decision would break the shared-premise invariant and leave neither one's label correct.",
     };
   }
 
@@ -404,7 +412,14 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
         record,
         action: "refinement",
         existing: decision.id,
-        explanation: `No decision with id ${record.id} exists here, but ${decision.id} ("${decision.statement}") looks like the same decision under a different id. Merging into the existing node: creating a second one would put two live records for a single belief in the log, and the contradiction gates would then fire on a decision contradicting itself.`,
+        explanation:
+          "No decision with id " +
+          record.id +
+          " exists here, but " +
+          decision.id +
+          ' ("' +
+          decision.statement +
+          '") looks like the same decision under a different id. Merging into the existing node: creating a second one would put two live records for a single belief in the log, and the contradiction gates would then fire on a decision contradicting itself.',
       };
     }
   }
@@ -414,7 +429,9 @@ function classifyRecord(record: ParsedRecord, state: GraphState): MergeEntry {
     record,
     action: "new",
     existing: null,
-    explanation: `${record.id} is not in this log and nothing here matches its content. It would be PROPOSED, not committed: the system proposes and the human disposes, so an imported decision lands in the review queue where it can be checked against the log that already exists.`,
+    explanation:
+      record.id +
+      " is not in this log and nothing here matches its content. It would be PROPOSED, not committed: the system proposes and the human disposes, so an imported decision lands in the review queue where it can be checked against the log that already exists.",
   };
 }
 
@@ -460,7 +477,17 @@ export function importedEvent(
       created: plan.counts.new,
     },
     actor,
-    reason: `Imported from a DECISIONS.md stamped at log head ${plan.sourceHeadHash.length === 0 ? "(unstamped)" : plan.sourceHeadHash.slice(0, 12)}${plan.verification.ok ? ", which matches this log" : ", which does not match this log"}: ${plan.counts.identical} identical, ${plan.counts.refinement} merged as refinements, ${plan.counts.new} proposed as new.`,
+    reason:
+      "Imported from a DECISIONS.md stamped at log head " +
+      (plan.sourceHeadHash.length === 0 ? "(unstamped)" : plan.sourceHeadHash.slice(0, 12)) +
+      (plan.verification.ok ? ", which matches this log" : ", which does not match this log") +
+      ": " +
+      plan.counts.identical +
+      " identical, " +
+      plan.counts.refinement +
+      " merged as refinements, " +
+      plan.counts.new +
+      " proposed as new.",
     at,
   };
 }
@@ -468,25 +495,25 @@ export function importedEvent(
 /** The merge plan as the user reads it, before they decide to apply it. */
 export function describeMergePlan(plan: MergePlan): string {
   if (plan.refuse) {
-    return `REFUSED. ${plan.refusalReason ?? ""}`;
+    return "REFUSED. " + (plan.refusalReason ?? "");
   }
 
   const lines = [
     plan.verificationNote,
     "",
-    `${plan.entries.length} record(s) parsed from the file:`,
-    `  identical      ${plan.counts.identical}  — already here, nothing to do`,
-    `  refinement     ${plan.counts.refinement}  — merged into an existing node`,
-    `  new            ${plan.counts.new}  — PROPOSED for review, never auto-committed`,
+    plan.entries.length + " record(s) parsed from the file:",
+    "  identical      " + plan.counts.identical + "  — already here, nothing to do",
+    "  refinement     " + plan.counts.refinement + "  — merged into an existing node",
+    "  new            " + plan.counts.new + "  — PROPOSED for review, never auto-committed",
     "",
   ];
 
   for (const entry of plan.entries.slice(0, 20)) {
     lines.push(
-      `  ${entry.action.toUpperCase().padEnd(11)}${entry.record.id} — ${entry.explanation}`,
+      "  " + entry.action.toUpperCase().padEnd(11) + entry.record.id + " — " + entry.explanation,
     );
   }
-  if (plan.entries.length > 20) lines.push(`  … ${plan.entries.length - 20} more`);
+  if (plan.entries.length > 20) lines.push("  … " + (plan.entries.length - 20) + " more");
 
   lines.push("");
   lines.push("A Markdown round trip is LOSSY and says so: DECISIONS.md never carried the original");

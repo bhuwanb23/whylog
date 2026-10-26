@@ -42,8 +42,7 @@ import { entrenchmentOf } from "@/reasoning/entrenchment";
 import type { NodeId } from "@/reasoning/labeller";
 import { label as labelGraph } from "@/reasoning/labeller";
 import { useWhyLog } from "@/store/whylog";
-import type { DecisionId } from "@/types/common";
-import { asPremiseId } from "@/types/common";
+import type { DecisionId, PremiseId } from "@/types/common";
 import { type ReactElement, useMemo, useState } from "react";
 
 export function GraphView(): ReactElement {
@@ -165,12 +164,12 @@ export function GraphView(): ReactElement {
             labels={labels}
             decisionId={selectedDecision}
             entrenchment={breakdown}
-            onSelectPremise={(id) => setSelected(id)}
+            onSelectPremise={(id) => setSelected(id as NodeId)}
           />
         </section>
       ) : null}
 
-      {selected?.startsWith("P-") ? (
+      {selected !== null && selected.startsWith("P-") ? (
         <section className="card">
           <h2 className="card-title">Premise {selected}</h2>
           <PremiseDetail premiseId={selected} />
@@ -184,8 +183,8 @@ export function GraphView(): ReactElement {
 
 function PremiseDetail({ premiseId }: { premiseId: string }): ReactElement {
   const whylog = useWhyLog();
-  const premise = whylog.state.premises.get(asPremiseId(premiseId));
-  const dependents = whylog.state.premiseToDecisions.get(asPremiseId(premiseId)) ?? [];
+  const premise = whylog.state.premises.get(premiseId as PremiseId);
+  const dependents = whylog.state.premiseToDecisions.get(premiseId as PremiseId) ?? [];
   const labels = useMemo(() => labelGraph(whylog.state).labels, [whylog.state]);
 
   if (premise === undefined) {
@@ -216,13 +215,16 @@ function PremiseDetail({ premiseId }: { premiseId: string }): ReactElement {
 
       <div className="mono faint" style={{ fontSize: 11, marginTop: 6 }}>
         {premise.type}.{premise.predicate}
-        {premise.value === undefined ? "" : ` = ${String(premise.value)}`}
+        {premise.value === undefined ? "" : " = " + String(premise.value)}
       </div>
 
       <div className="dim" style={{ fontSize: 12, marginTop: 10 }}>
         {dependents.length === 0
           ? "Nothing rests on this premise. It is recorded but load-bearing for no decision — worth checking whether the decision it was extracted beside lost its justification."
-          : `${dependents.length} decision(s) rest on this premise: ${dependents.join(", ")}. Falsifying it puts every one of them in play at once, which is why a SHARED premise is drawn larger in the lattice than one with a single dependent.`}
+          : dependents.length +
+            " decision(s) rest on this premise: " +
+            dependents.join(", ") +
+            ". Falsifying it puts every one of them in play at once, which is why a SHARED premise is drawn larger in the lattice than one with a single dependent."}
       </div>
     </div>
   );

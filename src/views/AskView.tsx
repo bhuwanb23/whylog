@@ -257,7 +257,7 @@ export function AskView(): ReactElement {
           <p className="dim" style={{ margin: 0 }}>
             Five index levels fused by RRF at k = {RRF_K}, then reranked by{" "}
             {Object.entries(RERANK_WEIGHTS)
-              .map(([name, weight]) => `${name} ${weight}`)
+              .map(([name, weight]) => name + " " + weight)
               .join(" · ")}
             . Every weight, threshold and rule is listed here rather than tuned behind your back.
           </p>
@@ -302,8 +302,9 @@ function AnswerPanel({ answer }: { answer: Answer }): ReactElement {
         </pre>
 
         <div className="faint" style={{ marginTop: 10, fontSize: 11 }}>
-          {answer.engine.model} · answered {answer.answeredAt} · {answer.trace.searches.length} of{" "}
-          {answer.trace.maxSearches} searches · {answer.retrieved.length} candidates ranked
+          {answer.engine.model.length === 0 ? answer.engine.kind : answer.engine.model} · answered{" "}
+          {answer.answeredAt} · {answer.trace.searches.length} of {answer.trace.maxSearches}{" "}
+          searches · {answer.retrieved.length} candidates ranked
         </div>
       </section>
 
@@ -333,9 +334,9 @@ function VerdictBanner({ answer }: { answer: Answer }): ReactElement {
   return (
     <div
       style={{
-        borderLeft: `3px solid ${style.colour}`,
+        borderLeft: "3px solid " + style.colour,
         padding: "8px 12px",
-        background: `color-mix(in srgb, ${style.colour} 8%, transparent)`,
+        background: "color-mix(in srgb, " + style.colour + " 8%, transparent)",
       }}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
@@ -343,7 +344,12 @@ function VerdictBanner({ answer }: { answer: Answer }): ReactElement {
         <span className="mono" style={{ fontSize: 12 }}>
           {answer.claims.length === 0
             ? "no claims made"
-            : `${percent}% grounded · ${groundedCount(answer)} of ${answer.claims.length} claims`}
+            : percent +
+              "% grounded · " +
+              groundedCount(answer) +
+              " of " +
+              answer.claims.length +
+              " claims"}
         </span>
       </div>
       <div className="dim" style={{ marginTop: 4, fontSize: 12 }}>
@@ -459,7 +465,7 @@ function CitationsCard({
     <section className="card">
       <h2 className="card-title">
         Citations · {answer.citations.length}
-        {unresolved.length > 0 ? ` · ${unresolved.length} unresolved` : ""}
+        {unresolved.length > 0 ? " · " + unresolved.length + " unresolved" : ""}
       </h2>
 
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
@@ -523,7 +529,7 @@ function ExpandedCitationRow({
   return (
     <div
       style={{
-        border: `1px solid ${selected ? "var(--action)" : "var(--edge-soft, #333)"}`,
+        border: "1px solid " + (selected ? "var(--action)" : "var(--edge-soft, #333)"),
         borderRadius: 4,
         padding: "8px 10px",
       }}
@@ -546,7 +552,7 @@ function ExpandedCitationRow({
         rests on {entry.restsOn.length} premise(s) · excludes {entry.excludes.length} · rejected{" "}
         {entry.rejected.length} alternative(s) · {entry.guardsPassing} of {entry.guardsTotal}{" "}
         guard(s) passing
-        {entry.guardsNeverRun > 0 ? ` · ${entry.guardsNeverRun} never run` : ""}
+        {entry.guardsNeverRun > 0 ? " · " + entry.guardsNeverRun + " never run" : ""}
       </div>
 
       {entry.restsOn.length === 0 ? (
@@ -880,7 +886,13 @@ function IndexCard(): ReactElement {
         <p className="dim" style={{ margin: 0, fontSize: 12 }}>
           {ask.artifacts === null
             ? "No index yet. It is built automatically on your first question."
-            : `Built by ${ask.artifacts.engine} · ${ask.artifacts.dimensions} dimensions · ${ask.artifacts.stale ? "stale" : "current"}.`}
+            : "Built by " +
+              ask.artifacts.engine +
+              " · " +
+              ask.artifacts.dimensions +
+              " dimensions · " +
+              (ask.artifacts.stale ? "stale" : "current") +
+              "."}
         </p>
       )}
     </section>

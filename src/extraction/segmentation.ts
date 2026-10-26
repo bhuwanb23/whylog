@@ -1,4 +1,44 @@
+/**
+ * Episode segmentation — 1.2, the deliberate deviation.
+ *
+ * Phase 1 · sub-phase 1.2
+ * Plan: plan/phase-1-extraction-pipeline.md §1.2
+ *
+ * ---------------------------------------------------------------------------
+ * WHY NOT SENTENCES
+ *
+ * arXiv:2506.11005 (Kantara) assumes "rationale appears in a single sentence
+ * containing both a decision and its rationale". That holds for Linux commit
+ * messages, which are written AFTER the decision by someone summarising it.
+ *
+ * It does not hold for dialogue, where the decision is NEGOTIATED:
+ *
+ *     agent:  "Postgres via Supabase would work, but it means a hosted
+ *              dependency… What's the actual concurrency requirement?"
+ *     human:  "none really. it's one person, one machine, one log."   ← PREMISE
+ *     agent:  "Then I'd use SQLite with better-sqlite3 instead…"       ← PROPOSAL
+ *     human:  "yeah ok. going with SQLite, not Postgres. single-user   ← DECISION
+ *              and no deploy hassle is the whole argument."            ← RATIONALE
+ *
+ * Four turns, one decision, and the premise appears BEFORE the decision it
+ * supports. Sentence segmentation discards turns 1 and 2 for having no cue, which
+ * is precisely the premise the whole product is built on. So: segment on EPISODES
+ * — a window of consecutive turns bounded by topic shift and containing at least
+ * one decision cue — extract at episode granularity, then attribute individual
+ * snippets within it.
+ *
+ * ---------------------------------------------------------------------------
+ * THE LEAD TURN
+ *
+ * Every episode includes one turn BEFORE its first cue. That single rule is what
+ * recovers the premise above, and it costs one extra turn of context per episode.
+ * It is not a heuristic dressed up as a principle: it is the observation that in
+ * dialogue the constraint is stated, then the decision follows from it.
+ * ---------------------------------------------------------------------------
+ */
+
 import type { VariableGuess } from "@/ontology/canonicalize";
+import type { DecisionVariable } from "@/types/domain";
 import { type CueHit, episodeVariable, scanCues, variableAtCue } from "./cue-scan";
 import { toRawBounds } from "./normalizer";
 import type {
@@ -7,6 +47,18 @@ import type {
   NormalizedTranscript,
   NormalizedTurn,
 } from "./types";
+
+/** The episode currently being accumulated, before it is closed into a range.
+ *
+ *  Named rather than inlined because `close` is a closure that assigns `open = null`, and TypeScript
+ *  widens a captured `let` back to its declared type after any call to a function that mutates it.
+ *  Re-narrowing through a local needs an explicit annotation on that local, and an annotation needs
+ *  a name to refer to — an inline object literal type there produces a circular inference instead. */
+interface OpenEpisode {
+  firstCue: number;
+  lastCue: number;
+  variable: DecisionVariable | null;
+}
 
 /** Consecutive cue-less turns that close an episode. Three rather than one
  *  because a negotiation routinely has a digression in the middle of it, and
@@ -80,17 +132,6 @@ interface Range {
 }
 
 /**
- * An episode being grown. The variable is a GUESS, not a label: the score is
- * what decides whether a shift to a different variable is a topic change or
- * just noise.
- */
-interface OpenEpisode {
-  readonly firstCue: number;
-  readonly lastCue: number;
-  readonly variable: VariableGuess | null;
-}
-
-/**
  * Walk the turns and collect [start, end) ranges that contain at least one cue.
  *
  * The window is grown around the cues rather than built from them: the first cue
@@ -121,12 +162,8 @@ function groupRanges(
     if (hits.length > 0) {
       const variable = variableForTurn(turns[i] as NormalizedTurn, hits);
 
-      // `open` is read through a local because a `let` that a closure could
-      // touch loses its narrowing after every function call — and `close` is one.
-      const current: OpenEpisode | null = open;
-
-      if (current === null) {
-        open = { firstCue: i, lastCue: i, variable };
+      if (open === null) {
+        open = { firstCue: i, lastCue: i, variable: variable === null ? null : variable.variable };
         quiet = 0;
         continue;
       }
@@ -135,31 +172,36 @@ function groupRanges(
       // and opens a new one at this turn. Splitting here is what keeps a database
       // decision and an auth decision out of the same justification.
       if (
-        current.variable !== null &&
+        open.variable !== null &&
         variable !== null &&
-        variable.variable !== current.variable.variable &&
+        variable.variable !== open.variable &&
         variable.score >= TOPIC_SHIFT_SCORE
       ) {
         close(i, "topic-shift");
-        open = { firstCue: i, lastCue: i, variable };
+        open = { firstCue: i, lastCue: i, variable: variable.variable };
         quiet = 0;
         continue;
       }
 
-      const grown: OpenEpisode = {
+      /* `close` is a closure that assigns `open = null`, so TypeScript conservatively widens `open`
+       * back to nullable after any call to it — including the one in the topic-shift branch above,
+       * which cannot reach here. Re-narrowing through a local is what lets the spread typecheck.
+       * The guard is unreachable at runtime and is here for the compiler, not for the reader. */
+      if (open === null) continue;
+      const current: OpenEpisode = open;
+
+      open = {
         ...current,
         lastCue: i,
-        variable: current.variable ?? variable,
+        variable: current.variable ?? (variable === null ? null : variable.variable),
       };
-      open = grown;
       quiet = 0;
 
-      if (i - grown.firstCue + 1 >= MAX_EPISODE_TURNS) close(i + 1, "length-cap");
+      if (i - current.firstCue + 1 >= MAX_EPISODE_TURNS) close(i + 1, "length-cap");
       continue;
     }
 
-    const current: OpenEpisode | null = open;
-    if (current === null) continue;
+    if (open === null) continue;
 
     quiet += 1;
     if (quiet >= CUE_GAP_TURNS) {
@@ -167,7 +209,7 @@ function groupRanges(
       continue;
     }
 
-    const soFar = charSpan(turns, Math.max(0, current.firstCue - LEAD_TURNS), i + 1);
+    const soFar = charSpan(turns, Math.max(0, open.firstCue - LEAD_TURNS), i + 1);
     if (soFar > MAX_EPISODE_CHARS) close(i, "length-cap");
   }
 
@@ -243,9 +285,11 @@ function buildEpisode(
     turns: slice,
     turnRange: [start, end],
     charRange: [first?.start ?? 0, last?.end ?? 0],
+    /* Computed above at the same time `text` is built; returning it is what lets a recogniser
+     * convert a within-turn cue position into an episode position without re-searching. */
+    turnOffsets,
     rawRange: rawRangeOf(normalized, first, last),
     text,
-    turnOffsets,
     variable: episodeVariable(text, hits),
     cuePositions: hits.map((hit) => hit.start),
     boundaryReason: reason,

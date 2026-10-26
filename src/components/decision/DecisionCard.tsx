@@ -46,7 +46,7 @@
 import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
 import { LABEL_COLOUR } from "@/theme";
-import type { DecisionId, PremiseId } from "@/types/common";
+import type { DecisionId } from "@/types/common";
 import type { Decision } from "@/types/domain";
 import type { EntrenchmentBreakdown as Breakdown } from "@/types/reasoning";
 import { type ReactElement, useState } from "react";
@@ -72,11 +72,8 @@ export interface DecisionCardProps {
   /** Rendered in the header. Kept as a prop so a list of cards can show a compact variant without
    *  a second component. */
   readonly compact?: boolean;
-  /* `| undefined` is explicit because `exactOptionalPropertyTypes` is on: a caller that has no
-   * handler to give must be able to pass `undefined` rather than omit the prop, and the card
-   * renders identically either way. */
-  readonly onSelectPremise?: ((id: PremiseId) => void) | undefined;
-  readonly onSelectDecision?: ((id: DecisionId) => void) | undefined;
+  readonly onSelectPremise?: (id: string) => void;
+  readonly onSelectDecision?: (id: DecisionId) => void;
   readonly actions?: readonly CardAction[];
 }
 
@@ -112,7 +109,7 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
     <div
       style={{
         border: "1px solid var(--border-strong)",
-        borderLeft: `3px solid ${LABEL_COLOUR[label]}`,
+        borderLeft: "3px solid " + LABEL_COLOUR[label],
         borderRadius: 6,
         padding: "12px 14px",
         background: "var(--surface-raised)",
@@ -164,7 +161,7 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
         summary={
           props.entrenchment.capped.toFixed(2) +
           (props.entrenchment.ee3CapApplied
-            ? ` (EE3-capped from ${props.entrenchment.total.toFixed(2)})`
+            ? " (EE3-capped from " + props.entrenchment.total.toFixed(2) + ")"
             : "")
         }
         defaultOpen={false}
@@ -182,7 +179,7 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
 
       <Collapsible
         title="provenance"
-        summary={`${decision.provenance.origin} · ${decision.temporal.valid.slice(0, 10)}`}
+        summary={decision.provenance.origin + " · " + decision.temporal.valid.slice(0, 10)}
         defaultOpen={false}
         note="The snippet is verbatim, with its character offsets, so it can be checked against the source. A paraphrase here would make everything else on this card unauditable."
       >
@@ -191,7 +188,7 @@ export function DecisionCard(props: DecisionCardProps): ReactElement {
 
       <Collapsible
         title="relates to"
-        summary={`${relationCount(decision)} relationship(s)`}
+        summary={relationCount(decision) + " relationship(s)"}
         defaultOpen={false}
       >
         <RelationList state={props.state} decision={decision} />
@@ -260,7 +257,7 @@ function CompactRow({
         width: "100%",
         textAlign: "left",
         border: "none",
-        borderLeft: `3px solid ${LABEL_COLOUR[label]}`,
+        borderLeft: "3px solid " + LABEL_COLOUR[label],
         background: "transparent",
         padding: "6px 8px",
         cursor: "pointer",
@@ -289,7 +286,7 @@ function guardSummary(state: GraphState, decision: Decision): string {
     if (guard.lastRun?.outcome === "pass") passing += 1;
   }
 
-  return total === 0 ? "none — unverifiable" : `${passing}/${total} passing`;
+  return total === 0 ? "none — unverifiable" : passing + "/" + total + " passing";
 }
 
 function relationCount(decision: Decision): number {

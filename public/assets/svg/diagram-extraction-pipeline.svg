@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 720" width="1400" height="720" role="img" aria-label="Extraction pipeline: transcript to reviewed commit">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .st { font-size: 16.5px; font-weight: 700; fill: #e6e9ee; text-anchor: middle; }
+    .sd { font-size: 13.5px; fill: #99a1ad; text-anchor: middle; }
+    .lane { font-size: 14px; font-weight: 700; letter-spacing: 1.6; }
+  </style>
+
+  <rect width="1400" height="720" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">Transcript → decisions, premises, alternatives — a human decides each item</text>
+  <text x="70" y="94" class="sub">commit.ts refuses an item with no review action. Nothing enters the log unreviewed.</text>
+
+  <!-- lanes -->
+  <rect x="70" y="140" width="1260" height="180" rx="12" fill="#12151a" stroke="#232830"/>
+  <text x="94" y="172" class="lane" fill="#60a5fa">ENGINE — LOCAL BY DEFAULT, LLM OPTIONAL</text>
+
+  <rect x="70" y="360" width="1260" height="180" rx="12" fill="#0e1620" stroke="#fbbf24" stroke-width="2"/>
+  <text x="94" y="392" class="lane" fill="#fbbf24">HUMAN — THE REVIEW QUEUE</text>
+
+  <rect x="70" y="580" width="1260" height="90" rx="12" fill="#12151a" stroke="#232830"/>
+  <text x="94" y="612" class="lane" fill="#4ade80">LOG — APPEND ONLY</text>
+
+  <!-- stage boxes, lane 1 -->
+  <g>
+    <g transform="translate(96,196)">
+      <rect width="180" height="100" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="90" y="44" class="st">normalise</text>
+      <text x="90" y="70" class="sd">turns · offset map</text>
+    </g>
+    <g transform="translate(304,196)">
+      <rect width="180" height="100" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="90" y="44" class="st">segment</text>
+      <text x="90" y="70" class="sd">episodes, not sentences</text>
+    </g>
+    <g transform="translate(512,196)">
+      <rect width="180" height="100" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="90" y="44" class="st">cue scan</text>
+      <text x="90" y="70" class="sd">120 decision cues</text>
+    </g>
+    <g transform="translate(720,196)">
+      <rect width="180" height="100" rx="12" fill="#0b0d10" stroke="#4ade80" stroke-width="2"/>
+      <text x="90" y="44" class="st" fill="#4ade80">recover ★</text>
+      <text x="90" y="70" class="sd">decisions + PREMISES</text>
+    </g>
+    <g transform="translate(928,196)">
+      <rect width="180" height="100" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="90" y="44" class="st">resolve</text>
+      <text x="90" y="70" class="sd">merge, never duplicate</text>
+    </g>
+    <g transform="translate(1136,196)">
+      <rect width="170" height="100" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="85" y="44" class="st">score</text>
+      <text x="85" y="70" class="sd">confidence tiers</text>
+    </g>
+  </g>
+
+  <!-- arrows lane 1 -->
+  <g fill="none" stroke="#333a45" stroke-width="2" stroke-linecap="round">
+    <path d="M276 246 L304 246"/><path d="M294 241 L306 246 L294 251"/>
+    <path d="M484 246 L512 246"/><path d="M502 241 L514 246 L502 251"/>
+    <path d="M692 246 L720 246"/><path d="M710 241 L722 246 L710 251"/>
+    <path d="M900 246 L928 246"/><path d="M918 241 L930 246 L918 251"/>
+    <path d="M1108 246 L1136 246"/><path d="M1126 241 L1138 246 L1126 251"/>
+  </g>
+
+  <!-- down to review -->
+  <g fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round">
+    <path d="M760 296 L760 420"/>
+    <path d="M752 406 L760 422 L768 406"/>
+  </g>
+  <text x="778" y="344" font-size="14.5" fill="#fbbf24">every item carries a snippet, a span and an engine stamp</text>
+
+  <!-- review items -->
+  <g>
+    <g transform="translate(96,420)">
+      <rect width="240" height="94" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="120" y="40" class="st">approve · edit</text>
+      <text x="120" y="66" class="sd">high tier pre-expanded</text>
+    </g>
+    <g transform="translate(364,420)">
+      <rect width="240" height="94" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="120" y="40" class="st">discard · merge</text>
+      <text x="120" y="66" class="sd">false positives outnumber 13:1</text>
+    </g>
+    <g transform="translate(632,420)">
+      <rect width="240" height="94" rx="12" fill="#0b0d10" stroke="#333a45"/>
+      <text x="120" y="40" class="st">mark contested</text>
+      <text x="120" y="66" class="sd">kept, visibly disputed</text>
+    </g>
+    <g transform="translate(900,420)">
+      <rect width="406" height="94" rx="12" fill="#0b0d10" stroke="#fbbf24" stroke-width="2"/>
+      <text x="203" y="40" class="st" fill="#fbbf24">bulk approve — with a reason</text>
+      <text x="203" y="66" class="sd">the reason goes into the log</text>
+    </g>
+  </g>
+
+  <!-- to log -->
+  <g fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round">
+    <path d="M760 514 L760 580"/>
+    <path d="M752 568 L760 584 L768 568"/>
+  </g>
+
+  <!-- commit order -->
+  <g transform="translate(300,606)">
+    <text x="0" y="30" font-size="15.5" font-weight="700" fill="#4ade80">commit order →</text>
+    <g transform="translate(140,-4)">
+      <rect width="150" height="40" rx="8" fill="#0b0d10" stroke="#333a45"/><text x="75" y="26" font-size="14" fill="#e6e9ee" text-anchor="middle">premises</text>
+      <rect x="164" width="140" height="40" rx="8" fill="#0b0d10" stroke="#333a45"/><text x="234" y="26" font-size="14" fill="#e6e9ee" text-anchor="middle">decision</text>
+      <rect x="318" width="170" height="40" rx="8" fill="#0b0d10" stroke="#333a45"/><text x="403" y="26" font-size="14" fill="#e6e9ee" text-anchor="middle">alternatives</text>
+      <rect x="502" width="180" height="40" rx="8" fill="#0b0d10" stroke="#333a45"/><text x="592" y="26" font-size="14" fill="#e6e9ee" text-anchor="middle">justification</text>
+      <rect x="696" width="160" height="40" rx="8" fill="#0b0d10" stroke="#4ade80"/><text x="776" y="26" font-size="14" font-weight="700" fill="#4ade80" text-anchor="middle">approval</text>
+    </g>
+  </g>
+  <text x="1330" y="660" font-size="14.5" fill="#6a7280" text-anchor="end">SHA-stamped events · hash chain unbroken</text>
+</svg>

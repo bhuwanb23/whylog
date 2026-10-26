@@ -1,14 +1,18 @@
 /**
  * The demo log, built two ways.
  *
- * The fixture (`fixtures/demo-transcript.txt`) states its OWN expected extraction:
+ * The fixture (`fixtures/demo-transcript.txt`) states its OWN expected extraction
+ * in its own informal words — six decisions. The ONTOLOGY (src/ontology/data/variables.ts)
+ * resolves those six onto SEVEN typed slots, because some lines span two slots and
+ * "single-user" is its own variable:
  *
- *   1. DATABASE   | Use SQLite (better-sqlite3), not Postgres
- *   2. AUTH       | Drop auth entirely
- *   3. FRAMEWORK  | Vite + React + Tailwind instead of Next.js
- *   4. STORAGE    | Embeddings inline in JSON, brute-force cosine scan
- *   5. TESTING    | Golden-file tests on the extractor only
- *   6. (weaker)   | Keep the schema small so migration stays possible
+ *   1. DATABASE   | Use SQLite (better-sqlite3), not Postgres  -> DATABASE=sqlite
+ *   2. AUTH       | Drop auth entirely                         -> AUTH=local
+ *   3. FRAMEWORK  | Vite + React + Tailwind instead of Next.js -> FRAMEWORK=single-page
+ *                                                                 + UI_KIT=tailwind
+ *   4. STORAGE    | Embeddings inline in JSON, brute-force scan -> RETRIEVAL=embeddings
+ *   5. TESTING    | Golden-file tests on the extractor only    -> TESTING=golden-file
+ *   6. (weaker)   | "one person, one machine, one log"          -> SCOPE=single-user
  *
  * The local engine extracts NINETEEN decision candidates from that transcript, because it
  * also reads the assistant's QUESTIONS and the REJECTED ALTERNATIVES as if they were
@@ -50,31 +54,42 @@ export const ENGINE_ID = { kind: "local", model: "cue-extractor-v1" } as const;
 export const NOW = asISO("2026-10-03T15:00:00.000Z");
 
 /**
- * The six decisions the transcript settled, as the engine resolved them.
+ * The decisions the transcript settled, as the engine resolved them — the seven
+ * keys curated review keeps (one per variable).
  *
- * The fixture names the decisions by its own variable names (DATABASE, AUTH, FRAMEWORK,
- * STORAGE, TESTING). The engine's ONTOLOGY is coarser and resolves two of them onto
- * different variables, so the mapping is spelled out here rather than being a coincidence:
+ * The fixture names its decisions informally; the engine maps them onto the ONTOLOGY's
+ * 14 typed slots (src/ontology/data/variables.ts). The mapping is spelled out here
+ * because the ontology — not this file — is the authority, and when the two disagree
+ * the ontology wins. (They disagreed once: this set was stale and read SCOPE=sqlite /
+ * AUTH=auth / FRAMEWORK=tailwind / ARCHITECTURE=single. The engine emits finer slots —
+ * tailwind is a UI_KIT, not a FRAMEWORK — so the stale set left the curated log with
+ * two decisions instead of six and every downstream gate failed. Updated to the real
+ * mapping.)
  *
- *   fixture DATABASE   "Use SQLite"          -> SCOPE=sqlite        (conf 0.82, rationale
- *                                                    "one machine, one log" - the fixture's
- *                                                    own "single-user, no deploy hassle")
- *   fixture AUTH       "Drop auth entirely"   -> AUTH=auth
- *   fixture FRAMEWORK  "Vite + React + Tail" -> FRAMEWORK=tailwind
- *   fixture STORAGE    "Embeddings inline"   -> RETRIEVAL=embeddings
- *   fixture TESTING    "Golden-file tests"    -> TESTING=golden-file
- *   fixture (weaker)   "Keep the schema small"-> ARCHITECTURE=single
+ *   fixture DATABASE      "Use SQLite"           -> DATABASE=sqlite
+ *   fixture AUTH          "Drop auth entirely"    -> AUTH=local
+ *   fixture FRAMEWORK     "Vite + React"          -> FRAMEWORK=single-page
+ *   fixture FRAMEWORK     "+ Tailwind"            -> UI_KIT=tailwind  (styling is its own slot)
+ *   fixture STORAGE       "Embeddings inline"     -> RETRIEVAL=embeddings
+ *   fixture TESTING       "Golden-file tests"     -> TESTING=golden-file
+ *   fixture (single-user) "one person, one log"   -> SCOPE=single-user
+ *
+ * Postgres, multi-user, and the migration alternatives are NOT kept: they are the
+ * rejected alternatives and the questions the transcript raised, and keeping them
+ * alongside the chosen value would make the log contradict itself (two live DATABASE
+ * decisions), which the export gate refuses.
  *
  * One decision per variable, which is what a consistent log looks like: the ontology says
  * one question, one current answer, and the export gate enforces it.
  */
 const KEEP: ReadonlySet<string> = new Set([
-  "SCOPE=sqlite",
-  "AUTH=auth",
-  "FRAMEWORK=tailwind",
+  "DATABASE=sqlite",
+  "AUTH=local",
+  "FRAMEWORK=single-page",
+  "UI_KIT=tailwind",
   "RETRIEVAL=embeddings",
   "TESTING=golden-file",
-  "ARCHITECTURE=single",
+  "SCOPE=single-user",
 ]);
 
 export type ReviewMode = "curated" | "approve-all";

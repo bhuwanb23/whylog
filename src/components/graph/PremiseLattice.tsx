@@ -204,12 +204,20 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
     setFalsifyFor(null);
     setNote(
       next.steps.length === 0
-        ? `Falsified ${premiseId}. Nothing flipped: ${
-            next.survivors.length > 0
-              ? `${next.survivors.length} node(s) were in the blast radius and every one survived, because each has support that does not depend on this premise.`
-              : "nothing depended on it."
-          }`
-        : `Falsified ${premiseId}. ${next.steps.length} label(s) flipped and ${next.survivors.length} survived. The animation shows the real diff, not a simulation.`,
+        ? "Falsified " +
+            premiseId +
+            ". Nothing flipped: " +
+            (next.survivors.length > 0
+              ? next.survivors.length +
+                " node(s) were in the blast radius and every one survived, because each has support that does not depend on this premise."
+              : "nothing depended on it.")
+        : "Falsified " +
+            premiseId +
+            ". " +
+            next.steps.length +
+            " label(s) flipped and " +
+            next.survivors.length +
+            " survived. The animation shows the real diff, not a simulation.",
     );
   };
 
@@ -255,7 +263,7 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
         >
           {/* column headers */}
           {layout.columns.map((column) => (
-            <g key={column.type} transform={`translate(${column.x},26)`}>
+            <g key={column.type} transform={"translate(" + column.x + ",26)"}>
               <text
                 textAnchor="middle"
                 className="mono"
@@ -307,7 +315,7 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
             const to = layout.nodes.get(edge.to);
             if (from === undefined || to === undefined) return null;
 
-            const key = `${edge.from}\u0000${edge.to}\u0000${edge.kind}`;
+            const key = edge.from + "\u0000" + edge.to + "\u0000" + edge.kind;
             const isHighlighted = highlight.edges.has(key);
 
             /* An edge turns red when the node it feeds has flipped in this animation. Red means an
@@ -390,7 +398,7 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
           className="notice notice-info"
           style={{
             marginTop: 10,
-            borderLeft: `3px solid ${LABEL_COLOUR[currentStep.to]}`,
+            borderLeft: "3px solid " + LABEL_COLOUR[currentStep.to],
             fontSize: 12,
           }}
         >
@@ -445,7 +453,10 @@ export function PremiseLattice(props: PremiseLatticeProps): ReactElement {
           ) : (
             <div className="dim" style={{ fontSize: 11, marginTop: 6 }}>
               {selectedNode.collapsedPremises.length > 0
-                ? `${selectedNode.collapsedPremises.length} premise(s) collapsed into this card: ${selectedNode.collapsedPremises.join(", ")}. A premise supporting exactly one decision adds a node and an edge to say what the card already says.`
+                ? selectedNode.collapsedPremises.length +
+                  " premise(s) collapsed into this card: " +
+                  selectedNode.collapsedPremises.join(", ") +
+                  ". A premise supporting exactly one decision adds a node and an edge to say what the card already says."
                 : "Every premise this decision rests on is drawn above it."}
             </div>
           )}

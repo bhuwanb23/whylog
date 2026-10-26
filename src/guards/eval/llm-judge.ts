@@ -80,7 +80,9 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
 
   if (!input.engine.capabilities().classification) {
     return skipped(
-      `The active engine (${input.engineId}) cannot produce a judgement. Configure an LLM engine in Settings, or replace this guard with a deterministic one.`,
+      "The active engine (" +
+        input.engineId +
+        ") cannot produce a judgement. Configure an LLM engine in Settings, or replace this guard with a deterministic one.",
       input.engineId,
     );
   }
@@ -100,7 +102,9 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
 
   if (scoped.length === 0) {
     return skipped(
-      `No pasted file matches this guard's scope (${spec.scopeGlobs.join(", ")}), so there was nothing to judge.`,
+      "No pasted file matches this guard's scope (" +
+        spec.scopeGlobs.join(", ") +
+        "), so there was nothing to judge.",
       input.engineId,
     );
   }
@@ -119,13 +123,13 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
     const slice = text.length > budget ? text.slice(0, budget) : text;
     if (text.length > budget) truncated = true;
     budget -= slice.length;
-    material.push(`--- ${path} ---\n${slice}`);
+    material.push("--- " + path + " ---\n" + slice);
   }
 
   const prompt = [
-    `Decision under test: ${input.decisionStatement}`,
+    "Decision under test: " + input.decisionStatement,
     "",
-    `Rubric: ${spec.rubric}`,
+    "Rubric: " + spec.rubric,
     "",
     "Files in scope:",
     material.join("\n\n"),
@@ -150,7 +154,11 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
     return {
       evaluation: {
         outcome: "pass",
-        evidence: `Judged by ${result.engine}: ${rest.length > 0 ? rest : "the rubric was satisfied"}`,
+        evidence:
+          "Judged by " +
+          result.engine +
+          ": " +
+          (rest.length > 0 ? rest : "the rubric was satisfied"),
       },
       engine: result.engine,
       filesJudged: files,
@@ -162,7 +170,11 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
     return {
       evaluation: {
         outcome: "fail",
-        evidence: `Judged by ${result.engine}: ${rest.length > 0 ? rest : "the rubric was not satisfied"}`,
+        evidence:
+          "Judged by " +
+          result.engine +
+          ": " +
+          (rest.length > 0 ? rest : "the rubric was not satisfied"),
       },
       engine: result.engine,
       filesJudged: files,
@@ -174,7 +186,10 @@ export async function evalLlmJudge(input: JudgeInput): Promise<JudgeVerdict> {
     evaluation: {
       outcome: "skip",
       evidence: "",
-      skipReason: `The judge could not tell from the files in scope${rest.length > 0 ? `: ${rest}` : "."}${truncated ? ` The material was truncated to ${JUDGE_CHAR_BUDGET} characters.` : ""}`,
+      skipReason:
+        "The judge could not tell from the files in scope" +
+        (rest.length > 0 ? ": " + rest : ".") +
+        (truncated ? " The material was truncated to " + JUDGE_CHAR_BUDGET + " characters." : ""),
     },
     engine: result.engine,
     filesJudged: files,

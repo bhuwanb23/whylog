@@ -74,6 +74,13 @@ export interface GateOptions {
   /** Skip gate (b) even when a retriever exists — used by the keyless demo path and
    *  by Phase 7 when measuring gates (a) and (c) in isolation. */
   readonly skipSemantic?: boolean;
+  /** Skip gate (a). Ablation only: without it the system never notices you contradicting
+   *  yourself, which is what makes the gate's contribution measurable. */
+  readonly skipStructural?: boolean;
+  /** Skip gate (c). Ablation only, and the most consequential switch in the file: without
+   *  it the graph is monotonic and a decision can no longer become false because the world
+   *  changed. */
+  readonly skipPremiseInvalidation?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -88,10 +95,16 @@ export async function runGates(
   const started = nowMs();
 
   /* ---- (a) structural: no await, no model, no threshold ---- */
-  const structural = detectStructural(state);
+  const structural = options.skipStructural === true ? [] : detectStructural(state);
 
-  /* ---- (c) premise: a label lookup over the justification set ---- */
-  const premiseGate = detectPremiseInvalidation(state, labels);
+  /* ---- (c) premise: a label lookup over the justification set ----
+   * Skipped by handing the detector an empty label map rather than by branching on the
+   * result: with no labels every justification reads UNFOUNDED, so nothing can be
+   * invalidated, which is exactly what "gate (c) is off" means. */
+  const premiseGate =
+    options.skipPremiseInvalidation === true
+      ? detectPremiseInvalidation(state, new Map())
+      : detectPremiseInvalidation(state, labels);
 
   /* ---- (b) semantic: retrieval + classification, when available ---- */
   const semantic =

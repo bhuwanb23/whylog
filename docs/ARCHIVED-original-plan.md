@@ -41,21 +41,21 @@ Plus: three views (Timeline, Ask, Export) + Graph, manual "quick log" entry (10 
 
 ```
 ┌──────────────────────────── Browser (Vite + React SPA) ───────────────────────────┐
-³                                                                                   ³
-³  VIEWS          Timeline · Ask · Export · Graph                                   ³
-³                     ³                                                             ³
-³  STATE          Zustand store ──persist──> localStorage (whylog:decisions:v1)      ³
-³                     ³                       + JSON file import/export             ³
-³  PIPELINE           ³                                                             ³
-³    paste transcript ──> extractDecisions() ──> REVIEW DIFF ──> embed() ──> store    ³
-³                                              ³                                    ³
-³                                              └──> checkConflict(top-3 similar)     ³
-³                                                    └──> reversal banner            ³
-³    ask question ──> embed(q) ──> cosine top-k ──> answer(q, retrieved) ──> citations³
-³                                                                                   ³
-³  AI LAYER       ai/index.ts  →  route(key ? llm : local)                          ³
-³                   ├─ providers/  (OpenAI · Anthropic · OpenRouter)                 ³
-³                   └─ local/      (extract · embed · conflict · answer)  ← offline   ³
+│                                                                                   │
+│  VIEWS          Timeline · Ask · Export · Graph                                   │
+│                     │                                                             │
+│  STATE          Zustand store ──persist──> localStorage (whylog:decisions:v1)      │
+│                     │                       + JSON file import/export             │
+│  PIPELINE           │                                                             │
+│    paste transcript ──> extractDecisions() ──> REVIEW DIFF ──> embed() ──> store    │
+│                                              │                                    │
+│                                              └──> checkConflict(top-3 similar)     │
+│                                                    └──> reversal banner            │
+│    ask question ──> embed(q) ──> cosine top-k ──> answer(q, retrieved) ──> citations│
+│                                                                                   │
+│  AI LAYER       ai/index.ts  →  route(key ? llm : local)                          │
+│                   ├─ providers/  (OpenAI · Anthropic · OpenRouter)                 │
+│                   └─ local/      (extract · embed · conflict · answer)  ← offline   │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -121,21 +121,21 @@ whylog/
 ├─ package.json          # vite react tailwind zustand nanoid d3-force
 ├─ vite.config.ts
 ├─ src/
-³  ├─ main.tsx  App.tsx  index.css
-³  ├─ types.ts
-³  ├─ store/
-³  ³   ├─ useDecisions.ts        # zustand + persist
-³  ³   └─ seed.ts                # demo transcript + pre-baked Oct-3 decisions
-³  ├─ ai/
-³  ³   ├─ index.ts               # the router: key ? llm : local
-³  ³   ├─ prompts.ts             # EXTRACT / CONFLICT / ANSWER prompt text
-³  ³   ├─ providers/{openai,anthropic,openrouter}.ts
-³  ³   └─ local/{extract,embed,conflict,answer,lexicon}.ts
-³  ├─ search/cosine.ts           # topK(queryVec, decisions, k)
-³  ├─ export/formats/{claude,cursorrules,agents,decisions}.ts
-³  ├─ views/{Timeline,Ask,Export,Graph}.tsx
-³  └─ components/{PasteModal,ExtractReview,DecisionCard,ConflictBanner,
-³                 QuickLog,SearchBar,SettingsBar,ModeBadge}.tsx
+│  ├─ main.tsx  App.tsx  index.css
+│  ├─ types.ts
+│  ├─ store/
+│  │   ├─ useDecisions.ts        # zustand + persist
+│  │   └─ seed.ts                # demo transcript + pre-baked Oct-3 decisions
+│  ├─ ai/
+│  │   ├─ index.ts               # the router: key ? llm : local
+│  │   ├─ prompts.ts             # EXTRACT / CONFLICT / ANSWER prompt text
+│  │   ├─ providers/{openai,anthropic,openrouter}.ts
+│  │   └─ local/{extract,embed,conflict,answer,lexicon}.ts
+│  ├─ search/cosine.ts           # topK(queryVec, decisions, k)
+│  ├─ export/formats/{claude,cursorrules,agents,decisions}.ts
+│  ├─ views/{Timeline,Ask,Export,Graph}.tsx
+│  └─ components/{PasteModal,ExtractReview,DecisionCard,ConflictBanner,
+│                 QuickLog,SearchBar,SettingsBar,ModeBadge}.tsx
 └─ README.md
 ```
 

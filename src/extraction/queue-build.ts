@@ -77,6 +77,7 @@ export function buildQueue(
       episodeId: null,
       inRefs: candidate.premiseRefs,
       outRefs: [],
+      /* I4: no candidate reaches an event without a human action. Built null; the review layer sets it. */
       action: null,
     });
   });
@@ -98,6 +99,7 @@ export function buildQueue(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      /* I4: no candidate reaches an event without a human action. Built null; the review layer sets it. */
       action: null,
     });
   });
@@ -119,6 +121,7 @@ export function buildQueue(
       episodeId: null,
       inRefs: [],
       outRefs: [],
+      /* I4: no candidate reaches an event without a human action. Built null; the review layer sets it. */
       action: null,
     });
   });

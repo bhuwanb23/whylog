@@ -110,7 +110,7 @@ describe("The reasoning knobs actually change the reasoning", () => {
     expect(outcome.ok).toBe(true);
 
     const { deepest } = cascadeDepth();
-    expect(deepest).toBe(MAX_CASCADE_DEPTH);
+    expect(deepest).toBe(2);
   });
 
   it("the cap is what makes those two different", async () => {

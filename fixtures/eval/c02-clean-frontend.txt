@@ -1,0 +1,18 @@
+Claude Code — session: whylog-eval-c02
+Started: Oct 4, 10:05
+
+User: what should we build the UI with?
+
+Assistant: What are the constraints? Do you need server rendering or API routes?
+
+User: no SSR, no API routes. it's a local tool. and I want the fastest possible dev loop.
+
+Assistant: Then Vite with React. Next.js would give you SSR you won't use and a build step you don't need.
+
+User: agreed, let's use Vite, not Next.js. no SSR needed is the reason.
+
+Assistant: Recording that. Premise: scope is a local tool with no SSR requirement. Rejected: Next.js, because of the unused SSR and the slower dev loop.
+
+User: and for state, just use zustand. redux is too much ceremony for this.
+
+Assistant: Noted — zustand for state management, redux rejected as too much ceremony.

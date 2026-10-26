@@ -36,16 +36,13 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
 
   return (
     <g
-      transform={`translate(${props.node.x},${props.node.y})`}
+      transform={"translate(" + props.node.x + "," + props.node.y + ")"}
       onClick={() => props.onSelect(props.node.id)}
       style={{
         cursor: "pointer",
         opacity: props.dimmed ? 0.22 : 1,
         transition: "opacity 220ms ease",
       }}
-      /* biome-ignore lint/a11y/useSemanticElements: SVG has no <button>; a focusable <g> with an
-         explicit role and a key handler is the accessible equivalent, and a HTML button cannot be
-         placed inside a <svg> at all. */
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
@@ -56,11 +53,21 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
       }}
     >
       <title>
-        {`${props.node.id} · ${props.node.text}\nlabel ${props.node.label} — ${LABEL_MEANING[props.node.label]}\nlifecycle ${props.status}${
-          props.node.collapsedPremises.length > 0
-            ? `\n${props.node.collapsedPremises.length} premise(s) collapsed into this card: ${props.node.collapsedPremises.join(", ")}`
-            : ""
-        }`}
+        {props.node.id +
+          " · " +
+          props.node.text +
+          "\nlabel " +
+          props.node.label +
+          " — " +
+          LABEL_MEANING[props.node.label] +
+          "\nlifecycle " +
+          props.status +
+          (props.node.collapsedPremises.length > 0
+            ? "\n" +
+              props.node.collapsedPremises.length +
+              " premise(s) collapsed into this card: " +
+              props.node.collapsedPremises.join(", ")
+            : "")}
       </title>
 
       {props.flipping ? (
@@ -120,5 +127,5 @@ export function DecisionNode(props: DecisionNodeProps): ReactElement {
 
 function truncate(text: string, limit: number): string {
   const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`;
+  return flat.length <= limit ? flat : flat.slice(0, limit - 1) + "…";
 }

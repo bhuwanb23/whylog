@@ -24,7 +24,9 @@
       "recommended": true,
       "complexity": {
         "noExcessiveCognitiveComplexity": "warn",
-        "useLiteralKeys": "off"
+        "useLiteralKeys": "off",
+        "noForEach": "off",
+        "useOptionalChain": "off"
       },
       "correctness": {
         "noUnusedImports": "error",
@@ -32,11 +34,18 @@
         "useExhaustiveDependencies": "warn"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "off",
+        "useTemplate": "off"
       },
       "suspicious": {
         "noExplicitAny": "error",
         "noConsoleLog": "warn"
+      },
+      "a11y": {
+        "useSemanticElements": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noAutofocus": "warn",
+        "noNoninteractiveElementToInteractiveRole": "warn"
       }
     }
   },
@@ -46,11 +55,6 @@
       "semicolons": "always",
       "trailingCommas": "all",
       "arrowParentheses": "always"
-    }
-  },
-  "json": {
-    "parser": {
-      "allowComments": true
     }
   }
 }

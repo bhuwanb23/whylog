@@ -428,12 +428,11 @@ export function reportAll(state: GraphState, now: ISODateString): MetricsReport 
 }
 
 /** The three numbers that go in the export stamp, in one place so the compiler
- *  and the health panel cannot disagree about them.
- *
- *  No reference instant: all three are pure functions of the graph. If a
- *  time-dependent metric is ever added here, it takes one — but a parameter
- *  that is ignored is a lie about what the function depends on. */
-export function headlineNumbers(state: GraphState): {
+ *  and the health panel cannot disagree about them. */
+export function headlineNumbers(
+  state: GraphState,
+  _now: ISODateString,
+): {
   compliance: number;
   verifiableCoverage: number;
   soundness: number;

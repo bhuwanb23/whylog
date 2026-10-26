@@ -43,7 +43,15 @@ export type Polarity = "positive" | "negative";
 export interface PolarityEvidence {
   readonly polarity: Polarity;
   /** What decided it, so a wrong call is diagnosable. */
-  readonly via: "cue-direction" | "negation-flip" | "verb-pattern" | "default";
+  readonly via:
+    | "cue-direction"
+    | "negation-flip"
+    | "verb-pattern"
+    | "default"
+    /** Only produced when the ablation switch `negationCues: false` is set. It exists so a
+     *  run with the cues off is diagnosable from its own evidence rather than looking like a
+     *  cue that simply failed to fire. */
+    | "ablation-negation-off";
   readonly marker: string | null;
   /** The tokens the negation search covered. */
   readonly scope: readonly string[];
@@ -289,6 +297,8 @@ export const POLARITY_EXPLANATIONS: Readonly<Record<PolarityEvidence["via"], str
   "negation-flip": "a negation inside the cue's clause reversed it",
   "verb-pattern": "the verb decided, because the cue was direction-neutral",
   default: "no polarity evidence — defaulted to chosen, which the review can correct",
+  "ablation-negation-off":
+    "negation cues were DISABLED for this run, so polarity was reported positive without reading the text",
 };
 
 export function describePolarity(evidence: PolarityEvidence): string {

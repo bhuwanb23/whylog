@@ -28,7 +28,6 @@
  */
 
 import { TARGET_AUDIENCE, checkSixProperties, describeGate, describeVerifyPolicy } from "@/export";
-import { type GateCheck, checkGateG5 } from "@/export/gate-g5";
 import {
   describeExportState,
   describeSelectedBudget,
@@ -39,7 +38,7 @@ import {
 import { useWhyLog } from "@/store/whylog";
 import type { ExportTarget } from "@/types/export";
 import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
-import { type ReactElement, useMemo, useState } from "react";
+import { type ReactElement, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* The view                                                                   */
@@ -50,7 +49,6 @@ export function ExportView(): ReactElement {
   const store = useExport();
   const [showReference, setShowReference] = useState(false);
 
-  const _artifact = useMemo(() => selectedArtifact(store), [store]);
   const busy = store.status === "compiling";
   const decisionCount = whylog.state.decisions.size;
 
@@ -142,6 +140,106 @@ export function ExportView(): ReactElement {
 /* -------------------------------------------------------------------------- */
 /* Gate G5 — checked, not eyeballed                                           */
 /* -------------------------------------------------------------------------- */
+
+interface GateCheck {
+  readonly property: string;
+  readonly passed: boolean;
+  readonly evidence: string;
+}
+
+/**
+ * Does the compiled CLAUDE.md satisfy gate G5?
+ *
+ * Every clause of the gate is a predicate over the artifact text. Running them is what makes the
+ * gate a gate rather than a description of one.
+ */
+function checkGateG5(contents: string | null): readonly GateCheck[] {
+  if (contents === null) {
+    return [
+      { property: "artifact exists", passed: false, evidence: "Nothing has been compiled yet." },
+    ];
+  }
+
+  /* Take the first `### WLD-…` block, which is the highest-priority decision by construction. */
+  const start = contents.indexOf("\n### ");
+  const end = contents.indexOf("\n### ", start + 1);
+  const block = start < 0 ? "" : contents.slice(start, end < 0 ? contents.length : end);
+
+  const recordId = /^###\s+((?:WLD|ADR)-[0-9A-Za-z-]+)/.exec(block.trim())?.[1] ?? null;
+
+  return [
+    {
+      property: "a decision record is present",
+      passed: recordId !== null,
+      evidence:
+        recordId === null
+          ? "No `### WLD-…` block found in the artifact."
+          : recordId + " is the highest-priority record and is checked below.",
+    },
+    {
+      property: "MUST / MUST NOT imperative form",
+      passed: /\bMUST NOT\b/.test(block) || /\bMUST\b/.test(block),
+      evidence:
+        firstMatch(block, /\bMUST(?: NOT)?\b[^.\n]*\.?/) ??
+        "no normative keyword found — the record is prose, which an agent has to summarise before it can follow it",
+    },
+    {
+      property: "applies_to scope",
+      passed: /^Applies to:\s*\S/m.test(block),
+      evidence:
+        firstMatch(block, /^Applies to:.*$/m) ??
+        "no scope line — the rule would load into every context",
+    },
+    {
+      property: "Because: with premise IDs",
+      passed: /^Because:.*\bP-[0-9]/m.test(block),
+      evidence:
+        firstMatch(block, /^Because:.*$/m) ??
+        "no premise IDs — a reader cannot see what would have to change for the rule to stop applying",
+    },
+    {
+      property: "rejected alternatives",
+      passed: /^Rejected:/m.test(block) || /## Rejected — do not re-propose/.test(contents),
+      evidence:
+        firstMatch(block, /^Rejected:.*$/m) ??
+        (contents.includes("## Rejected — do not re-propose")
+          ? "present as a top-level section rather than on this record"
+          : "nothing rejected is recorded, so an agent is free to re-propose what was already turned down"),
+    },
+    {
+      property: "a runnable verify command",
+      passed: /^Verify:\s*(?!none)/m.test(block),
+      evidence:
+        firstMatch(block, /^Verify:.*$/m) ??
+        "no verify line — the requirement no ADR tool satisfies automatically",
+    },
+    {
+      property: "status line",
+      passed: /^Status:/m.test(block),
+      evidence: firstMatch(block, /^Status:.*$/m) ?? "no status line",
+    },
+    {
+      property: "integrity stamp",
+      passed: contents.includes("<!-- whylog:stamp"),
+      evidence: contents.includes("<!-- whylog:stamp")
+        ? "present, with the log head and the content digest"
+        : "MISSING — the artifact cannot be tied back to the log that produced it",
+    },
+    {
+      property: "anti-re-litigation line",
+      passed: contents.includes("Do not re-litigate without superseding this record."),
+      evidence: contents.includes("Do not re-litigate")
+        ? "present — disagreeing is allowed but has a form, and the form is a recorded supersession"
+        : "absent",
+    },
+  ];
+}
+
+function firstMatch(text: string, pattern: RegExp): string | null {
+  const match = pattern.exec(text);
+  const found = match?.[0]?.trim();
+  return found === undefined || found.length === 0 ? null : found;
+}
 
 function GateG5Card(): ReactElement {
   const store = useExport();
@@ -481,14 +579,13 @@ function SixPropertiesCard(): ReactElement {
       <h2 className="card-title">
         The six agent-optimized properties · {record.id}
         {records.length > 1 ? (
-          <button
-            type="button"
+          <span
             className="badge"
             style={{ marginLeft: 8 }}
             onClick={() => setIndex((index + 1) % records.length)}
           >
             next record
-          </button>
+          </span>
         ) : null}
       </h2>
 
@@ -588,7 +685,7 @@ function VerifyCard(): ReactElement {
       {store.checks.map((check, index) => (
         <div
           key={String(index) + check.path}
-          className={`notice ${check.verification.ok ? "notice-info" : "notice-warning"}`}
+          className={"notice " + (check.verification.ok ? "notice-info" : "notice-warning")}
           style={{ marginTop: 10, fontSize: 12 }}
         >
           <strong>{check.path}</strong> — {check.note}

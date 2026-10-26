@@ -11,12 +11,12 @@
  *   NAIVE                            WhyLog
  *   ─────                            ──────
  *   "why did we drop auth?"          "why did we drop auth?"
- *            ³                                ³
+ *            │                                │
  *            ▼                                ▼
  *   match against STATEMENTS         match against INVERTED QUESTIONS
  *   "Drop auth entirely — local      "why is there no login?"
  *    single-user tool"               "did we decide about auth?"
- *            ³                                ³
+ *            │                                │
  *            ▼                                ▼
  *   interrogative vs declarative     question ↔ question
  *   — a dialect mismatch             — same shape, same dialect
@@ -113,5 +113,7 @@ export function describeL2(artifacts: IndexArtifacts): string {
   const count = l2Count(artifacts);
   return count === 0
     ? "L2 inverted questions — none built. Question-shaped queries fall back to L1 and L3."
-    : `L2 inverted questions (HyPE) — ${count} decision(s). Query matching becomes question-to-question, which removes the interrogative/declarative asymmetry entirely. Cost: zero extra model calls.`;
+    : "L2 inverted questions (HyPE) — " +
+        count +
+        " decision(s). Query matching becomes question-to-question, which removes the interrogative/declarative asymmetry entirely. Cost: zero extra model calls.";
 }

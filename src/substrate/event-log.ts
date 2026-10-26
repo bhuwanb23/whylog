@@ -29,13 +29,7 @@ import type {
   ValidationResult,
 } from "@/types/events";
 import { type ValidationContext, validateEvent } from "./event-validation";
-import {
-  type ChainVerification,
-  GENESIS_HASH,
-  hashEvent,
-  linkHash,
-  verifyChain,
-} from "./hash-chain";
+import { type ChainVerification, GENESIS_HASH, hashEvent, linkHash, verifyChain } from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
 
 /* -------------------------------------------------------------------------- */
@@ -124,10 +118,11 @@ function seal<T extends EventType>(
   draft: EventDraft<T>,
   context: AppendContext,
 ): AnyEvent {
-  const at = draft.at ?? context.now;
+  const rawAt = draft.at ?? context.now;
+  const at = log.lastAt !== null && rawAt < log.lastAt ? log.lastAt : rawAt;
   const occurredAt = draft.occurredAt ?? context.occurredAt ?? at;
 
-  const linked = {
+  const event = {
     id: mintId(log, at),
     type: draft.type,
     at,
@@ -136,13 +131,13 @@ function seal<T extends EventType>(
     payload: draft.payload,
     reason: draft.reason ?? context.reason,
     prevHash: log.headHash,
+    selfHash: "",
     schemaVersion: log.schemaVersion,
   } as unknown as DomainEvent<T, EventPayloadMap[T]>;
 
-  // The content hash rides with the event so that an edit is reported AT the
-  // edited event, not at the next one. It is computed over the content only,
-  // so it survives a re-link onto a different chain.
-  return { ...linked, selfHash: hashEvent(linked) } as AnyEvent;
+  (event as unknown as { selfHash: string }).selfHash = hashEvent(event as unknown as DomainEvent);
+
+  return event as AnyEvent;
 }
 
 function contextFor(log: EventLog): ValidationContext {

@@ -29,7 +29,8 @@ import { ReviewView } from "@/views/ReviewView";
 import { SettingsView } from "@/views/SettingsView";
 import { TimeMachineView } from "@/views/TimeMachineView";
 import { TimelineView } from "@/views/TimelineView";
-import { type ReactElement, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactElement } from "react";
 /* Bundled rather than fetched: the sandboxed preview has no network, and §6.9 requires the demo to
  * be one click from a cold start. */
 import demoTranscript from "../fixtures/demo-transcript.txt?raw";

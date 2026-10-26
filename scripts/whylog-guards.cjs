@@ -7,7 +7,7 @@
  * This file is what makes those lines true. It is compiled from the same graph in the same
  * pass, so a verify command cannot name a guard this runner does not have.
  *
- * Log head: 373bdbded207e8
+ * Log head: 1a6228c7c0059d
  * Guards:   17
  *
  * Re-export after any change to the log. Editing this file by hand is detected as a stamp
@@ -16,7 +16,7 @@
 /**
  * WhyLog decision guards — generated. Do not edit by hand.
  *
- * Log head: 373bdbded207e8
+ * Log head: 1a6228c7c0059d
  * Guards:   17
  *
  * Exits non-zero if any BLOCKING guard fails. Warning failures are printed

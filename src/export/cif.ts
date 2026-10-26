@@ -117,17 +117,8 @@ export function buildCif(
   /* ---- 1. candidate set ---- */
   const candidates = candidateIds(state, labels, options);
 
-  /* ---- 2. the gate, before anything is rendered ----
-   *
-   * The gate gets BOTH sets: every candidate (so a conflict is reported even when the file
-   * dodges it) and the ones that will actually be written (so the file is only blocked when
-   * the file itself would be wrong). */
-  const gate = consistencyGate({
-    state,
-    labels,
-    candidates: candidates.map((entry) => entry.id),
-    emitted: candidates.filter((entry) => entry.excluded === null).map((entry) => entry.id),
-  });
+  /* ---- 2. the gate, before anything is rendered ---- */
+  const gate = consistencyGate({ state, labels, candidates: candidates.map((entry) => entry.id) });
 
   /* ---- 3. rank ---- */
   const priorities = new Map<DecisionId, PriorityBreakdown>();
@@ -256,7 +247,8 @@ function candidateIds(
 
     if (decision.status === "superseded" || decision.status === "archived") {
       if (options?.includeSuperseded !== true) {
-        excluded = `${decision.status} — the log has withdrawn it, and its replacement is emitted instead`;
+        excluded =
+          decision.status + " — the log has withdrawn it, and its replacement is emitted instead";
       }
     } else if (label === "OUT") {
       if (options?.includeOut !== true) {
@@ -321,26 +313,38 @@ export function describeCif(result: CifResult): string {
   const lines = [
     result.blocked ? "BLOCKED by the consistency gate." : "Consistency gate passed.",
     "",
-    `  inline (tier 1)   ${result.cif.stats.decisionsIncluded}`,
-    `  index  (tier 2)   ${result.cif.stats.decisionsLinkedOut}`,
-    `  excluded          ${result.cif.stats.decisionsExcluded}`,
-    `  lines             ${result.cif.stats.lineCount} / ${result.budget.maxLines}${result.budget.overBudget ? "  — OVER BUDGET" : ""}`,
-    `  ~tokens           ${result.cif.stats.estimatedTokens}`,
-    `  rejected entries  ${result.cif.rejected.length}`,
-    `  compliance        ${Math.round(result.cif.stats.compliance * 100)}%`,
-    `  coverage          ${Math.round(result.cif.stats.verifiableCoverage * 100)}%`,
+    "  inline (tier 1)   " + result.cif.stats.decisionsIncluded,
+    "  index  (tier 2)   " + result.cif.stats.decisionsLinkedOut,
+    "  excluded          " + result.cif.stats.decisionsExcluded,
+    "  lines             " +
+      result.cif.stats.lineCount +
+      " / " +
+      result.budget.maxLines +
+      (result.budget.overBudget ? "  — OVER BUDGET" : ""),
+    "  ~tokens           " + result.cif.stats.estimatedTokens,
+    "  rejected entries  " + result.cif.rejected.length,
+    "  compliance        " + Math.round(result.cif.stats.compliance * 100) + "%",
+    "  coverage          " + Math.round(result.cif.stats.verifiableCoverage * 100) + "%",
   ];
 
   if (result.gate.conflicts.length > 0) {
     lines.push("");
     lines.push(
-      `Conflicts found: ${result.gate.conflicts.length} (${result.blocked ? "blocking — both sides were being emitted" : "reported only — the export dodged them, the log did not"})`,
+      "Conflicts found: " +
+        result.gate.conflicts.length +
+        " (" +
+        (result.blocked
+          ? "blocking — both sides were being emitted"
+          : "reported only — the export dodged them, the log did not") +
+        ")",
     );
   }
 
   if (result.gate.annotations.length > 0) {
     lines.push(
-      `Annotations: ${result.gate.annotations.length} attached inline to the records they concern.`,
+      "Annotations: " +
+        result.gate.annotations.length +
+        " attached inline to the records they concern.",
     );
   }
 
@@ -376,7 +380,7 @@ export function checkSixProperties(
     {
       property: "token-aware",
       present: true,
-      note: `tier ${record.tier}, priority ${record.priority.toFixed(3)}`,
+      note: "tier " + record.tier + ", priority " + record.priority.toFixed(3),
     },
     {
       property: "non-conflicting",
@@ -386,7 +390,7 @@ export function checkSixProperties(
     {
       property: "addressable",
       present: record.id.length > 0,
-      note: `${record.id} — stable, never renumbered, never reused`,
+      note: record.id + " — stable, never renumbered, never reused",
     },
   ];
 }

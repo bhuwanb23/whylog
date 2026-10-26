@@ -117,7 +117,9 @@ export function buildProject(input: ProjectInput): ProjectParseReport {
   if (implied.length > 0 && filePaths.length === 0) {
     filePaths = implied;
     notices.push(
-      `No listing was pasted, so the ${implied.length} file(s) named in the contents are used as the listing. Path guards can run; a file you did not paste is still absent from them.`,
+      "No listing was pasted, so the " +
+        implied.length +
+        " file(s) named in the contents are used as the listing. Path guards can run; a file you did not paste is still absent from them.",
     );
   } else if (implied.length > 0) {
     filePaths = [...filePaths, ...implied];
@@ -254,7 +256,12 @@ export function parseManifest(raw: string): ManifestParse {
     );
   } else {
     notices.push(
-      `The pasted manifest was not valid JSON. Recovered ${count} dependency line(s) by pattern${section === "devDependencies" ? "; the last section seen was devDependencies, but without valid JSON the split cannot be trusted, so all of them are treated as runtime dependencies." : "."}`,
+      "The pasted manifest was not valid JSON. Recovered " +
+        count +
+        " dependency line(s) by pattern" +
+        (section === "devDependencies"
+          ? "; the last section seen was devDependencies, but without valid JSON the split cannot be trusted, so all of them are treated as runtime dependencies."
+          : "."),
     );
   }
 
@@ -312,7 +319,16 @@ export function parseFileListing(raw: string): ListingParse {
     );
   } else {
     notices.push(
-      `Read ${parsed.paths.length} path(s) from ${looksLikeTree ? "`tree`-style" : "plain"} listing.${parsed.directoryCount > 0 ? ` ${parsed.directoryCount} directory node(s) were reconstructed and are not listed as files.` : ""}`,
+      "Read " +
+        parsed.paths.length +
+        " path(s) from " +
+        (looksLikeTree ? "`tree`-style" : "plain") +
+        " listing." +
+        (parsed.directoryCount > 0
+          ? " " +
+            parsed.directoryCount +
+            " directory node(s) were reconstructed and are not listed as files."
+          : ""),
     );
   }
 
@@ -540,7 +556,9 @@ export function parseFileContents(raw: string): ContentsParse {
       "The pasted contents had no recognisable file headers, so nothing was attributed to a path. Separate files with a line like `--- src/db/schema.ts ---`.",
     );
   } else {
-    notices.push(`Read contents for ${headers} file(s). String guards can now run against them.`);
+    notices.push(
+      "Read contents for " + headers + " file(s). String guards can now run against them.",
+    );
   }
 
   return { contents, notices, unparsed };
@@ -608,7 +626,7 @@ export function dependencyEvidenceLine(
   found: { version: string; dev: boolean },
 ): string {
   const section = found.dev ? "devDependencies" : "dependencies";
-  return `"${name}": "${found.version}" found in package.json ${section}`;
+  return '"' + name + '": "' + found.version + '" found in package.json ' + section;
 }
 
 /** Can path guards run at all? False when no listing was pasted. */
@@ -635,10 +653,18 @@ export function describeProject(project: VirtualProject): string {
   const contents = Object.keys(project.fileContents).length;
 
   return [
-    `Virtual project · loaded ${project.loadedAt} · source ${project.sourcedFrom.kind}`,
-    `  dependencies     ${deps} runtime, ${dev} dev${deps + dev === 0 ? "  — dependency guards will SKIP" : ""}`,
-    `  file listing     ${files} path(s)${files === 0 ? "  — path guards will SKIP" : ""}`,
-    `  file contents    ${contents} file(s)${contents === 0 ? "  — string guards will SKIP" : ""}`,
+    "Virtual project · loaded " + project.loadedAt + " · source " + project.sourcedFrom.kind,
+    "  dependencies     " +
+      deps +
+      " runtime, " +
+      dev +
+      " dev" +
+      (deps + dev === 0 ? "  — dependency guards will SKIP" : ""),
+    "  file listing     " + files + " path(s)" + (files === 0 ? "  — path guards will SKIP" : ""),
+    "  file contents    " +
+      contents +
+      " file(s)" +
+      (contents === 0 ? "  — string guards will SKIP" : ""),
     "",
     "A skip is never a pass. Guards whose data was not pasted report SKIP with a reason, so a",
     "run that could check nothing cannot be mistaken for a clean run.",

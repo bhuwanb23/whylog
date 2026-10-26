@@ -176,7 +176,7 @@ export interface Guard {
   readonly lastRun?: GuardRunResult;
   /** When this guard first started failing and has not passed since.
    *  Drives the `Drift Age` metric (Phase 4.4). */
-  readonly firstFailedAt?: ISODateString;
+  readonly firstFailedAt?: ISODateString | undefined;
 
   /**
    * Guards INHERIT their decision's label: a decision that is OUT or

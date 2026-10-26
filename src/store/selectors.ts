@@ -17,13 +17,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import {
-  byIdAsc,
-  byTemporalValidDesc,
-  compare,
-  formatInterval,
-  isOpen,
-} from "@/substrate/bi-temporal";
+import { byIdAsc, byValidDesc, compare, formatInterval, isOpen } from "@/substrate/bi-temporal";
 import type { GraphState } from "@/substrate/graph-state";
 import { OTHER_VARIABLE_THRESHOLD } from "@/substrate/graph-state";
 import * as decisions from "@/substrate/projections/decisions";
@@ -36,7 +30,7 @@ import type { Decision, DecisionLabel, DecisionVariable, Premise } from "@/types
 
 /** The canonical timeline order: valid time descending, ties broken by id.
  *  Exported so a component cannot sort the same list differently by accident. */
-export const timelineOrder = compare(byTemporalValidDesc, byIdAsc);
+export const timelineOrder = compare<Decision>(byValidDesc, byIdAsc);
 
 export interface GraphNode {
   readonly id: DecisionId;

@@ -452,6 +452,9 @@ export async function assertUserDecision(
  * user would reasonably conclude the action did nothing.
  */
 async function relabelAfterAction(): Promise<void> {
+  /* `get` is only in scope inside the `create()` body. These helpers are module-level, so they
+   * reach the store the way any out-of-store caller does. Safe because every caller is an async
+   * action invoked after module initialisation, never during it. */
   await useReasoning.getState().run();
 }
 

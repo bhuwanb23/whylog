@@ -93,6 +93,28 @@ export function detectStructural(state: GraphState): readonly StructuralHit[] {
         const b = live[j];
         if (a === undefined || b === undefined) continue;
 
+        /* BOTH SIDES PROPOSED => NO CONTRADICTION RAISED.
+         *
+         * A `proposed` decision is a candidate the extractor produced; nobody has accepted it. Two
+         * such candidates disagreeing is a statement about the extractor's precision, not about the
+         * project, and surfacing it interrupts the user with the system's own noise — which is
+         * precisely the failure mode docs/03 §8 and docs/02 §7 both name as the one that gets the
+         * panel closed and never reopened.
+         *
+         * This was measured, not reasoned about. On corpus 0.1.0 with a reviewed graph the metric
+         * reported 138.2 unexpected interruptions per 100 decisions, of which 43 were contradiction
+         * records and only 4 were retractions. The ablation independently attributes them here:
+         * switching gate (a) off removes them entirely. 28 of the 34 decision nodes in that graph
+         * had no ground-truth label behind them, so most pairs were proposal-against-proposal.
+         *
+         * At least one accepted side makes the conflict real: if a human committed to one of the two,
+         * the disagreement is about the project and belongs in the panel.
+         *
+         * `findContradictors` below is deliberately EXEMPT. Its newcomer is being put forward by a
+         * human at this moment, so one side is accepted by construction and the check would always
+         * pass. Applying it there would suppress the Hansson screening entirely. */
+        if (a.status === "proposed" && b.status === "proposed") continue;
+
         const canonicalA = canonicalValueOf(variable, a.value);
         const canonicalB = canonicalValueOf(variable, b.value);
         if (canonicalA === canonicalB) continue;

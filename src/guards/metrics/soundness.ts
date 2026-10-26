@@ -67,13 +67,13 @@ export function describeSoundness(result: SoundnessResult): string {
   if (result.denominator === 0) return "No live decisions to assess.";
 
   const parts = [
-    `Log soundness: ${result.inCount} of ${result.denominator} live decisions are IN.`,
+    "Log soundness: " + result.inCount + " of " + result.denominator + " live decisions are IN.",
   ];
 
   for (const label of ["OUT", "UNKNOWN", "UNFOUNDED"] as const) {
     const count = result.byLabel[label];
     if (count === 0) continue;
-    parts.push(`  ${label}: ${count} — ${meaningOf(label)}`);
+    parts.push("  " + label + ": " + count + " — " + meaningOf(label));
   }
 
   parts.push("");

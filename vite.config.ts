@@ -36,10 +36,18 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: true,
-    // No manual chunks. There WAS a `graph: ["d3-force"]` split here, left over from the
-    // force-layout design that §6.6 abandoned: the premise lattice is laid out
-    // deterministically (columns by premise type, decisions at the barycentre of their
-    // premises), so d3-force was never imported and the split produced an empty chunk on
-    // every build. The dependency went with it.
+    /*
+     * No manualChunks.
+     *
+     * This used to split `d3-force` into a `graph` chunk for the premise lattice. Phase 6 rejected force
+     * simulation: the lattice layout is DETERMINISTIC — columns by premise type, decisions at the
+     * barycentre of their premises — because a cascade animation is only legible if nodes stay where they
+     * were, and a force layout gives different positions on every run.
+     *
+     * So `d3-force` is imported nowhere, and a manualChunks entry naming an unimported module is dead
+     * build config that fails or warns depending on the Rollup version. The dependency is removed from
+     * package.json alongside it. If chunking is ever wanted, it should be derived from the real module
+     * graph rather than from a library that was considered and rejected.
+     */
   },
 });

@@ -157,18 +157,56 @@ export function guardStatusFor(
 }
 
 export function explainPriority(breakdown: PriorityBreakdown): string {
-  return `priority ${breakdown.total.toFixed(3)} = ${EXPORT_PRIORITY_WEIGHTS.soundness}·soundness(${breakdown.soundness.toFixed(2)}) + ${EXPORT_PRIORITY_WEIGHTS.entrenchment}·entrenchment(${breakdown.entrenchment.toFixed(2)}) + ${EXPORT_PRIORITY_WEIGHTS.scopeBreadth}·scope(${breakdown.scopeBreadth.toFixed(2)}) + ${EXPORT_PRIORITY_WEIGHTS.guardSeverity}·guardSeverity(${breakdown.guardSeverity.toFixed(2)}) + ${EXPORT_PRIORITY_WEIGHTS.recency}·recency(${breakdown.recency.toFixed(2)})`;
+  return (
+    "priority " +
+    breakdown.total.toFixed(3) +
+    " = " +
+    EXPORT_PRIORITY_WEIGHTS.soundness +
+    "·soundness(" +
+    breakdown.soundness.toFixed(2) +
+    ") + " +
+    EXPORT_PRIORITY_WEIGHTS.entrenchment +
+    "·entrenchment(" +
+    breakdown.entrenchment.toFixed(2) +
+    ") + " +
+    EXPORT_PRIORITY_WEIGHTS.scopeBreadth +
+    "·scope(" +
+    breakdown.scopeBreadth.toFixed(2) +
+    ") + " +
+    EXPORT_PRIORITY_WEIGHTS.guardSeverity +
+    "·guardSeverity(" +
+    breakdown.guardSeverity.toFixed(2) +
+    ") + " +
+    EXPORT_PRIORITY_WEIGHTS.recency +
+    "·recency(" +
+    breakdown.recency.toFixed(2) +
+    ")"
+  );
 }
 
 export function describePriority(): string {
   return [
     "Inclusion priority — what gets an inline slot when the log is bigger than the budget:",
     "",
-    `  ${EXPORT_PRIORITY_WEIGHTS.soundness}  soundness       IN 1.0 · UNKNOWN 0.5 · UNFOUNDED 0.3 · OUT 0.0`,
-    `  ${EXPORT_PRIORITY_WEIGHTS.entrenchment}  entrenchment    decision.entrenchment, REUSED not recomputed`,
-    `  ${EXPORT_PRIORITY_WEIGHTS.scopeBreadth}  scope breadth   appliesTo.length / ${SCOPE_SATURATION}, saturating`,
-    `  ${EXPORT_PRIORITY_WEIGHTS.guardSeverity}  guard severity  1.0 with a blocking guard · 0.6 warning-only · 0 none`,
-    `  ${EXPORT_PRIORITY_WEIGHTS.recency}  recency         half-life ${RECENCY_HALF_LIFE_DAYS} days on VALID time`,
+    "  " +
+      EXPORT_PRIORITY_WEIGHTS.soundness +
+      "  soundness       IN 1.0 · UNKNOWN 0.5 · UNFOUNDED 0.3 · OUT 0.0",
+    "  " +
+      EXPORT_PRIORITY_WEIGHTS.entrenchment +
+      "  entrenchment    decision.entrenchment, REUSED not recomputed",
+    "  " +
+      EXPORT_PRIORITY_WEIGHTS.scopeBreadth +
+      "  scope breadth   appliesTo.length / " +
+      SCOPE_SATURATION +
+      ", saturating",
+    "  " +
+      EXPORT_PRIORITY_WEIGHTS.guardSeverity +
+      "  guard severity  1.0 with a blocking guard · 0.6 warning-only · 0 none",
+    "  " +
+      EXPORT_PRIORITY_WEIGHTS.recency +
+      "  recency         half-life " +
+      RECENCY_HALF_LIFE_DAYS +
+      " days on VALID time",
     "",
     "OUT decisions are EXCLUDED before ranking, not ranked low. Ranking one highly and emitting it",
     'would put a rule the log no longer believes next to its replacement — the "model may pick',

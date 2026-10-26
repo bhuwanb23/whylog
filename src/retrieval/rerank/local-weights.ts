@@ -220,13 +220,35 @@ export function explainScore(scored: ScoredCandidate): string {
   const w = RERANK_WEIGHTS;
 
   return [
-    `${scored.candidate.decisionId} — rerank ${scored.total.toFixed(3)}`,
-    `  ${w.structural.toFixed(2)} × structural ${c.structural.toFixed(2)}${scored.candidate.structural === null ? " (no exact slot or value match)" : ` (${scored.candidate.structural.explanation})`}`,
-    `  ${w.lexical.toFixed(2)} × lexical    ${c.lexical.toFixed(2)}${scored.exactTerms.length === 0 ? " (BM25 only)" : ` (exact: ${scored.exactTerms.join(", ")})`}`,
-    `  ${w.dense.toFixed(2)} × dense      ${c.dense.toFixed(2)}${scored.candidate.denseScore === null ? " (unavailable — index stale or not built)" : ""}`,
-    `  ${w.premise.toFixed(2)} × premise    ${c.premise.toFixed(2)}`,
-    `  ${w.recency.toFixed(2)} × recency    ${c.recency.toFixed(2)} (tie-break, ${RECENCY_HALF_LIFE_DAYS}-day half-life)`,
-    `  = ${scored.total.toFixed(3)}`,
+    scored.candidate.decisionId + " — rerank " + scored.total.toFixed(3),
+    "  " +
+      w.structural.toFixed(2) +
+      " × structural " +
+      c.structural.toFixed(2) +
+      (scored.candidate.structural === null
+        ? " (no exact slot or value match)"
+        : " (" + scored.candidate.structural.explanation + ")"),
+    "  " +
+      w.lexical.toFixed(2) +
+      " × lexical    " +
+      c.lexical.toFixed(2) +
+      (scored.exactTerms.length === 0
+        ? " (BM25 only)"
+        : " (exact: " + scored.exactTerms.join(", ") + ")"),
+    "  " +
+      w.dense.toFixed(2) +
+      " × dense      " +
+      c.dense.toFixed(2) +
+      (scored.candidate.denseScore === null ? " (unavailable — index stale or not built)" : ""),
+    "  " + w.premise.toFixed(2) + " × premise    " + c.premise.toFixed(2),
+    "  " +
+      w.recency.toFixed(2) +
+      " × recency    " +
+      c.recency.toFixed(2) +
+      " (tie-break, " +
+      RECENCY_HALF_LIFE_DAYS +
+      "-day half-life)",
+    "  = " + scored.total.toFixed(3),
   ].join("\n");
 }
 
@@ -256,7 +278,7 @@ export function dominantComponents(scored: ScoredCandidate): readonly string[] {
   return contributions
     .filter((entry) => entry.amount > 0)
     .sort((a, b) => b.amount - a.amount)
-    .map((entry) => `${entry.name} ${entry.amount.toFixed(3)}`);
+    .map((entry) => entry.name + " " + entry.amount.toFixed(3));
 }
 
 /** A `RetrievedHit` carries no rerank breakdown, so the score is attached here for the

@@ -76,7 +76,7 @@ export function SettingsView(): ReactElement {
               onChange={(event) => {
                 const provider = event.target.value as ProviderId;
                 setModel(DEFAULT_MODELS[provider]);
-                apply(() => settings.setProvider(provider), `Provider set to ${provider}.`);
+                apply(() => settings.setProvider(provider), "Provider set to " + provider + ".");
               }}
               style={{ display: "block", fontSize: 12, marginTop: 3 }}
             >
@@ -95,7 +95,7 @@ export function SettingsView(): ReactElement {
               onChange={(event) => setModel(event.target.value)}
               onBlur={() => {
                 if (model !== settings.config.model) {
-                  apply(() => settings.setModel(model), `Model set to ${model}.`);
+                  apply(() => settings.setModel(model), "Model set to " + model + ".");
                 }
               }}
               style={{ display: "block", fontSize: 12, marginTop: 3, width: 200 }}
@@ -107,7 +107,7 @@ export function SettingsView(): ReactElement {
           Currently running:{" "}
           <span className="mono">
             {whylog.engineId.kind}
-            {whylog.engineId.model.length > 0 ? ` · ${whylog.engineId.model}` : ""}
+            {whylog.engineId.model.length > 0 ? " · " + whylog.engineId.model : ""}
           </span>
           . Every node is stamped with the engine that produced it, so a decision extracted months
           ago by a different engine still reports its origin honestly.
@@ -179,7 +179,7 @@ export function SettingsView(): ReactElement {
 
         <div className="faint" style={{ fontSize: 11, marginTop: 8 }}>
           {settings.hasKey
-            ? `A key is stored (${settings.keyHint ?? "hint unavailable"}).`
+            ? "A key is stored (" + (settings.keyHint ?? "hint unavailable") + ")."
             : "No key stored — everything runs locally."}
         </div>
       </section>
@@ -201,7 +201,11 @@ export function SettingsView(): ReactElement {
             min={1}
             max={12}
             onChange={tuning.setCascadeDepthCap}
-            note={`How many hops the cascade may follow. It only ever follows SHARED-PREMISE edges, never topical similarity. Default ${DEFAULT_CASCADE_DEPTH_CAP}. Lowering it makes the cascade more conservative — it will stop earlier and report what it did not reach, rather than guess.`}
+            note={
+              "How many hops the cascade may follow. It only ever follows SHARED-PREMISE edges, never topical similarity. Default " +
+              DEFAULT_CASCADE_DEPTH_CAP +
+              ". Lowering it makes the cascade more conservative — it will stop earlier and report what it did not reach, rather than guess."
+            }
           />
 
           <NumberSetting
@@ -211,7 +215,11 @@ export function SettingsView(): ReactElement {
             max={1}
             step={0.01}
             onChange={(value) => tuning.setThresholds(value, tuning.tauLow)}
-            note={`Above this, two premises are the SAME node and merge automatically. Default ${TAU_HIGH} (the local engine uses 0.86, because its vectoriser is weaker).`}
+            note={
+              "Above this, two premises are the SAME node and merge automatically. Default " +
+              TAU_HIGH +
+              " (the local engine uses 0.86, because its vectoriser is weaker)."
+            }
           />
 
           <NumberSetting
@@ -221,7 +229,11 @@ export function SettingsView(): ReactElement {
             max={0.99}
             step={0.01}
             onChange={(value) => tuning.setThresholds(tuning.tauHigh, value)}
-            note={`Below this, they are different nodes. Between the two, the match is AMBIGUOUS and is surfaced for human confirmation rather than guessed — a wrong premise resolution produces a confident, spectacular and entirely wrong cascade. Default ${TAU_LOW}.`}
+            note={
+              "Below this, they are different nodes. Between the two, the match is AMBIGUOUS and is surfaced for human confirmation rather than guessed — a wrong premise resolution produces a confident, spectacular and entirely wrong cascade. Default " +
+              TAU_LOW +
+              "."
+            }
           />
 
           <NumberSetting
@@ -230,7 +242,11 @@ export function SettingsView(): ReactElement {
             min={1}
             max={MAX_SEARCHES}
             onChange={tuning.setMaxSearchSteps}
-            note={`Hard-capped at ${MAX_SEARCHES} by the evidence contract, and this can only LOWER it. The bound is not a performance optimisation: an unbounded search turns 'I could not find it' into 'I have not looked hard enough yet', and a system that can always look again never has to say it does not know.`}
+            note={
+              "Hard-capped at " +
+              MAX_SEARCHES +
+              " by the evidence contract, and this can only LOWER it. The bound is not a performance optimisation: an unbounded search turns 'I could not find it' into 'I have not looked hard enough yet', and a system that can always look again never has to say it does not know."
+            }
           />
 
           <button

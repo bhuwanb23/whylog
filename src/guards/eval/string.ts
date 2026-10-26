@@ -44,7 +44,10 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
     return {
       outcome: "skip",
       evidence: "",
-      skipReason: `No pasted file matches the scope glob \`${spec.glob}\`, so there was nothing to search. Widen the glob or paste a file it covers.`,
+      skipReason:
+        "No pasted file matches the scope glob `" +
+        spec.glob +
+        "`, so there was nothing to search. Widen the glob or paste a file it covers.",
     };
   }
 
@@ -53,7 +56,13 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
     return {
       outcome: "skip",
       evidence: "",
-      skipReason: `${scoped.length} file(s) match the scope \`${spec.glob}\` but none of their contents were pasted, so there was nothing to search: ${scoped.slice(0, 4).join(", ")}${scoped.length > 4 ? ", …" : ""}`,
+      skipReason:
+        scoped.length +
+        " file(s) match the scope `" +
+        spec.glob +
+        "` but none of their contents were pasted, so there was nothing to search: " +
+        scoped.slice(0, 4).join(", ") +
+        (scoped.length > 4 ? ", …" : ""),
     };
   }
 
@@ -69,13 +78,22 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
     const hit = findMatchInText(text, spec.pattern, options);
     if (hit === null) continue;
 
-    const quoted = hit.text.length > 160 ? `${hit.text.slice(0, 157)}...` : hit.text;
-    const where = `${path}:${hit.line}`;
+    const quoted = hit.text.length > 160 ? hit.text.slice(0, 157) + "..." : hit.text;
+    const where = path + ":" + hit.line;
 
     if (spec.kind === "string_absent_in_files") {
       return {
         outcome: "fail",
-        evidence: `"${spec.pattern}" found at ${where} — ${JSON.stringify(quoted)}${options.wordBoundary ? "" : " (matched WITHOUT word boundaries, so this may be part of a longer identifier)"}`,
+        evidence:
+          '"' +
+          spec.pattern +
+          '" found at ' +
+          where +
+          " — " +
+          JSON.stringify(quoted) +
+          (options.wordBoundary
+            ? ""
+            : " (matched WITHOUT word boundaries, so this may be part of a longer identifier)"),
       };
     }
 
@@ -83,25 +101,31 @@ export function evalString(spec: StringSpec, project: VirtualProject): Evaluatio
      * not absence, so further hits add nothing to the evidence. */
     return {
       outcome: "pass",
-      evidence: `"${spec.pattern}" found at ${where} — ${JSON.stringify(quoted)}`,
+      evidence: '"' + spec.pattern + '" found at ' + where + " — " + JSON.stringify(quoted),
     };
   }
 
-  const searched = `${withContents.length} file(s) matching \`${spec.glob}\``;
+  const searched = withContents.length + " file(s) matching `" + spec.glob + "`";
 
   if (spec.kind === "string_in_files") {
     return {
       outcome: "fail",
-      evidence: `"${spec.pattern}" does not appear in ${searched}.${
-        withContents.length < scoped.length
-          ? ` ${scoped.length - withContents.length} file(s) in scope had no pasted contents and were not searched.`
-          : ""
-      }`,
+      evidence:
+        '"' +
+        spec.pattern +
+        '" does not appear in ' +
+        searched +
+        "." +
+        (withContents.length < scoped.length
+          ? " " +
+            (scoped.length - withContents.length) +
+            " file(s) in scope had no pasted contents and were not searched."
+          : ""),
     };
   }
 
   return {
     outcome: "pass",
-    evidence: `"${spec.pattern}" does not appear in ${searched}.`,
+    evidence: '"' + spec.pattern + '" does not appear in ' + searched + ".",
   };
 }

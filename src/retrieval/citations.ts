@@ -191,7 +191,12 @@ export function renderExpansion(expanded: ExpandedCitationResult): string {
   const decision = expanded.decision;
 
   lines.push(
-    `${decision.id} · ${decision.statement} · ${expanded.label}${decision.status === "contested" ? " (CONTESTED — a human call is pending)" : ""}`,
+    decision.id +
+      " · " +
+      decision.statement +
+      " · " +
+      expanded.label +
+      (decision.status === "contested" ? " (CONTESTED — a human call is pending)" : ""),
   );
 
   if (expanded.restsOn.length === 0) {
@@ -200,13 +205,19 @@ export function renderExpansion(expanded: ExpandedCitationResult): string {
     );
   } else {
     lines.push(
-      `  rests on   ${expanded.restsOn.map((entry) => `${entry.premise.id} "${entry.premise.text}" (${entry.label})`).join("; ")}`,
+      "  rests on   " +
+        expanded.restsOn
+          .map((entry) => entry.premise.id + ' "' + entry.premise.text + '" (' + entry.label + ")")
+          .join("; "),
     );
   }
 
   if (expanded.excludes.length > 0) {
     lines.push(
-      `  excludes   ${expanded.excludes.map((entry) => `${entry.premise.id} "${entry.premise.text}" (${entry.label})`).join("; ")}`,
+      "  excludes   " +
+        expanded.excludes
+          .map((entry) => entry.premise.id + ' "' + entry.premise.text + '" (' + entry.label + ")")
+          .join("; "),
     );
     lines.push(
       "             If any excluded condition becomes true, this decision is invalidated. That is gate (c).",
@@ -215,34 +226,52 @@ export function renderExpansion(expanded: ExpandedCitationResult): string {
 
   if (expanded.rejected.length > 0) {
     lines.push(
-      `  rejected   ${expanded.rejected
-        .map(
-          (entry) =>
-            entry.value +
-            (entry.whyRejected === undefined
-              ? " (no reason recorded)"
-              : ` — "${entry.whyRejected}"`),
-        )
-        .join("; ")}`,
+      "  rejected   " +
+        expanded.rejected
+          .map(
+            (entry) =>
+              entry.value +
+              (entry.whyRejected === undefined
+                ? " (no reason recorded)"
+                : ' — "' + entry.whyRejected + '"'),
+          )
+          .join("; "),
     );
   }
 
   if (expanded.guardsTotal === 0) {
     lines.push("  guards     none. Nothing automatically checks whether this still holds.");
   } else {
-    const neverRun = expanded.guardsNeverRun > 0 ? `, ${expanded.guardsNeverRun} never run` : "";
+    const neverRun =
+      expanded.guardsNeverRun > 0 ? ", " + expanded.guardsNeverRun + " never run" : "";
     lines.push(
-      `  guards     ${expanded.guardsPassing} of ${expanded.guardsTotal} passing${neverRun}.`,
+      "  guards     " +
+        expanded.guardsPassing +
+        " of " +
+        expanded.guardsTotal +
+        " passing" +
+        neverRun +
+        ".",
     );
   }
 
   lines.push(
-    `  provenance ${expanded.snippet.transcriptId}, decided ${expanded.decidedAt.slice(0, 10)}, learned ${expanded.learnedAt.slice(0, 10)}, extracted by ${expanded.engine}.`,
+    "  provenance " +
+      expanded.snippet.transcriptId +
+      ", decided " +
+      expanded.decidedAt.slice(0, 10) +
+      ", learned " +
+      expanded.learnedAt.slice(0, 10) +
+      ", extracted by " +
+      expanded.engine +
+      ".",
   );
 
   if (expanded.labelsFromFallback > 0) {
     lines.push(
-      `  note       ${expanded.labelsFromFallback} premise label(s) came from the stored value because the labeller had no entry for them — treat those labels as possibly stale.`,
+      "  note       " +
+        expanded.labelsFromFallback +
+        " premise label(s) came from the stored value because the labeller had no entry for them — treat those labels as possibly stale.",
     );
   }
 
@@ -254,9 +283,10 @@ export function renderInline(expanded: ExpandedCitationResult): string {
   const premises =
     expanded.restsOn.length === 0
       ? "no premises recorded"
-      : `rests on ${expanded.restsOn.map((entry) => `${entry.premise.id} (${entry.label})`).join(", ")}`;
+      : "rests on " +
+        expanded.restsOn.map((entry) => entry.premise.id + " (" + entry.label + ")").join(", ");
 
-  return `[${expanded.decision.id} · ${premises}]`;
+  return "[" + expanded.decision.id + " · " + premises + "]";
 }
 
 export type { Decision, Premise };

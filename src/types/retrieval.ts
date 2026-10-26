@@ -211,10 +211,6 @@ export interface Answer {
   readonly nearestRelated?: readonly RetrievedHit[];
   /** Present only for PARTIAL: which claims are not grounded and why. */
   readonly ungroundedNotes?: readonly string[];
-  /** A note about HOW the answer was composed, not a claim about the log. It is kept
-   *  out of `claims` on purpose: it carries no decision id, so counting it as a
-   *  claim would score a fully-sourced answer as ungrounded. */
-  readonly disclosure?: string;
 }
 
 export interface Citation {
@@ -299,9 +295,17 @@ export interface QueryOptions {
   readonly includeSuperseded?: boolean;
 }
 
-export const DEFAULT_QUERY_OPTIONS: Required<
+/** `QueryOptions` with every default applied.
+ *
+ *  Retrieval reads `topK` and `recallK` at the point of slicing, where a missing value is not an
+ *  error but a silent "return nothing". Merging the defaults once and typing the RESULT as resolved
+ *  is what makes that unreachable, instead of repeating a fallback at each of the five reads. */
+export type ResolvedQueryOptions = Required<
   Pick<QueryOptions, "topK" | "recallK" | "rrfK" | "useHyde" | "includeSuperseded">
-> = {
+> &
+  Pick<QueryOptions, "levels">;
+
+export const DEFAULT_QUERY_OPTIONS: ResolvedQueryOptions = {
   topK: 5,
   recallK: 20,
   rrfK: 60,

@@ -33,7 +33,7 @@ export interface Highlight {
 export const NO_HIGHLIGHT: Highlight = { origin: null, nodes: new Set(), edges: new Set() };
 
 export function edgeKey(from: NodeId, to: NodeId, kind: string): string {
-  return `${from}\u0000${to}\u0000${kind}`;
+  return from + "\u0000" + to + "\u0000" + kind;
 }
 
 /**

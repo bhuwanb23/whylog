@@ -65,7 +65,7 @@ export interface SynthesizeInput {
   readonly cap?: number;
   /** Force templates only, even when an engine is available. Used to measure the template
    *  coverage claim on its own, and by the keyless demo path. */
-  readonly templatesOnly?: boolean;
+  readonly templatesOnly?: boolean | undefined;
   readonly signal?: AbortSignal;
 }
 
@@ -279,7 +279,13 @@ function unverifiableReason(
   const parts: string[] = [];
 
   parts.push(
-    `No guard could be synthesised for ${decision.id} (${decision.variable} = ${decision.value}).`,
+    "No guard could be synthesised for " +
+      decision.id +
+      " (" +
+      decision.variable +
+      " = " +
+      decision.value +
+      ").",
   );
 
   if (templateInput.rejected.length === 0) {
@@ -300,7 +306,7 @@ function unverifiableReason(
     "The literature's test is whether you can describe what a VIOLATION looks like. For this decision you cannot yet — which makes it unverifiable, not fine. Unverifiable decisions are the ones most likely to drift, because nothing would tell you if they did.",
   );
 
-  if (llmReason !== null) parts.push(`Model synthesis: ${llmReason}`);
+  if (llmReason !== null) parts.push("Model synthesis: " + llmReason);
 
   return parts.join(" ");
 }
@@ -346,13 +352,26 @@ export function describeSynthesis(reports: readonly SynthesisReport[]): string {
   const capped = reports.filter((report) => report.cappedAt !== null);
 
   return [
-    `${reports.length} decision(s) put through synthesis.`,
-    `  proposed guards   ${reports.reduce((total, report) => total + report.proposed.length, 0)}`,
-    `  from templates    ${share.templates}`,
-    `  from the model    ${share.llm}${share.llm > 0 ? "  (every one flagged requiresReview)" : ""}`,
-    `  template share    ${(share.share * 100).toFixed(0)}%${share.meetsTarget ? "  — meets the ≥80% target" : "  — BELOW the ≥80% target"}`,
-    `  unverifiable      ${unverifiable.length}${unverifiable.length > 0 ? `  — ${unverifiable.map((report) => report.decisionId).join(", ")}` : ""}`,
-    `  capped at ${GUARDS_PER_DECISION_CAP}        ${capped.length} decision(s) had more proposed than the cap allows; the least deterministic were dropped`,
+    reports.length + " decision(s) put through synthesis.",
+    "  proposed guards   " + reports.reduce((total, report) => total + report.proposed.length, 0),
+    "  from templates    " + share.templates,
+    "  from the model    " +
+      share.llm +
+      (share.llm > 0 ? "  (every one flagged requiresReview)" : ""),
+    "  template share    " +
+      (share.share * 100).toFixed(0) +
+      "%" +
+      (share.meetsTarget ? "  — meets the ≥80% target" : "  — BELOW the ≥80% target"),
+    "  unverifiable      " +
+      unverifiable.length +
+      (unverifiable.length > 0
+        ? "  — " + unverifiable.map((report) => report.decisionId).join(", ")
+        : ""),
+    "  capped at " +
+      GUARDS_PER_DECISION_CAP +
+      "        " +
+      capped.length +
+      " decision(s) had more proposed than the cap allows; the least deterministic were dropped",
     "",
     "Nothing here is installed. Every guard is `proposed` until accepted on the review list, and",
     "a proposed guard does not run — a synthesised guard that fails on day one teaches you to",

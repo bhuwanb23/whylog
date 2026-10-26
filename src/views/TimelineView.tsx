@@ -185,7 +185,7 @@ export function TimelineView(): ReactElement {
             Ranked by relevance, not date — that is what running the retrieval stack buys. Levels
             available: {results.levels.join(", ")}
             {results.levelsUnavailable.length > 0
-              ? ` (unavailable: ${results.levelsUnavailable.join(", ")})`
+              ? " (unavailable: " + results.levelsUnavailable.join(", ") + ")"
               : ""}{" "}
             · method {results.method} · {results.durationMs} ms.
           </div>
@@ -208,7 +208,11 @@ export function TimelineView(): ReactElement {
         {rows.length === 0 ? (
           <EmptyState
             title="Nothing matches those filters"
-            what={`The log holds ${whylog.state.decisions.size} decision(s) and none of them satisfy the current filters or search.`}
+            what={
+              "The log holds " +
+              whylog.state.decisions.size +
+              " decision(s) and none of them satisfy the current filters or search."
+            }
             action="Clear the filters to see the whole timeline."
             onAction={() => {
               setFilters(NO_FILTERS);

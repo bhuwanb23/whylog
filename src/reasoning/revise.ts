@@ -107,6 +107,18 @@ export interface ReviseInput {
   /** Phase 3. Absent means gate (b) reports itself unavailable. */
   readonly retrieve?: (state: GraphState) => Promise<readonly CandidatePair[]>;
   readonly skipSemantic?: boolean;
+  /** Ablation: gate (a) off. The system stops noticing self-contradiction. */
+  readonly skipStructural?: boolean;
+  /** Ablation: gate (c) off. The graph becomes monotonic — the single most important switch
+   *  in the ablation, because it is the difference between a decision log and a belief
+   *  revision system. */
+  readonly skipPremiseInvalidation?: boolean;
+  /** Ablation: no backtracking propagation. Culprit premises are still found, but nothing
+   *  downstream of them is re-examined. */
+  readonly disableCascade?: boolean;
+  /** Ablation: Hansson screening off, so a newcomer is never refused by a more entrenched
+   *  incumbent. */
+  readonly disableEntrenchment?: boolean;
   /** Phase 4. Absent means implementation cost is UNKNOWN, never assumed. */
   readonly guards?: ReadonlyMap<DecisionId, GuardStatus>;
   /** Phase 6.8. How deep the cascade may follow shared-premise edges. Absent means the module
@@ -198,6 +210,10 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
     engine: input.engine,
     ...(input.retrieve === undefined ? {} : { retrieve: input.retrieve }),
     ...(input.skipSemantic === undefined ? {} : { skipSemantic: input.skipSemantic }),
+    ...(input.skipStructural === undefined ? {} : { skipStructural: input.skipStructural }),
+    ...(input.skipPremiseInvalidation === undefined
+      ? {}
+      : { skipPremiseInvalidation: input.skipPremiseInvalidation }),
   });
 
   /* ---- 7 ADJUDICATE ----
@@ -211,6 +227,9 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
           newcomer: input.newcomer,
           now: Date.parse(input.now),
           ...(input.guards === undefined ? {} : { guards: input.guards }),
+          ...(input.disableEntrenchment === undefined
+            ? {}
+            : { disableEntrenchment: input.disableEntrenchment }),
         });
 
   const refused = adjudication?.kind === "reject-newcomer";
@@ -260,7 +279,7 @@ export async function revise(input: ReviseInput): Promise<ReviseResult> {
      * backtracking may have localised to a single premise. */
     const retracted = refused ? [] : backtrackResult.culpritPremises;
     const cascadeResult: CascadeResult =
-      retracted.length === 0
+      retracted.length === 0 || input.disableCascade === true
         ? {
             steps: [],
             flipped: [],
@@ -512,15 +531,11 @@ function proposalDraft(
         .map((step) => ({ decisionId: step.to, became: step.became })),
       survivors: proposal.cascade.survivors,
       entrenchment: proposal.entrenchment,
-      evidence: {
-        quote: proposal.evidence.quote,
-        source: proposal.evidence.source,
-        confidence: proposal.evidence.confidence,
-      },
       ...(adjudication?.kind === "reject-newcomer"
         ? { rejectedNewcomer: { eventId: PLACEHOLDER_EVENT_ID, why: adjudication.why } }
         : {}),
       availableActions: proposal.availableActions,
+      evidence: proposal.evidence,
     },
     actor: input.actor,
     reason: `${WHY_NOT_AUTO_APPLIED} Proposed for ${proposal.unsoundDecisionId} instead.`,
@@ -554,7 +569,8 @@ function narrate(
    * combination needs to see that before they read anything else. */
   if (reasserts !== null) {
     parts.push(
-      `WARNING — you are re-asserting a combination this log already found impossible on ${reasserts.recordedAt.slice(0, 10)} (${reasserts.id}). ${reasserts.explanation}`,
+      `WARNING — you are re-asserting a combination this log already found impossible on ${reasserts.recordedAt.slice(0, 10)} (${reasserts.id}). ` +
+        reasserts.explanation,
     );
   }
 

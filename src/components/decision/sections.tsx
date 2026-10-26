@@ -260,11 +260,11 @@ function guardTarget(spec: GuardSpec): string {
       return spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return `${JSON.stringify(spec.pattern)} in ${spec.glob}`;
+      return JSON.stringify(spec.pattern) + " in " + spec.glob;
     case "command_exit_zero":
       return spec.command;
     case "llm_judge":
-      return `rubric over ${spec.scopeGlobs.join(", ")}`;
+      return "rubric over " + spec.scopeGlobs.join(", ");
   }
 }
 

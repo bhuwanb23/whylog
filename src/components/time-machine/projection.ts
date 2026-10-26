@@ -165,7 +165,7 @@ export function diffGraphs(
       entries.push({
         kind: "decision-added",
         node: decision.id,
-        detail: `"${decision.statement}" (${decision.variable} = ${decision.value})`,
+        detail: '"' + decision.statement + '" (' + decision.variable + " = " + decision.value + ")",
       });
     }
   }
@@ -176,7 +176,11 @@ export function diffGraphs(
       entries.push({
         kind: "premise-invalidated",
         node: premise.id,
-        detail: `"${premise.text}" went OUT${premise.temporal.reason === undefined ? "" : ` — ${premise.temporal.reason}`}`,
+        detail:
+          '"' +
+          premise.text +
+          '" went OUT' +
+          (premise.temporal.reason === undefined ? "" : " — " + premise.temporal.reason),
       });
     }
   }
@@ -189,7 +193,7 @@ export function diffGraphs(
     entries.push({
       kind: "label-flipped",
       node: nodeId,
-      detail: `${fromLabel} → ${labelled.label}`,
+      detail: fromLabel + " → " + labelled.label,
     });
   }
 
@@ -200,7 +204,11 @@ export function diffGraphs(
       entries.push({
         kind: "reversal",
         node: decision.id,
-        detail: `"${decision.statement}" was superseded by ${decision.edges.supersededBy[0] ?? "a later decision"}`,
+        detail:
+          '"' +
+          decision.statement +
+          '" was superseded by ' +
+          (decision.edges.supersededBy[0] ?? "a later decision"),
       });
     }
   }
@@ -228,26 +236,42 @@ export function describeDiff(diff: TimelineDiff): string {
   const axis = AXIS_LABEL[diff.axis];
 
   if (diff.entries.length === 0) {
-    return `Nothing changed between ${diff.from.slice(0, 10)} and ${diff.to.slice(0, 10)} on the ${axis.short} axis.`;
+    return (
+      "Nothing changed between " +
+      diff.from.slice(0, 10) +
+      " and " +
+      diff.to.slice(0, 10) +
+      " on the " +
+      axis.short +
+      " axis."
+    );
   }
 
   const counts = new Map<DiffKind, number>();
   for (const entry of diff.entries) counts.set(entry.kind, (counts.get(entry.kind) ?? 0) + 1);
 
   const lines = [
-    `Between ${diff.from.slice(0, 10)} and ${diff.to.slice(0, 10)}, measured along ${axis.short} (${axis.question}):`,
+    "Between " +
+      diff.from.slice(0, 10) +
+      " and " +
+      diff.to.slice(0, 10) +
+      ", measured along " +
+      axis.short +
+      " (" +
+      axis.question +
+      "):",
     "",
   ];
 
   for (const [kind, count] of counts) {
-    lines.push(`  ${String(count).padStart(3)}  ${DIFF_KIND_LABEL[kind]}`);
+    lines.push("  " + String(count).padStart(3) + "  " + DIFF_KIND_LABEL[kind]);
   }
 
   lines.push("");
   for (const entry of diff.entries.slice(0, 24)) {
-    lines.push(`  ${entry.node.padEnd(10)} ${entry.detail}`);
+    lines.push("  " + entry.node.padEnd(10) + " " + entry.detail);
   }
-  if (diff.entries.length > 24) lines.push(`  … ${diff.entries.length - 24} more`);
+  if (diff.entries.length > 24) lines.push("  … " + (diff.entries.length - 24) + " more");
 
   return lines.join("\n");
 }

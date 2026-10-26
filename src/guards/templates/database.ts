@@ -81,11 +81,20 @@ export function databaseGuards(input: TemplateInput): TemplateOutput {
     const alternatives = rule.drivers.slice(1);
     out.push({
       spec: { kind: "dependency_present", package: driver, includeDev: false },
-      rationale: `${input.decisionId} chose ${input.value}, so a ${input.value} driver must be in the dependency tree.${
-        alternatives.length > 0
-          ? ` \`${driver}\` is the usual one; ${alternatives.join(", ")} would also satisfy the decision, and if you use one of those, edit this guard rather than suppressing it.`
-          : ""
-      }`,
+      rationale:
+        input.decisionId +
+        " chose " +
+        input.value +
+        ", so a " +
+        input.value +
+        " driver must be in the dependency tree." +
+        (alternatives.length > 0
+          ? " `" +
+            driver +
+            "` is the usual one; " +
+            alternatives.join(", ") +
+            " would also satisfy the decision, and if you use one of those, edit this guard rather than suppressing it."
+          : ""),
       severity: DEFAULT_SEVERITY.dependency_present,
       generatedBy: "template",
       confidence: asConfidence(0.8),
@@ -103,7 +112,14 @@ export function databaseGuards(input: TemplateInput): TemplateOutput {
 
     out.push({
       spec: { kind: "dependency_absent", package: rejectedDriver, includeDev: true },
-      rationale: `${input.decisionId} rejected ${rejected.value}${rejected.whyRejected === undefined ? "." : ` — "${rejected.whyRejected}".`} No ${rejectedDriver} driver should appear while this decision is IN. devDependencies are in scope: a rejected database installed as a dev dependency is still installed.`,
+      rationale:
+        input.decisionId +
+        " rejected " +
+        rejected.value +
+        (rejected.whyRejected === undefined ? "." : ' — "' + rejected.whyRejected + '".') +
+        " No " +
+        rejectedDriver +
+        " driver should appear while this decision is IN. devDependencies are in scope: a rejected database installed as a dev dependency is still installed.",
       severity: DEFAULT_SEVERITY.dependency_absent,
       generatedBy: "template",
       confidence: asConfidence(0.85),
@@ -124,7 +140,16 @@ export function databaseGuards(input: TemplateInput): TemplateOutput {
 
     out.push({
       spec: { kind: "dependency_absent", package: excluded, includeDev: true },
-      rationale: `\`${excluded}\` is mutually exclusive with ${input.value} under ${input.variable}, which ${input.decisionId} settled. Its presence would mean the decision has been reversed in code without being reversed in the log.`,
+      rationale:
+        "`" +
+        excluded +
+        "` is mutually exclusive with " +
+        input.value +
+        " under " +
+        input.variable +
+        ", which " +
+        input.decisionId +
+        " settled. Its presence would mean the decision has been reversed in code without being reversed in the log.",
       severity: DEFAULT_SEVERITY.dependency_absent,
       generatedBy: "template",
       confidence: asConfidence(0.7),
@@ -142,7 +167,16 @@ export function databaseGuards(input: TemplateInput): TemplateOutput {
         wordBoundary: false,
         caseSensitive: false,
       },
-      rationale: `No ${needle} connection string should appear while ${input.decisionId} (${input.value}) is IN. Scoped to \`${scope}\` and matched WITHOUT word boundaries, because a URL prefix has no word boundary to match — which is also why this guard is \`warning\`, not \`blocking\`.`,
+      rationale:
+        "No " +
+        needle +
+        " connection string should appear while " +
+        input.decisionId +
+        " (" +
+        input.value +
+        ") is IN. Scoped to `" +
+        scope +
+        "` and matched WITHOUT word boundaries, because a URL prefix has no word boundary to match — which is also why this guard is `warning`, not `blocking`.",
       severity: DEFAULT_SEVERITY.string_absent_in_files,
       generatedBy: "template",
       confidence: asConfidence(0.6),
@@ -155,7 +189,11 @@ export function databaseGuards(input: TemplateInput): TemplateOutput {
   if (artifact !== undefined) {
     out.push({
       spec: { kind: "path_glob_exists", glob: artifact },
-      rationale: `${input.decisionId} governs the data layer, so something matching \`${artifact}\` should exist. This is the weakest check in the set — an absent file may just mean a partial listing — which is why it is \`warning\` and ranked last.`,
+      rationale:
+        input.decisionId +
+        " governs the data layer, so something matching `" +
+        artifact +
+        "` should exist. This is the weakest check in the set — an absent file may just mean a partial listing — which is why it is `warning` and ranked last.",
       severity: DEFAULT_SEVERITY.path_glob_exists,
       generatedBy: "template",
       confidence: asConfidence(0.45),

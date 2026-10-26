@@ -86,7 +86,13 @@ export function storageGuards(input: TemplateInput): TemplateOutput {
   if (pkg !== undefined) {
     out.push({
       spec: { kind: "dependency_present", package: pkg, includeDev: false },
-      rationale: `${input.decisionId} chose ${input.value} for storage, so \`${pkg}\` should be in the dependency tree.`,
+      rationale:
+        input.decisionId +
+        " chose " +
+        input.value +
+        " for storage, so `" +
+        pkg +
+        "` should be in the dependency tree.",
       severity: DEFAULT_SEVERITY.dependency_present,
       generatedBy: "template",
       confidence: asConfidence(0.7),
@@ -97,7 +103,14 @@ export function storageGuards(input: TemplateInput): TemplateOutput {
   for (const excluded of rule.excludes) {
     out.push({
       spec: { kind: "dependency_absent", package: excluded, includeDev: true },
-      rationale: `\`${excluded}\` is a competing storage backend and ${input.decisionId} settled on ${input.value}. Storage decisions drift by accretion: one upload path added for a single feature becomes a second backend with its own consistency story.`,
+      rationale:
+        "`" +
+        excluded +
+        "` is a competing storage backend and " +
+        input.decisionId +
+        " settled on " +
+        input.value +
+        ". Storage decisions drift by accretion: one upload path added for a single feature becomes a second backend with its own consistency story.",
       severity: DEFAULT_SEVERITY.dependency_absent,
       generatedBy: "template",
       confidence: asConfidence(0.65),
@@ -114,7 +127,16 @@ export function storageGuards(input: TemplateInput): TemplateOutput {
         wordBoundary: false,
         caseSensitive: false,
       },
-      rationale: `No \`${needle}\` endpoint should appear while ${input.decisionId} (${input.value}) is IN. Scoped to \`${scope}\` and \`warning\` severity: a hostname can appear in a comment or a test fixture without the decision having drifted.`,
+      rationale:
+        "No `" +
+        needle +
+        "` endpoint should appear while " +
+        input.decisionId +
+        " (" +
+        input.value +
+        ") is IN. Scoped to `" +
+        scope +
+        "` and `warning` severity: a hostname can appear in a comment or a test fixture without the decision having drifted.",
       severity: DEFAULT_SEVERITY.string_absent_in_files,
       generatedBy: "template",
       confidence: asConfidence(0.5),
@@ -126,7 +148,12 @@ export function storageGuards(input: TemplateInput): TemplateOutput {
   if (artifact !== undefined) {
     out.push({
       spec: { kind: "path_glob_exists", glob: artifact },
-      rationale: `Something matching \`${artifact}\` should exist if ${input.value} storage is really in use. Weakest check in the set — an absent file may just mean a partial listing.`,
+      rationale:
+        "Something matching `" +
+        artifact +
+        "` should exist if " +
+        input.value +
+        " storage is really in use. Weakest check in the set — an absent file may just mean a partial listing.",
       severity: DEFAULT_SEVERITY.path_glob_exists,
       generatedBy: "template",
       confidence: asConfidence(0.4),

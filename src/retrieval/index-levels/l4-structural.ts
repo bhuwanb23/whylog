@@ -74,7 +74,12 @@ export function searchL4(
       out.push({
         decisionId,
         via: "value",
-        explanation: `settles ${variable} = ${canonical} — an exact structural match, not a similarity`,
+        explanation:
+          "settles " +
+          variable +
+          " = " +
+          canonical +
+          " — an exact structural match, not a similarity",
       });
     }
   }
@@ -86,7 +91,7 @@ export function searchL4(
       out.push({
         decisionId,
         via: "variable",
-        explanation: `concerns the ${variable} slot, which the query named`,
+        explanation: "concerns the " + variable + " slot, which the query named",
       });
     }
   }
@@ -97,7 +102,7 @@ export function searchL4(
 /** The `valueIndex` key format. Kept in one place because the builder and the reader
  *  must agree on it exactly, and a disagreement is an index that silently never hits. */
 export function valueKey(variable: DecisionVariable, canonicalValue: string): string {
-  return `${variable}:${foldKey(canonicalValue)}`;
+  return variable + ":" + foldKey(canonicalValue);
 }
 
 /** Every decision settling a variable, for the Ask view's "what did we decide about X?". */
@@ -117,5 +122,11 @@ export function l4Count(artifacts: IndexArtifacts): number {
 export function describeL4(artifacts: IndexArtifacts): string {
   const variables = artifacts.structural.variableIndex.size;
   const values = artifacts.structural.valueIndex.size;
-  return `L4 structural — ${variables} variable slot(s), ${values} distinct value(s). Exact and O(1); NOT fused into the ranking. A structural hit is promoted to the top regardless of its statistical score, because exact evidence outranks statistical evidence.`;
+  return (
+    "L4 structural — " +
+    variables +
+    " variable slot(s), " +
+    values +
+    " distinct value(s). Exact and O(1); NOT fused into the ranking. A structural hit is promoted to the top regardless of its statistical score, because exact evidence outranks statistical evidence."
+  );
 }

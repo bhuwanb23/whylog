@@ -103,7 +103,18 @@ export function acceptGuard(guard: Guard, context: ReviewContext): NewEvent<Even
     type: "GuardAccepted",
     payload: { guardId: guard.id },
     actor: context.actor,
-    reason: `A human accepted guard ${guard.id} (${guard.spec.kind}: ${describeTarget(guard)}) for ${guard.decisionId}. It was proposed by ${guard.generatedBy} and does not run before this point — an unaccepted check that fails is noise nobody agreed to hear.`,
+    reason:
+      "A human accepted guard " +
+      guard.id +
+      " (" +
+      guard.spec.kind +
+      ": " +
+      describeTarget(guard) +
+      ") for " +
+      guard.decisionId +
+      ". It was proposed by " +
+      guard.generatedBy +
+      " and does not run before this point — an unaccepted check that fails is noise nobody agreed to hear.",
     at: context.at,
   };
 }
@@ -126,7 +137,14 @@ export function suppressGuard(
     type: "GuardSuppressed",
     payload: { guardId: guard.id, suppressionReason: trimmed },
     actor: context.actor,
-    reason: `A human suppressed guard ${guard.id} on ${guard.decisionId}: ${trimmed}. Suppression is recorded with its justification because silencing a failing check is the act most in need of one.`,
+    reason:
+      "A human suppressed guard " +
+      guard.id +
+      " on " +
+      guard.decisionId +
+      ": " +
+      trimmed +
+      ". Suppression is recorded with its justification because silencing a failing check is the act most in need of one.",
     at: context.at,
   };
 }
@@ -141,7 +159,17 @@ export function deleteGuard(
     type: "GuardDeleted",
     payload: { guardId: guard.id },
     actor: context.actor,
-    reason: `A human deleted guard ${guard.id} (${guard.spec.kind}: ${describeTarget(guard)}) from ${guard.decisionId}${reason.trim().length > 0 ? `: ${reason.trim()}` : ". No reason given."} The record is retained with lifecycle \`deleted\`; nothing is ever removed from the log.`,
+    reason:
+      "A human deleted guard " +
+      guard.id +
+      " (" +
+      guard.spec.kind +
+      ": " +
+      describeTarget(guard) +
+      ") from " +
+      guard.decisionId +
+      (reason.trim().length > 0 ? ": " + reason.trim() : ". No reason given.") +
+      " The record is retained with lifecycle `deleted`; nothing is ever removed from the log.",
     at: context.at,
   };
 }
@@ -169,7 +197,10 @@ export function editGuard(
       type: "GuardDeleted",
       payload: { guardId: guard.id },
       actor: context.actor,
-      reason: `Guard ${guard.id} was edited, and editing is delete + re-synthesise: there is no edit event, so the previous spec stays in the log. A guard whose spec changed quietly after it started failing would be indistinguishable from one weakened to make the failure go away.`,
+      reason:
+        "Guard " +
+        guard.id +
+        " was edited, and editing is delete + re-synthesise: there is no edit event, so the previous spec stays in the log. A guard whose spec changed quietly after it started failing would be indistinguishable from one weakened to make the failure go away.",
       at: context.at,
     },
     {
@@ -184,7 +215,14 @@ export function editGuard(
         generatedBy: "user",
       },
       actor: context.actor,
-      reason: `Replacement for ${guard.id}, written by a human: ${spec.kind} on ${describeSpecTarget(spec)}.`,
+      reason:
+        "Replacement for " +
+        guard.id +
+        ", written by a human: " +
+        spec.kind +
+        " on " +
+        describeSpecTarget(spec) +
+        ".",
       at: context.at,
     },
     /* An edited guard still needs accepting. Carrying the old one's acceptance over would let an
@@ -212,7 +250,16 @@ export function synthesiseEvent(
       generatedBy: proposed.generatedBy,
     },
     actor: context.actor,
-    reason: `Compiled from ${decisionId} by the ${proposed.generatedBy} path: ${proposed.spec.kind} on ${describeSpecTarget(proposed.spec)}. It is PROPOSED and will not run until accepted.`,
+    reason:
+      "Compiled from " +
+      decisionId +
+      " by the " +
+      proposed.generatedBy +
+      " path: " +
+      proposed.spec.kind +
+      " on " +
+      describeSpecTarget(proposed.spec) +
+      ". It is PROPOSED and will not run until accepted.",
     at: context.at,
   };
 }
@@ -223,7 +270,7 @@ export function nextSuffix(state: GraphState, decisionId: DecisionId): string {
 
   for (const guard of state.guards.values()) {
     if (guard.decisionId !== decisionId) continue;
-    const suffix = guard.id.slice(`G-${decisionId.slice(4)}`.length);
+    const suffix = guard.id.slice(("G-" + decisionId.slice(4)).length);
     used.add(suffix);
   }
 
@@ -277,11 +324,16 @@ export function describeSpecTarget(spec: GuardSpec): string {
       return spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return `${JSON.stringify(spec.pattern)} in ${spec.glob}${spec.wordBoundary === false ? " (no word boundary)" : ""}`;
+      return (
+        JSON.stringify(spec.pattern) +
+        " in " +
+        spec.glob +
+        (spec.wordBoundary === false ? " (no word boundary)" : "")
+      );
     case "command_exit_zero":
       return spec.command;
     case "llm_judge":
-      return `rubric over ${spec.scopeGlobs.join(", ")}`;
+      return "rubric over " + spec.scopeGlobs.join(", ");
   }
 }
 
@@ -292,7 +344,12 @@ export function whyDisabled(guard: Guard, group: DecisionGuards): string | null 
     return "Proposed, not yet accepted. Accept it to activate — no guard runs before a human has read it.";
   }
   if (guard.lifecycle === "suppressed") {
-    return `Suppressed${guard.suppressionReason === undefined || guard.suppressionReason.length === 0 ? "." : `: ${guard.suppressionReason}`}`;
+    return (
+      "Suppressed" +
+      (guard.suppressionReason === undefined || guard.suppressionReason.length === 0
+        ? "."
+        : ": " + guard.suppressionReason)
+    );
   }
   if (guard.lifecycle === "deleted") {
     return "Deleted. The record is retained as history.";
@@ -323,7 +380,9 @@ export function describeReviewPolicy(): string {
     "Label inheritance: a decision that is not IN has its guards auto-disabled, maintained by the",
     "fold on LabelChanged. Re-enabling requires the decision to return to IN — not a click here.",
     "",
-    `Cap: ${GUARDS_PER_DECISION_CAP} guards per decision, ranked by determinism, so what gets dropped is always`,
+    "Cap: " +
+      GUARDS_PER_DECISION_CAP +
+      " guards per decision, ranked by determinism, so what gets dropped is always",
     "the least trustworthy kind. Passing guards collapse into a count in the panel, because a",
     "list of green checks is noise that hides the one red line.",
   ].join("\n");

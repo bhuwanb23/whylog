@@ -204,8 +204,6 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
     }
   }
 
-  const usage = sumUsage(runs);
-
   return {
     result: {
       ...first,
@@ -217,7 +215,7 @@ export function voteAcrossRuns(runs: readonly ExtractionResult[]): VoteOutcome {
       // every candidate any run produced.
       discarded: dedupeDiscards(runs),
       durationMs: runs.reduce((sum, run) => sum + run.durationMs, 0),
-      ...(usage === undefined ? {} : { usage }),
+      usage: sumUsage(runs),
     },
     runsUsed: total,
     decisionAgreement,

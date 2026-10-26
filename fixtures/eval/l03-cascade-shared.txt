@@ -1,0 +1,13 @@
+whylog-eval-l03 — Oct 22, 13:15 (PLANTED L3: three decisions share one premise)
+
+user: let's nail down the data layer consequences before we go further
+assistant: What follows from SQLite being single-writer?
+user: three things. one — no connection pooling, because there's only ever one connection
+assistant: Recording: WLD-cascade-1, skip connection pooling. It rests on the single-user premise directly, and it depends on the SQLite decision.
+user: two — no migration tooling, because we said hackathon scope
+assistant: Recording: WLD-cascade-2, no migration tooling. That rests on the hackathon-scope premise, NOT on single-user.
+user: three — no read replicas, obviously
+assistant: Recording: WLD-cascade-3, no read replicas. That rests on single-user AND on the no-deploy-infrastructure premise, so it has two supports.
+user: ok. so if single-user turns out to be false, what breaks?
+assistant: The SQLite decision, the pooling decision, and the replica decision. The migration-tooling decision survives — it rests on scope, which is a different premise. And read replicas would still have the no-deploy premise holding it up, so it depends on whether that survives too.
+user: good, that's exactly the distinction I wanted to see

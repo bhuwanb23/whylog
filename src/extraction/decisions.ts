@@ -94,6 +94,11 @@ export interface DecisionContext {
   /** The transcript's offset map. Required: without it a span cannot be built,
    *  and building one by arithmetic is how the evidence contract rots. */
   readonly map: OffsetMap;
+  /** Ablation: negation-cue recognition off. Absent means on. */
+  readonly negationCues?: boolean;
+  /** Ablation: modality filtering off, so hypotheticals and reported speech survive. Absent
+   *  means on — and "on" is acceptance criterion 4.1, zero hypotheticals becoming nodes. */
+  readonly modalityFilter?: boolean;
 }
 
 export interface RecoveredDecision {
@@ -136,9 +141,22 @@ export function recoverDecisions(
   const hits = scanCues(episode.text);
   if (hits.length === 0) return { decisions: [], discarded: [] };
 
-  const decisions: RecoveredDecision[] = [];
   const discarded: DiscardedCandidate[] = [];
-  const seen = new Set<string>();
+  /* Strongest mention per (variable, value), not the first.
+   *
+   * A decision is negotiated across several turns and the same value is usually mentioned more than
+   * once: an agent floats it early ("I'd use SQLite"), the human settles it later ("going with
+   * SQLite, not Postgres"). Keeping the FIRST mention recorded the proposal's span, the proposal's
+   * modality and the proposal's origin authority — so a decision a human accepted was stamped as an
+   * agent proposal, which understates `source_authority`, which feeds entrenchment, which decides
+   * what gets retracted. It also pointed provenance at the wrong sentence, so the review pane
+   * highlighted a suggestion rather than the acceptance.
+   *
+   * Cue weight is the right tiebreak because it is exactly "how reliably does this phrase mark a
+   * real decision": `going with` (0.90) outranks a bare `use` (0.60), which is the ordering the
+   * table was written to express. Ties keep the earlier mention, so behaviour is unchanged where
+   * there is nothing to choose between. */
+  const best = new Map<string, { decision: RecoveredDecision; weight: number }>();
 
   for (const hit of hits) {
     const recovered = recoverOne(episode, hit, context);
@@ -150,12 +168,13 @@ export function recoverDecisions(
     }
 
     const key = dedupeKey(recovered.decision.candidate);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    decisions.push(recovered.decision);
+    const incumbent = best.get(key);
+    if (incumbent === undefined || hit.weight > incumbent.weight) {
+      best.set(key, { decision: recovered.decision, weight: hit.weight });
+    }
   }
 
-  return { decisions, discarded };
+  return { decisions: [...best.values()].map((entry) => entry.decision), discarded };
 }
 
 type Recovered =
@@ -167,6 +186,14 @@ function recoverOne(
   hit: CueHit,
   context: DecisionContext,
 ): Recovered | null {
+  /* ---- 0. is this cue marking a decision, or the reason beside one? ----
+   * "because", "since", "so that", "in order to" and "as long as" are episode-boundary markers and
+   * rationale/premise material — `rationale.ts` and `premise-cues.ts` own them. Minting a decision
+   * from one emits a second candidate for a decision the real cue already found, so one true
+   * decision is scored as one false negative plus one false positive. Returned as null rather than
+   * a discard: this is not a rejected candidate, it was never a decision cue. */
+  if (hit.cue.rationaleOnly === true) return null;
+
   /* ---- 1. is the cue strong enough to be a decision at all? ---- */
   if (hit.weight < MIN_CUE_WEIGHT) {
     return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight);
@@ -180,20 +207,48 @@ function recoverOne(
   /* ---- 4. modality, before spending effort on the other slots ---- */
   const modality = classifyModality(located.turn.text, localHit, located.turn.speaker);
 
-  if (modality.modality === "hypothetical" || modality.modality === "reported") {
+  /* The modality filter is what keeps "what if we used Redis" out of the graph. With the
+   * ablation switch off the classification still runs — it is recorded on the candidate — but
+   * nothing is discarded for it, which is exactly the behaviour being measured. */
+  if (
+    context.modalityFilter !== false &&
+    (modality.modality === "hypothetical" || modality.modality === "reported")
+  ) {
     return discard("modality", modality.scope, hit.weight * 0.5);
   }
 
-  /* ---- 2. variable + value ---- */
-  const guess = variableAtCue(episode.text, hit);
-  const variable: DecisionVariable = guess?.variable ?? "OTHER";
-
-  const value = pickValue(episode.text, hit, variable);
+  /* ---- 2. value first, THEN variable ----
+   *
+   * `pickValue` needs a variable only to canonicalise the surface form, and `variableAtCue` accepts
+   * the value as a hint — so the two are resolved in a second pass rather than guessed in the wrong
+   * order. Guessing the variable from the cue's CONTEXT alone is what put "sqlite" in SCOPE and
+   * "vite" in ARCHITECTURE: the episode's topic outvoted the value itself. A value is much stronger
+   * evidence than a topic — `resolveVariable` scores the value first for exactly this reason — and
+   * getting the slot wrong is not a cosmetic miss: the matcher requires the variable to agree, and
+   * the identity ladder refuses to merge across slots, so a mis-slotted decision becomes one false
+   * negative and one false positive at the same time. */
+  const provisional = variableAtCue(episode.text, hit);
+  const value = pickValue(episode.text, hit, provisional?.variable ?? "OTHER");
   if (value === null)
     return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight * 0.4);
 
+  const guess = variableAtCue(episode.text, hit, value.surface);
+  const variable: DecisionVariable = guess?.variable ?? provisional?.variable ?? "OTHER";
+
   /* ---- 3. polarity ---- */
-  const polarity = polarityOf(episode.text, hit, value.surface);
+  /* With negation cues off, polarity is reported as positive without looking at the text, so
+   * a refused value is recorded as a decision FOR it. `alternatives.ts` will not pick it up
+   * either, because it reads the same polarity — which is the point: the ablation measures the
+   * cue set, not one call site of it. */
+  const polarity =
+    context.negationCues === false
+      ? {
+          polarity: "positive" as const,
+          via: "ablation-negation-off" as const,
+          marker: null,
+          scope: [] as readonly string[],
+        }
+      : polarityOf(episode.text, hit, value.surface);
 
   if (polarity.polarity === "negative") {
     // A refused value is a REJECTED ALTERNATIVE, not a decision. `alternatives.ts`
@@ -292,8 +347,17 @@ function pickValue(text: string, hit: CueHit, variable: DecisionVariable): Value
 
   if (phrase !== null) {
     const exact = ranked.find((c) => normalise(c.surface) === normalise(phrase));
-    if (exact !== undefined && exact.score >= MIN_VALUE_SCORE) return exact;
-    if (exact !== undefined && exact.strength === "tech-shaped") return exact;
+    /* `bare` is rejected here for the same reason it is rejected in the fallback below: a bare value
+     * is an ordinary word, not a technology or a choice, and the code's own definition of that case
+     * is "a failed extraction, not a low-confidence one". Letting the phrase path admit one on score
+     * alone is what turned "it's the thing" into AUTH → "thing" and "it's a local" into
+     * ARCHITECTURE → "local" — the cue's own phrase matched an ordinary word and the score gate waved
+     * it through. Two gates that disagree about the same word is how a decision node gets minted for
+     * a sentence that only described the world. */
+    if (exact !== undefined && exact.strength !== "bare") {
+      if (exact.score >= MIN_VALUE_SCORE) return exact;
+      if (exact.strength === "tech-shaped") return exact;
+    }
   }
 
   const best = ranked[0];
@@ -367,19 +431,20 @@ function spanFor(
 ): SourceSpan | null {
   const turn = located.turn;
 
-  // The value's bounds came from `rankValues` over the EPISODE text, so they cannot
-  // be added to a turn offset. It is re-located inside the turn by literal search
-  // instead — cheaper than threading a second coordinate system, and it fails
-  // safely: when the value is not in this turn at all (a pivot construction that
-  // spans two speakers) the snippet falls back to the cue, which is still a true
-  // quote of the text that produced the decision.
+  /* The value's bounds came from `rankValues` over the EPISODE text, so they cannot be added to a
+   * turn offset; the value is re-located inside the turn by literal search instead.
+   *
+   * When the value is NOT in this turn the candidate is rejected rather than falling back to a
+   * cue-only snippet. The fallback looked safe — the cue is still a true quote — but it is what
+   * lets a weak copula cue ("it's") in one sentence adopt a value mentioned three sentences away,
+   * and emit a decision whose snippet is the two characters "it's". A decision whose value does not
+   * appear in the cue's own turn was not stated by that cue, and the real pivot case (a value
+   * carried across two speakers) is rarer than the false positive it was buying. */
   const valueAt = turn.text.toLowerCase().indexOf(value.surface.toLowerCase());
+  if (valueAt < 0) return null;
 
   const start = toNormalised(located, localHit.start);
-  const end =
-    valueAt >= 0
-      ? toNormalised(located, Math.max(localHit.end, valueAt + value.surface.length))
-      : toNormalised(located, localHit.end);
+  const end = toNormalised(located, Math.max(localHit.end, valueAt + value.surface.length));
 
   if (end <= start) return null;
   return spanFrom(context.transcriptId, context.raw, context.map, start, end);

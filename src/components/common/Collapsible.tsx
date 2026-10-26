@@ -28,42 +28,30 @@ export function Collapsible(props: CollapsibleProps): ReactElement {
 
   return (
     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 8 }}>
-      <button
-        type="button"
-        style={{
-          display: "flex",
-          gap: 8,
-          alignItems: "baseline",
-          cursor: "pointer",
-          /* A real button, not a div with role="button": the native element brings the
-           * keyboard behaviour (Enter and Space activate it) and the focus ring for free,
-           * which is exactly what the hand-rolled onKeyDown was re-implementing badly. */
-          width: "100%",
-          background: "none",
-          border: "none",
-          padding: 0,
-          font: "inherit",
-          color: "inherit",
-          textAlign: "left",
-        }}
-        onClick={() => setOpen((previous) => !previous)}
-        aria-expanded={open}
-      >
-        <span className="mono faint" style={{ fontSize: 11, width: 12 }}>
-          {open ? "▾" : "▸"}
+    <button
+      type="button"
+      style={{ display: "flex", gap: 8, alignItems: "baseline", cursor: "pointer", background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", width: "100%", textAlign: "left" }}
+      onClick={() => setOpen((previous) => !previous)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          setOpen((previous) => !previous);
+        }
+      }}
+      aria-expanded={open}
+    >
+      <span className="mono faint" style={{ fontSize: 11, width: 12 }}>
+        {open ? "▾" : "▸"}
+      </span>
+      <span className="faint" style={{ fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" }}>
+        {props.title}
+      </span>
+      {props.summary !== undefined ? (
+        <span className="dim" style={{ fontSize: 11, marginLeft: "auto", textAlign: "right" }}>
+          {props.summary}
         </span>
-        <span
-          className="faint"
-          style={{ fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase" }}
-        >
-          {props.title}
-        </span>
-        {props.summary !== undefined ? (
-          <span className="dim" style={{ fontSize: 11, marginLeft: "auto", textAlign: "right" }}>
-            {props.summary}
-          </span>
-        ) : null}
-      </button>
+      ) : null}
+    </button>
 
       {open ? (
         <div style={{ marginTop: 8, paddingLeft: 20 }}>

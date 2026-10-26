@@ -146,14 +146,19 @@ function renderPremiseStatus(premises: readonly PremiseEntry[]): string {
   return premises
     .map(
       (entry) =>
-        `premise ${entry.id} ${shorten(entry.text)} ${entry.contested ? "CONTESTED" : `still ${entry.label}`}`,
+        "premise " +
+        entry.id +
+        " " +
+        shorten(entry.text) +
+        " " +
+        (entry.contested ? "CONTESTED" : "still " + entry.label),
     )
     .join("; ");
 }
 
 function shorten(text: string): string {
   const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length <= 34 ? flat : `${flat.slice(0, 31)}...`;
+  return flat.length <= 34 ? flat : flat.slice(0, 31) + "...";
 }
 
 /** The block as Markdown. */
@@ -172,7 +177,15 @@ export function renderRejectedBlock(entries: readonly RejectedBlockEntry[]): str
 
   for (const entry of entries) {
     lines.push(
-      `- **${entry.value}** (${entry.decisionId}) — ${entry.why}; ${entry.premiseStatus}${entry.contested ? "  ⚠ UNDER REVIEW" : ""}`,
+      "- **" +
+        entry.value +
+        "** (" +
+        entry.decisionId +
+        ") — " +
+        entry.why +
+        "; " +
+        entry.premiseStatus +
+        (entry.contested ? "  ⚠ UNDER REVIEW" : ""),
     );
   }
 

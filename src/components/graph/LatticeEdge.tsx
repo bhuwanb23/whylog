@@ -79,7 +79,7 @@ export function LatticeEdgeView(props: EdgeProps): ReactElement {
   const path =
     props.from.kind === "premise"
       ? curve(props.from.x, props.from.y, props.to.x, props.to.y)
-      : `M ${props.from.x} ${props.from.y} L ${props.to.x} ${props.to.y}`;
+      : "M " + props.from.x + " " + props.from.y + " L " + props.to.x + " " + props.to.y;
 
   const stroke = props.turnedRed ? "var(--edge-conflict)" : visual.stroke;
 
@@ -100,7 +100,9 @@ export function LatticeEdgeView(props: EdgeProps): ReactElement {
 
 function curve(x1: number, y1: number, x2: number, y2: number): string {
   const midY = (y1 + y2) / 2;
-  return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+  return (
+    "M " + x1 + " " + y1 + " C " + x1 + " " + midY + ", " + x2 + " " + midY + ", " + x2 + " " + y2
+  );
 }
 
 /** The edge legend. Rendered beside the lattice, because five line styles nobody can look up is

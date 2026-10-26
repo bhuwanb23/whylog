@@ -127,7 +127,6 @@ export function createLocalEngine(): WhyLogEngine {
      * engine will skip.
      */
     extract: async (request): Promise<ExtractionResult> => {
-      const _started = performanceSafeNow();
       if (request.signal?.aborted) {
         throw new EngineError("cancelled", "Cancelled.", { engine: id.model });
       }
@@ -182,13 +181,12 @@ export function createLocalEngine(): WhyLogEngine {
        * every sentence with its decision id inline, which is what lets
        * retrieval/answer.ts attribute claims to citations by the same rule it applies to
        * an LLM's prose. */
-      const composed = templateCompose(request);
+      const text = templateCompose(request);
       const cited = request.material.map((fact) => fact.decisionId);
 
       return {
-        text: composed.text,
+        text,
         citedDecisionIds: cited,
-        ...(composed.disclosure === undefined ? {} : { disclosure: composed.disclosure }),
         engine: id,
         durationMs: performanceSafeNow() - started,
       };
@@ -222,7 +220,13 @@ export function createLocalEngine(): WhyLogEngine {
       if (attributed.length === 0) {
         return {
           guards: [],
-          unverifiableReason: `No template covers ${request.variable} = ${request.value}, and the generic strategies found nothing checkable: no rejected alternative, no recognisable package or path in the value, and no \`applies_to\` globs. This decision is unverifiable with the local engine — an LLM engine may be able to propose a check, but nothing is invented here.`,
+          unverifiableReason:
+            "No template covers " +
+            request.variable +
+            " = " +
+            request.value +
+            ", and the generic strategies found nothing checkable: no rejected alternative, no recognisable package or path in the value, and no `applies_to` globs. " +
+            "This decision is unverifiable with the local engine — an LLM engine may be able to propose a check, but nothing is invented here.",
           engine: id,
         };
       }

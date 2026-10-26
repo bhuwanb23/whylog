@@ -101,7 +101,10 @@ export function negationReachesValue(text: string, value: string): NegationScope
       negated: true,
       cue: token,
       window,
-      reason: `a negation cue falls within ${NEGATION_SCOPE_TOKENS} tokens before the value, with nothing resetting its scope`,
+      reason:
+        "a negation cue falls within " +
+        NEGATION_SCOPE_TOKENS +
+        " tokens before the value, with nothing resetting its scope",
     };
   }
 
@@ -109,7 +112,7 @@ export function negationReachesValue(text: string, value: string): NegationScope
     negated: false,
     cue: null,
     window,
-    reason: `no negation cue within ${NEGATION_SCOPE_TOKENS} tokens of the value`,
+    reason: "no negation cue within " + NEGATION_SCOPE_TOKENS + " tokens of the value",
   };
 }
 
@@ -150,7 +153,13 @@ export function negationBetween(
  *  tokens the decision was made over, not just the verdict. */
 export function describeScope(verdict: NegationScopeVerdict): string {
   const window = verdict.window.length === 0 ? "(empty)" : verdict.window.join(" ");
-  return `${verdict.negated ? "NEGATED" : "not negated"} — scope window: [${window}] — ${verdict.reason}`;
+  return (
+    (verdict.negated ? "NEGATED" : "not negated") +
+    " — scope window: [" +
+    window +
+    "] — " +
+    verdict.reason
+  );
 }
 
 /** Re-exported for the classifier: `negationScope` needs a CueHit, which retrieval does not

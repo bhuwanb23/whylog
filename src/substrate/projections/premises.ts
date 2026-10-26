@@ -20,10 +20,13 @@
 
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import { type Decision, type Premise, type PremiseType, isWorldObservable } from "@/types/domain";
-import { byIdAsc, byTemporalValidDesc, compare, isOpen } from "../bi-temporal";
+import { byIdAsc, byValidDesc, compare, isOpen } from "../bi-temporal";
 import type { GraphState } from "../graph-state";
 
-const BY_VALID_TIME = compare(byTemporalValidDesc, byIdAsc);
+const BY_VALID_TIME = compare<Premise>(byValidDesc, byIdAsc);
+/* `decisionsOnPremise` returns decisions, so it needs its own order — a comparator pinned to
+ * Premise cannot sort a Decision, and a generic one is what failed to infer in the first place. */
+const BY_DECISION_VALID_TIME = compare<Decision>(byValidDesc, byIdAsc);
 
 export function getPremise(state: GraphState, id: PremiseId): Premise | null {
   return state.premises.get(id) ?? null;
@@ -117,7 +120,7 @@ export function dependentDecisions(state: GraphState, premiseId: PremiseId): rea
     const decision = state.decisions.get(id);
     if (decision) out.push(decision);
   }
-  return out.sort(BY_VALID_TIME);
+  return out.sort(BY_DECISION_VALID_TIME);
 }
 
 /** Premises a decision rests on, split the way Doyle's justification does.

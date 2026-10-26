@@ -39,16 +39,13 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
 
   return (
     <g
-      transform={`translate(${props.node.x},${props.node.y})`}
+      transform={"translate(" + props.node.x + "," + props.node.y + ")"}
       onClick={() => props.onSelect(props.node.id)}
       style={{
         cursor: "pointer",
         opacity: props.dimmed ? 0.22 : 1,
         transition: "opacity 220ms ease",
       }}
-      /* biome-ignore lint/a11y/useSemanticElements: SVG has no <button>; a focusable <g> with an
-         explicit role and a key handler is the accessible equivalent, and a HTML button cannot be
-         placed inside a <svg> at all. */
       role="button"
       tabIndex={0}
       onKeyDown={(event) => {
@@ -59,11 +56,23 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
       }}
     >
       <title>
-        {`${props.node.id} · ${props.type} · ${props.predicate}\n${props.node.text}\nlabel ${props.node.label} · ${props.node.dependents} decision(s) depend on it\n${
-          observable
+        {props.node.id +
+          " · " +
+          props.type +
+          " · " +
+          props.predicate +
+          "\n" +
+          props.node.text +
+          "\nlabel " +
+          props.node.label +
+          " · " +
+          props.node.dependents +
+          " decision(s) depend on it" +
+          "\n" +
+          (observable
             ? "WORLD-OBSERVABLE — a guard or repo scan could falsify this"
-            : "INTENT-BASED — only a human can retract this"
-        }\nClick to see everything resting on it; falsify it to watch the cascade.`}
+            : "INTENT-BASED — only a human can retract this") +
+          "\nClick to see everything resting on it; falsify it to watch the cascade."}
       </title>
 
       {/* The pulse ring, drawn only while this node is mid-flip. */}
@@ -71,7 +80,7 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
         <circle r={radius + 9} fill="none" stroke={colour} strokeWidth={1.5} opacity={0.55}>
           <animate
             attributeName="r"
-            values={`${String(radius + 4)};${String(radius + 14)}`}
+            values={String(radius + 4) + ";" + String(radius + 14)}
             dur="0.9s"
             repeatCount="indefinite"
           />
@@ -121,7 +130,7 @@ export function PremiseNode(props: PremiseNodeProps): ReactElement {
 
 function truncate(text: string, limit: number): string {
   const flat = text.replace(/\s+/g, " ").trim();
-  return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`;
+  return flat.length <= limit ? flat : flat.slice(0, limit - 1) + "…";
 }
 
 export type { DecisionLabel, PremiseType };

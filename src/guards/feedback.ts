@@ -182,7 +182,7 @@ export function attributeFailure(
     };
   }
 
-  const targetTokens = tokensOf(`${specTarget(guard)} ${result.evidence}`);
+  const targetTokens = tokensOf(specTarget(guard) + " " + result.evidence);
   const candidates: PremiseId[] = [];
   const scores: { id: PremiseId; shared: number }[] = [];
 
@@ -197,7 +197,7 @@ export function attributeFailure(
       const premise = state.premises.get(premiseId);
       if (premise === undefined) continue;
 
-      const premiseTokens = tokensOf(`${premise.text} ${premise.predicate}`);
+      const premiseTokens = tokensOf(premise.text + " " + premise.predicate);
       let shared = 0;
       for (const token of premiseTokens) {
         if (targetTokens.has(token)) shared += 1;
@@ -212,7 +212,12 @@ export function attributeFailure(
       premiseId: null,
       candidates,
       verdict: "none",
-      explanation: `Nothing the guard checked (${specTarget(guard)}) shares vocabulary with any of the ${candidates.length} premise(s) this decision rests on. The failure is about the DECISION, not its assumptions, so gate (a) treats it as structural drift: the code disagrees with what the log says was chosen.`,
+      explanation:
+        "Nothing the guard checked (" +
+        specTarget(guard) +
+        ") shares vocabulary with any of the " +
+        candidates.length +
+        " premise(s) this decision rests on. The failure is about the DECISION, not its assumptions, so gate (a) treats it as structural drift: the code disagrees with what the log says was chosen.",
     };
   }
 
@@ -226,7 +231,12 @@ export function attributeFailure(
       premiseId: null,
       candidates,
       verdict: "ambiguous",
-      explanation: `The failure matches ${scores.length} premises equally well (${scores.map((entry) => entry.id).join(", ")}), so the run cannot say which assumption broke. Guessing would produce a confident, spectacular and entirely wrong cascade, so the ambiguity is reported and gate (a) handles it as drift instead. Resolve it by asserting the premise directly.`,
+      explanation:
+        "The failure matches " +
+        scores.length +
+        " premises equally well (" +
+        scores.map((entry) => entry.id).join(", ") +
+        "), so the run cannot say which assumption broke. Guessing would produce a confident, spectacular and entirely wrong cascade, so the ambiguity is reported and gate (a) handles it as drift instead. Resolve it by asserting the premise directly.",
     };
   }
 
@@ -240,7 +250,14 @@ export function attributeFailure(
     premiseId: best.id,
     candidates,
     verdict: "single",
-    explanation: `The failure falsifies ${best.id} "${premise?.text ?? ""}" — ${best.shared} shared token(s) with what the guard checked, and no other premise matched as well. Gate (c) takes it: the premise goes OUT and every decision resting on it is re-examined.`,
+    explanation:
+      "The failure falsifies " +
+      best.id +
+      ' "' +
+      (premise?.text ?? "") +
+      '" — ' +
+      best.shared +
+      " shared token(s) with what the guard checked, and no other premise matched as well. Gate (c) takes it: the premise goes OUT and every decision resting on it is re-examined.",
   };
 }
 
@@ -257,11 +274,11 @@ export function specTarget(guard: Guard): string {
       return spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return `${spec.pattern} ${spec.glob}`;
+      return spec.pattern + " " + spec.glob;
     case "command_exit_zero":
       return spec.command;
     case "llm_judge":
-      return `${spec.rubric} ${spec.scopeGlobs.join(" ")}`;
+      return spec.rubric + " " + spec.scopeGlobs.join(" ");
   }
 }
 
@@ -318,7 +335,11 @@ export function feedbackFor(input: FeedbackInput): GuardFeedback {
       drafts: [ranEvent(input)],
       assertion: null,
       attribution: null,
-      summary: `${guard.id} skipped: ${result.skipReason ?? "no reason given"} Nothing is asserted, because a guard that could not run says nothing about the world.`,
+      summary:
+        guard.id +
+        " skipped: " +
+        (result.skipReason ?? "no reason given") +
+        " Nothing is asserted, because a guard that could not run says nothing about the world.",
     };
   }
 
@@ -328,7 +349,11 @@ export function feedbackFor(input: FeedbackInput): GuardFeedback {
       drafts: [ranEvent(input)],
       assertion: null,
       attribution: null,
-      summary: `${guard.id} passed for ${guard.decisionId}. Corroboration and \`implementation_cost\` are recomputed from the guard record — no premise is asserted, because a check confirming what the log already says is not new information.`,
+      summary:
+        guard.id +
+        " passed for " +
+        guard.decisionId +
+        ". Corroboration and `implementation_cost` are recomputed from the guard record — no premise is asserted, because a check confirming what the log already says is not new information.",
     };
   }
 
@@ -380,11 +405,18 @@ export function feedbackFor(input: FeedbackInput): GuardFeedback {
         ...(attribution.premiseId === null ? {} : { falsifiesPremiseId: attribution.premiseId }),
       },
       actor: input.actor,
-      reason: `Guard ${guard.id} (${guard.spec.kind}) failed while protecting ${guard.decisionId}: ${result.evidence}${
-        attribution.premiseId === null
+      reason:
+        "Guard " +
+        guard.id +
+        " (" +
+        guard.spec.kind +
+        ") failed while protecting " +
+        guard.decisionId +
+        ": " +
+        result.evidence +
+        (attribution.premiseId === null
           ? " No premise matched, so this is recorded as drift against the decision itself."
-          : ` Attributed to premise ${attribution.premiseId}.`
-      }`,
+          : " Attributed to premise " + attribution.premiseId + "."),
       at: input.at,
       occurredAt: result.ranAt,
     },
@@ -394,7 +426,14 @@ export function feedbackFor(input: FeedbackInput): GuardFeedback {
     drafts,
     assertion,
     attribution,
-    summary: `${guard.id} FAILED for ${guard.decisionId}. Evidence: ${result.evidence} ${attribution.explanation}`,
+    summary:
+      guard.id +
+      " FAILED for " +
+      guard.decisionId +
+      ". Evidence: " +
+      result.evidence +
+      " " +
+      attribution.explanation,
   };
 }
 
@@ -402,7 +441,7 @@ export function feedbackFor(input: FeedbackInput): GuardFeedback {
  *  confuse it with an extracted premise, and so a drift observation is recognisable in the log
  *  as something a check produced rather than something a person said. */
 function driftPredicate(guard: Guard): string {
-  return `drift.${guard.spec.kind}.${slug(specTarget(guard))}`;
+  return "drift." + guard.spec.kind + "." + slug(specTarget(guard));
 }
 
 function slug(text: string): string {
@@ -426,16 +465,25 @@ function observationText(
     guard.spec.kind === "dependency_absent" ||
     guard.spec.kind === "path_glob_absent" ||
     guard.spec.kind === "string_absent_in_files"
-      ? `the project now contains ${target}`
-      : `the project no longer contains ${target}`;
+      ? "the project now contains " + target
+      : "the project no longer contains " + target;
 
-  return `${observed} — observed by guard ${guard.id} (${guard.spec.kind}), which ${guard.decisionId} is protected by. Evidence: ${result.evidence}${
-    verdict === "none"
+  return (
+    observed +
+    " — observed by guard " +
+    guard.id +
+    " (" +
+    guard.spec.kind +
+    "), which " +
+    guard.decisionId +
+    " is protected by. Evidence: " +
+    result.evidence +
+    (verdict === "none"
       ? " This is drift against the decision itself, not against any premise it rests on."
       : verdict === "ambiguous"
         ? " Which premise this falsifies could not be determined, so it is reported as drift."
-        : ""
-  }`;
+        : "")
+  );
 }
 
 function ranEvent(input: FeedbackInput): NewEvent<EventType> {
@@ -451,13 +499,15 @@ function ranEvent(input: FeedbackInput): NewEvent<EventType> {
     /* `GuardRan` is not state-changing, so the log would accept an empty reason — but a run
      * recorded without saying what it found is a run nobody can audit later, and the field
      * costs nothing to fill. */
-    reason: `Guard ${input.guard.id} ran against the pasted project and ${
-      input.result.outcome === "pass"
-        ? `passed: ${input.result.evidence}`
+    reason:
+      "Guard " +
+      input.guard.id +
+      " ran against the pasted project and " +
+      (input.result.outcome === "pass"
+        ? "passed: " + input.result.evidence
         : input.result.outcome === "skip"
-          ? `SKIPPED: ${input.result.skipReason ?? "no reason given"}`
-          : `failed: ${input.result.evidence}`
-    }`,
+          ? "SKIPPED: " + (input.result.skipReason ?? "no reason given")
+          : "failed: " + input.result.evidence),
     at: input.at,
     occurredAt: input.result.ranAt,
   };
@@ -494,7 +544,11 @@ export function describeFeedbackLoop(): string {
     "spectacular and entirely wrong cascade.",
     "",
     "Consequence worth stating plainly: gate (a) plus a failing guard is a fully deterministic",
-    `contradiction detector. No embedding, no threshold, no model. Confidence ${GUARD_CONFIDENCE} for a deterministic guard (direct observation) against ${JUDGED_CONFIDENCE} for a judged one (an opinion).`,
+    "contradiction detector. No embedding, no threshold, no model. Confidence " +
+      GUARD_CONFIDENCE +
+      " for a deterministic guard (direct observation) against " +
+      JUDGED_CONFIDENCE +
+      " for a judged one (an opinion).",
   ].join("\n");
 }
 

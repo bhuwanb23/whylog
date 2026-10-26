@@ -60,6 +60,7 @@ import {
   premisesNamedBy,
 } from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
+import { validityOf } from "./labeller";
 
 /** Deeper than this the chain stops being readable and starts being a graph dump. */
 export const MAX_AUDIT_DEPTH = 8;
@@ -382,7 +383,11 @@ export function soleSupportDecisions(
      * premises and merely excludes a fourth. */
     const premiseIds = new Set<PremiseId>();
     for (const justification of justificationsFor(index, decisionId)) {
-      if (labels.get(justification.id)?.label !== "IN") continue;
+      /* A justification is not a node — the graph is bipartite over decisions and premises (I2), so
+       * it has no label of its own to look up, and `labels.get(justification.id)` was always
+       * undefined. That made this filter skip EVERY justification. Whether one is holding the
+       * decision up is Doyle's validity condition over the labels it does have. */
+      if (!validityOf(justification, labels).valid) continue;
       for (const premiseId of justification.inList) premiseIds.add(premiseId);
     }
     if (premiseIds.size !== 1) continue;

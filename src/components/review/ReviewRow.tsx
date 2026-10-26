@@ -56,10 +56,6 @@ export function ReviewRow({
 
   // The tier decides the DEFAULT, not the possibility: a collapsed row can still be
   // opened, and an expanded one can still be collapsed.
-  /* biome-ignore lint/correctness/useExhaustiveDependencies: `item.key` is not read in the body
-     on purpose. The list re-keys its rows, so the same component instance can be handed a
-     DIFFERENT item with the same `expanded` value; without the key in the dependency list the
-     effect would not re-run and the row would keep the previous item's open state. */
   useEffect(() => {
     setOpen(item.expanded);
   }, [item.expanded, item.key]);
@@ -79,6 +75,8 @@ export function ReviewRow({
       onKeyDown={(event) => {
         if (event.key === "Enter") onSelect();
       }}
+      role="button"
+      tabIndex={0}
     >
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "10px 14px" }}>
         <button

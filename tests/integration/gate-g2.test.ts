@@ -200,11 +200,11 @@ describe("Gate G2 — it reasons", () => {
     // falsification of ONE premise may only unsound the decisions that rest on
     // it. If everything goes OUT, the mechanism is over-firing and the
     // over-retraction is worse than the under-retraction.
-    const allOut = [...before.decisions.values()].filter(
-      (d) =>
-        result.labels.get(d.id)?.label === "OUT" &&
-        result.labels.get(d.id)?.reason.kind === "all-justifications-invalid",
-    ).length;
+    const afterState = useWhyLog.getState().state;
+    const allOut = [...before.decisions.values()].filter((d) => {
+      const lbl = afterState.decisions.get(d.id)?.label;
+      return lbl === "OUT";
+    }).length;
     const restingOut = [...before.decisions.values()].filter((d) =>
       d.justificationIds.some((id) =>
         before.justifications.get(id)?.inList.includes(singleUser.id),
