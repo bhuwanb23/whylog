@@ -31,13 +31,9 @@
  * ---------------------------------------------------------------------------
  */
 
-import {
-  DECISION_CUES,
-  type CueDirection,
-  type DecisionCue,
-} from "@/ontology/data/decision-cues";
-import { resolveVariable, type VariableGuess } from "@/ontology/canonicalize";
 import { contentTokens, normalise } from "@/lib/text";
+import { type VariableGuess, resolveVariable } from "@/ontology/canonicalize";
+import { type CueDirection, DECISION_CUES, type DecisionCue } from "@/ontology/data/decision-cues";
 import type { DecisionVariable } from "@/types/domain";
 
 export interface CueHit {

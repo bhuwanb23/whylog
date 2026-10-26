@@ -37,11 +37,28 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionVariable } from "@/types/domain";
 import type { VariableGuess } from "@/ontology/canonicalize";
-import type { EpisodeBoundaryReason, EpisodeWindow, NormalizedTurn, NormalizedTranscript } from "./types";
-import { episodeVariable, scanCues, variableAtCue, type CueHit } from "./cue-scan";
+import type { DecisionVariable } from "@/types/domain";
+import { type CueHit, episodeVariable, scanCues, variableAtCue } from "./cue-scan";
 import { toRawBounds } from "./normalizer";
+import type {
+  EpisodeBoundaryReason,
+  EpisodeWindow,
+  NormalizedTranscript,
+  NormalizedTurn,
+} from "./types";
+
+/** The episode currently being accumulated, before it is closed into a range.
+ *
+ *  Named rather than inlined because `close` is a closure that assigns `open = null`, and TypeScript
+ *  widens a captured `let` back to its declared type after any call to a function that mutates it.
+ *  Re-narrowing through a local needs an explicit annotation on that local, and an annotation needs
+ *  a name to refer to — an inline object literal type there produces a circular inference instead. */
+interface OpenEpisode {
+  firstCue: number;
+  lastCue: number;
+  variable: DecisionVariable | null;
+}
 
 /** Consecutive cue-less turns that close an episode. Three rather than one
  *  because a negotiation routinely has a digression in the middle of it, and
@@ -127,7 +144,6 @@ function groupRanges(
 ): readonly Range[] {
   const ranges: Range[] = [];
 
-  type OpenEpisode = { firstCue: number; lastCue: number; variable: DecisionVariable | null };
   let open: OpenEpisode | null = null;
   let quiet = 0;
 
@@ -152,19 +168,13 @@ function groupRanges(
         continue;
       }
 
-      // Bind the known non-null episode here: `close()` above can reassign `open` to
-      // null between this point and the update below, which invalidates narrowing and
-      // forces a nullable spread. `current` is provably non-null from here onward.
-      const current: OpenEpisode = open;
-
       // Topic shift: a confident guess at a DIFFERENT variable closes the episode
       // and opens a new one at this turn. Splitting here is what keeps a database
-      // decision and a auth decision out of the same justification. Read from
-      // `current` (bound non-null above) so `close()` nulling `open` is irrelevant.
+      // decision and an auth decision out of the same justification.
       if (
-        current.variable !== null &&
+        open.variable !== null &&
         variable !== null &&
-        variable.variable !== current.variable &&
+        variable.variable !== open.variable &&
         variable.score >= TOPIC_SHIFT_SCORE
       ) {
         close(i, "topic-shift");
@@ -173,11 +183,21 @@ function groupRanges(
         continue;
       }
 
-      const updated = { ...current, lastCue: i, variable: current.variable ?? (variable === null ? null : variable.variable) };
-      open = updated;
+      /* `close` is a closure that assigns `open = null`, so TypeScript conservatively widens `open`
+       * back to nullable after any call to it — including the one in the topic-shift branch above,
+       * which cannot reach here. Re-narrowing through a local is what lets the spread typecheck.
+       * The guard is unreachable at runtime and is here for the compiler, not for the reader. */
+      if (open === null) continue;
+      const current: OpenEpisode = open;
+
+      open = {
+        ...current,
+        lastCue: i,
+        variable: current.variable ?? (variable === null ? null : variable.variable),
+      };
       quiet = 0;
 
-      if (i - updated.firstCue + 1 >= MAX_EPISODE_TURNS) close(i + 1, "length-cap");
+      if (i - current.firstCue + 1 >= MAX_EPISODE_TURNS) close(i + 1, "length-cap");
       continue;
     }
 
@@ -212,7 +232,8 @@ function variableForTurn(turn: NormalizedTurn, hits: readonly CueHit[]): Variabl
 
 function charSpan(turns: readonly NormalizedTurn[], start: number, end: number): number {
   let total = 0;
-  for (let i = start; i < Math.min(end, turns.length); i += 1) total += (turns[i]?.text.length ?? 0) + 2;
+  for (let i = start; i < Math.min(end, turns.length); i += 1)
+    total += (turns[i]?.text.length ?? 0) + 2;
   return total;
 }
 
@@ -308,7 +329,10 @@ export function describeSegmentation(result: SegmentationResult, turnCount: numb
 
 /** The episode a normalised character position falls in. Used to attribute a
  *  snippet to its episode when the recogniser only has an offset. */
-export function episodeAt(episodes: readonly EpisodeWindow[], position: number): EpisodeWindow | null {
+export function episodeAt(
+  episodes: readonly EpisodeWindow[],
+  position: number,
+): EpisodeWindow | null {
   for (const episode of episodes) {
     if (position >= episode.charRange[0] && position < episode.charRange[1]) return episode;
   }

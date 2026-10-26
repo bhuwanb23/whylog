@@ -45,23 +45,23 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { DiscardedCandidate, PremiseCandidate } from "@/ai/types";
+import { canonicalPredicate, snakeCase } from "@/ontology/canonicalize";
+import {
+  EXPLICIT_AUTO_ACCEPT_THRESHOLD,
+  PREMISE_CUES,
+  type PremiseCue,
+  TOPICAL_AUTO_ACCEPT_THRESHOLD,
+  needsReview as cueNeedsReview,
+} from "@/ontology/data/premise-cues";
+import { PREMISE_TYPE_META, lookupPredicate } from "@/ontology/data/premise-types";
 import type { Confidence } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { PremiseType } from "@/types/domain";
-import type { DiscardedCandidate, PremiseCandidate } from "@/ai/types";
-import type { EpisodeWindow } from "./types";
 import type { DecisionContext } from "./decisions";
+import { type Located, locateInEpisode } from "./episode-position";
 import { spanFrom } from "./offset-map";
-import { locateInEpisode, type Located } from "./episode-position";
-import { canonicalPredicate, snakeCase } from "@/ontology/canonicalize";
-import {
-  PREMISE_CUES,
-  EXPLICIT_AUTO_ACCEPT_THRESHOLD,
-  TOPICAL_AUTO_ACCEPT_THRESHOLD,
-  needsReview as cueNeedsReview,
-  type PremiseCue,
-} from "@/ontology/data/premise-cues";
-import { PREMISE_TYPE_META, lookupPredicate } from "@/ontology/data/premise-types";
+import type { EpisodeWindow } from "./types";
 
 export interface RecoveredPremise {
   readonly candidate: PremiseCandidate;
@@ -98,8 +98,20 @@ const CUES_BY_LENGTH: readonly PremiseCue[] = [...PREMISE_CUES].sort(
 );
 
 const WORD_NUMBERS: Readonly<Record<string, number>> = {
-  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
-  nine: 9, ten: 10, twelve: 12, twenty: 20, fifty: 50, hundred: 100,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  twelve: 12,
+  twenty: 20,
+  fifty: 50,
+  hundred: 100,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -307,7 +319,11 @@ const CLAUSE_END = /[.!?\n;]/;
 
 /** The clause containing a cue, expanded a little either side so the premise reads
  *  as a sentence rather than as a fragment. */
-function readClause(text: string, at: number, phraseLength: number): { text: string; start: number; end: number } {
+function readClause(
+  text: string,
+  at: number,
+  phraseLength: number,
+): { text: string; start: number; end: number } {
   let start = at;
   while (start > 0 && !CLAUSE_END.test(text[start - 1] ?? "")) start -= 1;
 
@@ -364,8 +380,14 @@ function scorePremise(
 
 function countByType(found: readonly RecoveredPremise[]): Readonly<Record<PremiseType, number>> {
   const out: Record<PremiseType, number> = {
-    scale: 0, team: 0, budget: 0, time: 0,
-    deployment: 0, capability: 0, requirement: 0, external: 0,
+    scale: 0,
+    team: 0,
+    budget: 0,
+    time: 0,
+    deployment: 0,
+    capability: 0,
+    requirement: 0,
+    external: 0,
   };
   for (const premise of found) out[premise.candidate.type] += 1;
   return out;

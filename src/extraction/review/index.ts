@@ -32,14 +32,12 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
 import type { ExtractionRun } from "@/extraction/types";
 import type { ResolvedCandidate } from "@/extraction/types";
-import type { ConfidenceTier, ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
 import { tierOf } from "@/extraction/types";
-
-
+import type { GraphState } from "@/substrate/graph-state";
+import type { Decision, Premise, RejectedAlternative } from "@/types/domain";
+import type { ReviewFilter, ReviewItem, ReviewQueueOptions, ReviewSort } from "./types";
 
 /* -------------------------------------------------------------------------- */
 /* From an uncommitted run                                                    */
@@ -164,7 +162,9 @@ export function queueFromState(state: GraphState): readonly ReviewItem[] {
     if (alternative.snippet.text.length === 0) continue;
     /* An alternative records no origin or engine of its own; it inherits them from the decision it
      * was rejected in favour of, which is the only honest source. */
-    items.push(itemFromAlternative(alternative, state.decisions.get(alternative.decisionId) ?? null));
+    items.push(
+      itemFromAlternative(alternative, state.decisions.get(alternative.decisionId) ?? null),
+    );
   }
 
   return items;
@@ -216,7 +216,10 @@ function itemFromPremise(premise: Premise): ReviewItem {
   };
 }
 
-function itemFromAlternative(alternative: RejectedAlternative, decision: Decision | null): ReviewItem {
+function itemFromAlternative(
+  alternative: RejectedAlternative,
+  decision: Decision | null,
+): ReviewItem {
   const confidence = alternative.confidence;
   return {
     key: alternative.id,
@@ -332,7 +335,8 @@ export interface QueueSummary {
 }
 
 export function summariseQueue(items: readonly ReviewItem[]): QueueSummary {
-  const count = (predicate: (item: ReviewItem) => boolean): number => items.filter(predicate).length;
+  const count = (predicate: (item: ReviewItem) => boolean): number =>
+    items.filter(predicate).length;
 
   return {
     total: items.length,
@@ -368,7 +372,9 @@ export function describeQueue(summary: QueueSummary): string {
   if (summary.derived > 0) parts.push(`${summary.derived} derived rather than quoted — read those`);
   if (summary.conflicts > 0) parts.push(`${summary.conflicts} conflict with a live decision`);
   if (summary.reviewed > 0) {
-    parts.push(`${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`);
+    parts.push(
+      `${summary.reviewed} reviewed (${summary.accepted} accepted, ${summary.edited} edited, ${summary.discarded} discarded)`,
+    );
   }
   return parts.join(" · ");
 }

@@ -39,8 +39,6 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionId, PremiseId } from "@/types/common";
-import { asConfidence } from "@/types/common";
 import type {
   AlternativeCandidate,
   DecisionCandidate,
@@ -48,6 +46,8 @@ import type {
   PremiseCandidate,
 } from "@/ai/types";
 import type { ResolvedCandidate, ReviewAction } from "@/extraction/types";
+import type { DecisionId, PremiseId } from "@/types/common";
+import { asConfidence } from "@/types/common";
 import type { ReviewItem } from "./types";
 
 /** An edit raises the item to the top of the range a machine extraction can reach.
@@ -190,11 +190,21 @@ function editDecision(
 ): DecisionCandidate {
   return {
     ...candidate,
-    ...(stringField(fields, "variable") === null ? {} : { variable: stringField(fields, "variable") as DecisionCandidate["variable"] }),
-    ...(stringField(fields, "value") === null ? {} : { value: stringField(fields, "value") as string }),
-    ...(stringField(fields, "statement") === null ? {} : { statement: stringField(fields, "statement") as string }),
-    ...(stringField(fields, "yStatement") === null ? {} : { yStatement: stringField(fields, "yStatement") as string }),
-    ...(stringField(fields, "rationale") === null ? {} : { rationale: stringField(fields, "rationale") as string }),
+    ...(stringField(fields, "variable") === null
+      ? {}
+      : { variable: stringField(fields, "variable") as DecisionCandidate["variable"] }),
+    ...(stringField(fields, "value") === null
+      ? {}
+      : { value: stringField(fields, "value") as string }),
+    ...(stringField(fields, "statement") === null
+      ? {}
+      : { statement: stringField(fields, "statement") as string }),
+    ...(stringField(fields, "yStatement") === null
+      ? {}
+      : { yStatement: stringField(fields, "yStatement") as string }),
+    ...(stringField(fields, "rationale") === null
+      ? {}
+      : { rationale: stringField(fields, "rationale") as string }),
     origin: "human_override",
     confidence: EDITED_CONFIDENCE,
     // An edited decision is asserted, not proposed: the human has said the words.
@@ -210,9 +220,15 @@ function editPremise(
 ): PremiseCandidate {
   return {
     ...candidate,
-    ...(stringField(fields, "predicate") === null ? {} : { predicate: stringField(fields, "predicate") as string }),
-    ...(stringField(fields, "text") === null ? {} : { text: stringField(fields, "text") as string }),
-    ...(fields["value"] === undefined || fields["value"] === null ? {} : { value: fields["value"] as string | number | boolean }),
+    ...(stringField(fields, "predicate") === null
+      ? {}
+      : { predicate: stringField(fields, "predicate") as string }),
+    ...(stringField(fields, "text") === null
+      ? {}
+      : { text: stringField(fields, "text") as string }),
+    ...(fields["value"] === undefined || fields["value"] === null
+      ? {}
+      : { value: fields["value"] as string | number | boolean }),
     confidence: EDITED_CONFIDENCE,
     // A human-confirmed premise no longer needs review. This is the only route to
     // `needsReview: false` in Phase 1, and it requires a person.
@@ -226,8 +242,12 @@ function editAlternative(
 ): AlternativeCandidate {
   return {
     ...candidate,
-    ...(stringField(fields, "value") === null ? {} : { value: stringField(fields, "value") as string }),
-    ...(stringField(fields, "whyRejected") === null ? {} : { whyRejected: stringField(fields, "whyRejected") as string }),
+    ...(stringField(fields, "value") === null
+      ? {}
+      : { value: stringField(fields, "value") as string }),
+    ...(stringField(fields, "whyRejected") === null
+      ? {}
+      : { whyRejected: stringField(fields, "whyRejected") as string }),
     confidence: EDITED_CONFIDENCE,
   };
 }
@@ -296,7 +316,9 @@ export function isBulkApprovable(item: ReviewItem): boolean {
 
 /** The contested items, which is the Hansson queue in Phase 1's clothing: things
  *  that could not outrank a contradictor and are waiting for a human. */
-export function contestedIn(candidates: readonly ResolvedCandidate[]): readonly ResolvedCandidate[] {
+export function contestedIn(
+  candidates: readonly ResolvedCandidate[],
+): readonly ResolvedCandidate[] {
   return candidates.filter((candidate) => candidate.action?.type === "contest");
 }
 

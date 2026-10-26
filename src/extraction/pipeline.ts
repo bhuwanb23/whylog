@@ -136,7 +136,7 @@ export async function runExtraction(
 
   /* ---- 1.1 chunk ---- */
   stageStart = nowMs();
-  const chunking = chunkTurns(normalized.turns, options.chunkChars, normalized);
+  const chunking = chunkTurns(normalized.turns, normalized, options.chunkChars);
   stages.push(stage("segment", stageStart, normalized.turns.length, chunking.chunks.length, describeChunking(chunking)));
 
   /* ---- 1.2 segment ---- */

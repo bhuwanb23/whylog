@@ -66,21 +66,26 @@
  * ---------------------------------------------------------------------------
  */
 
+import { type ModalityEvidence, classifyModality } from "@/ai/local/modality";
+import { type PolarityEvidence, polarityOf, rejectedAfterCue } from "@/ai/local/negation";
+import { type ValueCandidate, rankValues, valueAfter, valueBefore } from "@/ai/local/value-phrase";
+import type { DecisionCandidate, DiscardedCandidate } from "@/ai/types";
+import { normalise } from "@/lib/text";
+import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
 import type { Confidence, SourceSpan, TranscriptId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionVariable, Modality } from "@/types/domain";
-import type { DiscardedCandidate, DecisionCandidate } from "@/ai/types";
+import { type CueHit, cueContext, scanCues, variableAtCue } from "./cue-scan";
+import { type Located, locateInEpisode, toNormalised } from "./episode-position";
+import { type OffsetMap, spanFrom } from "./offset-map";
+import { type ClauseFields, extractClauseFields } from "./rationale";
 import type { EpisodeWindow, NormalizedTurn } from "./types";
-import { scanCues, variableAtCue, cueContext, type CueHit } from "./cue-scan";
-import { spanFrom, type OffsetMap } from "./offset-map";
-import { locateInEpisode, toNormalised, type Located } from "./episode-position";
-import { extractClauseFields, type ClauseFields } from "./rationale";
-import { imperativeStatement, renderYStatement, slotsFrom, type YStatementResult } from "./y-statement";
-import { polarityOf, rejectedAfterCue, type PolarityEvidence } from "@/ai/local/negation";
-import { classifyModality, type ModalityEvidence } from "@/ai/local/modality";
-import { rankValues, valueAfter, valueBefore, type ValueCandidate } from "@/ai/local/value-phrase";
-import { canonicalValueOf, foldKey, variableFromValue } from "@/ontology/canonicalize";
-import { normalise } from "@/lib/text";
+import {
+  type YStatementResult,
+  imperativeStatement,
+  renderYStatement,
+  slotsFrom,
+} from "./y-statement";
 
 export interface DecisionContext {
   readonly transcriptId: TranscriptId;
@@ -89,6 +94,11 @@ export interface DecisionContext {
   /** The transcript's offset map. Required: without it a span cannot be built,
    *  and building one by arithmetic is how the evidence contract rots. */
   readonly map: OffsetMap;
+  /** Ablation: negation-cue recognition off. Absent means on. */
+  readonly negationCues?: boolean;
+  /** Ablation: modality filtering off, so hypotheticals and reported speech survive. Absent
+   *  means on — and "on" is acceptance criterion 4.1, zero hypotheticals becoming nodes. */
+  readonly modalityFilter?: boolean;
 }
 
 export interface RecoveredDecision {
@@ -124,7 +134,10 @@ const MIN_CUE_WEIGHT = 0.35;
 /* -------------------------------------------------------------------------- */
 
 /** Recover the decisions in one episode. */
-export function recoverDecisions(episode: EpisodeWindow, context: DecisionContext): DecisionRecovery {
+export function recoverDecisions(
+  episode: EpisodeWindow,
+  context: DecisionContext,
+): DecisionRecovery {
   const hits = scanCues(episode.text);
   if (hits.length === 0) return { decisions: [], discarded: [] };
 
@@ -168,7 +181,11 @@ type Recovered =
   | { readonly kind: "decision"; readonly decision: RecoveredDecision }
   | { readonly kind: "discard"; readonly discard: DiscardedCandidate };
 
-function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContext): Recovered | null {
+function recoverOne(
+  episode: EpisodeWindow,
+  hit: CueHit,
+  context: DecisionContext,
+): Recovered | null {
   /* ---- 0. is this cue marking a decision, or the reason beside one? ----
    * "because", "since", "so that", "in order to" and "as long as" are episode-boundary markers and
    * rationale/premise material — `rationale.ts` and `premise-cues.ts` own them. Minting a decision
@@ -190,7 +207,13 @@ function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContex
   /* ---- 4. modality, before spending effort on the other slots ---- */
   const modality = classifyModality(located.turn.text, localHit, located.turn.speaker);
 
-  if (modality.modality === "hypothetical" || modality.modality === "reported") {
+  /* The modality filter is what keeps "what if we used Redis" out of the graph. With the
+   * ablation switch off the classification still runs — it is recorded on the candidate — but
+   * nothing is discarded for it, which is exactly the behaviour being measured. */
+  if (
+    context.modalityFilter !== false &&
+    (modality.modality === "hypothetical" || modality.modality === "reported")
+  ) {
     return discard("modality", modality.scope, hit.weight * 0.5);
   }
 
@@ -206,13 +229,26 @@ function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContex
    * negative and one false positive at the same time. */
   const provisional = variableAtCue(episode.text, hit);
   const value = pickValue(episode.text, hit, provisional?.variable ?? "OTHER");
-  if (value === null) return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight * 0.4);
+  if (value === null)
+    return discard("confidence-threshold", cueContext(episode.text, hit, 90), hit.weight * 0.4);
 
   const guess = variableAtCue(episode.text, hit, value.surface);
   const variable: DecisionVariable = guess?.variable ?? provisional?.variable ?? "OTHER";
 
   /* ---- 3. polarity ---- */
-  const polarity = polarityOf(episode.text, hit, value.surface);
+  /* With negation cues off, polarity is reported as positive without looking at the text, so
+   * a refused value is recorded as a decision FOR it. `alternatives.ts` will not pick it up
+   * either, because it reads the same polarity — which is the point: the ablation measures the
+   * cue set, not one call site of it. */
+  const polarity =
+    context.negationCues === false
+      ? {
+          polarity: "positive" as const,
+          via: "ablation-negation-off" as const,
+          marker: null,
+          scope: [] as readonly string[],
+        }
+      : polarityOf(episode.text, hit, value.surface);
 
   if (polarity.polarity === "negative") {
     // A refused value is a REJECTED ALTERNATIVE, not a decision. `alternatives.ts`
@@ -226,7 +262,8 @@ function recoverOne(episode: EpisodeWindow, hit: CueHit, context: DecisionContex
 
   /* ---- 6. statement ---- */
   const rejected = rejectedValues(episode.text, hit, value);
-  const canonical = variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
+  const canonical =
+    variable === "OTHER" ? foldKey(value.surface) : canonicalValueOf(variable, value.surface);
   const statement = imperativeStatement(canonical, rejected);
 
   const slots = slotsFrom(variable, canonical, statement, fields, rationalePremises(fields));
@@ -344,7 +381,9 @@ function rejectedValues(text: string, hit: CueHit, chosen: ValueCandidate): read
   // the ontology knows, so that an ordinary noun never becomes a rejected
   // alternative — the precision problem ARGUS measured at 15.4%.
   const window = text.slice(hit.start, Math.min(text.length, hit.end + 140));
-  const pivot = /\b(?:instead of|rather than|over|in preference to)\s+([A-Za-z0-9@/._+-]+)/i.exec(window);
+  const pivot = /\b(?:instead of|rather than|over|in preference to)\s+([A-Za-z0-9@/._+-]+)/i.exec(
+    window,
+  );
   const pivotValue = pivot?.[1];
   if (pivotValue !== undefined && normalise(pivotValue) !== normalise(chosen.surface)) {
     const folded = canonicalFold(pivotValue);

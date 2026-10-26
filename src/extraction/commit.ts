@@ -56,6 +56,14 @@
  * ---------------------------------------------------------------------------
  */
 
+import {
+  formatAlternativeId,
+  formatDecisionId,
+  formatEpisodeId,
+  formatJustificationId,
+  formatPremiseId,
+} from "@/lib/ids";
+import type { GraphState } from "@/substrate/graph-state";
 import type {
   Actor,
   AlternativeId,
@@ -65,24 +73,15 @@ import type {
   EpisodeId,
   EventId,
   ISODateString,
-  JustificationId,
   PremiseId,
   TranscriptId,
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import type { EventType, JustificationAttachedPayload, NewEvent } from "@/types/events";
 import type { Justification } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import {
-  formatAlternativeId,
-  formatDecisionId,
-  formatEpisodeId,
-  formatJustificationId,
-  formatPremiseId,
-} from "@/lib/ids";
+import type { EventType, JustificationAttachedPayload, NewEvent } from "@/types/events";
+import { isDerivedPremise } from "./review";
 import { isAccepted } from "./types";
 import type { ResolvedCandidate, ReviewAction } from "./types";
-import { isDerivedPremise } from "./review";
 
 export interface CommitInput {
   readonly transcriptId: TranscriptId;
@@ -169,7 +168,10 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   // `contest` is not an acceptance and not a discard: it parks the item. Phase 2
   // turns the Contested queue into proposals; until then a contested item is
   // recorded as a discard so it does not silently vanish, with the human's reason.
-  const accepted = reviewed.filter((item) => item.action !== null && item.action.type !== "discard" && item.action.type !== "contest");
+  const accepted = reviewed.filter(
+    (item) =>
+      item.action !== null && item.action.type !== "discard" && item.action.type !== "contest",
+  );
   const rejected = reviewed.filter((item) => item.action?.type === "discard");
   const contested = reviewed.filter((item) => item.action?.type === "contest");
   if (accepted.length === 0 && rejected.length === 0 && contested.length === 0) {
@@ -206,7 +208,6 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
   /* ---- 1. premises ---- */
   let premiseCount = 0;
   let premiseConfirmations = 0;
-  const outListPremiseIds = new Set<PremiseId>();
 
   input.items.forEach((item) => {
     if (item.kind !== "premise" || item.premise === null || !isAccepted(item.action)) return;
@@ -241,16 +242,30 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
     premiseCount += 1;
 
     if (item.action?.type === "edit") {
-      drafts.push(reviewEvent("PremiseCorrected", actor, {
-        premiseId: id,
-        fields: item.action.fields,
-      }, `Premise ${id} corrected by hand: ${item.premise.predicate}`, reasons));
+      drafts.push(
+        reviewEvent(
+          "PremiseCorrected",
+          actor,
+          {
+            premiseId: id,
+            fields: item.action.fields,
+          },
+          `Premise ${id} corrected by hand: ${item.premise.predicate}`,
+          reasons,
+        ),
+      );
+    } else if (!isDerivedPremise(item.premise.predicate, item.premise.text)) {
+      drafts.push(
+        reviewEvent(
+          "PremiseConfirmed",
+          actor,
+          { premiseId: id },
+          `Premise ${id} confirmed: ${item.premise.text}`,
+          reasons,
+        ),
+      );
+      premiseConfirmations += 1;
     }
-    // A premise that lands in a decision's OUT-list stays UNKNOWN: confirming it to
-    // IN means "the excluded condition holds", which the JTMS out-list rule reads as
-    // invalidating the justification. The decision list is built in loop 2 (below),
-    // so PremiseConfirmed for out-list members is emitted after that pass. In-list
-    // premises are always confirmed so `validityOf`'s in-list clause can hold.
   });
 
   /* ---- 2. decisions ---- */
@@ -269,7 +284,6 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
     decisionIds.set(item.key, id);
 
     const refs = resolvePremiseRefs(item.inRefs, input.items, premiseIds);
-    for (const outId of refs.outList) outListPremiseIds.add(outId);
     const episodeId = episodeIdFor(item.episodeIndex, input.episodeIds, state);
 
     drafts.push({
@@ -283,7 +297,9 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         value: item.decision.value,
         statement: item.decision.statement,
         ...(item.decision.rationale === undefined ? {} : { rationale: item.decision.rationale }),
-        ...(item.decision.acceptedDownside === undefined ? {} : { acceptedDownside: item.decision.acceptedDownside }),
+        ...(item.decision.acceptedDownside === undefined
+          ? {}
+          : { acceptedDownside: item.decision.acceptedDownside }),
         origin: item.origin,
         modality: item.decision.modality,
         confidence: item.confidence,
@@ -319,7 +335,6 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
       };
 
       drafts.push({
-
         actor,
         type: "JustificationAttached",
         payload: { justificationId, consequent: id, justification },
@@ -334,36 +349,44 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
 
     /* ---- 5. the review event ---- */
     if (item.action?.type === "edit") {
-      drafts.push(reviewEvent("DecisionEdited", actor, {
-        decisionId: id,
-        fields: item.action.fields,
-      }, `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`, reasons));
+      drafts.push(
+        reviewEvent(
+          "DecisionEdited",
+          actor,
+          {
+            decisionId: id,
+            fields: item.action.fields,
+          },
+          `Decision ${id} (${item.decision.variable} → ${item.decision.value}) edited by hand before acceptance`,
+          reasons,
+        ),
+      );
       edits += 1;
     } else {
-      const viaBulk = item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
-      drafts.push(reviewEvent("DecisionApproved", actor, {
-        decisionId: id,
-        viaBulkApprove: viaBulk,
-      }, approvalReason(item, viaBulk), reasons));
+      const viaBulk =
+        item.action?.type === "approve" ? item.action.viaBulk : input.viaBulkApprove === true;
+      drafts.push(
+        reviewEvent(
+          "DecisionApproved",
+          actor,
+          {
+            decisionId: id,
+            viaBulkApprove: viaBulk,
+          },
+          approvalReason(item, viaBulk),
+          reasons,
+        ),
+      );
       approvals += 1;
     }
   });
-
-  /* ---- 1b. PremiseConfirmed for in-list premises only (after outListPremiseIds is known) ---- */
-  for (const [key, id] of premiseIds) {
-    if (outListPremiseIds.has(id)) continue; // stays UNKNOWN so the justification stays valid
-    const item = input.items.find((candidate) => candidate.key === key);
-    if (item?.kind !== "premise" || item.premise === null) continue;
-    drafts.push(reviewEvent("PremiseConfirmed", actor, { premiseId: id },
-      `Premise ${id} confirmed: ${item.premise.text}`, reasons));
-    premiseConfirmations += 1;
-  }
 
   /* ---- 4. alternatives, after their decisions ---- */
   let alternativeCount = 0;
 
   input.items.forEach((item) => {
-    if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action)) return;
+    if (item.kind !== "alternative" || item.alternative === null || !isAccepted(item.action))
+      return;
 
     const decisionKey = `decision:${item.alternative.decisionRef}`;
     const decisionId = decisionIds.get(decisionKey);
@@ -381,7 +404,9 @@ export function commitReview(input: CommitInput, state: GraphState): CommitResul
         decisionId,
         variable: item.alternative.variable,
         value: item.alternative.value,
-        ...(item.alternative.whyRejected === undefined ? {} : { whyRejected: item.alternative.whyRejected }),
+        ...(item.alternative.whyRejected === undefined
+          ? {}
+          : { whyRejected: item.alternative.whyRejected }),
         confidence: item.confidence,
         engine: input.engine,
         snippet: item.alternative.snippet,
@@ -515,7 +540,9 @@ function resolvePremiseRefs(
 }
 
 function justificationReason(justification: Justification): string {
-  const parts = [`${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`];
+  const parts = [
+    `${justification.inList.length} supporting premise${justification.inList.length === 1 ? "" : "s"}`,
+  ];
   if (justification.outList.length > 0) {
     parts.push(
       `${justification.outList.length} excluded condition${justification.outList.length === 1 ? "" : "s"} — non-monotonic, so it can be invalidated by the world rather than only by a contradiction`,
@@ -535,7 +562,14 @@ function justificationReason(justification: Justification): string {
  * and it should say WHICH item it was about, because the reason is what the audit
  * trail shows six months later when somebody asks why a decision is IN.
  */
-function reviewEvent<T extends "DecisionApproved" | "DecisionEdited" | "DecisionRejected" | "PremiseConfirmed" | "PremiseCorrected">(
+function reviewEvent<
+  T extends
+    | "DecisionApproved"
+    | "DecisionEdited"
+    | "DecisionRejected"
+    | "PremiseConfirmed"
+    | "PremiseCorrected",
+>(
   type: T,
   actor: Actor,
   payload: NewEvent<T>["payload"],
@@ -547,7 +581,8 @@ function reviewEvent<T extends "DecisionApproved" | "DecisionEdited" | "Decision
 }
 
 function approvalReason(item: ResolvedCandidate, bulk: boolean): string {
-  const label = item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
+  const label =
+    item.decision === null ? item.key : `${item.decision.variable} → ${item.decision.value}`;
   return bulk
     ? `Approved ${label} in a bulk action, so it stays UNKNOWN rather than IN until it is approved individually.`
     : `Approved ${label}: the extraction is accepted and the decision is asserted.`;
@@ -579,6 +614,5 @@ function episodeIdFor(
   // sequence rather than a guess at an existing one.
   return formatEpisodeId(state.counters.episodes + Math.max(1, episodeIndex + 1));
 }
-
 
 export { PLACEHOLDER_EVENT_ID };

@@ -74,8 +74,8 @@ export interface ChunkingResult {
  */
 export function chunkTurns(
   turns: readonly NormalizedTurn[],
-  budget: number = DEFAULT_CHUNK_CHARS,
   normalized: NormalizedTranscript,
+  budget: number = DEFAULT_CHUNK_CHARS,
 ): ChunkingResult {
   if (turns.length === 0) {
     return { chunks: [], budget, oversizedTurns: 0 };
