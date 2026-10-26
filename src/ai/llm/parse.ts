@@ -28,26 +28,30 @@
  * ---------------------------------------------------------------------------
  */
 
+import { chunkTurns } from "@/extraction/chunking";
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { locateSnippet } from "@/extraction/offset-map";
+import { contentTokens } from "@/lib/text";
+import {
+  canonicalPredicate,
+  canonicalValueOf,
+  foldKey,
+  resolveVariable,
+} from "@/ontology/canonicalize";
 import type { EngineId } from "@/types/common";
 import { asConfidence } from "@/types/common";
 import type { DecisionVariable, PremiseType } from "@/types/domain";
 import { DECISION_VARIABLES, PREMISE_TYPES } from "@/types/domain";
-import type { ExtractionRequest, ExtractionResult } from "../types";
-import { canonicalPredicate, canonicalValueOf, foldKey, resolveVariable } from "@/ontology/canonicalize";
-import { contentTokens } from "@/lib/text";
-import { chunkTurns } from "@/extraction/chunking";
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { locateSnippet } from "@/extraction/offset-map";
 import {
-  EMPTY_LLM_EXTRACTION,
-  PROMPT_CHAR_BUDGET,
   type LlmAlternative,
   type LlmDecision,
   type LlmDiscard,
   type LlmExtraction,
   type LlmPremise,
+  PROMPT_CHAR_BUDGET,
 } from "../prompts/extraction";
 import { extractJson } from "../providers/openai-compatible";
+import type { ExtractionRequest, ExtractionResult } from "../types";
 
 /* -------------------------------------------------------------------------- */
 /* Parsing                                                                    */
@@ -59,7 +63,9 @@ export function readExtraction(text: string, model: string): LlmExtraction {
   return {
     decisions: arrayOf(parsed["decisions"]).filter(isRecord) as unknown as readonly LlmDecision[],
     premises: arrayOf(parsed["premises"]).filter(isRecord) as unknown as readonly LlmPremise[],
-    alternatives: arrayOf(parsed["alternatives"]).filter(isRecord) as unknown as readonly LlmAlternative[],
+    alternatives: arrayOf(parsed["alternatives"]).filter(
+      isRecord,
+    ) as unknown as readonly LlmAlternative[],
     discarded: arrayOf(parsed["discarded"]).filter(isRecord) as unknown as readonly LlmDiscard[],
   };
 }
@@ -142,7 +148,7 @@ function toDecision(
   decision: LlmDecision,
   request: ExtractionRequest,
   raw: string,
-  engine: EngineId,
+  _engine: EngineId,
   premiseCount: number,
 ): ExtractionResult["decisions"][number] | null {
   const value = stringOf(decision["value"]);
@@ -175,9 +181,16 @@ function toDecision(
   return {
     variable,
     value: canonical,
-    statement: stringOf(decision["statement"]).length > 0 ? stringOf(decision["statement"]) : `Use ${canonical}`,
-    ...(stringOf(decision["yStatement"]).length === 0 ? {} : { yStatement: stringOf(decision["yStatement"]) }),
-    ...(stringOf(decision["rationale"]).length === 0 ? {} : { rationale: stringOf(decision["rationale"]) }),
+    statement:
+      stringOf(decision["statement"]).length > 0
+        ? stringOf(decision["statement"])
+        : `Use ${canonical}`,
+    ...(stringOf(decision["yStatement"]).length === 0
+      ? {}
+      : { yStatement: stringOf(decision["yStatement"]) }),
+    ...(stringOf(decision["rationale"]).length === 0
+      ? {}
+      : { rationale: stringOf(decision["rationale"]) }),
     ...(stringOf(decision["acceptedDownside"]).length === 0
       ? {}
       : { acceptedDownside: stringOf(decision["acceptedDownside"]) }),
@@ -189,7 +202,10 @@ function toDecision(
     snippet,
     premiseRefs: refs,
     alternativeRefs,
-    appliesTo: arrayOf(decision["appliesTo"]).map(String).filter((glob) => glob.includes("*")).slice(0, 8),
+    appliesTo: arrayOf(decision["appliesTo"])
+      .map(String)
+      .filter((glob) => glob.includes("*"))
+      .slice(0, 8),
   };
 }
 
@@ -206,14 +222,18 @@ function toPremise(
   const snippet = resolveSpan(request, raw, stringOf(premise["snippet"]) || text);
   if (snippet === null) return null;
 
-  const type: PremiseType = isPremiseType(premise["type"]) ? (premise["type"] as PremiseType) : "requirement";
+  const type: PremiseType = isPremiseType(premise["type"])
+    ? (premise["type"] as PremiseType)
+    : "requirement";
   const predicate = canonicalPredicate(type, stringOf(premise["predicate"]) || text);
   void engine;
 
   return {
     type,
     predicate,
-    ...(premise["value"] === undefined || premise["value"] === null ? {} : { value: premise["value"] as string | number | boolean }),
+    ...(premise["value"] === undefined || premise["value"] === null
+      ? {}
+      : { value: premise["value"] as string | number | boolean }),
     text,
     confidence: asConfidence(Math.min(0.85, clamp(Number(premise["confidence"] ?? 0.55)))),
     snippet,
@@ -248,7 +268,9 @@ function toAlternative(
   return {
     variable,
     value: variable === "OTHER" ? foldKey(value) : canonicalValueOf(variable, value),
-    ...(stringOf(alternative["whyRejected"]).length === 0 ? {} : { whyRejected: stringOf(alternative["whyRejected"]) }),
+    ...(stringOf(alternative["whyRejected"]).length === 0
+      ? {}
+      : { whyRejected: stringOf(alternative["whyRejected"]) }),
     // Halved against the model's own claim: published precision on this component is
     // 15.4%, and a model's self-reported confidence is not calibrated against that.
     confidence: asConfidence(Math.min(0.6, clamp(Number(alternative["confidence"] ?? 0.5)) * 0.5)),
@@ -269,7 +291,11 @@ function toAlternative(
  * downstream. Guessing a span would produce a highlight over the wrong words, and
  * that is undetectable by reading it.
  */
-function resolveSpan(request: ExtractionRequest, raw: string, snippet: string): ReturnType<typeof locateSnippet> {
+function resolveSpan(
+  request: ExtractionRequest,
+  raw: string,
+  snippet: string,
+): ReturnType<typeof locateSnippet> {
   const needle = snippet.trim();
   if (needle.length === 0) return null;
   return locateSnippet(request.transcriptId, raw, needle);
@@ -287,9 +313,12 @@ function resolveSpan(request: ExtractionRequest, raw: string, snippet: string): 
  * Phase 7 compares the two engines on the same fixture and a different split would
  * be a confound.
  */
-export function splitForPrompt(raw: string, transcriptId: ExtractionRequest["transcriptId"]): readonly string[] {
+export function splitForPrompt(
+  raw: string,
+  transcriptId: ExtractionRequest["transcriptId"],
+): readonly string[] {
   const normalized = normaliseTranscript(raw, { transcriptId });
-  const { chunks } = chunkTurns(normalized.turns, PROMPT_CHAR_BUDGET, normalized);
+  const { chunks } = chunkTurns(normalized.turns, normalized, PROMPT_CHAR_BUDGET);
 
   if (chunks.length === 0) return [raw];
   return chunks.map((chunk) =>
@@ -336,7 +365,9 @@ function modalityOf(value: unknown): "asserted" | "proposed" | "hypothetical" | 
   }
 }
 
-function originOf(value: unknown): "human_stated" | "agent_proposed_human_accepted" | "agent_inferred" {
+function originOf(
+  value: unknown,
+): "human_stated" | "agent_proposed_human_accepted" | "agent_inferred" {
   switch (value) {
     case "human_stated":
     case "agent_proposed_human_accepted":
@@ -345,4 +376,3 @@ function originOf(value: unknown): "human_stated" | "agent_proposed_human_accept
       return "agent_inferred";
   }
 }
-

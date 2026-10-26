@@ -9,8 +9,8 @@
  * confidence fast, which a bar communicates at a glance in a way a shade of amber does not.
  */
 
-import type { ReactElement } from "react";
 import { confidenceTier, confidenceWidth } from "@/theme";
+import type { ReactElement } from "react";
 
 export function ConfidenceBar({
   confidence,

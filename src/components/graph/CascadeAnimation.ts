@@ -34,8 +34,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { DecisionLabel } from "@/types/domain";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { DecisionLabel } from "@/types/domain";
 
 /** Milliseconds between flips. Long enough to read each one, short enough that a six-decision
  *  cascade finishes inside the ten seconds the plan budgets for the whole demonstration. */
@@ -103,7 +103,8 @@ export function planCascade(
       node: nodeId,
       from,
       to: labelled.label,
-      reason: reasonFor(nodeId, labelled.label, labelled.reason) || describeFlip(from, labelled.label),
+      reason:
+        reasonFor(nodeId, labelled.label, labelled.reason) || describeFlip(from, labelled.label),
       /* Premises first: a decision flips BECAUSE a premise did, and showing the decision first
        * would animate an effect before its cause. */
       order: isPremiseId(nodeId) ? 0 : 1,
@@ -124,7 +125,9 @@ export function planCascade(
       reason:
         labelled === undefined
           ? "not in the labelled set"
-          : "SURVIVED — still " + labelled.label + ". " +
+          : "SURVIVED — still " +
+            labelled.label +
+            ". " +
             (reasonFor(nodeId, labelled.label, labelled.reason) ||
               "It has support that does not depend on the falsified premise."),
     });
@@ -160,7 +163,11 @@ export function isPremiseId(id: NodeId): boolean {
 
 function describeFlip(from: DecisionLabel, to: DecisionLabel): string {
   if (to === "OUT") {
-    return "Moved from " + from + " to OUT: every justification it had depended on a premise that is no longer IN.";
+    return (
+      "Moved from " +
+      from +
+      " to OUT: every justification it had depended on a premise that is no longer IN."
+    );
   }
   if (to === "IN") {
     return "Moved from " + from + " to IN: a justification is now valid.";
@@ -171,21 +178,38 @@ function describeFlip(from: DecisionLabel, to: DecisionLabel): string {
 export function describeAnimationPlan(plan: CascadeAnimationPlan): string {
   if (plan.steps.length === 0) {
     return (
-      "Falsifying " + plan.origin + " flipped nothing. " +
+      "Falsifying " +
+      plan.origin +
+      " flipped nothing. " +
       (plan.survivors.length > 0
-        ? plan.survivors.length + " node(s) were in the blast radius and all survived — each has support that does not depend on the falsified premise."
+        ? plan.survivors.length +
+          " node(s) were in the blast radius and all survived — each has support that does not depend on the falsified premise."
         : "Nothing depended on it.")
     );
   }
 
   const lines = [
-    plan.steps.length + " label flip(s), animated at " + FLIP_INTERVAL_MS + " ms apart (" +
-      ((plan.steps.length * FLIP_INTERVAL_MS) / 1000).toFixed(1) + "s), then " + SETTLE_MS + " ms to settle.",
+    plan.steps.length +
+      " label flip(s), animated at " +
+      FLIP_INTERVAL_MS +
+      " ms apart (" +
+      ((plan.steps.length * FLIP_INTERVAL_MS) / 1000).toFixed(1) +
+      "s), then " +
+      SETTLE_MS +
+      " ms to settle.",
     "",
   ];
 
   for (const step of plan.steps) {
-    lines.push("  " + step.node + "  " + step.from + " → " + step.to + (step.isPremise ? "  (premise, flips first)" : ""));
+    lines.push(
+      "  " +
+        step.node +
+        "  " +
+        step.from +
+        " → " +
+        step.to +
+        (step.isPremise ? "  (premise, flips first)" : ""),
+    );
     lines.push("      " + step.reason);
   }
 

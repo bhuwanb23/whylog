@@ -35,26 +35,29 @@
  * ---------------------------------------------------------------------------
  */
 
-import type { EngineId, ISODateString } from "@/types/common";
-import { asConfidence } from "@/types/common";
+import { scoreAlternative, scoreDecision, scorePremise } from "@/ai/local/confidence";
 import type {
   AlternativeCandidate,
-  DecisionCandidate,
   DiscardedCandidate,
   EpisodeSpan,
   ExtractionRequest,
   ExtractionResult,
   PremiseCandidate,
 } from "@/ai/types";
-import { isWorldObservable } from "@/types/domain";
-import type { EpisodeWindow, NormalizedTranscript } from "@/extraction/types";
-import type { OffsetMap } from "@/extraction/offset-map";
-import { recoverDecisions, type DecisionContext, type RecoveredDecision } from "@/extraction/decisions";
-import { recoverPremises, type RecoveredPremise } from "@/extraction/premises";
-import { linkPremises } from "@/extraction/premise-linker";
 import { recoverAlternatives } from "@/extraction/alternatives";
-import { classifyOrigin, type OriginClassification } from "@/extraction/provenance";
-import { scoreAlternative, scoreDecision, scorePremise } from "@/ai/local/confidence";
+import {
+  type DecisionContext,
+  type RecoveredDecision,
+  recoverDecisions,
+} from "@/extraction/decisions";
+import type { OffsetMap } from "@/extraction/offset-map";
+import { linkPremises } from "@/extraction/premise-linker";
+import { type RecoveredPremise, recoverPremises } from "@/extraction/premises";
+import { type OriginClassification, classifyOrigin } from "@/extraction/provenance";
+import type { EpisodeWindow, NormalizedTranscript } from "@/extraction/types";
+import type { EngineId, ISODateString } from "@/types/common";
+import { asConfidence } from "@/types/common";
+import { isWorldObservable } from "@/types/domain";
 
 export interface LocalExtractionContext {
   readonly normalized: NormalizedTranscript;
@@ -75,7 +78,10 @@ export interface LocalExtraction {
 /* Entry point                                                                */
 /* -------------------------------------------------------------------------- */
 
-export function extractLocal(request: ExtractionRequest, context: LocalExtractionContext): LocalExtraction {
+export function extractLocal(
+  request: ExtractionRequest,
+  context: LocalExtractionContext,
+): LocalExtraction {
   const started = nowMs();
   const map = mapOf(context.normalized);
 
@@ -83,6 +89,8 @@ export function extractLocal(request: ExtractionRequest, context: LocalExtractio
     transcriptId: request.transcriptId,
     raw: context.normalized.raw,
     map,
+    ...(request.negationCues === undefined ? {} : { negationCues: request.negationCues }),
+    ...(request.modalityFilter === undefined ? {} : { modalityFilter: request.modalityFilter }),
   };
 
   const decisions: RecoveredDecision[] = [];
@@ -195,7 +203,11 @@ export function extractLocal(request: ExtractionRequest, context: LocalExtractio
       const breakdown = scoreAlternative(alternative);
       const globalDecisionIndex = base + alternative.decisionIndex;
 
-      alternatives.push({ ...alternative.candidate, confidence: breakdown.total, decisionRef: globalDecisionIndex });
+      alternatives.push({
+        ...alternative.candidate,
+        confidence: breakdown.total,
+        decisionRef: globalDecisionIndex,
+      });
 
       const target = decisions[globalDecisionIndex];
       if (target !== undefined) {
@@ -246,7 +258,10 @@ function mapOf(normalized: NormalizedTranscript): OffsetMap {
  *  shape. Synthesising one is cheaper than threading a nullable through
  *  `scorePremise`, and the synthesised source is never emitted — only its score is
  *  used. */
-function synthesisedSource(excluded: { type: PremiseCandidate["type"]; candidate: PremiseCandidate }): RecoveredPremise {
+function synthesisedSource(excluded: {
+  type: PremiseCandidate["type"];
+  candidate: PremiseCandidate;
+}): RecoveredPremise {
   return {
     candidate: excluded.candidate,
     cue: {
@@ -258,7 +273,14 @@ function synthesisedSource(excluded: { type: PremiseCandidate["type"]; candidate
     },
     kind: "explicit",
     polarity: "negative",
-    turn: { index: -1, speaker: "unknown", text: excluded.candidate.text, start: 0, end: 0, attribution: "none" },
+    turn: {
+      index: -1,
+      speaker: "unknown",
+      text: excluded.candidate.text,
+      start: 0,
+      end: 0,
+      attribution: "none",
+    },
     episodeIndex: -1,
     predicateVia: "cue",
   };
@@ -272,6 +294,9 @@ function nowMs(): number {
  *  `commit.ts` needs the same value and deriving it twice would risk a mismatch —
  *  and a mismatch between a premise's valid time and its decision's would put them
  *  in the wrong order on the timeline. */
-export function occurredAtOf(normalized: NormalizedTranscript, fallback: ISODateString): ISODateString {
+export function occurredAtOf(
+  normalized: NormalizedTranscript,
+  fallback: ISODateString,
+): ISODateString {
   return normalized.occurredAt.length > 0 ? normalized.occurredAt : fallback;
 }

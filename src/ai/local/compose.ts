@@ -50,9 +50,7 @@ export function templateCompose(request: CompositionRequest): string {
   const facts = request.material;
 
   if (facts.length === 0) {
-    return (
-      "Nothing in the log answers that yet. Import a transcript or record the decision, and ask again."
-    );
+    return "Nothing in the log answers that yet. Import a transcript or record the decision, and ask again.";
   }
 
   const limit = request.maxLengthChars;
@@ -68,7 +66,11 @@ export function templateCompose(request: CompositionRequest): string {
 
   return (
     (lastSentence > 0 ? cut.slice(0, lastSentence + 1) : cut) +
-    " [truncated to " + limit + " characters — " + facts.length + " decisions were retrieved and not all of them are shown]"
+    " [truncated to " +
+    limit +
+    " characters — " +
+    facts.length +
+    " decisions were retrieved and not all of them are shown]"
   );
 }
 
@@ -110,8 +112,15 @@ function composeAnswer(question: string, facts: readonly CompositionFact[]): str
     const label = fact.label === "IN" ? "" : ", currently labelled " + fact.label;
 
     lines.push(
-      fact.decisionId + ": " + fact.statement + label +
-        " (decided " + fact.validFrom.slice(0, 10) + " [" + fact.decisionId + "]).",
+        fact.decisionId +
+        ": " +
+        fact.statement +
+        label +
+        " (decided " +
+        fact.validFrom.slice(0, 10) +
+        " [" +
+        fact.decisionId +
+        "]).",
     );
 
     if (fact.rationale !== undefined && fact.rationale.length > 0) {
@@ -121,13 +130,15 @@ function composeAnswer(question: string, facts: readonly CompositionFact[]): str
     if (fact.premises.length === 0) {
       lines.push(
         "  It rests on no recorded premise, so there is nothing to check it against — this is a gap in the log, not a decision that needs no assumptions [" +
-          fact.decisionId + "].",
+          fact.decisionId +
+          "]",
       );
     } else {
       lines.push("  It rests on: " + fact.premises.join("; ") + " [" + fact.decisionId + "].");
       lines.push(
         "  If any of those stops being true, this decision stops being justified — that is what gate (c) watches for [" +
-          fact.decisionId + "].",
+          fact.decisionId +
+          "]",
       );
     }
   }
@@ -183,9 +194,16 @@ function composeGuardRationale(facts: readonly CompositionFact[]): string {
       : fact.premises.join("; ");
 
   return (
-    'Checks that "' + fact.statement + '" still holds. The log records it as a live decision ' +
-    "(label " + fact.label + ", valid from " + fact.validFrom.slice(0, 10) + ") resting on " +
-    premises + "." +
+    'Checks that "' +
+    fact.statement +
+    '" still holds. The log records it as a live decision ' +
+    "(label " +
+    fact.label +
+    ", valid from " +
+    fact.validFrom.slice(0, 10) +
+    ") resting on " +
+    premises +
+    "." +
     (fact.rationale === undefined ? "" : " Its recorded reason was: " + fact.rationale + ".")
   );
 }
@@ -221,8 +239,13 @@ function composePremiseSummary(facts: readonly CompositionFact[]): string {
 
   for (const [premise, decisionIds] of byPremise) {
     lines.push(
-      "- " + premise + " → " + decisionIds.join(", ") +
-        (decisionIds.length > 1 ? "  (SHARED — falsifying this premise puts every one of these decisions in play at once)" : ""),
+      "- " +
+        premise +
+        " → " +
+        decisionIds.join(", ") +
+        (decisionIds.length > 1
+          ? "  (SHARED — falsifying this premise puts every one of these decisions in play at once)"
+          : ""),
     );
   }
 
@@ -240,14 +263,17 @@ function composePremiseSummary(facts: readonly CompositionFact[]): string {
 
 /** Why a retraction reached these decisions and stopped there. */
 function composeCascade(facts: readonly CompositionFact[]): string {
-  const lines = [
-    facts.length + " decision(s) rest on the falsified premise:",
-    "",
-  ];
+  const lines = [facts.length + " decision(s) rest on the falsified premise:", ""];
 
   for (const fact of facts) {
     lines.push(
-      "- " + fact.decisionId + " " + fact.statement + " (label " + fact.label + ")" +
+      "- " +
+        fact.decisionId +
+        " " +
+        fact.statement +
+        " (label " +
+        fact.label +
+        ")" +
         (fact.rationale === undefined ? "" : " — " + fact.rationale),
     );
   }

@@ -10,7 +10,7 @@
  * affordance looks and behaves the same on every section of every screen.
  */
 
-import { useState, type ReactElement, type ReactNode } from "react";
+import { type ReactElement, type ReactNode, useState } from "react";
 
 export interface CollapsibleProps {
   readonly title: string;

@@ -30,7 +30,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, type ReactElement } from "react";
+import { type ReactElement, useEffect } from "react";
 
 export interface KeybindAction {
   readonly key: string;
@@ -99,7 +99,11 @@ export function describeKeybinds(actions: readonly KeybindAction[]): string {
   return actions
     .map((action) => {
       const key =
-        action.meta === true ? "⌘/Ctrl + " + action.key : action.key === "Escape" ? "Esc" : action.key;
+        action.meta === true
+          ? "⌘/Ctrl + " + action.key
+          : action.key === "Escape"
+            ? "Esc"
+            : action.key;
       return key.padEnd(12) + action.label;
     })
     .join("\\n");

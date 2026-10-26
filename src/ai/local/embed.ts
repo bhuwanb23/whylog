@@ -41,8 +41,8 @@
  * ---------------------------------------------------------------------------
  */
 
-import { charNgrams, contentTokens, normalise, tokenise } from "@/lib/text";
 import { l2normalise } from "@/lib/cosine";
+import { charNgrams, contentTokens, normalise, tokenise } from "@/lib/text";
 import type { EngineId } from "@/types/common";
 import { LOCAL_DIMENSIONS } from "../config";
 
@@ -113,7 +113,10 @@ export function embedText(text: string, options: EmbedOptions = {}): Float32Arra
   const allTokens = tokenise(normalised);
 
   const add = (feature: string, weight: number): void => {
-    const { bucket, sign } = bucketAndSign(namespace.length > 0 ? `${namespace}\u0001${feature}` : feature, dimensions);
+    const { bucket, sign } = bucketAndSign(
+      namespace.length > 0 ? `${namespace}\u0001${feature}` : feature,
+      dimensions,
+    );
     vector[bucket] = (vector[bucket] ?? 0) + sign * weight;
   };
 
@@ -200,7 +203,11 @@ export function dimensions(options: EmbedOptions = {}): number {
  *  change to the tokeniser and every retrieval number downstream is meaningless. */
 export function sanityPairs(): readonly { a: string; b: string; expect: "near" | "far" }[] {
   return [
-    { a: "use postgres for the primary store", b: "postgresql as the main database", expect: "near" },
+    {
+      a: "use postgres for the primary store",
+      b: "postgresql as the main database",
+      expect: "near",
+    },
     { a: "use sqlite, it's one file", b: "embedded sqlite database", expect: "near" },
     { a: "use sqlite, it's one file", b: "use postgres for the primary store", expect: "far" },
     { a: "no authentication at all", b: "single user, no login", expect: "near" },
