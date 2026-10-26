@@ -33,29 +33,10 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useMemo, useState, type ReactElement, type ReactNode } from "react";
-import type { DecisionId, PremiseId, ProposalId } from "@/types/common";
-import type { EntrenchmentBreakdown } from "@/types/reasoning";
-import type { DecisionLabel } from "@/types/domain";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { isWorldObservable, PREMISE_TYPES_CLOSED, VARIABLES } from "@/ontology";
-import type { PremiseType } from "@/types/domain";
-import { LABEL_BACKGROUND, LABEL_COLOUR, LABEL_MEANING } from "@/theme";
-import { useWhyLog } from "@/store/whylog";
+import { PREMISE_TYPES_CLOSED, VARIABLES, isWorldObservable } from "@/ontology";
 import {
-  applyContest,
-  applyOverride,
-  applyVouch,
-  assertPremiseFalsified,
-  applyRejustification,
-  applyReversal,
-  contestedCases,
-  deterministicCases,
-  hardestCase,
-  truncatedCases,
-  useReasoning,
-} from "@/store/reasoning";
-import {
+  type Newcomer,
+  type RevisionCase,
   auditDecision,
   chronologicalOrder,
   describeAction,
@@ -63,9 +44,28 @@ import {
   describeRun,
   renderTrail,
   renderWeakest,
-  type Newcomer,
-  type RevisionCase,
 } from "@/reasoning";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import {
+  applyContest,
+  applyOverride,
+  applyRejustification,
+  applyReversal,
+  applyVouch,
+  assertPremiseFalsified,
+  contestedCases,
+  deterministicCases,
+  hardestCase,
+  truncatedCases,
+  useReasoning,
+} from "@/store/reasoning";
+import { useWhyLog } from "@/store/whylog";
+import { LABEL_BACKGROUND, LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import type { DecisionId, PremiseId, ProposalId } from "@/types/common";
+import type { DecisionLabel } from "@/types/domain";
+import type { PremiseType } from "@/types/domain";
+import type { EntrenchmentBreakdown } from "@/types/reasoning";
+import { type ReactElement, type ReactNode, useMemo, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* The view                                                                   */
@@ -86,7 +86,7 @@ export function ReasoningView(): ReactElement {
   /** The last newcomer that went through screening. Kept so "override anyway" can force
    *  the SAME information through rather than making the user retype it — an override
    *  that requires re-entry is an override nobody performs. */
-  const [pendingNewcomer, setPendingNewcomer] = useState<Newcomer | null>(null);
+  const [pendingNewcomer] = useState<Newcomer | null>(null);
 
   const decisionCount = state.decisions.size;
   const premiseCount = state.premises.size;
@@ -98,7 +98,6 @@ export function ReasoningView(): ReactElement {
 
   const selectedCase = cases.find((entry) => entry.proposal.id === selected) ?? null;
 
-
   /* ---------------------------------------------------------------------- */
 
   if (decisionCount === 0) {
@@ -107,8 +106,8 @@ export function ReasoningView(): ReactElement {
         <h2 className="card-title">Reasoning</h2>
         <p className="dim">
           There is nothing to reason about yet. Import a transcript and review it first — the
-          reasoning cycle works on decisions and the premises they rest on, and neither exists
-          until an extraction has been committed.
+          reasoning cycle works on decisions and the premises they rest on, and neither exists until
+          an extraction has been committed.
         </p>
       </section>
     );
@@ -167,7 +166,10 @@ export function ReasoningView(): ReactElement {
         ) : null}
 
         {result !== null ? (
-          <pre className="mono faint" style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 11 }}>
+          <pre
+            className="mono faint"
+            style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 11 }}
+          >
             {describeRun(result.gates)}
             {"\n"}
             {describeAvailability(result.gates)}
@@ -202,9 +204,9 @@ export function ReasoningView(): ReactElement {
           <h2 className="card-title">Not acted on — needs your confirmation</h2>
           <p className="dim" style={{ marginTop: 0, fontSize: 13 }}>
             These assertions matched no premise by exact (type, predicate), so nothing was
-            invalidated. Gate (c) fires only on RESOLVED premise identity: a false match
-            does not miss a conflict, it produces a confident, spectacular, entirely wrong
-            cascade. Guessing here is the one thing worse than asking.
+            invalidated. Gate (c) fires only on RESOLVED premise identity: a false match does not
+            miss a conflict, it produces a confident, spectacular, entirely wrong cascade. Guessing
+            here is the one thing worse than asking.
           </p>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
             {unresolved.map((entry, index) => (
@@ -214,9 +216,13 @@ export function ReasoningView(): ReactElement {
                 </span>{" "}
                 — “{entry.assertion.text}”{" "}
                 <span className="badge" style={{ fontSize: 10 }}>
-                  {entry.kind === "ambiguous" ? `${entry.candidates.length} candidates` : "no match"}
+                  {entry.kind === "ambiguous"
+                    ? `${entry.candidates.length} candidates`
+                    : "no match"}
                 </span>
-                <div className="faint" style={{ fontSize: 11 }}>{entry.explanation}</div>
+                <div className="faint" style={{ fontSize: 11 }}>
+                  {entry.explanation}
+                </div>
               </li>
             ))}
           </ul>
@@ -228,7 +234,9 @@ export function ReasoningView(): ReactElement {
 
       {/* ---- findings + diagnosis ---- */}
       {cases.length > 0 ? (
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(260px, 340px) 1fr", gap: 16 }}>
+        <section
+          style={{ display: "grid", gridTemplateColumns: "minmax(260px, 340px) 1fr", gap: 16 }}
+        >
           <CaseList
             cases={cases}
             selected={selected}
@@ -295,9 +303,7 @@ function RunButton({
       onClick={onClick}
       disabled={disabled === true}
       style={
-        secondary === true
-          ? undefined
-          : { borderColor: "var(--action)", color: "var(--action)" }
+        secondary === true ? undefined : { borderColor: "var(--action)", color: "var(--action)" }
       }
     >
       {label}
@@ -328,9 +334,9 @@ function NewInformation({
     <section className="card">
       <h2 className="card-title">New information</h2>
       <p className="dim" style={{ marginTop: 0 }}>
-        Something changed in the world. Enter it and the cycle will screen it against everything
-        it contradicts — and may REFUSE it. This is the second-user scenario: a log built on
-        "single user" meeting the arrival of a second one.
+        Something changed in the world. Enter it and the cycle will screen it against everything it
+        contradicts — and may REFUSE it. This is the second-user scenario: a log built on "single
+        user" meeting the arrival of a second one.
       </p>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -423,7 +429,12 @@ function CaseList({
               className="nav-item"
               aria-current={selected === entry.proposal.id ? "true" : undefined}
               onClick={() => onSelect(entry.proposal.id)}
-              style={{ textAlign: "left", flexDirection: "column", alignItems: "flex-start", gap: 4 }}
+              style={{
+                textAlign: "left",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 4,
+              }}
             >
               <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <GateBadge gate={entry.finding.gate} />
@@ -431,7 +442,11 @@ function CaseList({
                   {entry.finding.decisionId}
                 </span>
                 {truncatedIds.has(entry.proposal.id) ? (
-                  <span className="faint" style={{ fontSize: 10 }} title="Backtracking or the cascade hit its depth cap. The diagnosis is knowingly incomplete.">
+                  <span
+                    className="faint"
+                    style={{ fontSize: 10 }}
+                    title="Backtracking or the cascade hit its depth cap. The diagnosis is knowingly incomplete."
+                  >
                     incomplete
                   </span>
                 ) : null}
@@ -470,7 +485,10 @@ function GateBadge({ gate }: { gate: "structural" | "semantic" | "premise" }): R
   );
 }
 
-function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: boolean }): ReactElement {
+function CaseDetail({
+  entry,
+  isHardest,
+}: { entry: RevisionCase; isHardest: boolean }): ReactElement {
   const state = useWhyLog((s) => s.state);
   const proposal = entry.proposal;
   const [reason, setReason] = useState("");
@@ -483,7 +501,7 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
   const rival =
     entry.finding.otherDecisionId === null
       ? null
-      : state.decisions.get(entry.finding.otherDecisionId) ?? null;
+      : (state.decisions.get(entry.finding.otherDecisionId) ?? null);
   const [newValue, setNewValue] = useState(rival?.value ?? "");
 
   /* Rejustifying needs the premise the decision ACTUALLY rests on. Defaults come from
@@ -507,9 +525,7 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
     setBusy(true);
     const outcome = await run();
     setBusy(false);
-    setMessage(
-      outcome.ok ? outcome.value ?? "Recorded." : outcome.error ?? "Failed.",
-    );
+    setMessage(outcome.ok ? (outcome.value ?? "Recorded.") : (outcome.error ?? "Failed."));
   };
 
   const wantsReverse = proposal.availableActions.includes("reverse");
@@ -553,8 +569,8 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
           {proposal.evidence.quote}
         </blockquote>
         <p className="faint" style={{ fontSize: 11, margin: 0 }}>
-          source: {proposal.evidence.source} · confidence{" "}
-          {proposal.evidence.confidence.toFixed(2)} · verbatim, never paraphrased
+          source: {proposal.evidence.source} · confidence {proposal.evidence.confidence.toFixed(2)}{" "}
+          · verbatim, never paraphrased
         </p>
       </Part>
 
@@ -579,7 +595,9 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
       {/* 4 */}
       <Part n={4} title="What else it affects">
         {entry.cascade.steps.length === 0 ? (
-          <p className="dim" style={{ marginTop: 0 }}>Nothing else depended on it.</p>
+          <p className="dim" style={{ marginTop: 0 }}>
+            Nothing else depended on it.
+          </p>
         ) : (
           <>
             <ul style={{ margin: "0 0 6px", paddingLeft: 18, fontSize: 13 }}>
@@ -616,7 +634,9 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
           <span className="badge">{proposal.entrenchmentBand}</span>
         </p>
         <ul className="faint" style={{ fontSize: 11, margin: 0, paddingLeft: 18 }}>
-          <li>source authority {proposal.entrenchment.components.sourceAuthority.toFixed(2)} × 0.30</li>
+          <li>
+            source authority {proposal.entrenchment.components.sourceAuthority.toFixed(2)} × 0.30
+          </li>
           <li>
             implementation cost{" "}
             {proposal.entrenchment.implementationCostUnknown
@@ -644,9 +664,18 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
         </p>
 
         {wantsReverse ? (
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, marginBottom: 8 }}>
+          <label
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              fontSize: 12,
+              marginBottom: 8,
+            }}
+          >
             <span className="faint">
-              the value that replaces it{rival === null ? "" : ` — defaults to ${rival.id} "${rival.value}"`}
+              the value that replaces it
+              {rival === null ? "" : ` — defaults to ${rival.id} "${rival.value}"`}
             </span>
             <input
               className="mono"
@@ -659,9 +688,12 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
 
         {wantsRejustify ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, flex: 1 }}>
+            <label
+              style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, flex: 1 }}
+            >
               <span className="faint">
-                what it really rests on{failedPremise === undefined ? "" : ` — replacing "${failedPremise.text}"`}
+                what it really rests on
+                {failedPremise === undefined ? "" : ` — replacing "${failedPremise.text}"`}
               </span>
               <input
                 value={premiseText}
@@ -712,7 +744,9 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
               onClick={() => {
                 switch (action) {
                   case "reverse":
-                    void act(() => applyReversal(proposal.unsoundDecisionId, newValue.trim(), reason));
+                    void act(() =>
+                      applyReversal(proposal.unsoundDecisionId, newValue.trim(), reason),
+                    );
                     return;
                   case "rejustify":
                     /* Creates the premise, its justification and the link in one batch.
@@ -743,9 +777,9 @@ function CaseDetail({ entry, isHardest }: { entry: RevisionCase; isHardest: bool
         </div>
 
         <p className="faint" style={{ fontSize: 11, marginTop: 8 }}>
-          {proposal.availableActions.map((action) => describeAction(action)).join(" · ")} ·
-          keep it — vouch for the decision personally, raising its authority to 0.9 and
-          resolving the proposal
+          {proposal.availableActions.map((action) => describeAction(action)).join(" · ")} · keep it
+          — vouch for the decision personally, raising its authority to 0.9 and resolving the
+          proposal
         </p>
 
         {entry.reassertsNogood !== null ? (
@@ -850,7 +884,11 @@ function ContestedCard({
       <p style={{ marginTop: 0, whiteSpace: "pre-wrap", fontSize: 13 }}>{why}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
-        <BreakdownColumn title="the newcomer" breakdown={newcomerBreakdown} tone="var(--label-unknown)" />
+        <BreakdownColumn
+          title="the newcomer"
+          breakdown={newcomerBreakdown}
+          tone="var(--label-unknown)"
+        />
         <BreakdownColumn
           title={`${blockingDecisionId} (incumbent)`}
           breakdown={incumbentBreakdown}
@@ -859,10 +897,9 @@ function ContestedCard({
       </div>
 
       <p className="faint" style={{ fontSize: 11, marginTop: 10 }}>
-        Non-prioritized revision (Hansson). AGM's Success postulate — always accept new
-        information — would let one remark in a transcript overwrite a decision made over
-        three days. Refusal is never silent: this is the queue, and the override is right
-        here.
+        Non-prioritized revision (Hansson). AGM's Success postulate — always accept new information
+        — would let one remark in a transcript overwrite a decision made over three days. Refusal is
+        never silent: this is the queue, and the override is right here.
       </p>
 
       {newcomer === null ? (
@@ -883,11 +920,11 @@ function ContestedCard({
             onClick={() => void override()}
           />
           <p className="faint" style={{ fontSize: 11, marginTop: 6 }}>
-            Writes a <span className="mono">HumanOverride</span> event and raises the
-            newcomer's source authority to 0.9 — high enough to win every subsequent
-            adjudication, but still below a directly human-stated decision (1.0), so an
-            override can itself be overridden by better evidence. An override that could
-            never be overturned is not a queue, it is a dead end.
+            Writes a <span className="mono">HumanOverride</span> event and raises the newcomer's
+            source authority to 0.9 — high enough to win every subsequent adjudication, but still
+            below a directly human-stated decision (1.0), so an override can itself be overridden by
+            better evidence. An override that could never be overturned is not a queue, it is a dead
+            end.
           </p>
         </div>
       )}
@@ -914,7 +951,9 @@ function BreakdownColumn({
     return (
       <div>
         <h3 style={{ fontSize: 12, margin: "0 0 6px", color: tone }}>{title}</h3>
-        <p className="dim" style={{ fontSize: 12, margin: 0 }}>No breakdown recorded.</p>
+        <p className="dim" style={{ fontSize: 12, margin: 0 }}>
+          No breakdown recorded.
+        </p>
       </div>
     );
   }
@@ -987,9 +1026,8 @@ function FalsifySection(): ReactElement {
       <section className="card">
         <h2 className="card-title">Falsify a premise</h2>
         <p className="dim" style={{ marginTop: 0 }}>
-          No premises in the log yet. Premises are what make this more than a decision
-          list: they are the conditions a decision was true under, and they are what
-          reality invalidates.
+          No premises in the log yet. Premises are what make this more than a decision list: they
+          are the conditions a decision was true under, and they are what reality invalidates.
         </p>
       </section>
     );
@@ -1011,10 +1049,10 @@ function FalsifySection(): ReactElement {
     <section className="card">
       <h2 className="card-title">Something stopped being true</h2>
       <p className="dim" style={{ marginTop: 0, fontSize: 13 }}>
-        This is the demonstration the whole project exists for. Pick a premise about the
-        world, say what you observed instead, and the cycle will find every decision that
-        was true <em>given</em> it — then backtrack, cascade, weigh what it would cost to
-        change, and propose. It will not apply anything.
+        This is the demonstration the whole project exists for. Pick a premise about the world, say
+        what you observed instead, and the cycle will find every decision that was true{" "}
+        <em>given</em> it — then backtrack, cascade, weigh what it would cost to change, and
+        propose. It will not apply anything.
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1059,10 +1097,10 @@ function FalsifySection(): ReactElement {
                     onClick={() => void submit()}
                   />
                   <p className="faint" style={{ fontSize: 11, width: "100%", margin: 0 }}>
-                    Recorded as a <span className="mono">repo-scan</span> observation that
-                    refutes <span className="mono">{premise.predicate}</span>. The same path a
-                    guard will take in Phase 4 — no branch in the reasoning code knows or
-                    cares which one it was.
+                    Recorded as a <span className="mono">repo-scan</span> observation that refutes{" "}
+                    <span className="mono">{premise.predicate}</span>. The same path a guard will
+                    take in Phase 4 — no branch in the reasoning code knows or cares which one it
+                    was.
                   </p>
                 </div>
               ) : null}
@@ -1090,16 +1128,19 @@ function FalsifySection(): ReactElement {
           <p className="faint" style={{ fontSize: 11 }}>
             <span className="mono">team</span>, <span className="mono">budget</span>,{" "}
             <span className="mono">time</span> and <span className="mono">requirement</span>{" "}
-            premises record what you wanted, not what the world is. No scan can observe that
-            you stopped wanting offline mode, so no guard can check them and nothing here will
-            retract them. Only you can, and the log marks them unverifiable rather than
-            pretending otherwise.
+            premises record what you wanted, not what the world is. No scan can observe that you
+            stopped wanting offline mode, so no guard can check them and nothing here will retract
+            them. Only you can, and the log marks them unverifiable rather than pretending
+            otherwise.
           </p>
         </details>
       ) : null}
 
       {message !== null ? (
-        <p className="notice notice-info" style={{ fontSize: 12, marginTop: 12, whiteSpace: "pre-wrap" }}>
+        <p
+          className="notice notice-info"
+          style={{ fontSize: 12, marginTop: 12, whiteSpace: "pre-wrap" }}
+        >
           {message}
         </p>
       ) : null}

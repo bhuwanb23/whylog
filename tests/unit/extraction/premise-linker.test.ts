@@ -1,3 +1,12 @@
+import { isDerivedPremise } from "@/extraction/review";
+import {
+  exclusionCount,
+  exclusionsFor,
+  hasExclusion,
+  primaryExclusion,
+} from "@/ontology/data/exclusions";
+import { PREMISE_TYPE_META } from "@/ontology/data/premise-types";
+import { DERIVED_PREMISE_MARKER, isDerivedPremiseText } from "@/reasoning/graph-index";
 /**
  * OUT-list recovery — the mechanism the whole non-monotonic thesis rests on.
  *
@@ -6,11 +15,7 @@
  * lets gate (c) fire when the world moves rather than only when somebody contradicts themselves.
  */
 import { describe, expect, it } from "vitest";
-import { isDerivedPremise } from "@/extraction/review";
-import { DERIVED_PREMISE_MARKER, isDerivedPremiseText } from "@/reasoning/graph-index";
-import { primaryExclusion, hasExclusion, exclusionCount, exclusionsFor } from "@/ontology/data/exclusions";
-import { PREMISE_TYPE_META } from "@/ontology/data/premise-types";
-import { sqliteGraph, DERIVED_MARKER } from "../../helpers/graph";
+import { DERIVED_MARKER, sqliteGraph } from "../../helpers/graph";
 
 describe("the derived-premise marker", () => {
   it("is the same string in both places that read it", () => {
@@ -24,8 +29,15 @@ describe("the derived-premise marker", () => {
     /* `hasExclusion(predicate)` is deliberately NOT part of the test: a SUPPORTING premise can also
      * have an exclusion rule, since that is how its OUT-list entry is derived. Only the marker can
      * distinguish the two. */
-    expect(isDerivedPremise("scale.concurrent_writers", `more than one writer ${DERIVED_MARKER} "single user"`)).toBe(true);
-    expect(isDerivedPremise("scale.concurrent_writers", "more than one writer at a time")).toBe(false);
+    expect(
+      isDerivedPremise(
+        "scale.concurrent_writers",
+        `more than one writer ${DERIVED_MARKER} "single user"`,
+      ),
+    ).toBe(true);
+    expect(isDerivedPremise("scale.concurrent_writers", "more than one writer at a time")).toBe(
+      false,
+    );
     expect(isDerivedPremise("scale.single_user", "the app has a single user")).toBe(false);
   });
 });
@@ -55,8 +67,8 @@ describe("the exclusion table", () => {
     expect(hasExclusion("scale.single_user")).toBe(true);
     const rule = primaryExclusion("scale.single_user");
     expect(rule).not.toBeNull();
-    expect(rule!.breaksPredicate).toBe("scale.concurrent_writers");
-    expect(rule!.text.length).toBeGreaterThan(0);
+    expect(rule?.breaksPredicate).toBe("scale.concurrent_writers");
+    expect(rule?.text.length).toBeGreaterThan(0);
   });
 
   it("returns null for a predicate with no rule, so the linker falls back to mechanical negation", () => {

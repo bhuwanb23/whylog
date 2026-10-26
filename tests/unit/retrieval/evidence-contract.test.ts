@@ -1,3 +1,11 @@
+import {
+  MAX_SEARCHES,
+  SearchTrace,
+  assessSufficiency,
+  searchStep,
+  stopReason,
+} from "@/retrieval/evidence-contract";
+import type { SearchStep } from "@/types/retrieval";
 /**
  * The evidence contract — at most N searches, each recorded, refusal reachable.
  *
@@ -8,9 +16,7 @@
  * searching, which measures nothing.
  */
 import { describe, expect, it } from "vitest";
-import { MAX_SEARCHES, SearchTrace, assessSufficiency, searchStep, stopReason } from "@/retrieval/evidence-contract";
 import { decisionId } from "../../helpers/events";
-import type { SearchStep } from "@/types/retrieval";
 
 function step(why: string): SearchStep {
   return searchStep("a query", [], 0, 0, why);
@@ -129,7 +135,9 @@ describe("assessSufficiency reads the trace, not the constant", () => {
   it("names the ceiling when the budget was not lowered", () => {
     const trace = new SearchTrace();
     trace.record(step("the question"));
-    expect(assessSufficiency("STOPPED_SUFFICIENT", trace, 0.9, 3)).toContain(`of ${MAX_SEARCHES} searches`);
+    expect(assessSufficiency("STOPPED_SUFFICIENT", trace, 0.9, 3)).toContain(
+      `of ${MAX_SEARCHES} searches`,
+    );
   });
 });
 
@@ -173,4 +181,3 @@ describe("stopReason classifies why the run ended, in a fixed precedence", () =>
     expect(stopReason(trace, 0.2, 0.5, 10)).toBe("STOPPED_EMPTY");
   });
 });
-

@@ -1,3 +1,12 @@
+import {
+  formatAlternativeId,
+  formatDecisionId,
+  formatEpisodeId,
+  formatGuardId,
+  formatJustificationId,
+  formatPremiseId,
+  formatTranscriptId,
+} from "@/lib/ids";
 /**
  * Event builders.
  *
@@ -7,9 +16,8 @@
  * substrate. If a draft cannot be sealed the helper THROWS: a test that silently builds on a
  * rejected event reports a pass for a graph that does not exist.
  */
-import { appendBatch, emptyLog, type AppendContext, type EventLog } from "@/substrate/event-log";
+import { type AppendContext, type EventLog, appendBatch, emptyLog } from "@/substrate/event-log";
 import { validationMessage } from "@/substrate/event-validation";
-import { formatAlternativeId, formatDecisionId, formatEpisodeId, formatGuardId, formatJustificationId, formatPremiseId, formatTranscriptId } from "@/lib/ids";
 import { asConfidence, asISO } from "@/types/common";
 import type {
   Actor,
@@ -25,8 +33,15 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
+import type {
+  DecisionLabel,
+  DecisionOrigin,
+  DecisionVariable,
+  Justification,
+  Modality,
+  PremiseType,
+} from "@/types/domain";
 import type { AnyEvent, EventType, NewEvent } from "@/types/events";
-import type { DecisionLabel, DecisionOrigin, DecisionVariable, Justification, Modality, PremiseType } from "@/types/domain";
 
 export const ACTOR: Actor = { kind: "system" };
 export const HUMAN: Actor = { kind: "human" };
@@ -241,7 +256,11 @@ export function premiseInvalidated(
     payload: {
       premiseId: id,
       invalidatedBy:
-        by === "human" ? { kind: "human" } : by === "guard" ? { kind: "guard", guardId: "G-0000a" as GuardId } : { kind: "assertion", eventId: "EV-000000-000000" as AnyEvent["id"] },
+        by === "human"
+          ? { kind: "human" }
+          : by === "guard"
+            ? { kind: "guard", guardId: "G-0000a" as GuardId }
+            : { kind: "assertion", eventId: "EV-000000-000000" as AnyEvent["id"] },
     },
     actor: by === "human" ? HUMAN : ACTOR,
     reason: `Test falsifying premise ${id}.`,
@@ -285,15 +304,23 @@ export function seal(
   );
 
   if (!outcome.ok) {
-    throw new Error(`seal() rejected at index ${outcome.failedAt}: ${validationMessage(outcome.validation)}`);
+    throw new Error(
+      `seal() rejected at index ${outcome.failedAt}: ${validationMessage(outcome.validation)}`,
+    );
   }
 
   return { log: outcome.log, events: outcome.log.events };
 }
 
 /** Convenience: seal a flat list of drafts with an automatically advancing clock. */
-export function sealAll(drafts: readonly NewEvent<EventType>[], log: EventLog = emptyLog()): Sealed {
-  return seal(drafts.map((draft) => ({ draft })), log);
+export function sealAll(
+  drafts: readonly NewEvent<EventType>[],
+  log: EventLog = emptyLog(),
+): Sealed {
+  return seal(
+    drafts.map((draft) => ({ draft })),
+    log,
+  );
 }
 
 export { emptyLog, validationMessage };

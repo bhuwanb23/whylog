@@ -1,3 +1,4 @@
+import type { GraphState } from "@/substrate/graph-state";
 /**
  * Graph builders.
  *
@@ -6,23 +7,22 @@
  * invariant the fold would never produce, and a test that passes against it is testing a fiction.
  */
 import { fold } from "@/substrate/materialize";
-import type { GraphState } from "@/substrate/graph-state";
 import type { AnyEvent, EventType, NewEvent } from "@/types/events";
 import {
   LOCAL_ENGINE,
+  type Sealed,
   alternativeId,
   decisionId,
+  decisionProposed,
+  justificationAttached,
   justificationId,
   nextAt,
+  premiseAsserted,
+  premiseConfirmed,
   premiseId,
   sealAll,
   transcriptId,
   transcriptImported,
-  premiseAsserted,
-  premiseConfirmed,
-  decisionProposed,
-  justificationAttached,
-  type Sealed,
 } from "./events";
 
 export interface Built {
@@ -110,9 +110,27 @@ export function sqliteGraph(): SqliteGraph {
       predicate: "requirement.must",
       text: "this only has to survive the hackathon",
     }),
-    decisionProposed({ id: sqlite, transcript: t1, variable: "DATABASE", value: "sqlite", statement: "going with SQLite, not Postgres" }),
-    decisionProposed({ id: migration, transcript: t1, variable: "DATABASE", value: "migration-tools", statement: "skip migration tooling for now" }),
-    decisionProposed({ id: pooling, transcript: t1, variable: "STORAGE", value: "connection-pooling", statement: "no connection pooling" }),
+    decisionProposed({
+      id: sqlite,
+      transcript: t1,
+      variable: "DATABASE",
+      value: "sqlite",
+      statement: "going with SQLite, not Postgres",
+    }),
+    decisionProposed({
+      id: migration,
+      transcript: t1,
+      variable: "DATABASE",
+      value: "migration-tools",
+      statement: "skip migration tooling for now",
+    }),
+    decisionProposed({
+      id: pooling,
+      transcript: t1,
+      variable: "STORAGE",
+      value: "connection-pooling",
+      statement: "no connection pooling",
+    }),
     /* The human confirms the two QUOTED premises. The derived one is deliberately left
      * unconfirmed: an OUT-list clause is broken by its premise becoming IN, and confirming an
      * exclusion would invalidate the justification at birth. Confirming nothing at all would leave

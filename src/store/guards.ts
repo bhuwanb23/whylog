@@ -209,7 +209,7 @@ export const useGuards = create<GuardState>()((set, get) => ({
 
   loadProject: (input) => {
     const report = buildProject(input);
-    set({ project: report.project, parse: report });
+    set({ project: report.project, parse: report, baseline: null, lastEvaluated: [], lastRunAt: null });
     persist(report.project, get().baseline);
   },
 
@@ -345,9 +345,12 @@ export const useGuards = create<GuardState>()((set, get) => ({
       return err(message);
     }
 
-    set({ status: "running", error: null });
+    set({ status: "running", error: null, baseline: null });
     const at = nowISO() as ISODateString;
-    const labels = label(whylog.state).labels;
+    const labels = new Map<any, any>();
+    for (const d of whylog.state.decisions.values()) {
+      labels.set(d.id, { label: d.label, reason: { kind: "asserted-premise" } });
+    }
 
     try {
       const result = await runAll({

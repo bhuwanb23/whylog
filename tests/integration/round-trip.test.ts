@@ -1,3 +1,7 @@
+import { GENESIS_HASH, headHash, verifyChain } from "@/substrate/hash-chain";
+import { fold } from "@/substrate/materialize";
+import { describeRejection, exportLog, importLog } from "@/substrate/portability";
+import type { EventId } from "@/types/common";
 /**
  * Gate G5 — export then import reproduces the same log.
  *
@@ -6,11 +10,7 @@
  * sorting object keys is what makes that reproducible rather than dependent on insertion order.
  */
 import { describe, expect, it } from "vitest";
-import { exportLog, importLog, describeRejection } from "@/substrate/portability";
-import { GENESIS_HASH, headHash, verifyChain } from "@/substrate/hash-chain";
-import { fold } from "@/substrate/materialize";
 import { LOCAL_ENGINE, nextAt, resetClock } from "../helpers/events";
-import type { EventId } from "@/types/common";
 import { sqliteGraph } from "../helpers/graph";
 
 function statsOf(g: ReturnType<typeof sqliteGraph>) {
@@ -53,7 +53,10 @@ describe("import reproduces the SAME chain", () => {
     const exported = exportLog(g.events, g.sealed.log.headHash, statsOf(g), LOCAL_ENGINE, nextAt());
     if (!exported.ok) throw new Error(exported.error);
 
-    const imported = importLog(JSON.stringify(exported.value), { existingIds: null, existingHeadHash: GENESIS_HASH });
+    const imported = importLog(JSON.stringify(exported.value), {
+      existingIds: null,
+      existingHeadHash: GENESIS_HASH,
+    });
 
     expect(imported.ok).toBe(true);
     if (!imported.ok) {
@@ -71,7 +74,10 @@ describe("import reproduces the SAME chain", () => {
     const exported = exportLog(g.events, g.sealed.log.headHash, statsOf(g), LOCAL_ENGINE, nextAt());
     if (!exported.ok) throw new Error(exported.error);
 
-    const imported = importLog(JSON.stringify(exported.value), { existingIds: null, existingHeadHash: GENESIS_HASH });
+    const imported = importLog(JSON.stringify(exported.value), {
+      existingIds: null,
+      existingHeadHash: GENESIS_HASH,
+    });
     if (!imported.ok) throw new Error(describeRejection(imported.rejection));
 
     const before = fold(g.events, { engine: LOCAL_ENGINE, now: nextAt() });
@@ -114,7 +120,10 @@ describe("import REFUSES a damaged file rather than repairing it", () => {
     const victim = tampered.events[1] as unknown as Record<string, unknown>;
     victim["payload"] = { ...(victim["payload"] as object), value: "postgres" };
 
-    const imported = importLog(JSON.stringify(tampered), { existingIds: null, existingHeadHash: GENESIS_HASH });
+    const imported = importLog(JSON.stringify(tampered), {
+      existingIds: null,
+      existingHeadHash: GENESIS_HASH,
+    });
     expect(imported.ok).toBe(false);
     if (!imported.ok) expect(describeRejection(imported.rejection).length).toBeGreaterThan(0);
   });

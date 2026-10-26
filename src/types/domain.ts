@@ -58,12 +58,7 @@ export type DecisionLabel =
   | "UNFOUNDED";
 
 /** Lifecycle state, orthogonal to the label. */
-export type DecisionStatus =
-  | "proposed"
-  | "active"
-  | "contested"
-  | "superseded"
-  | "archived";
+export type DecisionStatus = "proposed" | "active" | "contested" | "superseded" | "archived";
 
 /* -------------------------------------------------------------------------- */
 /* The decision variable ontology                                             */

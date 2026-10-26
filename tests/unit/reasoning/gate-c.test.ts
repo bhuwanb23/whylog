@@ -1,3 +1,5 @@
+import { isDerivedPremise } from "@/extraction/review";
+import { type NodeId, label, validityOf } from "@/reasoning/labeller";
 /**
  * Gate (c) — Doyle's SL-justification validity, and the non-monotonic OUT-list.
  *
@@ -10,8 +12,6 @@
  * filter skipped every justification. Audit found nothing and nogoods blocked nothing.
  */
 import { describe, expect, it } from "vitest";
-import { label, validityOf, type NodeId } from "@/reasoning/labeller";
-import { isDerivedPremise } from "@/extraction/review";
 import { decisionId, premiseId, resetClock } from "../../helpers/events";
 import { sqliteGraph } from "../../helpers/graph";
 
@@ -57,7 +57,10 @@ describe("validityOf evaluates Doyle's condition over the labels a justification
 
     /* Simulate the falsification by re-labelling the premise the justification rests on. */
     const broken = new Map(labels);
-    broken.set(g.singleUser, { label: "OUT", reason: { kind: "invalidated", at: g.events[0]!.at } });
+    broken.set(g.singleUser, {
+      label: "OUT",
+      reason: { kind: "invalidated", at: g.events[0]!.at },
+    });
 
     const verdict = validityOf(justification, broken);
     expect(verdict.valid).toBe(false);
@@ -105,7 +108,10 @@ describe("validityOf evaluates Doyle's condition over the labels a justification
     expect(migration.outList).toHaveLength(0);
 
     const broken = new Map(labels);
-    broken.set(g.singleUser, { label: "OUT", reason: { kind: "invalidated", at: g.events[0]!.at } });
+    broken.set(g.singleUser, {
+      label: "OUT",
+      reason: { kind: "invalidated", at: g.events[0]!.at },
+    });
     broken.set(g.concurrentWriters, { label: "IN", reason: { kind: "asserted-premise" } });
 
     expect(validityOf(migration, broken).valid).toBe(true);

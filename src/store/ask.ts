@@ -36,25 +36,31 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
+import { nowISO } from "@/lib/format";
+import type { CandidatePair } from "@/reasoning/gates/semantic";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import { label } from "@/reasoning/labeller";
+import {
+  type RetrievalResult,
+  describePipeline,
+  describeRetrieval,
+  retrieve,
+  ask as runAsk,
+} from "@/retrieval";
+import { type BuildReport, buildIndex, describeBuild } from "@/retrieval/build-index";
+import { candidatePairs, describeCandidatePolicy, describeSource } from "@/retrieval/candidates";
+import { type ExpandedCitationResult, expandAll, renderExpansion } from "@/retrieval/citations";
+import { describeRules } from "@/retrieval/contradiction";
+import { describeContract } from "@/retrieval/evidence-contract";
+import { describeThresholds } from "@/retrieval/groundedness";
+import { countPreemptions } from "@/retrieval/preemption";
+import { describeWeights } from "@/retrieval/rerank";
+import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, ISODateString } from "@/types/common";
 import type { Actor } from "@/types/common";
 import type { Answer, IndexArtifacts, QueryOptions, RetrievedHit } from "@/types/retrieval";
 import { DEFAULT_QUERY_OPTIONS } from "@/types/retrieval";
-import type { GraphState } from "@/substrate/graph-state";
-import { buildIndex, describeBuild, type BuildReport } from "@/retrieval/build-index";
-import { ask as runAsk, describePipeline, describeRetrieval, retrieve, type RetrievalResult } from "@/retrieval";
-import { candidatePairs, describeCandidatePolicy, describeSource } from "@/retrieval/candidates";
-import { expandAll, renderExpansion, type ExpandedCitationResult } from "@/retrieval/citations";
-import { describeContract } from "@/retrieval/evidence-contract";
-import { describeThresholds } from "@/retrieval/groundedness";
-import { describeWeights } from "@/retrieval/rerank";
-import { describeRules } from "@/retrieval/contradiction";
-import { countPreemptions } from "@/retrieval/preemption";
-import type { CandidatePair } from "@/reasoning/gates/semantic";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
-import { nowISO } from "@/lib/format";
-import { label } from "@/reasoning/labeller";
+import { create } from "zustand";
 import { useWhyLog } from "./whylog";
 
 /** `system`, not `engine`: index construction and retrieval are deterministic given the
@@ -158,7 +164,13 @@ export const useAsk = create<AskState>()((set, get) => ({
         reason:
           report.embedded === 0
             ? "Index rebuilt with no new embeddings: L3/L4/L5 are pure functions of the log and every vector was already current."
-            : "Index rebuilt: " + report.embedded + " decision(s) embedded, " + report.skipped + " unchanged, levels " + report.levels.join("/") + ".",
+            : "Index rebuilt: " +
+              report.embedded +
+              " decision(s) embedded, " +
+              report.skipped +
+              " unchanged, levels " +
+              report.levels.join("/") +
+              ".",
         actor: ASK_ACTOR,
         occurredAt: nowISO() as ISODateString,
       });
@@ -166,7 +178,8 @@ export const useAsk = create<AskState>()((set, get) => ({
       if (!committed.ok) {
         set({
           buildError:
-            "The index was built but its events could not be committed: " + committed.error +
+            "The index was built but its events could not be committed: " +
+            committed.error +
             ". Retrieval will still work from the in-memory artifacts; the log just cannot explain this rebuild later.",
         });
         return report;
@@ -210,7 +223,8 @@ export const useAsk = create<AskState>()((set, get) => ({
 
     const artifacts = await get().ensureIndex();
     if (artifacts === null) {
-      const message = get().buildError ?? "The index could not be built, so there is nothing to search.";
+      const message =
+        get().buildError ?? "The index could not be built, so there is nothing to search.";
       set({ status: "failed", error: message, durationMs: Date.now() - started });
       return null;
     }
@@ -318,16 +332,24 @@ export function describeIndex(state: AskState): string {
     return "No index has been built yet. Ask a question and it will be built first.";
   }
 
-  if (state.build !== null) return describeBuild(state.build) + "\n\nLog size: " + whylog.state.decisions.size + " decisions.";
+  if (state.build !== null)
+    return (
+      describeBuild(state.build) + "\n\nLog size: " + whylog.state.decisions.size + " decisions."
+    );
 
   return (
-    "Index built by " + artifacts.engine + " at " + artifacts.computedAt +
+    "Index built by " +
+    artifacts.engine +
+    " at " +
+    artifacts.computedAt +
     (artifacts.stale ? " — STALE: the engine or the log has changed since." : "") +
-    "\nLog size: " + whylog.state.decisions.size + " decisions."
+    "\nLog size: " +
+    whylog.state.decisions.size +
+    " decisions."
   );
 }
 
-export function describeHowProduced(state: AskState, result: RetrievalResult | null): string {
+export function describeHowProduced(_state: AskState, result: RetrievalResult | null): string {
   const parts = [
     describePipeline(),
     "",
@@ -366,9 +388,20 @@ export function describePreemptionCoverage(state: GraphState): string {
   }
 
   return [
-    counts.eligible + " of " + counts.total + " recorded alternatives can pre-empt a repeat question.",
-    counts.missingReason > 0 ? "  " + counts.missingReason + " have no recorded reason — pre-empting without a reason is nagging, so they are excluded." : "",
-    counts.unconfirmed > 0 ? "  " + counts.unconfirmed + " have a reason but were never confirmed by a human — an inferred rejection is far more likely to be wrong than right, so they are excluded too." : "",
+    counts.eligible +
+      " of " +
+      counts.total +
+      " recorded alternatives can pre-empt a repeat question.",
+    counts.missingReason > 0
+      ? "  " +
+        counts.missingReason +
+        " have no recorded reason — pre-empting without a reason is nagging, so they are excluded."
+      : "",
+    counts.unconfirmed > 0
+      ? "  " +
+        counts.unconfirmed +
+        " have a reason but were never confirmed by a human — an inferred rejection is far more likely to be wrong than right, so they are excluded too."
+      : "",
     "",
     "Confirm an alternative on the Review tab to make it eligible. A false pre-emption costs",
     "more trust than a missed one, so both conditions are required rather than one.",

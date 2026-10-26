@@ -1,3 +1,7 @@
+import { createLocalEngine } from "@/ai/local";
+import { synthesiseAll } from "@/guards";
+import { TEMPLATED_VARIABLES, hasTemplate, templateGuards } from "@/guards/templates";
+import { GUARDS_PER_DECISION_CAP } from "@/guards/types";
 /**
  * Guard synthesis — the central novelty claim.
  *
@@ -11,11 +15,7 @@
  *     store pushed nothing, so the guard count stayed at zero and demo beat 7 had nothing to show.
  */
 import { describe, expect, it } from "vitest";
-import { synthesiseAll } from "@/guards";
-import { hasTemplate, TEMPLATED_VARIABLES, templateGuards } from "@/guards/templates";
-import { createLocalEngine } from "@/ai/local";
-import { GUARDS_PER_DECISION_CAP } from "@/guards/types";
-import { ACTOR, LOCAL_ENGINE, decisionId, nextAt, resetClock } from "../../helpers/events";
+import { ACTOR, decisionId, nextAt, resetClock } from "../../helpers/events";
 import { sqliteGraph } from "../../helpers/graph";
 
 const engine = createLocalEngine();
@@ -25,7 +25,9 @@ describe("capabilities is a METHOD", () => {
     /* This is the regression, stated as a test: reading a property off the function itself is what
      * silently disabled both LLM paths. */
     expect(typeof engine.capabilities).toBe("function");
-    expect((engine.capabilities as unknown as Record<string, unknown>)["guardSynthesis"]).toBeUndefined();
+    expect(
+      (engine.capabilities as unknown as Record<string, unknown>)["guardSynthesis"],
+    ).toBeUndefined();
     expect(engine.capabilities().guardSynthesis).toBeDefined();
   });
 
@@ -80,7 +82,13 @@ describe("synthesiseAll actually produces the events it documents", () => {
   it("proposes every guard as PROPOSED, never accepted — invariant I4", async () => {
     resetClock();
     const g = sqliteGraph();
-    const result = await synthesiseAll({ state: g.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
+    const result = await synthesiseAll({
+      state: g.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
 
     for (const draft of result.drafts) {
       expect(draft.type).toBe("GuardSynthesised");
@@ -95,14 +103,21 @@ describe("synthesiseAll actually produces the events it documents", () => {
   it("never exceeds the per-decision cap", async () => {
     resetClock();
     const g = sqliteGraph();
-    const result = await synthesiseAll({ state: g.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
+    const result = await synthesiseAll({
+      state: g.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
 
     const perDecision = new Map<string, number>();
     for (const draft of result.drafts) {
       const payload = draft.payload as { decisionId: string };
       perDecision.set(payload.decisionId, (perDecision.get(payload.decisionId) ?? 0) + 1);
     }
-    for (const count of perDecision.values()) expect(count).toBeLessThanOrEqual(GUARDS_PER_DECISION_CAP);
+    for (const count of perDecision.values())
+      expect(count).toBeLessThanOrEqual(GUARDS_PER_DECISION_CAP);
   });
 
   it("mints guard ids in the documented `G-<decision>a` shape, never `G-00070`", async () => {
@@ -110,7 +125,13 @@ describe("synthesiseAll actually produces the events it documents", () => {
      * and disagreeing with `nextFreeSuffix` — a collision waiting to happen. */
     resetClock();
     const g = sqliteGraph();
-    const result = await synthesiseAll({ state: g.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
+    const result = await synthesiseAll({
+      state: g.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
 
     for (const draft of result.drafts) {
       const payload = draft.payload as { guardId: string; decisionId: string };
@@ -124,17 +145,36 @@ describe("synthesiseAll actually produces the events it documents", () => {
     resetClock();
     const b = sqliteGraph();
 
-    const first = await synthesiseAll({ state: a.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
-    const second = await synthesiseAll({ state: b.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
+    const first = await synthesiseAll({
+      state: a.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
+    const second = await synthesiseAll({
+      state: b.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
 
-    expect(first.drafts.map((d) => (d.payload as { guardId: string }).guardId))
-      .toEqual(second.drafts.map((d) => (d.payload as { guardId: string }).guardId));
+    expect(first.drafts.map((d) => (d.payload as { guardId: string }).guardId)).toEqual(
+      second.drafts.map((d) => (d.payload as { guardId: string }).guardId),
+    );
   });
 
   it("reports the template share, which is 100% on the keyless path", async () => {
     resetClock();
     const g = sqliteGraph();
-    const result = await synthesiseAll({ state: g.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
+    const result = await synthesiseAll({
+      state: g.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
     expect(result.share).toBeDefined();
   });
 });

@@ -1,3 +1,9 @@
+import { createLocalEngine } from "@/ai/local";
+import { guardStatusMap } from "@/guards/feedback";
+import { label, validityOf } from "@/reasoning/labeller";
+import { revise } from "@/reasoning/revise";
+import { appendBatch } from "@/substrate/event-log";
+import { fold } from "@/substrate/materialize";
 /**
  * THE HEADLINE TEST — gate (c) and the cascade.
  *
@@ -8,14 +14,8 @@
  * log noticed — which is the sentence the demo peaks on and the thing no surveyed system does.
  */
 import { describe, expect, it } from "vitest";
-import { fold } from "@/substrate/materialize";
-import { label, validityOf } from "@/reasoning/labeller";
-import { revise } from "@/reasoning/revise";
-import { guardStatusMap } from "@/guards/feedback";
-import { appendBatch } from "@/substrate/event-log";
 import { ACTOR, LOCAL_ENGINE, nextAt, premiseInvalidated, resetClock } from "../helpers/events";
-import { sqliteGraph, type SqliteGraph } from "../helpers/graph";
-import { createLocalEngine } from "@/ai/local";
+import { type SqliteGraph, sqliteGraph } from "../helpers/graph";
 
 const engine = createLocalEngine();
 
@@ -33,7 +33,10 @@ function falsify(g: SqliteGraph) {
   ]);
 
   if (!outcome.ok) throw new Error("falsification was rejected by the log");
-  return { log: outcome.log, state: fold(outcome.log.events, { engine: LOCAL_ENGINE, now: nextAt() }) };
+  return {
+    log: outcome.log,
+    state: fold(outcome.log.events, { engine: LOCAL_ENGINE, now: nextAt() }),
+  };
 }
 
 describe("before the falsification: a reviewed graph holds", () => {
@@ -42,10 +45,10 @@ describe("before the falsification: a reviewed graph holds", () => {
     const g = sqliteGraph();
     const { labels } = label(g.state);
 
-    expect(labels.get(g.singleUser)!.label).toBe("IN");
-    expect(labels.get(g.sqlite)!.label).toBe("IN");
-    expect(labels.get(g.pooling)!.label).toBe("IN");
-    expect(labels.get(g.migration)!.label).toBe("IN");
+    expect(labels.get(g.singleUser)?.label).toBe("IN");
+    expect(labels.get(g.sqlite)?.label).toBe("IN");
+    expect(labels.get(g.pooling)?.label).toBe("IN");
+    expect(labels.get(g.migration)?.label).toBe("IN");
   });
 
   it("reports both justifications as valid under Doyle's condition", () => {
@@ -65,7 +68,7 @@ describe("gate (c): falsifying ONE premise invalidates the decisions that rest o
     const { state } = falsify(g);
     const { labels } = label(state);
 
-    expect(labels.get(g.singleUser)!.label).not.toBe("IN");
+    expect(labels.get(g.singleUser)?.label).not.toBe("IN");
   });
 
   it("makes the SQLite decision unsound WITHOUT anybody mentioning it", () => {
@@ -75,7 +78,7 @@ describe("gate (c): falsifying ONE premise invalidates the decisions that rest o
     const { state } = falsify(g);
     const { labels } = label(state);
 
-    expect(labels.get(g.sqlite)!.label).not.toBe("IN");
+    expect(labels.get(g.sqlite)?.label).not.toBe("IN");
     const verdict = validityOf(state.justifications.get(g.justSqlite)!, labels);
     expect(verdict.valid).toBe(false);
     expect(verdict.failedNode).toBe(g.singleUser);
@@ -112,7 +115,7 @@ describe("the cascade follows shared premises — and stops where it should", ()
     const { state } = falsify(g);
     const { labels } = label(state);
 
-    expect(labels.get(g.pooling)!.label).not.toBe("IN");
+    expect(labels.get(g.pooling)?.label).not.toBe("IN");
   });
 
   it("PRESERVES the survivor that shares nothing with the falsified premise", () => {
@@ -123,7 +126,7 @@ describe("the cascade follows shared premises — and stops where it should", ()
     const { state } = falsify(g);
     const { labels } = label(state);
 
-    expect(labels.get(g.migration)!.label).toBe("IN");
+    expect(labels.get(g.migration)?.label).toBe("IN");
     expect(validityOf(state.justifications.get(g.justMigration)!, labels).valid).toBe(true);
   });
 
@@ -131,7 +134,7 @@ describe("the cascade follows shared premises — and stops where it should", ()
     const g = sqliteGraph();
     const { state } = falsify(g);
     const { labels } = label(state);
-    expect(labels.get(g.scope)!.label).toBe("IN");
+    expect(labels.get(g.scope)?.label).toBe("IN");
   });
 });
 
@@ -176,10 +179,14 @@ describe("revise turns the labelling into events the log can record", () => {
     for (const flip of flips) {
       const payload = flip.payload as { nodeId: string; from: string; to: string };
       expect(payload.from).not.toBe(payload.to);
-      expect(payload.nodeId === String(g.sqlite) || payload.nodeId === String(g.pooling)).toBe(true);
+      expect(payload.nodeId === String(g.sqlite) || payload.nodeId === String(g.pooling)).toBe(
+        true,
+      );
     }
     /* The survivor must never appear in a flip. */
-    expect(flips.some((f) => (f.payload as { nodeId: string }).nodeId === String(g.migration))).toBe(false);
+    expect(
+      flips.some((f) => (f.payload as { nodeId: string }).nodeId === String(g.migration)),
+    ).toBe(false);
   });
 
   it("respects the cascade depth cap", async () => {
@@ -198,7 +205,13 @@ describe("revise turns the labelling into events the log can record", () => {
     /* Depth 0 means the cascade may not follow any shared-premise edge, so it cannot propose more
      * flips than an uncapped run. Asserting an ordering rather than an exact count keeps this honest
      * about what the cap controls. */
-    const uncapped = await revise({ state, engine, actor: ACTOR, now: nextAt(), guards: guardStatusMap(state) });
+    const uncapped = await revise({
+      state,
+      engine,
+      actor: ACTOR,
+      now: nextAt(),
+      guards: guardStatusMap(state),
+    });
     expect(capped.eventDrafts.length).toBeLessThanOrEqual(uncapped.eventDrafts.length);
   });
 
@@ -206,17 +219,32 @@ describe("revise turns the labelling into events the log can record", () => {
     const g = sqliteGraph();
     const { state } = falsify(g);
 
-    const first = await revise({ state, engine, actor: ACTOR, now: nextAt(), guards: guardStatusMap(state) });
+    const first = await revise({
+      state,
+      engine,
+      actor: ACTOR,
+      now: nextAt(),
+      guards: guardStatusMap(state),
+    });
     if (first.eventDrafts.length === 0) return; // nothing to commit, so nothing to repeat
 
     const outcome = appendBatch(
       g.sealed.log,
-      first.eventDrafts.map((draft) => ({ draft, context: { now: nextAt(), actor: ACTOR, reason: "Test revision." } })),
+      first.eventDrafts.map((draft) => ({
+        draft,
+        context: { now: nextAt(), actor: ACTOR, reason: "Test revision." },
+      })),
     );
     if (!outcome.ok) throw new Error("revision rejected");
 
     const settled = fold(outcome.log.events, { engine: LOCAL_ENGINE, now: nextAt() });
-    const second = await revise({ state: settled, engine, actor: ACTOR, now: nextAt(), guards: guardStatusMap(settled) });
+    const second = await revise({
+      state: settled,
+      engine,
+      actor: ACTOR,
+      now: nextAt(),
+      guards: guardStatusMap(settled),
+    });
 
     /* A second pass over a log that already recorded the first pass's findings has nothing to add.
      * Without this, every click on "run" would append another copy of the same flip. */

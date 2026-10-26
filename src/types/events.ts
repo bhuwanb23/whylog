@@ -37,12 +37,6 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "./common";
-import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
-import type {
-  ContradictionVerdict,
-  GroundednessVerdict,
-  RetrievedHit,
-} from "./retrieval";
 import type {
   DecisionLabel,
   DecisionOrigin,
@@ -50,8 +44,10 @@ import type {
   Justification,
   PremiseType,
 } from "./domain";
-import type { EntrenchmentBreakdown } from "./reasoning";
 import type { ExportTarget, IntegrityStamp } from "./export";
+import type { GuardKind, GuardSeverity, GuardSpec } from "./guards";
+import type { EntrenchmentBreakdown } from "./reasoning";
+import type { ContradictionVerdict, GroundednessVerdict, RetrievedHit } from "./retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Event type union                                                           */
@@ -357,9 +353,7 @@ export interface RevisionProposedPayload {
   /** Set when the newcomer was screened out rather than applied. */
   readonly rejectedNewcomer?: { readonly eventId: EventId; readonly why: string };
   readonly availableActions: readonly ("reverse" | "rejustify" | "contest")[];
-  /** The finding's verbatim evidence, carried on the event so the fold can store
-   *  it as-is. Absent on logs written before this field existed; the materialiser
-   *  falls back to the event reason with source "transcript" for those. */
+  /** Guard-provenance evidence, when the proposal was raised by a guard failure. */
   readonly evidence?: {
     readonly quote: string;
     readonly span?: SourceSpan;

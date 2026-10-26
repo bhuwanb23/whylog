@@ -31,7 +31,35 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
+/* Imported from the module rather than the `@/guards` barrel: the barrel pulls in the CI
+ * exporter and the metrics, none of which the reasoning store needs, and a narrower import keeps
+ * the dependency edge honest about what is actually used. */
+import { guardStatusMap } from "@/guards/feedback";
+import { nowISO } from "@/lib/format";
+import {
+  formatJustificationId,
+  formatPremiseId,
+  formatProposalId,
+  formatTranscriptId,
+} from "@/lib/ids";
+import type { Result } from "@/lib/result";
+import { err, ok } from "@/lib/result";
+import { foldKey } from "@/ontology/canonicalize";
+import { canonicalPredicate } from "@/ontology/canonicalize";
+import {
+  type Assertion,
+  type AssertionResult,
+  type DecisionAssertion,
+  type ReviseInput,
+  type ReviseResult,
+  type RevisionCase,
+  type UnresolvedPremise,
+  assertNewInformation,
+  revise,
+} from "@/reasoning";
+import type { Newcomer } from "@/reasoning/adjudication";
+import type { CandidatePair } from "@/reasoning/gates/semantic";
+import type { GraphState } from "@/substrate/graph-state";
 import type {
   Actor,
   DecisionId,
@@ -44,44 +72,15 @@ import type {
   TranscriptId,
 } from "@/types/common";
 import { asConfidence } from "@/types/common";
+import type { Justification, PremiseType } from "@/types/domain";
 /* Both were used at `applyRejustification` since Phase 2 without being imported — the kind of
  * error the structural checker cannot see, because it verifies that imports RESOLVE, not that
  * every identifier used is declared. Found by a string-aware scan for undeclared identifiers. */
 import type { EventType, NewEvent } from "@/types/events";
-import type { Justification, PremiseType } from "@/types/domain";
-import type { GraphState } from "@/substrate/graph-state";
-import { foldKey } from "@/ontology/canonicalize";
-import { canonicalPredicate } from "@/ontology/canonicalize";
-import {
-  formatJustificationId,
-  formatPremiseId,
-  formatProposalId,
-  formatTranscriptId,
-} from "@/lib/ids";
-import type { Result } from "@/lib/result";
-import { err, ok } from "@/lib/result";
-import { nowISO } from "@/lib/format";
-import {
-  assertNewInformation,
-  revise,
-  type AssertContext,
-  type Assertion,
-  type AssertionResult,
-  type UnresolvedPremise,
-  type DecisionAssertion,
-  type ReviseInput,
-  type ReviseResult,
-  type RevisionCase,
-} from "@/reasoning";
-import type { Newcomer } from "@/reasoning/adjudication";
-import type { CandidatePair } from "@/reasoning/gates/semantic";
-/* Imported from the module rather than the `@/guards` barrel: the barrel pulls in the CI
- * exporter and the metrics, none of which the reasoning store needs, and a narrower import keeps
- * the dependency edge honest about what is actually used. */
-import { guardStatusMap } from "@/guards/feedback";
+import { create } from "zustand";
+import { useAsk } from "./ask";
 import { useTuning } from "./settings";
 import { useWhyLog } from "./whylog";
-import { useAsk } from "./ask";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
 
@@ -109,9 +108,7 @@ export interface ReasoningState {
   readonly run: (options?: RunOptions) => Promise<Result<number, string>>;
   /** §2.1 — assert new information, then run the cycle over the result. Two batches,
    *  because the labeller must see the state AFTER the assertion is folded. */
-  readonly assertAndRevise: (
-    assertion: Assertion,
-  ) => Promise<Result<AssertionResult, string>>;
+  readonly assertAndRevise: (assertion: Assertion) => Promise<Result<AssertionResult, string>>;
   readonly select: (proposalId: ProposalId | null) => void;
   readonly clear: () => void;
 }
@@ -153,7 +150,8 @@ export const useReasoning = create<ReasoningState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message = "The log is read-only: its hash chain is broken. Reasoning needs to append events.";
+      const message =
+        "The log is read-only: its hash chain is broken. Reasoning needs to append events.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -377,7 +375,9 @@ export async function assertPremiseFalsified(
 
   if (premise === undefined) return err(`No premise ${premiseId} in the log.`);
   if (observedText.trim().length === 0) {
-    return err("Say what you observed. A falsification with no observation is an opinion, and the log records observations.");
+    return err(
+      "Say what you observed. A falsification with no observation is an opinion, and the log records observations.",
+    );
   }
 
   const assertion: Assertion = {
@@ -408,7 +408,10 @@ export async function assertUserDecision(
   reason: string,
 ): Promise<Result<string, string>> {
   if (statement.trim().length === 0) return err("A decision needs a statement.");
-  if (reason.trim().length === 0) return err("A hand-entered decision needs a reason: it is the only provenance it will ever have.");
+  if (reason.trim().length === 0)
+    return err(
+      "A hand-entered decision needs a reason: it is the only provenance it will ever have.",
+    );
 
   const assertion: Assertion = {
     source: "user-decision",
@@ -454,8 +457,6 @@ async function relabelAfterAction(): Promise<void> {
    * action invoked after module initialisation, never during it. */
   await useReasoning.getState().run();
 }
-
-
 
 /** Resolved to the creating event by the materialiser on fold. */
 const PLACEHOLDER_EVENT_ID = "EV-000000-000000" as EventId;
@@ -550,7 +551,9 @@ export async function applyRejustification(
     return err("A rejustification needs a reason: it changes what a decision rests on.");
   }
   if (input.premiseText.trim().length === 0) {
-    return err("A rejustification needs the new premise. Without it the decision still rests on the old one.");
+    return err(
+      "A rejustification needs the new premise. Without it the decision still rests on the old one.",
+    );
   }
   if (state.decisions.get(decisionId) === undefined) {
     return err(`No decision ${decisionId} in the log.`);
@@ -648,7 +651,9 @@ export async function linkRejustification(
     return err("A rejustification needs a reason: it changes what a decision rests on.");
   }
   if (whylog.state.premises.get(newPremiseId) === undefined) {
-    return err(`${newPremiseId} does not exist. Create the premise first — an id that points at nothing makes the decision unfounded, not rejustified.`);
+    return err(
+      `${newPremiseId} does not exist. Create the premise first — an id that points at nothing makes the decision unfounded, not rejustified.`,
+    );
   }
 
   const outcome = whylog.record(

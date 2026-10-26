@@ -1,3 +1,12 @@
+import { RESET_KEYS, buildSeed, resetDemo } from "@/eval/demo/kit";
+import {
+  DEMO_SECONDS,
+  SCRIPT,
+  cuttableBeats,
+  renderScript,
+  totalSeconds,
+} from "@/eval/demo/script";
+import { renderVerification, verifyDemo } from "@/eval/demo/verify";
 /**
  * Gate G6 — the demo, as an executable script.
  *
@@ -6,9 +15,6 @@
  * stage, which is the failure this test exists to prevent.
  */
 import { describe, expect, it } from "vitest";
-import { SCRIPT, DEMO_SECONDS, totalSeconds, cuttableBeats, renderScript } from "@/eval/demo/script";
-import { buildSeed, resetDemo, RESET_KEYS } from "@/eval/demo/kit";
-import { verifyDemo, renderVerification } from "@/eval/demo/verify";
 
 describe("the script is well-formed data", () => {
   it("has the eight beats the pitch promises", () => {

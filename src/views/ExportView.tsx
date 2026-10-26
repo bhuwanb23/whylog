@@ -27,10 +27,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useMemo, useState, type ReactElement } from "react";
-import type { ExportTarget } from "@/types/export";
-import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
-import { useWhyLog } from "@/store/whylog";
+import { TARGET_AUDIENCE, checkSixProperties, describeGate, describeVerifyPolicy } from "@/export";
 import {
   describeExportState,
   describeSelectedBudget,
@@ -38,7 +35,10 @@ import {
   selectedArtifact,
   useExport,
 } from "@/store/export";
-import { TARGET_AUDIENCE, checkSixProperties, describeGate, describeVerifyPolicy } from "@/export";
+import { useWhyLog } from "@/store/whylog";
+import type { ExportTarget } from "@/types/export";
+import { EXPORT_TARGETS, TARGET_FILENAMES } from "@/types/export";
+import { type ReactElement, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* The view                                                                   */
@@ -49,7 +49,6 @@ export function ExportView(): ReactElement {
   const store = useExport();
   const [showReference, setShowReference] = useState(false);
 
-  const artifact = useMemo(() => selectedArtifact(store), [store]);
   const busy = store.status === "compiling";
   const decisionCount = whylog.state.decisions.size;
 
@@ -59,13 +58,12 @@ export function ExportView(): ReactElement {
         <h2 className="card-title">Agent-native export</h2>
 
         <p className="dim" style={{ margin: "0 0 12px" }}>
-          Compile the decision graph into every format an agent actually reads — scoped,
-          imperative, addressable, <strong>verifiable</strong>, non-conflicting and token-budgeted.
-          Multi-format export is not the claim; <code>ai-memory</code> ships it and{" "}
-          <code>AGENTS.md</code> is in 60,000+ projects. The three things that are: verify
-          commands compiled from the Phase 4 guards, a gate that refuses to export a
-          self-contradictory log, and the rejected-alternatives block with each reason's premise
-          status attached.
+          Compile the decision graph into every format an agent actually reads — scoped, imperative,
+          addressable, <strong>verifiable</strong>, non-conflicting and token-budgeted. Multi-format
+          export is not the claim; <code>ai-memory</code> ships it and <code>AGENTS.md</code> is in
+          60,000+ projects. The three things that are: verify commands compiled from the Phase 4
+          guards, a gate that refuses to export a self-contradictory log, and the
+          rejected-alternatives block with each reason's premise status attached.
         </p>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -106,7 +104,10 @@ export function ExportView(): ReactElement {
           <h2 className="card-title" style={{ color: "var(--label-out)" }}>
             Export blocked by the consistency gate
           </h2>
-          <pre className="mono" style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 12, lineHeight: 1.6 }}>
+          <pre
+            className="mono"
+            style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 12, lineHeight: 1.6 }}
+          >
             {store.blockedExplanation}
           </pre>
         </section>
@@ -154,7 +155,9 @@ interface GateCheck {
  */
 function checkGateG5(contents: string | null): readonly GateCheck[] {
   if (contents === null) {
-    return [{ property: "artifact exists", passed: false, evidence: "Nothing has been compiled yet." }];
+    return [
+      { property: "artifact exists", passed: false, evidence: "Nothing has been compiled yet." },
+    ];
   }
 
   /* Take the first `### WLD-…` block, which is the highest-priority decision by construction. */
@@ -168,22 +171,31 @@ function checkGateG5(contents: string | null): readonly GateCheck[] {
     {
       property: "a decision record is present",
       passed: recordId !== null,
-      evidence: recordId === null ? "No `### WLD-…` block found in the artifact." : recordId + " is the highest-priority record and is checked below.",
+      evidence:
+        recordId === null
+          ? "No `### WLD-…` block found in the artifact."
+          : recordId + " is the highest-priority record and is checked below.",
     },
     {
       property: "MUST / MUST NOT imperative form",
       passed: /\bMUST NOT\b/.test(block) || /\bMUST\b/.test(block),
-      evidence: firstMatch(block, /\bMUST(?: NOT)?\b[^.\n]*\.?/) ?? "no normative keyword found — the record is prose, which an agent has to summarise before it can follow it",
+      evidence:
+        firstMatch(block, /\bMUST(?: NOT)?\b[^.\n]*\.?/) ??
+        "no normative keyword found — the record is prose, which an agent has to summarise before it can follow it",
     },
     {
       property: "applies_to scope",
       passed: /^Applies to:\s*\S/m.test(block),
-      evidence: firstMatch(block, /^Applies to:.*$/m) ?? "no scope line — the rule would load into every context",
+      evidence:
+        firstMatch(block, /^Applies to:.*$/m) ??
+        "no scope line — the rule would load into every context",
     },
     {
       property: "Because: with premise IDs",
       passed: /^Because:.*\bP-[0-9]/m.test(block),
-      evidence: firstMatch(block, /^Because:.*$/m) ?? "no premise IDs — a reader cannot see what would have to change for the rule to stop applying",
+      evidence:
+        firstMatch(block, /^Because:.*$/m) ??
+        "no premise IDs — a reader cannot see what would have to change for the rule to stop applying",
     },
     {
       property: "rejected alternatives",
@@ -197,7 +209,9 @@ function checkGateG5(contents: string | null): readonly GateCheck[] {
     {
       property: "a runnable verify command",
       passed: /^Verify:\s*(?!none)/m.test(block),
-      evidence: firstMatch(block, /^Verify:.*$/m) ?? "no verify line — the requirement no ADR tool satisfies automatically",
+      evidence:
+        firstMatch(block, /^Verify:.*$/m) ??
+        "no verify line — the requirement no ADR tool satisfies automatically",
     },
     {
       property: "status line",
@@ -279,7 +293,13 @@ function GateG5Card(): ReactElement {
             <tbody>
               {ran.map((check) => (
                 <tr key={check.property} style={{ borderTop: "1px solid var(--edge-soft, #333)" }}>
-                  <td style={{ padding: "4px 6px", whiteSpace: "nowrap", color: check.passed ? "var(--label-in)" : "var(--label-out)" }}>
+                  <td
+                    style={{
+                      padding: "4px 6px",
+                      whiteSpace: "nowrap",
+                      color: check.passed ? "var(--label-in)" : "var(--label-out)",
+                    }}
+                  >
                     {check.passed ? "✓" : "✗"}
                   </td>
                   <td style={{ padding: "4px 6px", whiteSpace: "nowrap" }}>{check.property}</td>
@@ -316,7 +336,10 @@ function OptionsCard(): ReactElement {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {EXPORT_TARGETS.map((target) => (
-          <label key={target} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
+          <label
+            key={target}
+            style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}
+          >
             <input
               type="checkbox"
               checked={store.targets.includes(target)}
@@ -333,7 +356,9 @@ function OptionsCard(): ReactElement {
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 12, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
+      <div
+        style={{ display: "flex", gap: 12, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}
+      >
         <label style={{ fontSize: 12 }}>
           Project name{" "}
           <input
@@ -379,9 +404,9 @@ function OptionsCard(): ReactElement {
       <div className="notice notice-warning" style={{ marginTop: 10, fontSize: 12 }}>
         Both are off by default and should stay off. A file containing a reversed rule alongside its
         replacement is exactly the failure the whole gate exists to prevent: "if two rules
-        contradict each other, the model may pick one arbitrarily." DECISIONS.md carries the
-        history regardless, because a human reading it needs the reversals and an agent following
-        rules does not.
+        contradict each other, the model may pick one arbitrarily." DECISIONS.md carries the history
+        regardless, because a human reading it needs the reversals and an agent following rules does
+        not.
       </div>
     </section>
   );
@@ -465,7 +490,11 @@ function ArtifactCard(): ReactElement {
     <section className="card">
       <h2 className="card-title">
         Artifact
-        {artifact !== null ? <span className="mono" style={{ marginLeft: 8, fontSize: 12 }}>{artifact.filename}</span> : null}
+        {artifact !== null ? (
+          <span className="mono" style={{ marginLeft: 8, fontSize: 12 }}>
+            {artifact.filename}
+          </span>
+        ) : null}
         {artifact !== null ? (
           <button type="button" className="badge" style={{ marginLeft: 8 }} onClick={download}>
             Download
@@ -516,7 +545,10 @@ function ArtifactCard(): ReactElement {
             <summary className="faint" style={{ fontSize: 11, cursor: "pointer" }}>
               Integrity stamp, parsed
             </summary>
-            <pre className="mono dim" style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontSize: 11 }}>
+            <pre
+              className="mono dim"
+              style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontSize: 11 }}
+            >
               {describeStamp(artifact.stamp)}
             </pre>
           </details>
@@ -547,7 +579,11 @@ function SixPropertiesCard(): ReactElement {
       <h2 className="card-title">
         The six agent-optimized properties · {record.id}
         {records.length > 1 ? (
-          <span className="badge" style={{ marginLeft: 8 }} onClick={() => setIndex((index + 1) % records.length)}>
+          <span
+            className="badge"
+            style={{ marginLeft: 8 }}
+            onClick={() => setIndex((index + 1) % records.length)}
+          >
             next record
           </span>
         ) : null}
@@ -571,7 +607,12 @@ function SixPropertiesCard(): ReactElement {
         <tbody>
           {checks.map((check) => (
             <tr key={check.property} style={{ borderTop: "1px solid var(--edge-soft, #333)" }}>
-              <td style={{ padding: "4px 6px", color: check.present ? "var(--label-in)" : "var(--label-unknown)" }}>
+              <td
+                style={{
+                  padding: "4px 6px",
+                  color: check.present ? "var(--label-in)" : "var(--label-unknown)",
+                }}
+              >
                 {check.present ? "✓" : "—"}
               </td>
               <td style={{ padding: "4px 6px", whiteSpace: "nowrap" }}>{check.property}</td>
@@ -695,7 +736,12 @@ function RoundTripCard(): ReactElement {
       />
 
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button type="button" className="badge" disabled={contents.trim().length === 0} onClick={plan}>
+        <button
+          type="button"
+          className="badge"
+          disabled={contents.trim().length === 0}
+          onClick={plan}
+        >
           Plan the merge
         </button>
         <button
@@ -715,7 +761,10 @@ function RoundTripCard(): ReactElement {
       ) : null}
 
       {store.mergeNote !== null ? (
-        <pre className="mono dim" style={{ whiteSpace: "pre-wrap", margin: "10px 0 0", fontSize: 11 }}>
+        <pre
+          className="mono dim"
+          style={{ whiteSpace: "pre-wrap", margin: "10px 0 0", fontSize: 11 }}
+        >
           {store.mergeNote}
         </pre>
       ) : null}

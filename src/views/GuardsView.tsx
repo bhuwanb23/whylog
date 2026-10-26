@@ -34,17 +34,6 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useMemo, useState, type ReactElement } from "react";
-import type { DecisionId, GuardId } from "@/types/common";
-import type { GuardSeverity, GuardSpec } from "@/types/guards";
-import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
-import { useWhyLog } from "@/store/whylog";
-import { label } from "@/reasoning/labeller";
-import {
-  describeGuardStore,
-  overCapDecisions,
-  useGuards,
-} from "@/store/guards";
 import {
   GUARDS_PER_DECISION_CAP,
   describeFeedbackLoop,
@@ -53,6 +42,13 @@ import {
   renderDashboard,
 } from "@/guards";
 import type { EvaluatedGuard } from "@/guards";
+import { label } from "@/reasoning/labeller";
+import { describeGuardStore, overCapDecisions, useGuards } from "@/store/guards";
+import { useWhyLog } from "@/store/whylog";
+import { LABEL_COLOUR, LABEL_MEANING } from "@/theme";
+import type { DecisionId, GuardId } from "@/types/common";
+import type { GuardSeverity, GuardSpec } from "@/types/guards";
+import { type ReactElement, useMemo, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* Gate G4                                                                    */
@@ -113,17 +109,17 @@ export function GuardsView(): ReactElement {
         <h2 className="card-title">Executable decision guards</h2>
 
         <p className="dim" style={{ margin: "0 0 12px" }}>
-          Every important architectural decision should have a corresponding fitness function —
-          but in every workflow the literature surveys, a human writes the check by hand, because
-          nobody has the decision in a structured enough form to generate from. Phase 1 produced
-          that form, so the checks here are <strong>compiled from your decisions</strong>, not
-          written for them. {decisionCount} decision(s), {guardCount} guard record(s).
+          Every important architectural decision should have a corresponding fitness function — but
+          in every workflow the literature surveys, a human writes the check by hand, because nobody
+          has the decision in a structured enough form to generate from. Phase 1 produced that form,
+          so the checks here are <strong>compiled from your decisions</strong>, not written for
+          them. {decisionCount} decision(s), {guardCount} guard record(s).
         </p>
 
         {decisionCount === 0 ? (
           <div className="notice notice-info">
-            The log is empty. Import a transcript on the Import &amp; review tab first — guards
-            are compiled from decisions, so there is nothing to compile yet.
+            The log is empty. Import a transcript on the Import &amp; review tab first — guards are
+            compiled from decisions, so there is nothing to compile yet.
           </div>
         ) : null}
 
@@ -137,12 +133,7 @@ export function GuardsView(): ReactElement {
             {guards.status === "synthesising" ? "Compiling…" : "Synthesise guards (keyless)"}
           </button>
 
-          <button
-            type="button"
-            className="badge"
-            disabled={busy}
-            onClick={() => void guards.run()}
-          >
+          <button type="button" className="badge" disabled={busy} onClick={() => void guards.run()}>
             {guards.status === "running" ? "Running…" : "Run accepted guards"}
           </button>
 
@@ -180,8 +171,8 @@ export function GuardsView(): ReactElement {
         {over.length > 0 ? (
           <div className="notice notice-warning" style={{ marginTop: 12 }}>
             {over.length} decision(s) have more than the cap of {GUARDS_PER_DECISION_CAP} guards:{" "}
-            {over.map((entry) => entry.decisionId + " (+" + entry.over + ")").join(", ")}. The
-            cap ranks by determinism, so the least trustworthy kinds are the ones to remove.
+            {over.map((entry) => entry.decisionId + " (+" + entry.over + ")").join(", ")}. The cap
+            ranks by determinism, so the least trustworthy kinds are the ones to remove.
           </div>
         ) : null}
       </section>
@@ -225,12 +216,14 @@ function GateG4Card(): ReactElement {
     const steps: string[] = [];
 
     guards.loadProject({ manifest: G4_MANIFEST, listing: G4_LISTING });
-    steps.push("1. Pasted a package.json containing \"pg\": \"^8.11.3\" and \"next\": \"^15.1.0\".");
+    steps.push('1. Pasted a package.json containing "pg": "^8.11.3" and "next": "^15.1.0".');
 
     const synthesised = await guards.synthesise({ templatesOnly: true });
     steps.push(
       synthesised.ok
-        ? "2. Compiled " + synthesised.value + " guard(s) from the log's decisions — templates only, no model consulted."
+        ? "2. Compiled " +
+            synthesised.value +
+            " guard(s) from the log's decisions — templates only, no model consulted."
         : "2. Synthesis failed: " + synthesised.error,
     );
 
@@ -238,12 +231,18 @@ function GateG4Card(): ReactElement {
      * use this is a human reading each one; the gate does it in bulk because the gate is testing
      * the LOOP, not the review. */
     const accepted = acceptAllProposed();
-    steps.push("3. Accepted " + accepted + " proposed guard(s) in bulk — the gate tests the loop, not the review.");
+    steps.push(
+      "3. Accepted " +
+        accepted +
+        " proposed guard(s) in bulk — the gate tests the loop, not the review.",
+    );
 
     const ran = await guards.run();
     steps.push(
       ran.ok
-        ? "4. Ran the guards. " + ran.value + " failure(s) entered REVISE() as evidence, through the same entry point a transcript uses."
+        ? "4. Ran the guards. " +
+            ran.value +
+            " failure(s) entered REVISE() as evidence, through the same entry point a transcript uses."
         : "4. Run failed: " + ran.error,
     );
 
@@ -251,7 +250,13 @@ function GateG4Card(): ReactElement {
       "5. Check below: compliance must have DROPPED, and the Reasoning tab must show a proposal whose evidence quotes the manifest line verbatim. No model was involved at any step — the guard is a dependency lookup, the contradiction is an ontology antonym check.",
     );
 
-    steps.push("Decisions in log: " + whylog.state.decisions.size + ". Guards: " + whylog.state.guards.size + ".");
+    steps.push(
+      "Decisions in log: " +
+        whylog.state.decisions.size +
+        ". Guards: " +
+        whylog.state.guards.size +
+        ".",
+    );
 
     setDone(steps.join("\n"));
   };
@@ -261,10 +266,10 @@ function GateG4Card(): ReactElement {
       <h2 className="card-title">Gate G4 — it verifies</h2>
 
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
-        Pastes a <span className="mono">package.json</span> containing <span className="mono">pg</span>,
-        compiles guards from the log's decisions, accepts them, and runs them. The gate passes if
-        compliance drops <em>and</em> a structural contradiction fires — deterministically, with no
-        model involved at any step.
+        Pastes a <span className="mono">package.json</span> containing{" "}
+        <span className="mono">pg</span>, compiles guards from the log's decisions, accepts them,
+        and runs them. The gate passes if compliance drops <em>and</em> a structural contradiction
+        fires — deterministically, with no model involved at any step.
       </p>
 
       <button
@@ -316,22 +321,25 @@ function DashboardCard(): ReactElement {
     <section className="card">
       <h2 className="card-title">Compliance dashboard</h2>
 
-      <pre className="mono" style={{ whiteSpace: "pre-wrap", margin: "0 0 12px", fontSize: 12, lineHeight: 1.7 }}>
+      <pre
+        className="mono"
+        style={{ whiteSpace: "pre-wrap", margin: "0 0 12px", fontSize: 12, lineHeight: 1.7 }}
+      >
         {renderDashboard(result)}
       </pre>
 
       <div className="notice notice-info" style={{ fontSize: 12 }}>
         Compliance is computed over <strong>deterministic guards only</strong>. A judged verdict
-        cannot reach the quotient, because a score that moved when the model changed would not be
-        a measurement of the codebase. Compliance and coverage are never shown apart: a log with
-        one passing guard scores 100% compliance, so the headline number flatters itself without
-        the denominator beside it.
+        cannot reach the quotient, because a score that moved when the model changed would not be a
+        measurement of the codebase. Compliance and coverage are never shown apart: a log with one
+        passing guard scores 100% compliance, so the headline number flatters itself without the
+        denominator beside it.
       </div>
 
       {result.compliance.baselinedOnly.length > 0 ? (
         <div className="notice notice-warning" style={{ marginTop: 10, fontSize: 12 }}>
-          {result.compliance.baselinedOnly.length} decision(s) fail only on violations the
-          baseline already knew about:{" "}
+          {result.compliance.baselinedOnly.length} decision(s) fail only on violations the baseline
+          already knew about:{" "}
           <span className="mono">{result.compliance.baselinedOnly.join(", ")}</span>. These are
           recorded and listed, but they are not drift, and they do not fire revision proposals —
           firing one for a violation that predates the guard would fill the queue with things you
@@ -403,8 +411,8 @@ function RunResultsCard({ evaluated }: { evaluated: readonly EvaluatedGuard[] })
             {showPassing ? "Hide" : "Show"} {passes.length} passing
           </button>
           <div className="faint" style={{ fontSize: 11, marginTop: 4 }}>
-            Passing guards collapse into a count by default (§4.7): a list of green checks is
-            noise that hides the one red line.
+            Passing guards collapse into a count by default (§4.7): a list of green checks is noise
+            that hides the one red line.
           </div>
 
           {showPassing ? (
@@ -471,7 +479,9 @@ function FailureRow({ entry }: { entry: EvaluatedGuard }): ReactElement {
   return (
     <div
       style={{
-        borderLeft: "3px solid " + (entry.guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)"),
+        borderLeft:
+          "3px solid " +
+          (entry.guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)"),
         padding: "10px 12px",
         marginBottom: 10,
         background:
@@ -507,7 +517,9 @@ function FailureRow({ entry }: { entry: EvaluatedGuard }): ReactElement {
       {rejected.map((alt) => (
         <div className="dim" key={alt.value} style={{ fontSize: 12, marginTop: 2 }}>
           Rejected alternative {alt.value}
-          {alt.whyRejected === undefined ? " — no reason recorded" : ' — reason: "' + alt.whyRejected + '"'}
+          {alt.whyRejected === undefined
+            ? " — no reason recorded"
+            : ' — reason: "' + alt.whyRejected + '"'}
         </div>
       ))}
 
@@ -516,7 +528,9 @@ function FailureRow({ entry }: { entry: EvaluatedGuard }): ReactElement {
         <div>→ Or is this drift? Undo the change, or suppress this guard with a reason.</div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <div
+        style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}
+      >
         <button
           type="button"
           className="badge"
@@ -570,8 +584,8 @@ function ProjectCard(): ReactElement {
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
         Guards have to run somewhere, and there is no shell or filesystem here. Paste what your
         project looks like and the six deterministic kinds evaluate against it in memory — real
-        logic, real data, no network. This is the designed default, not a compromise: the only
-        thing missing is automatic file discovery, which is a repo-connection concern.
+        logic, real data, no network. This is the designed default, not a compromise: the only thing
+        missing is automatic file discovery, which is a repo-connection concern.
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -591,7 +605,9 @@ function ProjectCard(): ReactElement {
         />
         <Field
           title="File contents (optional)"
-          hint={'Separate files with a header line like `--- src/db/schema.ts ---`. Enables the string guards.'}
+          hint={
+            "Separate files with a header line like `--- src/db/schema.ts ---`. Enables the string guards."
+          }
           value={contents}
           onChange={setContents}
           rows={5}
@@ -620,12 +636,17 @@ function ProjectCard(): ReactElement {
           {guards.parse.unparsed.length > 0 ? (
             <div className="notice notice-warning" style={{ marginTop: 10, fontSize: 12 }}>
               {guards.parse.unparsed.length} line(s) could not be interpreted and were KEPT rather
-              than dropped — a parse that silently ignores a line produces a project missing a
-              file, and a missing file makes a path guard fail for a reason that has nothing to do
-              with the codebase.
-              <pre className="mono" style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", fontSize: 11 }}>
+              than dropped — a parse that silently ignores a line produces a project missing a file,
+              and a missing file makes a path guard fail for a reason that has nothing to do with
+              the codebase.
+              <pre
+                className="mono"
+                style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", fontSize: 11 }}
+              >
                 {guards.parse.unparsed.slice(0, 8).join("\n")}
-                {guards.parse.unparsed.length > 8 ? "\n… " + (guards.parse.unparsed.length - 8) + " more" : ""}
+                {guards.parse.unparsed.length > 8
+                  ? "\n… " + (guards.parse.unparsed.length - 8) + " more"
+                  : ""}
               </pre>
             </div>
           ) : null}
@@ -687,7 +708,6 @@ function Metric({ label, value }: { label: string; value: number }): ReactElemen
  *  mutation. Two readings of one fact is how a stale label reaches the screen. */
 function ReviewCard(): ReactElement {
   const whylog = useWhyLog();
-  const guards = useGuards();
 
   const decisions = [...whylog.state.decisions.values()].filter(
     (decision) => decision.status !== "superseded" && decision.status !== "archived",
@@ -698,9 +718,9 @@ function ReviewCard(): ReactElement {
       <h2 className="card-title">Guard review</h2>
 
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
-        No guard runs until it is accepted. A synthesised guard that fails on day one is worse
-        than no guard, because it teaches you to ignore the panel — and a panel that gets ignored
-        stops being verification.
+        No guard runs until it is accepted. A synthesised guard that fails on day one is worse than
+        no guard, because it teaches you to ignore the panel — and a panel that gets ignored stops
+        being verification.
       </p>
 
       {decisions.length === 0 ? (
@@ -713,7 +733,10 @@ function ReviewCard(): ReactElement {
         <DecisionGuardRow key={decision.id} decisionId={decision.id} />
       ))}
 
-      <pre className="mono dim" style={{ whiteSpace: "pre-wrap", margin: "12px 0 0", fontSize: 11 }}>
+      <pre
+        className="mono dim"
+        style={{ whiteSpace: "pre-wrap", margin: "12px 0 0", fontSize: 11 }}
+      >
         {describeReviewPolicy()}
       </pre>
     </section>
@@ -727,7 +750,8 @@ function DecisionGuardRow({ decisionId }: { decisionId: DecisionId }): ReactElem
 
   const group = guards.groupFor(decisionId);
   const decision = whylog.state.decisions.get(decisionId);
-  const decisionLabel = label(whylog.state).labels.get(decisionId)?.label ?? decision?.label ?? "UNKNOWN";
+  const decisionLabel =
+    label(whylog.state).labels.get(decisionId)?.label ?? decision?.label ?? "UNKNOWN";
 
   if (group.guards.length === 0) return <span />;
 
@@ -754,8 +778,8 @@ function DecisionGuardRow({ decisionId }: { decisionId: DecisionId }): ReactElem
       {group.disabledByLabel ? (
         <div className="notice notice-warning" style={{ marginTop: 8, fontSize: 12 }}>
           This decision is not labelled IN, so its guards are disabled and will not run. Guards
-          inherit their decision's label: a reversed or unsupported decision must stop nagging.
-          They re-enable automatically if the decision returns to IN.
+          inherit their decision's label: a reversed or unsupported decision must stop nagging. They
+          re-enable automatically if the decision returns to IN.
         </div>
       ) : null}
 
@@ -763,13 +787,26 @@ function DecisionGuardRow({ decisionId }: { decisionId: DecisionId }): ReactElem
         const disabled = guards.disabledReason(guard.id);
 
         return (
-          <div key={guard.id} style={{ marginTop: 8, paddingLeft: 10, borderLeft: "2px solid var(--edge-soft, #444)" }}>
+          <div
+            key={guard.id}
+            style={{
+              marginTop: 8,
+              paddingLeft: 10,
+              borderLeft: "2px solid var(--edge-soft, #444)",
+            }}
+          >
             <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
               <span className="mono" style={{ fontSize: 11 }}>
                 {guard.id}
               </span>
               <span className="badge">{guard.spec.kind}</span>
-              <span className="badge" style={{ color: guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)" }}>
+              <span
+                className="badge"
+                style={{
+                  color:
+                    guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)",
+                }}
+              >
                 {guard.severity}
               </span>
               <span className="badge">{guard.lifecycle}</span>
@@ -895,8 +932,8 @@ function EditForm({
     <div style={{ marginTop: 8 }}>
       <div className="notice notice-warning" style={{ fontSize: 11 }}>
         Editing is <strong>delete + re-synthesise</strong>, recorded as two events. The closed
-        vocabulary has no edit event, and adding one would let a spec change without a record of
-        the spec it replaced — a guard quietly weakened after it started failing would be
+        vocabulary has no edit event, and adding one would let a spec change without a record of the
+        spec it replaced — a guard quietly weakened after it started failing would be
         indistinguishable from one that was fixed. The replacement is PROPOSED again: an edit does
         not inherit acceptance, because that would activate a check nobody reviewed.
       </div>
@@ -954,7 +991,12 @@ function describeSpec(spec: GuardSpec): string {
       return spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return JSON.stringify(spec.pattern) + " within " + spec.glob + (spec.wordBoundary === false ? ", no word boundary" : ", word-boundary matched");
+      return (
+        JSON.stringify(spec.pattern) +
+        " within " +
+        spec.glob +
+        (spec.wordBoundary === false ? ", no word boundary" : ", word-boundary matched")
+      );
     case "command_exit_zero":
       return spec.command;
     case "llm_judge":
@@ -973,16 +1015,14 @@ function UnverifiableCard(): ReactElement {
 
   return (
     <section className="card">
-      <h2 className="card-title">
-        Unverifiable · {guards.unverifiable.length} decision(s)
-      </h2>
+      <h2 className="card-title">Unverifiable · {guards.unverifiable.length} decision(s)</h2>
 
       <div className="notice notice-warning" style={{ fontSize: 12 }}>
         No guard could be compiled for these. They are SHOWN, never silently skipped: the
-        literature's own test is whether you can describe what a violation looks like, and for
-        these you cannot yet. Unverifiable decisions are exactly the ones most likely to drift,
-        because nothing would tell you if they did — and a compliance score computed only over the
-        decisions that happened to be checkable is a score that flatters itself.
+        literature's own test is whether you can describe what a violation looks like, and for these
+        you cannot yet. Unverifiable decisions are exactly the ones most likely to drift, because
+        nothing would tell you if they did — and a compliance score computed only over the decisions
+        that happened to be checkable is a score that flatters itself.
       </div>
 
       <ul style={{ margin: "10px 0 0", paddingLeft: 18 }}>
@@ -1002,7 +1042,11 @@ function UnverifiableCard(): ReactElement {
 
 function CiExportCard(): ReactElement {
   const guards = useGuards();
-  const [output, setOutput] = useState<{ runner: string; workflow: string; summary: string } | null>(null);
+  const [output, setOutput] = useState<{
+    runner: string;
+    workflow: string;
+    summary: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [which, setWhich] = useState<"runner" | "workflow">("runner");
 
@@ -1037,9 +1081,9 @@ function CiExportCard(): ReactElement {
 
       <p className="dim" style={{ margin: "0 0 10px", fontSize: 12 }}>
         A standalone Node runner (standard library only — no install step) and a GitHub Actions
-        workflow. The exported runner evaluates the same six predicates as the interpreter here,
-        and the guard set is serialised as data rather than regenerated, so the two cannot drift
-        apart by having been written twice.
+        workflow. The exported runner evaluates the same six predicates as the interpreter here, and
+        the guard set is serialised as data rather than regenerated, so the two cannot drift apart
+        by having been written twice.
       </p>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1070,7 +1114,10 @@ function CiExportCard(): ReactElement {
 
       {output !== null ? (
         <>
-          <pre className="mono dim" style={{ whiteSpace: "pre-wrap", margin: "10px 0 0", fontSize: 11 }}>
+          <pre
+            className="mono dim"
+            style={{ whiteSpace: "pre-wrap", margin: "10px 0 0", fontSize: 11 }}
+          >
             {output.summary}
           </pre>
           <pre
@@ -1119,4 +1166,3 @@ function Block({ title, body }: { title: string; body: string }): ReactElement {
     </div>
   );
 }
-

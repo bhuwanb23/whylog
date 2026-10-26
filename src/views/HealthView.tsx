@@ -29,10 +29,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useMemo, type ReactElement } from "react";
-import type { DecisionId } from "@/types/common";
-import type { GraphState } from "@/substrate/graph-state";
-import { label as labelGraph, type Labelled, type NodeId } from "@/reasoning/labeller";
+import { EmptyState } from "@/components/common";
 import {
   compliance as complianceOf,
   coverage as coverageOf,
@@ -42,10 +39,13 @@ import {
   evaluatedFromState,
   soundness as soundnessOf,
 } from "@/guards";
-import { useWhyLog } from "@/store/whylog";
-import { useExport } from "@/store/export";
-import { EmptyState } from "@/components/common";
 import { bar } from "@/guards/metrics/compliance";
+import { type Labelled, type NodeId, label as labelGraph } from "@/reasoning/labeller";
+import { useExport } from "@/store/export";
+import { useWhyLog } from "@/store/whylog";
+import type { GraphState } from "@/substrate/graph-state";
+import type { DecisionId } from "@/types/common";
+import { type ReactElement, useMemo } from "react";
 
 export function HealthView(): ReactElement {
   const whylog = useWhyLog();
@@ -56,7 +56,8 @@ export function HealthView(): ReactElement {
   const metrics = useMemo(() => {
     const evaluated = evaluatedFromState(whylog.state);
     const guardToDecision = new Map<string, DecisionId>();
-    for (const guard of whylog.state.guards.values()) guardToDecision.set(guard.id, guard.decisionId);
+    for (const guard of whylog.state.guards.values())
+      guardToDecision.set(guard.id, guard.decisionId);
 
     return {
       compliance: complianceOf(evaluated, labels, guardToDecision),
@@ -99,7 +100,9 @@ export function HealthView(): ReactElement {
                 ? "Every checkable decision holds. The code still does what the log says it does."
                 : "Your codebase has quietly stopped believing " +
                   (metrics.compliance.denominator - metrics.compliance.compliant) +
-                  " of " + metrics.compliance.denominator + " checkable decisions."
+                  " of " +
+                  metrics.compliance.denominator +
+                  " checkable decisions."
           }
         />
 
@@ -110,7 +113,9 @@ export function HealthView(): ReactElement {
           gloss={
             metrics.coverage.score < 0.5
               ? "Most of the log is unfalsifiable prose — nothing would tell you if these decisions stopped holding. Shown next to compliance on purpose: compliance without coverage is a score that flatters itself."
-              : metrics.coverage.inDecisions - metrics.coverage.covered + " IN decision(s) have no accepted guard."
+              : metrics.coverage.inDecisions -
+                metrics.coverage.covered +
+                " IN decision(s) have no accepted guard."
           }
         />
 
@@ -130,7 +135,11 @@ export function HealthView(): ReactElement {
           gloss={
             contention.contested + contention.out === 0
               ? "No premise is contested or falsified. The ground has not shifted since these decisions were made."
-              : "How much of the ground has shifted: " + contention.contested + " contested and " + contention.out + " falsified premise(s). Each one is a decision that may no longer be justified."
+              : "How much of the ground has shifted: " +
+                contention.contested +
+                " contested and " +
+                contention.out +
+                " falsified premise(s). Each one is a decision that may no longer be justified."
           }
           inverted
         />
@@ -145,7 +154,11 @@ export function HealthView(): ReactElement {
         <MetricRow
           name="Drift Age (worst)"
           value={metrics.drift.worstDays === 0 ? 0 : Math.min(1, metrics.drift.worstDays / 30)}
-          fraction={metrics.drift.worst === null ? "none" : metrics.drift.worstDays + " days · " + metrics.drift.worst.decisionId}
+          fraction={
+            metrics.drift.worst === null
+              ? "none"
+              : metrics.drift.worstDays + " days · " + metrics.drift.worst.decisionId
+          }
           gloss={
             metrics.drift.worst === null
               ? "No unresolved guard failures, so nothing is drifting."
@@ -183,7 +196,11 @@ export function HealthView(): ReactElement {
             detail={
               whylog.status === "degraded"
                 ? "BROKEN — the log is read-only. Every event is chained to its predecessor, so a broken chain means an event was altered or removed, and nothing appended since can be trusted."
-                : "Verified. " + whylog.log.events.length + " event(s), head " + (whylog.log.headHash.slice(0, 12) || "empty") + ". Every event is chained to its predecessor, so an alteration anywhere downstream invalidates the head."
+                : "Verified. " +
+                  whylog.log.events.length +
+                  " event(s), head " +
+                  (whylog.log.headHash.slice(0, 12) || "empty") +
+                  ". Every event is chained to its predecessor, so an alteration anywhere downstream invalidates the head."
             }
           />
 
@@ -205,7 +222,10 @@ export function HealthView(): ReactElement {
             detail={
               exportStore.checks.length === 0
                 ? "No exported file has been checked against the log. Paste one on the Export tab to find out whether it still corresponds — auditability, not security."
-                : exportStore.checks.filter((check) => !check.verification.ok).length + " of " + exportStore.checks.length + " checked file(s) do not match the current log head."
+                : exportStore.checks.filter((check) => !check.verification.ok).length +
+                  " of " +
+                  exportStore.checks.length +
+                  " checked file(s) do not match the current log head."
             }
           />
 
@@ -249,7 +269,10 @@ function MetricRow({
     <div style={{ borderTop: "1px solid var(--border)", padding: "10px 0" }}>
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
         <strong style={{ fontSize: 12.5, minWidth: 170 }}>{name}</strong>
-        <span className="mono" style={{ fontSize: 12, letterSpacing: 1, color: barColour(clamped, inverted) }}>
+        <span
+          className="mono"
+          style={{ fontSize: 12, letterSpacing: 1, color: barColour(clamped, inverted) }}
+        >
           {bar(clamped)}
         </span>
         <span className="mono" style={{ fontSize: 12 }}>
@@ -273,14 +296,23 @@ function barColour(value: number, inverted: boolean): string {
   return "var(--label-in)";
 }
 
-function IntegrityRow({ ok, label, detail }: { ok: boolean; label: string; detail: string }): ReactElement {
+function IntegrityRow({
+  ok,
+  label,
+  detail,
+}: { ok: boolean; label: string; detail: string }): ReactElement {
   return (
     <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-      <span className="mono" style={{ color: ok ? "var(--label-in)" : "var(--edge-conflict)", flexShrink: 0 }}>
+      <span
+        className="mono"
+        style={{ color: ok ? "var(--label-in)" : "var(--edge-conflict)", flexShrink: 0 }}
+      >
         {ok ? "✓" : "✗"}
       </span>
       <span style={{ minWidth: 130, flexShrink: 0 }}>{label}</span>
-      <span className="dim" style={{ fontSize: 11.5 }}>{detail}</span>
+      <span className="dim" style={{ fontSize: 11.5 }}>
+        {detail}
+      </span>
     </div>
   );
 }
@@ -364,10 +396,28 @@ export function agencyRatio(state: GraphState): {
     total === 0
       ? "No decisions yet."
       : agentSourced === 0
-        ? "Every one of your " + total + " decision(s) was stated by you, so there is nothing to measure agency against. This metric becomes interesting the first time an agent proposes something."
-        : "You have overridden your agent " + humanOverride + " time(s) out of " + (agentSourced + humanOverride) +
-          " agent-sourced decision(s). " + agentProposed + " proposed and accepted, " + agentInferred +
-          " inferred and never checked, " + humanStated + " stated by you outright. Nobody who does not classify decision origin can compute this.";
+        ? "Every one of your " +
+          total +
+          " decision(s) was stated by you, so there is nothing to measure agency against. This metric becomes interesting the first time an agent proposes something."
+        : "You have overridden your agent " +
+          humanOverride +
+          " time(s) out of " +
+          (agentSourced + humanOverride) +
+          " agent-sourced decision(s). " +
+          agentProposed +
+          " proposed and accepted, " +
+          agentInferred +
+          " inferred and never checked, " +
+          humanStated +
+          " stated by you outright. Nobody who does not classify decision origin can compute this.";
 
-  return { score, overridden: humanOverride, humanStated, agentProposed, agentInferred, total, gloss };
+  return {
+    score,
+    overridden: humanOverride,
+    humanStated,
+    agentProposed,
+    agentInferred,
+    total,
+    gloss,
+  };
 }

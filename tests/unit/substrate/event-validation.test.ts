@@ -1,3 +1,16 @@
+import {
+  EVENT_TYPES,
+  EVENT_TYPE_COUNT,
+  hasReason,
+  isKnownEventType,
+  payloadShapeOk,
+  validateEvent,
+  validateLoose,
+  validationMessage,
+} from "@/substrate/event-validation";
+import { GENESIS_HASH } from "@/substrate/hash-chain";
+import { STATE_CHANGING_EVENTS } from "@/types/events";
+import type { AnyEvent } from "@/types/events";
 /**
  * Event validation — the seven rules the append path enforces.
  *
@@ -7,11 +20,17 @@
  * literal typed loosely enough to allow it. This test exists so that class of bug cannot return.
  */
 import { describe, expect, it } from "vitest";
-import { EVENT_TYPE_COUNT, EVENT_TYPES, hasReason, isKnownEventType, payloadShapeOk, validateEvent, validateLoose, validationMessage } from "@/substrate/event-validation";
-import { GENESIS_HASH } from "@/substrate/hash-chain";
-import { ACTOR, LOCAL_ENGINE, decisionId, nextAt, resetClock, sealAll, transcriptId, transcriptImported, decisionProposed } from "../../helpers/events";
-import { STATE_CHANGING_EVENTS } from "@/types/events";
-import type { AnyEvent } from "@/types/events";
+import {
+  ACTOR,
+  LOCAL_ENGINE,
+  decisionId,
+  decisionProposed,
+  nextAt,
+  resetClock,
+  sealAll,
+  transcriptId,
+  transcriptImported,
+} from "../../helpers/events";
 
 const t1 = transcriptId(1);
 
@@ -42,7 +61,9 @@ describe("the event vocabulary", () => {
 
 describe("rule 2 — every state-changing event carries a non-empty reason", () => {
   const stateChanging = STATE_CHANGING_EVENTS[0]!;
-  const recordOnly = EVENT_TYPES.find((t) => !(STATE_CHANGING_EVENTS as readonly string[]).includes(t))!;
+  const recordOnly = EVENT_TYPES.find(
+    (t) => !(STATE_CHANGING_EVENTS as readonly string[]).includes(t),
+  )!;
 
   it("declares a non-trivial set of state-changing events, all of them in the vocabulary", () => {
     expect(STATE_CHANGING_EVENTS.length).toBeGreaterThan(5);
@@ -104,7 +125,9 @@ describe("validateLoose over events the log actually sealed", () => {
 describe("validationMessage narrows the union in exactly one place", () => {
   it("returns the rule's message on failure and a fallback on success", () => {
     expect(validationMessage({ ok: true })).toBe("rejected by validation");
-    expect(validationMessage({ ok: false, rule: 2, message: "missing reason" })).toBe("missing reason");
+    expect(validationMessage({ ok: false, rule: 2, message: "missing reason" })).toBe(
+      "missing reason",
+    );
   });
 });
 
@@ -154,10 +177,11 @@ describe("validateEvent against a chain context", () => {
   it("rejects an event learned before the one already in the log", () => {
     const events = sealed();
     resetClock();
-    const result = validateEvent(
-      { ...events[1]!, at: "2020-01-01T00:00:00.000Z" } as AnyEvent,
-      { expectedPrevHash: events[1]!.prevHash, lastLearnedAt: events[0]!.at, knownIds: new Set([events[0]!.id]) },
-    );
+    const result = validateEvent({ ...events[1]!, at: "2020-01-01T00:00:00.000Z" } as AnyEvent, {
+      expectedPrevHash: events[1]!.prevHash,
+      lastLearnedAt: events[0]!.at,
+      knownIds: new Set([events[0]!.id]),
+    });
     expect(result.ok).toBe(false);
   });
 

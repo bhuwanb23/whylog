@@ -1,3 +1,4 @@
+import { DECISION_CUES } from "@/ontology/data/decision-cues";
 /**
  * Decision recovery — the four bugs that made precision collapse.
  *
@@ -6,12 +7,13 @@
  * eval corpus so a failure names the mechanism instead of moving a benchmark number.
  */
 import { describe, expect, it } from "vitest";
-import { DECISION_CUES } from "@/ontology/data/decision-cues";
 import { extract, pairs } from "../../helpers/extraction";
 
 describe("rationale markers are episode boundaries, not decisions", () => {
   it("flags exactly the five that introduce a WHY or a CONDITION", () => {
-    const rationaleOnly = DECISION_CUES.filter((cue) => cue.rationaleOnly === true).map((cue) => cue.phrase).sort();
+    const rationaleOnly = DECISION_CUES.filter((cue) => cue.rationaleOnly === true)
+      .map((cue) => cue.phrase)
+      .sort();
     expect(rationaleOnly).toEqual(["as long as", "because", "in order to", "since", "so that"]);
   });
 
@@ -39,7 +41,9 @@ describe("rationale markers are episode boundaries, not decisions", () => {
     /* The rationale cue itself must not mint a decision: no candidate may quote "because" or "since"
      * as the start of its statement. */
     for (const decision of decisions) {
-      expect(decision.statement.toLowerCase()).not.toMatch(/^(because|since|so that|in order to)\b/);
+      expect(decision.statement.toLowerCase()).not.toMatch(
+        /^(because|since|so that|in order to)\b/,
+      );
     }
   });
 
@@ -77,7 +81,9 @@ describe("a value must be a value, not an ordinary word", () => {
       ["Human: what about auth?", "Agent: it's the thing we need for now."].join("\n"),
     );
     for (const decision of decisions) {
-      expect(["thing", "things", "something", "stuff", "one", "lot"]).not.toContain(decision.value.toLowerCase());
+      expect(["thing", "things", "something", "stuff", "one", "lot"]).not.toContain(
+        decision.value.toLowerCase(),
+      );
     }
   });
 
@@ -107,16 +113,12 @@ describe("the strongest mention of a decision wins, not the first", () => {
 
     /* The surviving candidate must point at the acceptance, which is the later sentence. */
     const acceptance = raw.indexOf("going with SQLite");
-    expect(sqlite!.snippet.start).toBeGreaterThanOrEqual(acceptance - 20);
+    expect(sqlite?.snippet.start).toBeGreaterThanOrEqual(acceptance - 20);
   });
 
   it("produces exactly one candidate for a value mentioned twice", async () => {
     const { decisions } = await extract(
-      [
-        "Human: storage?",
-        "Agent: I'd use SQLite.",
-        "Human: agreed, going with SQLite.",
-      ].join("\n"),
+      ["Human: storage?", "Agent: I'd use SQLite.", "Human: agreed, going with SQLite."].join("\n"),
     );
     expect(decisions.filter((d) => d.value.toLowerCase().includes("sqlite"))).toHaveLength(1);
   });
@@ -137,7 +139,7 @@ describe("the variable comes from the VALUE, not from the episode's topic", () =
     );
     const sqlite = decisions.find((d) => d.value.toLowerCase().includes("sqlite"));
     expect(sqlite).toBeDefined();
-    expect(sqlite!.variable).toBe("DATABASE");
+    expect(sqlite?.variable).toBe("DATABASE");
   });
 
   it("puts vite in FRAMEWORK", async () => {
@@ -146,7 +148,7 @@ describe("the variable comes from the VALUE, not from the episode's topic", () =
     );
     const vite = decisions.find((d) => d.value.toLowerCase().includes("vite"));
     expect(vite).toBeDefined();
-    expect(vite!.variable).toBe("FRAMEWORK");
+    expect(vite?.variable).toBe("FRAMEWORK");
   });
 });
 
@@ -169,13 +171,14 @@ describe("every recovered decision carries a snippet that is real text", () => {
     /* The old cue-only fallback emitted snippets like the two characters "it's" while the value came
      * from three sentences away. A snippet that does not contain its own value is not evidence. */
     const { decisions } = await extract(
-      [
-        "Human: database?",
-        "Agent: it's a tricky one. Later: we decided to use Postgres.",
-      ].join("\n"),
+      ["Human: database?", "Agent: it's a tricky one. Later: we decided to use Postgres."].join(
+        "\n",
+      ),
     );
     for (const decision of decisions) {
-      expect(decision.snippet.text.toLowerCase()).toContain(decision.value.toLowerCase().slice(0, 4));
+      expect(decision.snippet.text.toLowerCase()).toContain(
+        decision.value.toLowerCase().slice(0, 4),
+      );
     }
   });
 });

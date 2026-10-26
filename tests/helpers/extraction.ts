@@ -1,3 +1,5 @@
+import { createLocalEngine } from "@/ai/local";
+import type { DecisionCandidate, ExtractionResult, PremiseCandidate } from "@/ai/types";
 /**
  * Run the real local pipeline over a hand-written transcript.
  *
@@ -7,11 +9,9 @@
  * clause minted as a second decision. Testing a stage in isolation cannot see any of that.
  */
 import { runExtraction } from "@/extraction/pipeline";
-import { emptyState } from "@/substrate/graph-state";
-import { createLocalEngine } from "@/ai/local";
 import { nowISO } from "@/lib/format";
+import { emptyState } from "@/substrate/graph-state";
 import { LOCAL_ENGINE, transcriptId } from "./events";
-import type { DecisionCandidate, ExtractionResult, PremiseCandidate } from "@/ai/types";
 
 const engine = createLocalEngine();
 

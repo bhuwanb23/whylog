@@ -1,3 +1,14 @@
+import { createLocalEngine } from "@/ai/local";
+import { runExtraction } from "@/extraction/pipeline";
+import { synthesiseAll } from "@/guards";
+import { guardStatusMap } from "@/guards/feedback";
+import { label, validityOf } from "@/reasoning/labeller";
+import { revise } from "@/reasoning/revise";
+import { ask } from "@/retrieval";
+import { buildIndex } from "@/retrieval/build-index";
+import { appendBatch } from "@/substrate/event-log";
+import { emptyState } from "@/substrate/graph-state";
+import { fold } from "@/substrate/materialize";
 /**
  * Gate G2 with NO KEY AND NO NETWORK.
  *
@@ -11,18 +22,14 @@
  * mechanism work with the network unplugged.
  */
 import { describe, expect, it, vi } from "vitest";
-import { createLocalEngine } from "@/ai/local";
-import { runExtraction } from "@/extraction/pipeline";
-import { emptyState } from "@/substrate/graph-state";
-import { fold } from "@/substrate/materialize";
-import { label, validityOf } from "@/reasoning/labeller";
-import { revise } from "@/reasoning/revise";
-import { guardStatusMap } from "@/guards/feedback";
-import { synthesiseAll } from "@/guards";
-import { appendBatch } from "@/substrate/event-log";
-import { buildIndex } from "@/retrieval/build-index";
-import { ask } from "@/retrieval";
-import { ACTOR, LOCAL_ENGINE, nextAt, nowIsoForTest, premiseInvalidated, resetClock, transcriptId } from "../helpers/events";
+import {
+  ACTOR,
+  LOCAL_ENGINE,
+  nextAt,
+  premiseInvalidated,
+  resetClock,
+  transcriptId,
+} from "../helpers/events";
 import { sqliteGraph } from "../helpers/graph";
 
 const engine = createLocalEngine();
@@ -38,10 +45,22 @@ describe("no network is available, and nothing reaches for one", () => {
     const { labels } = label(g.state);
     expect(labels.size).toBeGreaterThan(0);
 
-    const revised = await revise({ state: g.state, engine, actor: ACTOR, now: nextAt(), guards: guardStatusMap(g.state) });
+    const revised = await revise({
+      state: g.state,
+      engine,
+      actor: ACTOR,
+      now: nextAt(),
+      guards: guardStatusMap(g.state),
+    });
     expect(Array.isArray(revised.eventDrafts)).toBe(true);
 
-    const synthesised = await synthesiseAll({ state: g.state, engine, templatesOnly: true, actor: ACTOR, at: nextAt() });
+    const synthesised = await synthesiseAll({
+      state: g.state,
+      engine,
+      templatesOnly: true,
+      actor: ACTOR,
+      at: nextAt(),
+    });
     expect(synthesised.drafts.length).toBeGreaterThan(0);
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -75,7 +94,9 @@ describe("extraction runs keyless", () => {
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect(outcome.outcome.result.decisions.length).toBeGreaterThan(0);
-    expect(outcome.outcome.result.decisions.some((d) => d.value.toLowerCase().includes("sqlite"))).toBe(true);
+    expect(
+      outcome.outcome.result.decisions.some((d) => d.value.toLowerCase().includes("sqlite")),
+    ).toBe(true);
   });
 });
 
@@ -84,7 +105,10 @@ describe("the headline mechanism runs keyless", () => {
     const g = sqliteGraph();
 
     const outcome = appendBatch(g.sealed.log, [
-      { draft: premiseInvalidated(g.singleUser, "human"), context: { now: nextAt(), actor: ACTOR, reason: "Concurrent writers arrived." } },
+      {
+        draft: premiseInvalidated(g.singleUser, "human"),
+        context: { now: nextAt(), actor: ACTOR, reason: "Concurrent writers arrived." },
+      },
     ]);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
@@ -93,13 +117,19 @@ describe("the headline mechanism runs keyless", () => {
     const { labels } = label(state);
 
     /* The decision nobody re-mentioned is unsound. */
-    expect(labels.get(g.sqlite)!.label).not.toBe("IN");
+    expect(labels.get(g.sqlite)?.label).not.toBe("IN");
     /* The one that shares the premise cascades with it. */
-    expect(labels.get(g.pooling)!.label).not.toBe("IN");
+    expect(labels.get(g.pooling)?.label).not.toBe("IN");
     /* The one that shares nothing survives. */
-    expect(labels.get(g.migration)!.label).toBe("IN");
+    expect(labels.get(g.migration)?.label).toBe("IN");
 
-    const revised = await revise({ state, engine, actor: ACTOR, now: nextAt(), guards: guardStatusMap(state) });
+    const revised = await revise({
+      state,
+      engine,
+      actor: ACTOR,
+      now: nextAt(),
+      guards: guardStatusMap(state),
+    });
     expect(revised.eventDrafts.filter((d) => d.type === "LabelChanged").length).toBeGreaterThan(0);
   });
 

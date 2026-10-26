@@ -1,3 +1,15 @@
+import {
+  byIdAsc,
+  byValidAsc,
+  byValidDesc,
+  compare,
+  formatInterval,
+  isOpen,
+  isValidAt,
+} from "@/substrate/bi-temporal";
+import { fold, materializeAsOf } from "@/substrate/materialize";
+import type { ValidityWindow } from "@/types/common";
+import type { Decision, Premise } from "@/types/domain";
 /**
  * Bi-temporality — the two clocks.
  *
@@ -7,12 +19,8 @@
  * timeline order did not typecheck against a `Decision` or a `Premise` at all.
  */
 import { describe, expect, it } from "vitest";
-import { byIdAsc, byValidAsc, byValidDesc, compare, formatInterval, isOpen, isValidAt } from "@/substrate/bi-temporal";
-import { fold, materializeAsOf } from "@/substrate/materialize";
-import { at, decisionId, LOCAL_ENGINE, nextAt, premiseId, resetClock, transcriptId } from "../../helpers/events";
+import { LOCAL_ENGINE, at, nextAt, resetClock } from "../../helpers/events";
 import { buildGraph, sqliteGraph } from "../../helpers/graph";
-import type { Decision, Premise } from "@/types/domain";
-import type { ValidityWindow } from "@/types/common";
 
 /** A validity window. `learned` is set to the same instant because these tests are about the VALID
  *  axis; the two clocks are exercised separately in the `materializeAsOf` block below. */
@@ -23,18 +31,26 @@ function window(valid: string, invalidFrom?: string): ValidityWindow {
    * type that declares a bare optional. Widening `ValidityWindow` to suit a test helper would be
    * changing the domain for the convenience of the thing that is supposed to check it. */
   if (invalidFrom === undefined) return { valid: validAt, learned: validAt };
-    /* `ValidityWindow["invalidFrom"]` is `ISODateString | undefined` — an indexed access on an optional
+  /* `ValidityWindow["invalidFrom"]` is `ISODateString | undefined` — an indexed access on an optional
    * property includes undefined — so the cast target has to be the non-nullable form. */
-  return { valid: validAt, learned: validAt, invalidFrom: invalidFrom as NonNullable<ValidityWindow["invalidFrom"]> };
+  return {
+    valid: validAt,
+    learned: validAt,
+    invalidFrom: invalidFrom as NonNullable<ValidityWindow["invalidFrom"]>,
+  };
 }
 
 describe("isValidAt filters the WHOLE window, it is not a prefix fold", () => {
   it("is false before the fact became true", () => {
-    expect(isValidAt(window("2026-03-01T00:00:00.000Z"), "2026-02-01T00:00:00.000Z" as never)).toBe(false);
+    expect(isValidAt(window("2026-03-01T00:00:00.000Z"), "2026-02-01T00:00:00.000Z" as never)).toBe(
+      false,
+    );
   });
 
   it("is true inside the window", () => {
-    expect(isValidAt(window("2026-03-01T00:00:00.000Z"), "2026-04-01T00:00:00.000Z" as never)).toBe(true);
+    expect(isValidAt(window("2026-03-01T00:00:00.000Z"), "2026-04-01T00:00:00.000Z" as never)).toBe(
+      true,
+    );
   });
 
   it("is false from invalidFrom onwards — a closed window never reopens", () => {

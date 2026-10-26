@@ -8,13 +8,13 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { normaliseTranscript } from "@/extraction/normalizer";
-import { segmentEpisodes } from "@/extraction/segmentation";
-import { chunkTurns } from "@/extraction/chunking";
-import { runExtraction } from "@/extraction/pipeline";
-import { emptyState } from "@/substrate/graph-state";
 import { createLocalEngine } from "@/ai/local";
+import { chunkTurns } from "@/extraction/chunking";
+import { normaliseTranscript } from "@/extraction/normalizer";
+import { runExtraction } from "@/extraction/pipeline";
+import { segmentEpisodes } from "@/extraction/segmentation";
+import { emptyState } from "@/substrate/graph-state";
+import { describe, expect, it } from "vitest";
 import { LOCAL_ENGINE, nextAt, resetClock, transcriptId } from "../helpers/events";
 
 const engine = createLocalEngine();
@@ -49,7 +49,7 @@ describe("chunking reports RAW bounds, which is what the review pane highlights 
      * slice of the pasted text whenever noise had been collapsed — silently, and only on messy
      * transcripts, which is exactly when a presenter is most likely to paste one. */
     const normalized = normaliseTranscript(FIXTURE, { transcriptId: transcriptId(1) });
-    const { chunks } = chunkTurns(normalized.turns, 4000, normalized);
+    const { chunks } = chunkTurns(normalized.turns, normalized, 4000);
 
     expect(chunks.length).toBeGreaterThan(0);
     for (const chunk of chunks) {
@@ -64,7 +64,7 @@ describe("chunking reports RAW bounds, which is what the review pane highlights 
 
   it("covers every turn exactly once or as a declared overlap", () => {
     const normalized = normaliseTranscript(FIXTURE, { transcriptId: transcriptId(1) });
-    const { chunks } = chunkTurns(normalized.turns, 4000, normalized);
+    const { chunks } = chunkTurns(normalized.turns, normalized, 4000);
     const seen = new Map<number, number>();
     for (const chunk of chunks) {
       for (const turn of chunk.turns) seen.set(turn.index, (seen.get(turn.index) ?? 0) + 1);
@@ -72,7 +72,8 @@ describe("chunking reports RAW bounds, which is what the review pane highlights 
     for (const turn of normalized.turns) expect(seen.get(turn.index)).toBeGreaterThan(0);
     /* A turn in two chunks is allowed, but only when the chunk says so. */
     for (const chunk of chunks.slice(1)) {
-      if (chunk.turns.some((t) => (seen.get(t.index) ?? 0) > 1)) expect(chunk.overlapsPrevious).toBe(true);
+      if (chunk.turns.some((t) => (seen.get(t.index) ?? 0) > 1))
+        expect(chunk.overlapsPrevious).toBe(true);
     }
   });
 });
@@ -126,7 +127,9 @@ describe("the full pipeline over the demo fixture", () => {
     /* The evidence contract: a paraphrased snippet rots it silently, so every snippet is checked as a
      * literal substring of the input and discarded if it is not. */
     for (const decision of outcome.outcome.result.decisions) {
-      expect(FIXTURE.slice(decision.snippet.start, decision.snippet.end)).toBe(decision.snippet.text);
+      expect(FIXTURE.slice(decision.snippet.start, decision.snippet.end)).toBe(
+        decision.snippet.text,
+      );
       expect(decision.snippet.transcriptId).toBe(transcriptId(1));
     }
     for (const premise of outcome.outcome.result.premises) {
@@ -146,7 +149,9 @@ describe("the full pipeline over the demo fixture", () => {
      * denominator is "everything the recogniser considered", not "everything it kept". */
     for (const discard of outcome.outcome.result.discarded) {
       expect(discard.rawText.length).toBeGreaterThan(0);
-      expect(["confidence-threshold", "modality", "duplicate", "human"]).toContain(discard.discardedBy);
+      expect(["confidence-threshold", "modality", "duplicate", "human"]).toContain(
+        discard.discardedBy,
+      );
     }
   });
 
