@@ -23,14 +23,14 @@
  * ---------------------------------------------------------------------------
  */
 
-import { ok, err, type Result } from "@/lib/result";
-import type { EngineId } from "@/types/common";
+import { type Result, err, ok } from "@/lib/result";
 import {
+  type StoredConfig,
   clearApiKey as clearStoredKey,
   loadConfig,
   saveConfig,
-  type StoredConfig,
 } from "@/substrate/persistence";
+import type { EngineId } from "@/types/common";
 
 export type ProviderId = "openai" | "anthropic" | "openrouter" | "local";
 

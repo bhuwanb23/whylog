@@ -32,13 +32,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 import { createLocalEngine, localEngineId } from "../src/ai/local";
+import { RUNNER_PATH } from "../src/export/verify-command";
+import { describeExport, exportCi } from "../src/guards/ci-export";
 import { monotonicNow, nowISO } from "../src/lib/format";
 import { label } from "../src/reasoning/labeller";
-import { describeExport, exportCi } from "../src/guards/ci-export";
-import { RUNNER_PATH } from "../src/export/verify-command";
 import { fold } from "../src/substrate";
 import { describeRejection, importLog } from "../src/substrate/portability";
 import type { ISODateString } from "../src/types/common";
+import type { AnyEvent } from "../src/types/events";
 
 /* `RUNNER_PATH` is imported from `export/verify-command.ts` rather than repeated here. That module
  * emits verify commands naming this exact path, so a second copy of the string is a second place for
@@ -76,7 +77,9 @@ function readArgs(argv: readonly string[]): Args {
     } else if (token === "--quiet") {
       quiet = true;
     } else if (token !== undefined && token.startsWith("--")) {
-      process.stderr.write("unknown flag " + token + " (known: --log --out --include-proposed --dry-run --quiet)\n");
+      process.stderr.write(
+        "unknown flag " + token + " (known: --log --out --include-proposed --dry-run --quiet)\n",
+      );
     }
   }
 
@@ -94,7 +97,7 @@ async function main(): Promise<void> {
   const started = monotonicNow();
 
   /* ---- obtain the graph ---- */
-  let events;
+  let events: readonly AnyEvent[];
   let headHash: string;
   let source: string;
 
@@ -102,7 +105,9 @@ async function main(): Promise<void> {
     const path = resolvePath(process.cwd(), args.log);
     if (!existsSync(path)) {
       process.stderr.write("no such log file: " + args.log + "\n");
-      process.stderr.write("Export one from the app's Export view (JSON), then re-run with --log <file>.\n");
+      process.stderr.write(
+        "Export one from the app's Export view (JSON), then re-run with --log <file>.\n",
+      );
       process.exitCode = 1;
       return;
     }
@@ -114,8 +119,8 @@ async function main(): Promise<void> {
       process.stderr.write("the log was REJECTED: " + describeRejection(imported.rejection) + "\n");
       process.stderr.write(
         "A broken hash chain is refused rather than repaired. Exporting guards from a log whose history " +
-        "cannot be verified would stamp a digest over events nobody can trust, and the stamp is the only " +
-        "thing telling a reader the runner matches the graph.\n",
+          "cannot be verified would stamp a digest over events nobody can trust, and the stamp is the only " +
+          "thing telling a reader the runner matches the graph.\n",
       );
       process.exitCode = 1;
       return;
@@ -125,8 +130,13 @@ async function main(): Promise<void> {
      * this is the whole file. `headHashAfter` is the chain head the digest must cover. */
     events = imported.outcome.newEvents;
     headHash = imported.outcome.headHashAfter;
-    source = args.log + " (" + imported.outcome.totalInFile + " event(s), " +
-      imported.outcome.duplicates + " duplicate(s) skipped)";
+    source =
+      args.log +
+      " (" +
+      imported.outcome.totalInFile +
+      " event(s), " +
+      imported.outcome.duplicates +
+      " duplicate(s) skipped)";
   } else {
     say("no --log given: building the DEMO seed from fixtures/demo-transcript*.txt");
     say("a CI job verifying the demo fixtures is not verifying your project.\n");
@@ -158,17 +168,27 @@ async function main(): Promise<void> {
 
   if (exported.notExported.length > 0) {
     say("");
-    say("NOT EXPORTED (" + exported.notExported.length + ") — reported rather than silently omitted,");
-    say("because an export covering 8 of 12 decisions that does not say so looks like full coverage:");
+    say(
+      "NOT EXPORTED (" + exported.notExported.length + ") — reported rather than silently omitted,",
+    );
+    say(
+      "because an export covering 8 of 12 decisions that does not say so looks like full coverage:",
+    );
     for (const entry of exported.notExported) say("  " + entry.decisionId + " · " + entry.reason);
   }
 
   if (exported.guards.length === 0) {
     say("");
     say("ZERO GUARDS EXPORTED.");
-    say("Guards are PROPOSED, never auto-installed (invariant I4), so a graph nobody has accepted any");
-    say("guard for exports nothing. That is correct behaviour, not a failure — but a CI job with no");
-    say("checks is a CI job that always passes, so pass --include-proposed if you want the proposals");
+    say(
+      "Guards are PROPOSED, never auto-installed (invariant I4), so a graph nobody has accepted any",
+    );
+    say(
+      "guard for exports nothing. That is correct behaviour, not a failure — but a CI job with no",
+    );
+    say(
+      "checks is a CI job that always passes, so pass --include-proposed if you want the proposals",
+    );
     say("run in CI, or accept guards in the app's Guards view first.");
     if (!args.includeProposed) process.exitCode = 0;
   }
@@ -176,8 +196,20 @@ async function main(): Promise<void> {
   if (args.dryRun) {
     say("");
     say("--dry-run: nothing written.");
-    say("would write " + RUNNER_PATH + " (" + exported.runner.length.toLocaleString("en-US") + " bytes)");
-    say("would write " + WORKFLOW_PATH + " (" + exported.workflow.length.toLocaleString("en-US") + " bytes)");
+    say(
+      "would write " +
+        RUNNER_PATH +
+        " (" +
+        exported.runner.length.toLocaleString("en-US") +
+        " bytes)",
+    );
+    say(
+      "would write " +
+        WORKFLOW_PATH +
+        " (" +
+        exported.workflow.length.toLocaleString("en-US") +
+        " bytes)",
+    );
     return;
   }
 
@@ -188,19 +220,30 @@ async function main(): Promise<void> {
   say("");
   say("done in " + (monotonicNow() - started).toFixed(0) + "ms.");
   say("");
-  say("The runner is standalone Node with no dependencies beyond the standard library, so it can be");
+  say(
+    "The runner is standalone Node with no dependencies beyond the standard library, so it can be",
+  );
   say("committed and run by CI without installing this project. Verify one decision with:");
   say("");
   say("  node " + RUNNER_PATH + " --decision WLD-0001");
   say("");
-  say("The digest stamped into it covers the guard set and this head hash. If the graph changes, re-run");
-  say("this command — a runner whose digest no longer matches the graph is a check that has drifted from");
-  say("the decision it was compiled from, which is the exact failure mode guards exist to prevent.");
+  say(
+    "The digest stamped into it covers the guard set and this head hash. If the graph changes, re-run",
+  );
+  say(
+    "this command — a runner whose digest no longer matches the graph is a check that has drifted from",
+  );
+  say(
+    "the decision it was compiled from, which is the exact failure mode guards exist to prevent.",
+  );
 }
 
 /** Build the demo graph through the same harness the benchmark uses, so the exported guards come from
  *  the real pipeline rather than from a second, simpler import path that would eventually disagree. */
-async function buildDemoSeed(engine: ReturnType<typeof createLocalEngine>, engineId: ReturnType<typeof localEngineId>) {
+async function buildDemoSeed(
+  engine: ReturnType<typeof createLocalEngine>,
+  engineId: ReturnType<typeof localEngineId>,
+) {
   const { corpus, CORPUS_ROOT } = await import("../src/eval/corpus/data");
   const { loadCorpus } = await import("../src/eval/corpus/loader");
   const { runConfig } = await import("../src/eval/harness");
@@ -234,6 +277,8 @@ function write(path: string, contents: string, say: (text: string) => void): voi
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write("\n" + (error instanceof Error ? (error.stack ?? error.message) : String(error)) + "\n");
+  process.stderr.write(
+    "\n" + (error instanceof Error ? (error.stack ?? error.message) : String(error)) + "\n",
+  );
   process.exitCode = 1;
 });

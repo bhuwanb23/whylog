@@ -14,23 +14,23 @@
  * ---------------------------------------------------------------------------
  */
 
-import { useEffect, useState } from "react";
-import type { ReactElement } from "react";
-import { useWhyLog, persistenceAvailable } from "@/store/whylog";
-import { FoundationView } from "@/views/FoundationView";
-import { ReviewView } from "@/views/ReviewView";
-import { ReasoningView } from "@/views/ReasoningView";
+import { type KeybindAction, describeKeybinds, useKeybinds } from "@/components/common";
+import { useExtraction } from "@/store/extraction";
+import { persistenceAvailable, useWhyLog } from "@/store/whylog";
+import { MODE_BADGE } from "@/theme";
 import { AskView } from "@/views/AskView";
-import { GuardsView } from "@/views/GuardsView";
 import { ExportView } from "@/views/ExportView";
+import { FoundationView } from "@/views/FoundationView";
 import { GraphView } from "@/views/GraphView";
+import { GuardsView } from "@/views/GuardsView";
 import { HealthView } from "@/views/HealthView";
+import { ReasoningView } from "@/views/ReasoningView";
+import { ReviewView } from "@/views/ReviewView";
 import { SettingsView } from "@/views/SettingsView";
 import { TimeMachineView } from "@/views/TimeMachineView";
 import { TimelineView } from "@/views/TimelineView";
-import { MODE_BADGE } from "@/theme";
-import { describeKeybinds, useKeybinds, type KeybindAction } from "@/components/common";
-import { useExtraction } from "@/store/extraction";
+import { useEffect, useState } from "react";
+import type { ReactElement } from "react";
 /* Bundled rather than fetched: the sandboxed preview has no network, and §6.9 requires the demo to
  * be one click from a cold start. */
 import demoTranscript from "../fixtures/demo-transcript.txt?raw";
@@ -147,7 +147,12 @@ export function App(): ReactElement {
           <ModeBadge mode={mode} />
           <ChainBadge status={status} />
           {state.decisions.size === 0 ? (
-            <button type="button" className="badge" onClick={loadDemo} title="Load fixtures/demo-transcript.txt and extract it — the same path a real paste takes.">
+            <button
+              type="button"
+              className="badge"
+              onClick={loadDemo}
+              title="Load fixtures/demo-transcript.txt and extract it — the same path a real paste takes."
+            >
               load demo
             </button>
           ) : null}
@@ -225,7 +230,11 @@ function ChainBadge({ status }: { status: string }): ReactElement {
   }
   if (status === "degraded") {
     return (
-      <span className="badge" style={{ color: "var(--action)" }} title="The hash chain failed verification on load. The log is read-only.">
+      <span
+        className="badge"
+        style={{ color: "var(--action)" }}
+        title="The hash chain failed verification on load. The log is read-only."
+      >
         chain broken
       </span>
     );
@@ -247,8 +256,8 @@ function NotYet({ view }: { view: { label: string; phase: string } | undefined }
       <h2 className="card-title">{view?.label ?? "View"}</h2>
       <p className="dim">
         This view arrives in Phase {view?.phase ?? "6"}. The substrate underneath it — the
-        append-only log, the fold, the bi-temporal projections and the hash chain — is built and
-        is what the Foundation view reports on.
+        append-only log, the fold, the bi-temporal projections and the hash chain — is built and is
+        what the Foundation view reports on.
       </p>
     </section>
   );

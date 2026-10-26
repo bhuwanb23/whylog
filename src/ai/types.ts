@@ -43,14 +43,9 @@ import type {
   SourceSpan,
   TranscriptId,
 } from "@/types/common";
-import type {
-  DecisionOrigin,
-  DecisionVariable,
-  Modality,
-  PremiseType,
-} from "@/types/domain";
-import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
+import type { DecisionOrigin, DecisionVariable, Modality, PremiseType } from "@/types/domain";
 import type { ProposedGuard } from "@/types/guards";
+import type { ClassificationResult, ContradictionGate } from "@/types/retrieval";
 
 /* -------------------------------------------------------------------------- */
 /* Capabilities                                                               */
@@ -210,6 +205,11 @@ export interface ExtractionRequest {
   /** When the conversation happened, if known. Drives `occurredAt`. */
   readonly occurredAt?: ISODateString;
   readonly signal?: AbortSignal;
+  /** Ablation switches, threaded from `PipelineOptions`. Absent means production behaviour:
+   *  negation cues on and the modality filter on. They live on the request rather than on the
+   *  engine because the engine is shared across a run and the ablation varies per run. */
+  readonly negationCues?: boolean;
+  readonly modalityFilter?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
