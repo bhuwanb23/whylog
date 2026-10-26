@@ -1,3 +1,13 @@
+import {
+  GENESIS_HASH,
+  HASH_LENGTH,
+  describeVerification,
+  headHash,
+  linkHash,
+  sealEvents,
+  verifyChain,
+} from "@/substrate/hash-chain";
+import type { AnyEvent } from "@/types/events";
 /**
  * The hash chain — invariant I1's enforcement mechanism.
  *
@@ -6,9 +16,18 @@
  * checking a log that can be edited.
  */
 import { describe, expect, it } from "vitest";
-import { GENESIS_HASH, HASH_LENGTH, headHash, linkHash, sealEvents, verifyChain, describeVerification } from "@/substrate/hash-chain";
-import { ACTOR, LOCAL_ENGINE, at, decisionId, nextAt, resetClock, sealAll, span, transcriptId, transcriptImported, decisionProposed } from "../../helpers/events";
-import type { AnyEvent } from "@/types/events";
+import {
+  ACTOR,
+  LOCAL_ENGINE,
+  at,
+  decisionId,
+  decisionProposed,
+  resetClock,
+  sealAll,
+  span,
+  transcriptId,
+  transcriptImported,
+} from "../../helpers/events";
 
 const t1 = transcriptId(1);
 
@@ -70,7 +89,12 @@ describe("verifyChain", () => {
     const events = [
       ...sealAll([
         transcriptImported(t1, "going with SQLite"),
-        decisionProposed({ id: decisionId(1), transcript: t1, variable: "DATABASE", value: "sqlite" }),
+        decisionProposed({
+          id: decisionId(1),
+          transcript: t1,
+          variable: "DATABASE",
+          value: "sqlite",
+        }),
         decisionProposed({ id: decisionId(2), transcript: t1, variable: "HOSTING", value: "fly" }),
       ]).events,
     ];
@@ -112,7 +136,9 @@ describe("verifyChain", () => {
 
   it("detects a duplicated event id", () => {
     const events = twoEvents();
-    expect(verifyChain([...events, events[1]!]).violations.map((v) => v.kind)).toContain("duplicate-id");
+    expect(verifyChain([...events, events[1]!]).violations.map((v) => v.kind)).toContain(
+      "duplicate-id",
+    );
   });
 
   it("detects a re-ordered chain", () => {
@@ -137,7 +163,12 @@ describe("sealEvents", () => {
     resetClock();
     const built = sealAll([
       transcriptImported(t1, "raw"),
-      decisionProposed({ id: decisionId(1), transcript: t1, variable: "DATABASE", value: "sqlite" }),
+      decisionProposed({
+        id: decisionId(1),
+        transcript: t1,
+        variable: "DATABASE",
+        value: "sqlite",
+      }),
     ]);
 
     /* Strip the links and re-seal. Same content must produce the same chain — this is the property
@@ -157,7 +188,12 @@ describe("sealEvents", () => {
     resetClock();
     const built = sealAll([
       transcriptImported(t1, "raw"),
-      decisionProposed({ id: decisionId(1), transcript: t1, variable: "DATABASE", value: "sqlite" }),
+      decisionProposed({
+        id: decisionId(1),
+        transcript: t1,
+        variable: "DATABASE",
+        value: "sqlite",
+      }),
     ]);
     const stripped = built.events.map((event) => {
       const { prevHash: _omitted, ...rest } = event;
@@ -202,7 +238,13 @@ describe("engine and actor are carried, not invented", () => {
     const text = "going with SQLite, not Postgres";
     const { events } = sealAll([
       transcriptImported(t1, text),
-      decisionProposed({ id: decisionId(1), transcript: t1, variable: "DATABASE", value: "sqlite", snippet: span(t1, text, 0) }),
+      decisionProposed({
+        id: decisionId(1),
+        transcript: t1,
+        variable: "DATABASE",
+        value: "sqlite",
+        snippet: span(t1, text, 0),
+      }),
     ]);
     const decision = events[1]!;
     expect(decision.type).toBe("DecisionProposed");

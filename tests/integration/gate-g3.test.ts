@@ -109,7 +109,17 @@ describe("Gate G3 — it answers", () => {
       question: "Why did we choose SQLite over Postgres?",
     });
 
-     console.warn("G3 verdict=" + answer.verdict + " g=" + answer.groundedness + " claims=" + answer.claims.length + " notes=" + JSON.stringify(answer.ungroundedNotes)); expect(answer.verdict).toBe("GROUNDED");
+    console.warn(
+      "G3 verdict=" +
+        answer.verdict +
+        " g=" +
+        answer.groundedness +
+        " claims=" +
+        answer.claims.length +
+        " notes=" +
+        JSON.stringify(answer.ungroundedNotes),
+    );
+    expect(answer.verdict).toBe("GROUNDED");
     expect(answer.claims.length).toBeGreaterThan(0);
 
     // Every claim resolves to a citation that was resolved IN THIS RUN.
@@ -170,7 +180,7 @@ describe("Gate G3 — it answers", () => {
       question: "What did we decide about the payment provider?",
     });
 
-     expect(answer.verdict).toBe("INSUFFICIENT_EVIDENCE");
+    expect(answer.verdict).toBe("INSUFFICIENT_EVIDENCE");
 
     // 0/0 is NOT treated as 1. A refusal that claims perfect groundedness is a
     // refusal that is quietly lying about what it knows.

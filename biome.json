@@ -7,7 +7,17 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": ["dist", "coverage", "node_modules"]
+    "ignore": [
+      "dist",
+      "coverage",
+      "node_modules",
+      "brag-output",
+      "media",
+      ".hyperframes",
+      ".render",
+      ".reconcile",
+      ".freebuff"
+    ]
   },
   "formatter": {
     "enabled": true,

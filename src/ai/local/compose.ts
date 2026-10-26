@@ -104,15 +104,22 @@ function composeAnswer(question: string, facts: readonly CompositionFact[]): str
 
   lines.push(
     facts.length === 1
-      ? "One decision in the log bears on this question [" + (facts[0] as CompositionFact).decisionId + "]: " + question
-      : facts.length + " decisions in the log bear on this question [" + facts.map((fact) => fact.decisionId).join(", ") + "]: " + question,
+      ? "One decision in the log bears on this question [" +
+          (facts[0] as CompositionFact).decisionId +
+          "]: " +
+          question
+      : facts.length +
+          " decisions in the log bear on this question [" +
+          facts.map((fact) => fact.decisionId).join(", ") +
+          "]: " +
+          question,
   );
 
   for (const fact of facts) {
     const label = fact.label === "IN" ? "" : ", currently labelled " + fact.label;
 
     lines.push(
-        fact.decisionId +
+      fact.decisionId +
         ": " +
         fact.statement +
         label +

@@ -139,7 +139,15 @@ async function runG4() {
     expect(accepted.ok).toBe(true);
   }
 
-  const ran = await useGuards.getState().run(); console.warn("G4 proposals=" + useWhyLog.getState().state.proposals.size + " guardSrc=" + [...useWhyLog.getState().state.proposals.values()].filter((p:any) => p.evidence.source === "guard").length);
+  const ran = await useGuards.getState().run();
+  console.warn(
+    "G4 proposals=" +
+      useWhyLog.getState().state.proposals.size +
+      " guardSrc=" +
+      [...useWhyLog.getState().state.proposals.values()].filter(
+        (p: any) => p.evidence.source === "guard",
+      ).length,
+  );
   expect(ran.ok).toBe(true);
 
   return {
@@ -201,7 +209,16 @@ describe("Gate G4 — it verifies", () => {
   });
 
   it("gate (a) fires: a revision proposal whose evidence quotes the manifest", async () => {
-    const _r = await runG4(); const _st = _r.state; const _g = [..._st.guards.values()][0]; console.warn("TEST guard lastRun=" + _g?.lastRun?.outcome + " guardIds on WLD-0001=" + _st.decisions.get("WLD-0001" as any)?.guardIds?.length); const proposals = _r.proposals;
+    const _r = await runG4();
+    const _st = _r.state;
+    const _g = [..._st.guards.values()][0];
+    console.warn(
+      "TEST guard lastRun=" +
+        _g?.lastRun?.outcome +
+        " guardIds on WLD-0001=" +
+        _st.decisions.get("WLD-0001" as any)?.guardIds?.length,
+    );
+    const proposals = _r.proposals;
 
     expect(proposals.length).toBeGreaterThan(0);
 

@@ -204,10 +204,11 @@ def value_expected(src: str, i: int, prev: str) -> bool:
 
 
 def rel(path: pathlib.Path) -> str:
+    """POSIX-style path relative to ROOT so forbidden-pattern allowlists match on Windows."""
     try:
-        return str(path.relative_to(ROOT))
+        return path.relative_to(ROOT).as_posix()
     except ValueError:
-        return str(path)
+        return path.as_posix()
 
 
 def resolve(spec: str, origin: pathlib.Path) -> pathlib.Path | None:

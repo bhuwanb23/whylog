@@ -29,7 +29,13 @@ import type {
   ValidationResult,
 } from "@/types/events";
 import { type ValidationContext, validateEvent } from "./event-validation";
-import { type ChainVerification, GENESIS_HASH, hashEvent, linkHash, verifyChain } from "./hash-chain";
+import {
+  type ChainVerification,
+  GENESIS_HASH,
+  hashEvent,
+  linkHash,
+  verifyChain,
+} from "./hash-chain";
 import { SCHEMA_VERSION } from "./schema";
 
 /* -------------------------------------------------------------------------- */
