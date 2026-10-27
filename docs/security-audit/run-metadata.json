@@ -1,0 +1,13 @@
+{
+  "run_id": "whylog-audit-2026-10-27",
+  "repo": "whylog",
+  "target": "C:/Users/bhuwan.bhawarlal/Desktop/projects/whylog",
+  "source_ref": "main",
+  "source_dirty": false,
+  "output_dir": "C:/security-audit-reports/whylog-full-audit",
+  "profile": "standard",
+  "scope_paths": "all",
+  "budget": 50,
+  "execution_policy": "sandboxed-source-and-local-only",
+  "run_status": "in_progress"
+}

@@ -1,0 +1,107 @@
+[
+  {
+    "coverage_id": "CLI-env-config::TRUST-BOUNDARY::substrate::attack_class.DEFAULT",
+    "surface": "CLI-env-config",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "substrate",
+    "attack_class": "DEFAULT",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "scripts/",
+      "boundary_def": "STRUCTURE.md#TRUST-BOUNDARY",
+      "subsystem_mod": "src/substrate/",
+      "attack_class_blk": "attack-classes.md#DEFAULT"
+    }
+  },
+  {
+    "coverage_id": "Decision-input::TRUST-BOUNDARY::extraction::attack_class.VALIDATION",
+    "surface": "Decision-input",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "extraction",
+    "attack_class": "VALIDATION",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "src/extraction/",
+      "boundary_def": "THEORY.md#VALIDATION",
+      "subsystem_mod": "src/extraction/",
+      "attack_class_blk": "attack-classes.md#VALIDATION"
+    }
+  },
+  {
+    "coverage_id": "Premise-storage::TRUST-BOUNDARY::substrate::attack_class.ENTRENCHMENT",
+    "surface": "Premise-storage",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "substrate",
+    "attack_class": "ENTRENCHMENT",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "src/substrate/",
+      "boundary_def": "LIMITATIONS.md#ENTRENCHMENT",
+      "subsystem_mod": "src/substrate/",
+      "attack_class_blk": "attack-classes.md#ENTRENCHMENT"
+    }
+  },
+  {
+    "coverage_id": "Cascade-propagation::TRUST-BOUNDARY::reasoning::attack_class.BACKTRACK",
+    "surface": "Cascade-propagation",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "reasoning",
+    "attack_class": "BACKTRACK",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "src/reasoning/",
+      "boundary_def": "THEORY.md#BACKTRACK",
+      "subsystem_mod": "src/reasoning/",
+      "attack_class_blk": "attack-classes.md#BACKTRACK"
+    }
+  },
+  {
+    "coverage_id": "Export-compilation::TRUST-BOUNDARY::export-compiler::attack_class.CONSISTENCY-GATE",
+    "surface": "Export-compilation",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "export-compiler",
+    "attack_class": "CONSISTENCY-GATE",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "src/extraction/",
+      "boundary_def": "EVALUATION.md#CONSISTENCY-GATE",
+      "subsystem_mod": "src/extraction/",
+      "attack_class_blk": "attack-classes.md#CONSISTENCY-GATE"
+    }
+  },
+  {
+    "coverage_id": "Guard-compilation::TRUST-BOUNDARY::guards::attack_class.TEMPLATES",
+    "surface": "Guard-compilation",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "guards",
+    "attack_class": "TEMPLATES",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "src/reasoning/",
+      "boundary_def": "EVALUATION.md#TEMPLATES",
+      "subsystem_mod": "src/reasoning/",
+      "attack_class_blk": "attack-classes.md#TEMPLATES"
+    }
+  },
+  {
+    "coverage_id": "System-proposes::TRUST-BOUNDARY::human-disposes::attack_class.AUTO-APPLY",
+    "surface": "System-proposes",
+    "boundary": "TRUST-BOUNDARY",
+    "subsystem": "human-disposes",
+    "attack_class": "AUTO-APPLY",
+    "lifecycle": "initial",
+    "status": "planned",
+    "canonical_refs": {
+      "entry_path": "src/reasoning/",
+      "boundary_def": "LIMITATIONS.md#AUTO-APPLY",
+      "subsystem_mod": "src/reasoning/",
+      "attack_class_blk": "attack-classes.md#AUTO-APPLY"
+    }
+  }
+]

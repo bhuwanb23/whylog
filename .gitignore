@@ -42,3 +42,5 @@ tmp/
 # Commit them deliberately if you want them versioned with a project.
 .whylog/
 whylog-export/
+*.exe
+.hyperframes/
