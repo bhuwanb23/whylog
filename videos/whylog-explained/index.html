@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Code editorial frame design tokens remixed for WhyLog */
+      :root {
+        --ground: #e6e9ee;
+        --ink: #0b0d10;
+        --coral: #4ade80;
+        --navy: #0b0d10;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ground);
+      }
+      #root {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "EB Garamond", serif;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 48px;
+        color: var(--ink);
+        font-family: "EB Garamond", serif;
+        text-align: center;
+        sentence-case: true;
+      }
+      h2 {
+        margin: 8px 0 0 0;
+        font-size: 32px;
+        color: var(--ink);
+        font-family: "EB Garamond", serif;
+        text-align: center;
+        sentence-case: true;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-qbnw"
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="60"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Sub-compositions referenced via data-composition-src -->
+      <!-- Frame 1: The given (0-5s) -->
+      <iframe data-hf-id="hf-7gph"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/01-the-given.html"
+        data-composition-id="frame-1"
+        data-start="0"
+        data-duration="5"
+      ></iframe>
+      
+      <!-- Frame 2: A decision rests on premises (5-11s) -->
+      <iframe data-hf-id="hf-u2ba"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/02-decision-rests.html"
+        data-composition-id="frame-2"
+        data-start="5"
+        data-duration="6"
+      ></iframe>
+      
+      <!-- Frame 3: The world moves (11-17s) -->
+      <iframe data-hf-id="hf-hgq6"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/03-world-moves.html"
+        data-composition-id="frame-3"
+        data-start="11"
+        data-duration="6"
+      ></iframe>
+      
+      <!-- Frame 4: No one tells you (17-22s) -->
+      <iframe data-hf-id="hf-20j7"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/04-no-one-tells-you.html"
+        data-composition-id="frame-4"
+        data-start="17"
+        data-duration="5"
+      ></iframe>
+      
+      <!-- Frame 5: The cascade (22-29s) -->
+      <iframe data-hf-id="hf-k0lm"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/05-the-cascade.html"
+        data-composition-id="frame-5"
+        data-start="22"
+        data-duration="7"
+      ></iframe>
+      
+      <!-- Frame 6: WhyLog stores the given (29-35s) -->
+      <iframe data-hf-id="hf-ec7m"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/06-stores-the-given.html"
+        data-composition-id="frame-6"
+        data-start="29"
+        data-duration="6"
+      ></iframe>
+      
+      <!-- Frame 7: REVISE() (35-42s) -->
+      <iframe data-hf-id="hf-v79l"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/07-revise-cycle.html"
+        data-composition-id="frame-7"
+        data-start="35"
+        data-duration="7"
+      ></iframe>
+      
+      <!-- Frame 8: You dispose (42-47s) -->
+      <iframe data-hf-id="hf-7tfr"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/08-you-dispose.html"
+        data-composition-id="frame-8"
+        data-start="42"
+        data-duration="5"
+      ></iframe>
+      
+      <!-- Frame 9: Compiled, verified, keyless (47-53s) -->
+      <iframe data-hf-id="hf-o8jg"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/09-compiled-keyless.html"
+        data-composition-id="frame-9"
+        data-start="47"
+        data-duration="6"
+      ></iframe>
+      
+      <!-- Frame 10: A decision log that checks itself (53-59s) -->
+      <iframe data-hf-id="hf-ekxc"
+        style="position:absolute; inset:0; display:none;"
+        data-composition-src="compositions/10-a-decision-log.html"
+        data-composition-id="frame-10"
+        data-start="53"
+        data-duration="6"
+      ></iframe>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      
+      // Root timeline that seeks through all frames
+      const rootTl = gsap.timeline({ paused: true });
+      
+      // Each frame's timeline is loaded from its sub-composition
+      // The root coordinates seeking to each frame's start time
+      
+      // Pre-load all frame timelines and seek to start positions
+      function initFrameTimeline(compId, startTime, duration) {
+        const tl = gsap.timeline({ paused: true });
+        window.__timelines[compId] = tl;
+        
+        // Seek to the start time of this frame
+        // We'll seek the root timeline to start this frame
+        rootTl.call(() => {
+          // The sub-composition timelines are already set up
+          // We seek each frame's timeline to its start
+          if (window.__timelines[compId]) {
+            window.__timelines[compId].progress(0);
+          }
+        }, [], this);
+      }
+      
+      // Initialize all 10 frames
+      initFrameTimeline("frame-1", 0, 5);
+      initFrameTimeline("frame-2", 5, 6);
+      initFrameTimeline("frame-3", 11, 6);
+      initFrameTimeline("frame-4", 17, 5);
+      initFrameTimeline("frame-5", 22, 7);
+      initFrameTimeline("frame-6", 29, 6);
+      initFrameTimeline("frame-7", 35, 7);
+      initFrameTimeline("frame-8", 42, 5);
+      initFrameTimeline("frame-9", 47, 6);
+      initFrameTimeline("frame-10", 53, 6);
+      
+      // Root timeline seeks through frames
+      // When seeking to a position, it activates the corresponding frame
+      rootTl.seek(0);
+      
+      // Make root timeline play when needed
+      // rootTl.time(5); // seek to frame 2, etc.
+      
+      window.__timelines["main"] = rootTl;
+    </script>
+  </body>
+</html>

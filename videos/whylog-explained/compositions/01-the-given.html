@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        background: #e6e9ee;
+        color: #0b0d10;
+        font-family: "EB Garamond", serif;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 48px;
+        color: #0b0d10;
+        font-family: "EB Garamond", serif;
+        text-align: center;
+        sentence-case: true;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-6m4x"
+      data-composition-id="frame-1"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="5"
+    >
+      <section data-hf-id="hf-8ycu" class="clip" data-start="0" data-duration="5" data-track-index="1">
+        <h1 data-hf-id="hf-f95e">Your agent forgets the given.</h1>
+      </section>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      tl.from("h1", { y: 80, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.2);
+      window.__timelines["frame-1"] = tl;
+    </script>
+  </body>
+</html>

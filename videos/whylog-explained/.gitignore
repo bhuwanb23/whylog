@@ -1,0 +1,20 @@
+# HyperFrames video project gitignore
+# Rendered output
+*.mp4
+*.mp3
+*.wav
+
+# Thumbnails
+.thumbnails/
+
+# HyperFrames studio state
+.hyperframes/
+
+# Render cache
+.render/
+
+# Preview logs
+*.log
+
+# Local metadata
+meta.json
