@@ -41,9 +41,7 @@ const LATER = asISO("2026-11-18T09:41:00.000Z");
 /** Falsify the premise the demo rests on, and run the whole cycle. */
 async function falsifyAndRevise() {
   const before = useWhyLog.getState().state;
-  const singleUser = [...before.premises.values()].find(
-    (p) => p.predicate === "scale.single_user",
-  );
+  const singleUser = [...before.premises.values()].find((p) => p.predicate === "scale.single_user");
   if (!singleUser) throw new Error("the fixture did not yield scale.single_user");
 
   const outcome = await useReasoning.getState().assertAndRevise(

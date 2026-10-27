@@ -45,7 +45,6 @@ export const ORIGIN_MEANING: Readonly<Record<string, string>> = {
 };
 
 export function ProvenanceBlock({
-  state,
   decision,
   transcriptText,
 }: {

@@ -1059,8 +1059,8 @@ function readManifest() {
   }
 }
 
-function listFiles(dir, out) {
-  out = out || [];
+function listFiles(dir) {
+  const out = [];
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -1070,7 +1070,7 @@ function listFiles(dir, out) {
   for (const entry of entries) {
     if (entry.name === "node_modules" || entry.name === ".git") continue;
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) listFiles(full, out);
+    if (entry.isDirectory()) listFiles(full);
     else out.push(full.split(path.sep).join("/"));
   }
   return out;
@@ -1372,7 +1372,7 @@ function main() {
     files: files,
   };
 
-  console.log(
+  console.info(
     "WhyLog decision guards \u00b7 " +
       GUARDS.length +
       " guard(s) \u00b7 " +
@@ -1394,7 +1394,7 @@ function main() {
     }
     if (result.outcome === "skip") {
       skipped += 1;
-      console.log(
+      console.info(
         "\x1b[33m\u2013 " +
           guard.id +
           " SKIPPED\x1b[0m (" +
@@ -1410,11 +1410,11 @@ function main() {
     if (guard.severity === "blocking") blocking += 1;
     else warnings += 1;
 
-    console.log(reportFailure(guard, result));
+    console.info(reportFailure(guard, result));
   }
 
-  console.log("");
-  console.log(
+  console.info("");
+  console.info(
     "  passed " +
       passed +
       " \u00b7 failed " +
@@ -1428,14 +1428,14 @@ function main() {
   );
 
   if (blocking > 0) {
-    console.log("\n\x1b[31m" + blocking + " blocking decision guard(s) failed.\x1b[0m");
-    console.log(
+    console.error("\n\x1b[31m" + blocking + " blocking decision guard(s) failed.\x1b[0m");
+    console.error(
       "Each failure above names the decision, the premise it rests on, and what was rejected.",
     );
     process.exit(1);
   }
   if (warnings > 0) {
-    console.log(
+    console.info(
       "\n" + warnings + " warning-level guard(s) failed \u2014 advisory, build not blocked.",
     );
   }

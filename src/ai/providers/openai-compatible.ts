@@ -126,7 +126,7 @@ export function sanitizeLlmInput(text: string): string {
  */
 export function boundLlmMessages(
   messages: readonly ChatMessage[],
-  max: number = 50,
+  max = 50,
 ): readonly ChatMessage[] {
   if (messages.length <= max) return messages;
   const split = Math.ceil(max / 2);

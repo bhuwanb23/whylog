@@ -24,7 +24,6 @@
  */
 
 import { type Result, err, ok } from "@/lib/result";
-import type { ISODateString } from "@/types/common";
 import {
   type StoredConfig,
   clearApiKey as clearStoredKey,
@@ -134,7 +133,10 @@ export function writeConfig(config: EngineConfig): Result<void, string> {
   return saveConfig(stored);
 }
 
-export function applyConfig(current: EngineConfig, patch: Partial<EngineConfig>): Result<void, string> {
+export function applyConfig(
+  current: EngineConfig,
+  patch: Partial<EngineConfig>,
+): Result<void, string> {
   return writeConfig({ ...current, ...patch });
 }
 

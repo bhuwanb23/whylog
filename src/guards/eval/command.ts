@@ -37,10 +37,13 @@
  *
  * What cannot be identical is the file discovery: the browser runs against a pasted virtual
  * project, CI against the real tree. That difference is the point of exporting.
- */import type { Evaluation, GuardSpec, SkipReason, VirtualProject } from "../../types/guards";export type CommandSpec = GuardSpec & { kind: "command_exit_zero"; command: string };
+ */ import type { Evaluation, GuardSpec, SkipReason, VirtualProject } from "../../types/guards";
+
+export type CommandSpec = GuardSpec & { kind: "command_exit_zero"; command: string };
 
 const SKIP_NOT_RUNNABLE: SkipReason = {
-  skipReason: "Command guard cannot run without a shell — this guard is not evaluated in the browser",
+  skipReason:
+    "Command guard cannot run without a shell — this guard is not evaluated in the browser",
 };
 
 /**
@@ -126,7 +129,7 @@ export function evalCommand(_spec: CommandSpec, _project: VirtualProject): Evalu
     evidence: allowed
       ? "Command is in the allowlist and was executed successfully"
       : "Command denied by allowlist/denylist — see COMMAND_ALLOWLIST and COMMAND_DENYLIST",
-      skipReason: skipReason ?? SKIP_NOT_RUNNABLE.skipReason,
+    skipReason: skipReason ?? SKIP_NOT_RUNNABLE.skipReason,
   };
 }
 
@@ -137,5 +140,5 @@ export function commandLine(spec: CommandSpec): string {
 
 /** Quote a string for use in a POSIX shell command. */
 export function shellQuote(s: string): string {
-  return `"${s.replace(/"/g, "\\\"")}"`;
+  return `"${s.replace(/"/g, '\\"')}"`;
 }

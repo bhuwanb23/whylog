@@ -4,16 +4,16 @@
  * Phase 2 · sub-phase 2.7 (the settings store)
  */
 
-import type { Result } from "../lib/result";
 import {
-  engineIdOf,
-  hasKey,
-  readConfig,
-  forgetKey,
-  applyConfig,
   type EngineConfig,
   type EngineId,
+  applyConfig,
+  engineIdOf,
+  forgetKey,
+  hasKey,
+  readConfig,
 } from "../ai/config";
+import type { Result } from "../lib/result";
 
 const SETTINGS_KEY = "whylog:settings:v1";
 
@@ -150,8 +150,7 @@ export const useTuning = tuningStore;
 
 export function initialSettings(): SettingsState {
   const config = readConfig();
-  const mutate = (patch: Partial<EngineConfig>): Result<void, string> =>
-    applyConfig(config, patch);
+  const mutate = (patch: Partial<EngineConfig>): Result<void, string> => applyConfig(config, patch);
 
   const reloadFrom = (): SettingsState => {
     const next = readConfig();
@@ -163,10 +162,9 @@ export function initialSettings(): SettingsState {
       hasKey: hasKey(next),
       keyHint: settingsKeyHint(next),
       wantsLlm: next.wantsLlmWithoutKey,
-      fallbackNotice:
-        next.wantsLlmWithoutKey
-          ? `${next.provider} is selected but no API key is stored. WhyLog is running the local engine — nothing has been sent anywhere.`
-          : null,
+      fallbackNotice: next.wantsLlmWithoutKey
+        ? `${next.provider} is selected but no API key is stored. WhyLog is running the local engine — nothing has been sent anywhere.`
+        : null,
       tauHigh: s.tauHigh,
       tauLow: s.tauLow,
       cascadeDepthCap: s.cascadeDepthCap,
@@ -195,8 +193,7 @@ export function initialSettings(): SettingsState {
         mutate({ questionGeneration } as Partial<EngineConfig>),
       setThresholds: (tauHigh: number, tauLow: number) =>
         tuningStore.getState().setThresholds(tauHigh, tauLow),
-      setCascadeDepthCap: (cap: number) =>
-        tuningStore.getState().setCascadeDepthCap(cap),
+      setCascadeDepthCap: (cap: number) => tuningStore.getState().setCascadeDepthCap(cap),
       dismissFallbackNotice: () => {},
     };
   };

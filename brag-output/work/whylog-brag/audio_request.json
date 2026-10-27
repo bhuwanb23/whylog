@@ -1,1 +1,8 @@
-{"lines":[],"bgm":{"mode":"generate","prompt":"cinematic dark ambient electronic, sparse piano, deep low synth pulse, serious tech trailer underscore, minor key, restrained percussion, no vocals, 90 BPM","query":"cinematic dark ambient trailer"}}
+{
+  "lines": [],
+  "bgm": {
+    "mode": "generate",
+    "prompt": "cinematic dark ambient electronic, sparse piano, deep low synth pulse, serious tech trailer underscore, minor key, restrained percussion, no vocals, 90 BPM",
+    "query": "cinematic dark ambient trailer"
+  }
+}

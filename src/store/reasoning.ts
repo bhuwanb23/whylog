@@ -80,8 +80,8 @@ import type { EventType, NewEvent } from "@/types/events";
 import { create } from "zustand";
 import { useAsk } from "./ask";
 
-import { useWhyLog } from "./whylog";
 import { useTuning } from "./settings";
+import { useWhyLog } from "./whylog";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
 
