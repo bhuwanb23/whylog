@@ -75,8 +75,7 @@ export function ProvenanceBlock({
 
       <div className="mono faint" style={{ fontSize: 10, marginTop: 6 }}>
         {span.transcriptId}
-        {" · episode " + decision.provenance.episodeId} · chars{" "}
-        {span.start}–{span.end}
+        {" · episode " + decision.provenance.episodeId} · chars {span.start}–{span.end}
         {transcriptText !== undefined ? (
           <span title="The offsets let this be verified as a literal substring of the source. A model will happily quote a sentence nobody said, and a fabricated quote inside a provenance block destroys the one feature meant to make everything else trustworthy.">
             {" "}

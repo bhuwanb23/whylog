@@ -40,19 +40,16 @@
  * ---------------------------------------------------------------------------
  */
 
-import { create } from "zustand";
-import type { Actor } from "@/types/common";
-import type { DecisionId, GuardId, ISODateString } from "@/types/common";
-import type { EventType, NewEvent } from "@/types/events";
-import type { GuardBaseline, GuardSeverity, GuardSpec, UnverifiableDecision, VirtualProject } from "@/types/guards";
-import type { GraphState } from "@/substrate/graph-state";
-import { EMPTY_VIRTUAL_PROJECT } from "@/types/guards";
-import { label } from "@/reasoning/labeller";
-import type { Assertion } from "@/reasoning/assert";
 import {
-  NO_BASELINE,
+  type DecisionGuards,
+  type EvaluatedGuard,
+  type MetricsResult,
+  type ProjectInput,
+  type ProjectParseReport,
+  type SynthesisReport,
   acceptedGuards,
   buildProject,
+  metrics as computeMetrics,
   describeBaseline,
   describeExport,
   describeProject,
@@ -61,24 +58,32 @@ import {
   freezeBaseline,
   guardsForDecision,
   hasBaseline,
-  metrics as computeMetrics,
   overCap,
   runAll,
   shrinkBaseline,
   synthesiseAll,
   synthesiseDecision,
   whyDisabled,
-  type DecisionGuards,
-  type EvaluatedGuard,
-  type MetricsResult,
-  type ProjectInput,
-  type ProjectParseReport,
-  type SynthesisReport,
 } from "@/guards";
 import { nowISO } from "@/lib/format";
-import { ok, err, type Result } from "@/lib/result";
-import { useWhyLog } from "./whylog";
+import { type Result, err, ok } from "@/lib/result";
+import type { Assertion } from "@/reasoning/assert";
+import { label } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
+import type { Actor } from "@/types/common";
+import type { DecisionId, GuardId, ISODateString } from "@/types/common";
+import type { EventType, NewEvent } from "@/types/events";
+import type {
+  GuardBaseline,
+  GuardSeverity,
+  GuardSpec,
+  UnverifiableDecision,
+  VirtualProject,
+} from "@/types/guards";
+import { EMPTY_VIRTUAL_PROJECT } from "@/types/guards";
+import { create } from "zustand";
 import { useReasoning } from "./reasoning";
+import { useWhyLog } from "./whylog";
 
 /** Persisted alongside the log. The virtual project is a paste, not a derivation: losing it on
  *  reload would mean re-pasting a file listing every session, which is enough friction that the
@@ -126,14 +131,21 @@ export interface GuardState {
 
   /* --- actions --- */
   readonly loadProject: (input: ProjectInput) => void;
-  readonly synthesise: (options?: { templatesOnly?: boolean; decisionId?: DecisionId }) => Promise<Result<number, string>>;
+  readonly synthesise: (options?: { templatesOnly?: boolean; decisionId?: DecisionId }) => Promise<
+    Result<number, string>
+  >;
   readonly run: () => Promise<Result<number, string>>;
   readonly freeze: () => void;
   readonly removeFromBaseline: (guardId: GuardId) => void;
   readonly accept: (guardId: GuardId) => Result<void, string>;
   readonly suppress: (guardId: GuardId, reason: string) => Result<void, string>;
   readonly remove: (guardId: GuardId, reason: string) => Result<void, string>;
-  readonly edit: (guardId: GuardId, spec: GuardSpec, rationale: string, severity?: GuardSeverity) => Result<void, string>;
+  readonly edit: (
+    guardId: GuardId,
+    spec: GuardSpec,
+    rationale: string,
+    severity?: GuardSeverity,
+  ) => Result<void, string>;
   readonly select: (decisionId: DecisionId | null) => void;
   readonly exportForCi: () => Result<{ runner: string; workflow: string; summary: string }, string>;
   readonly groupFor: (decisionId: DecisionId) => DecisionGuards;
@@ -157,13 +169,15 @@ function load(): PersistedGuards {
     /* The virtual project survives JSON intact — it is strings and arrays. The `Float32Array`s
      * that make the index blob awkward to persist have no counterpart here, which is part of why
      * the pasted-project design is the default rather than a fallback. */
-    const project = record["project"] !== null && typeof record["project"] === "object"
-      ? (record["project"] as VirtualProject)
-      : null;
+    const project =
+      record["project"] !== null && typeof record["project"] === "object"
+        ? (record["project"] as VirtualProject)
+        : null;
 
-    const baseline = record["baseline"] !== null && typeof record["baseline"] === "object"
-      ? (record["baseline"] as GuardBaseline)
-      : null;
+    const baseline =
+      record["baseline"] !== null && typeof record["baseline"] === "object"
+        ? (record["baseline"] as GuardBaseline)
+        : null;
 
     return { project, baseline };
   } catch {
@@ -209,7 +223,13 @@ export const useGuards = create<GuardState>()((set, get) => ({
 
   loadProject: (input) => {
     const report = buildProject(input);
-    set({ project: report.project, parse: report, baseline: null, lastEvaluated: [], lastRunAt: null });
+    set({
+      project: report.project,
+      parse: report,
+      baseline: null,
+      lastEvaluated: [],
+      lastRunAt: null,
+    });
     persist(report.project, get().baseline);
   },
 
@@ -221,7 +241,8 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message = "The log is read-only: its hash chain is broken. Synthesis needs to append events.";
+      const message =
+        "The log is read-only: its hash chain is broken. Synthesis needs to append events.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -271,7 +292,8 @@ export const useGuards = create<GuardState>()((set, get) => ({
         const claimed = new Map<DecisionId, number>();
 
         for (const report of all.reports) {
-          let index = claimed.get(report.decisionId) ?? countExisting(whylog.state, report.decisionId);
+          let index =
+            claimed.get(report.decisionId) ?? countExisting(whylog.state, report.decisionId);
 
           for (const proposed of report.proposed) {
             drafts.push({
@@ -287,8 +309,13 @@ export const useGuards = create<GuardState>()((set, get) => ({
               },
               actor: GUARD_ACTOR,
               reason:
-                "Compiled from " + report.decisionId + " by the " + proposed.generatedBy + " path: " +
-                proposed.spec.kind + ". PROPOSED — it will not run until a human accepts it.",
+                "Compiled from " +
+                report.decisionId +
+                " by the " +
+                proposed.generatedBy +
+                " path: " +
+                proposed.spec.kind +
+                ". PROPOSED — it will not run until a human accepts it.",
               at,
             });
             index += 1;
@@ -301,7 +328,9 @@ export const useGuards = create<GuardState>()((set, get) => ({
       if (drafts.length > 0) {
         const committed = whylog.recordBatch(drafts, {
           reason:
-            "Synthesised " + drafts.length + " proposed guard(s) from the decisions in the log. Nothing is installed: every one is PROPOSED and will not run until accepted.",
+            "Synthesised " +
+            drafts.length +
+            " proposed guard(s) from the decisions in the log. Nothing is installed: every one is PROPOSED and will not run until accepted.",
           actor: GUARD_ACTOR,
           occurredAt: at,
         });
@@ -331,7 +360,8 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const whylog = useWhyLog.getState();
 
     if (whylog.status === "degraded") {
-      const message = "The log is read-only: its hash chain is broken. A guard run needs to append events.";
+      const message =
+        "The log is read-only: its hash chain is broken. A guard run needs to append events.";
       set({ status: "failed", error: message });
       return err(message);
     }
@@ -368,9 +398,13 @@ export const useGuards = create<GuardState>()((set, get) => ({
       if (result.drafts.length > 0) {
         const committed = whylog.recordBatch(result.drafts, {
           reason:
-            "Ran " + guards.length + " accepted guard(s) against the pasted project: " +
-            result.report.blockingFailures + " new blocking failure(s), " +
-            result.report.warningFailures + " new warning(s).",
+            "Ran " +
+            guards.length +
+            " accepted guard(s) against the pasted project: " +
+            result.report.blockingFailures +
+            " new blocking failure(s), " +
+            result.report.warningFailures +
+            " new warning(s).",
           actor: GUARD_ACTOR,
           occurredAt: at,
         });
@@ -386,7 +420,12 @@ export const useGuards = create<GuardState>()((set, get) => ({
         lastRunAt: at,
         lastRunDurationMs: result.report.durationMs,
         lastEvaluated: result.evaluated,
-        lastRunSummary: summariseRun(result.report.blockingFailures, result.report.warningFailures, result.report.nothingCheckable, result.assertions.length),
+        lastRunSummary: summariseRun(
+          result.report.blockingFailures,
+          result.report.warningFailures,
+          result.report.nothingCheckable,
+          result.assertions.length,
+        ),
       });
       persist(get().project, result.baseline);
 
@@ -426,7 +465,9 @@ export const useGuards = create<GuardState>()((set, get) => ({
     const evaluated = get().lastEvaluated;
 
     if (get().lastRunAt === null || evaluated.length === 0) {
-      set({ error: "Run the guards first. A baseline freezes a set of results, and there are none yet." });
+      set({
+        error: "Run the guards first. A baseline freezes a set of results, and there are none yet.",
+      });
       return;
     }
 
@@ -437,8 +478,13 @@ export const useGuards = create<GuardState>()((set, get) => ({
       baseline: frozen,
       error: null,
       lastRunSummary:
-        "Baseline frozen at " + frozen.frozenAt + ": " + known + " known failure(s) recorded and " +
-        frozen.enforced.length + " guard(s) ratcheted as enforced. Only violations NEW since this freeze surface as drift.",
+        "Baseline frozen at " +
+        frozen.frozenAt +
+        ": " +
+        known +
+        " known failure(s) recorded and " +
+        frozen.enforced.length +
+        " guard(s) ratcheted as enforced. Only violations NEW since this freeze surface as drift.",
     });
 
     persist(get().project, frozen);
@@ -465,15 +511,24 @@ export const useGuards = create<GuardState>()((set, get) => ({
         payload: { guardId: guard.id },
         actor: GUARD_ACTOR,
         reason:
-          "A human accepted guard " + guard.id + " (" + guard.spec.kind + ") for " + guard.decisionId +
-          ". It was proposed by the " + guard.generatedBy + " path and does not run before this point — an unaccepted check that fails is noise nobody agreed to hear.",
+          "A human accepted guard " +
+          guard.id +
+          " (" +
+          guard.spec.kind +
+          ") for " +
+          guard.decisionId +
+          ". It was proposed by the " +
+          guard.generatedBy +
+          " path and does not run before this point — an unaccepted check that fails is noise nobody agreed to hear.",
         at,
       },
     ]),
 
   suppress: (guardId, reason) => {
     if (reason.trim().length === 0) {
-      return err("A suppression needs a reason. Silencing a failing check is the act most in need of a recorded justification.");
+      return err(
+        "A suppression needs a reason. Silencing a failing check is the act most in need of a recorded justification.",
+      );
     }
 
     return reviewAction(guardId, (guard, _state, at) => [
@@ -481,7 +536,8 @@ export const useGuards = create<GuardState>()((set, get) => ({
         type: "GuardSuppressed",
         payload: { guardId: guard.id, suppressionReason: reason.trim() },
         actor: GUARD_ACTOR,
-        reason: "A human suppressed guard " + guard.id + " on " + guard.decisionId + ": " + reason.trim(),
+        reason:
+          "A human suppressed guard " + guard.id + " on " + guard.decisionId + ": " + reason.trim(),
         at,
       },
     ]);
@@ -494,7 +550,10 @@ export const useGuards = create<GuardState>()((set, get) => ({
         payload: { guardId: guard.id },
         actor: GUARD_ACTOR,
         reason:
-          "A human deleted guard " + guard.id + " from " + guard.decisionId +
+          "A human deleted guard " +
+          guard.id +
+          " from " +
+          guard.decisionId +
           (reason.trim().length > 0 ? ": " + reason.trim() : ". No reason given.") +
           " The record is retained with lifecycle `deleted`; nothing is ever removed from the log.",
         at,
@@ -514,7 +573,9 @@ export const useGuards = create<GuardState>()((set, get) => ({
           payload: { guardId: guard.id },
           actor: GUARD_ACTOR,
           reason:
-            "Guard " + guard.id + " was edited, and editing is delete + re-synthesise: the closed vocabulary has no edit event, so the previous spec stays in the log. A guard whose spec changed quietly after it started failing would be indistinguishable from one weakened to make the failure go away.",
+            "Guard " +
+            guard.id +
+            " was edited, and editing is delete + re-synthesise: the closed vocabulary has no edit event, so the previous spec stays in the log. A guard whose spec changed quietly after it started failing would be indistinguishable from one weakened to make the failure go away.",
           at,
         },
         {
@@ -530,7 +591,10 @@ export const useGuards = create<GuardState>()((set, get) => ({
           },
           actor: GUARD_ACTOR,
           reason:
-            "Replacement for " + guard.id + ", written by a human: " + spec.kind +
+            "Replacement for " +
+            guard.id +
+            ", written by a human: " +
+            spec.kind +
             ". PROPOSED — an edit does not inherit the old guard's acceptance, because that would let an edit activate a check nobody reviewed.",
           at,
         },
@@ -642,11 +706,7 @@ function countExisting(state: GraphState, decisionId: DecisionId): number {
   return count;
 }
 
-function nextFreeSuffix(
-  state: GraphState,
-  decisionId: DecisionId,
-  excluding: GuardId,
-): string {
+function nextFreeSuffix(state: GraphState, decisionId: DecisionId, excluding: GuardId): string {
   const used = new Set<string>();
 
   for (const guard of state.guards.values()) {
@@ -686,13 +746,12 @@ function summariseRun(
     return "Every guard SKIPPED — the pasted project did not contain the data any of them needs. This is not a clean run: nothing was checked. Paste a package.json, a file listing, or file contents.";
   }
 
-  const parts = [
-    blocking + " new blocking failure(s), " + warnings + " new warning(s).",
-  ];
+  const parts = [blocking + " new blocking failure(s), " + warnings + " new warning(s)."];
 
   if (assertions > 0) {
     parts.push(
-      assertions + " failure(s) entered the reasoning cycle as evidence, through the same entry point a transcript uses.",
+      assertions +
+        " failure(s) entered the reasoning cycle as evidence, through the same entry point a transcript uses.",
     );
   } else if (blocking + warnings > 0) {
     parts.push(
@@ -711,7 +770,10 @@ function recomputeMetrics(): void {
 
   /* Prefer the retained run: it carries baseline-relative novelty, which `evaluatedFrom` cannot
    * reconstruct, because a stored `lastRun` does not record whether the baseline knew about it. */
-  const evaluated = guardStore.lastEvaluated.length > 0 ? guardStore.lastEvaluated : evaluatedFromState(whylog.state);
+  const evaluated =
+    guardStore.lastEvaluated.length > 0
+      ? guardStore.lastEvaluated
+      : evaluatedFromState(whylog.state);
 
   useGuards.setState({
     metricsResult: computeMetrics({
@@ -748,7 +810,9 @@ export function describeGuardStore(state: GuardState): string {
 }
 
 /** Decisions with more guards than the cap, for the review panel. */
-export function overCapDecisions(state: GuardState): readonly { decisionId: DecisionId; over: number }[] {
+export function overCapDecisions(
+  state: GuardState,
+): readonly { decisionId: DecisionId; over: number }[] {
   const whylog = useWhyLog.getState();
   const labels = label(whylog.state).labels;
   const out: { decisionId: DecisionId; over: number }[] = [];

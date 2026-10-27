@@ -79,8 +79,9 @@ import type { Justification, PremiseType } from "@/types/domain";
 import type { EventType, NewEvent } from "@/types/events";
 import { create } from "zustand";
 import { useAsk } from "./ask";
-import { useTuning } from "./settings";
+
 import { useWhyLog } from "./whylog";
+import { useTuning } from "./settings";
 
 export type ReasoningStatus = "idle" | "running" | "done" | "failed";
 

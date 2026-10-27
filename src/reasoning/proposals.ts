@@ -37,13 +37,13 @@
  * ---------------------------------------------------------------------------
  */
 
+import { GUARD_CONFIDENCE, JUDGED_CONFIDENCE } from "@/guards/feedback";
 import { formatProposalId } from "@/lib/ids";
 import type { GraphState } from "@/substrate/graph-state";
 import type { Confidence, DecisionId, EventId, PremiseId, SourceSpan } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import { isDeterministic } from "@/types/guards";
-import { GUARD_CONFIDENCE, JUDGED_CONFIDENCE } from "@/guards/feedback";
 import type { Premise } from "@/types/domain";
+import { isDeterministic } from "@/types/guards";
 import type {
   AdjudicationOutcome,
   CascadeResult,
@@ -227,13 +227,18 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
     if (decisionWithGuards !== undefined) {
       const failing = decisionWithGuards.guardIds
         .map((gid) => state.guards.get(gid))
-        .filter((g): g is NonNullable<typeof g> => g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0);
+        .filter(
+          (g): g is NonNullable<typeof g> =>
+            g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0,
+        );
       const preferred = failing.find((g) => g.lastRun!.evidence.includes("found in")) ?? failing[0];
       if (preferred !== undefined) {
         return {
           quote: preferred.lastRun!.evidence,
           source: "guard",
-          confidence: asConfidence(isDeterministic(preferred.spec.kind) ? GUARD_CONFIDENCE : JUDGED_CONFIDENCE),
+          confidence: asConfidence(
+            isDeterministic(preferred.spec.kind) ? GUARD_CONFIDENCE : JUDGED_CONFIDENCE,
+          ),
         };
       }
     }
@@ -260,17 +265,38 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   const b =
     finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
 
-  const decisionWithGuards = state.decisions.get(finding.decisionId); console.warn("EF " + finding.decisionId + " premiseId=" + finding.premiseId + " guardIds=" + (decisionWithGuards?.guardIds?.length ?? 0) + " guardsInState=" + state.guards.size);
+  const decisionWithGuards = state.decisions.get(finding.decisionId);
+  console.warn(
+    "EF " +
+      finding.decisionId +
+      " premiseId=" +
+      finding.premiseId +
+      " guardIds=" +
+      (decisionWithGuards?.guardIds?.length ?? 0) +
+      " guardsInState=" +
+      state.guards.size,
+  );
   if (decisionWithGuards !== undefined) {
-    console.warn("  guard evidence=" + decisionWithGuards.guardIds.map(gid => JSON.stringify(state.guards.get(gid)?.lastRun?.evidence?.slice(0,20))).join(",")); const failing = decisionWithGuards.guardIds
+    console.warn(
+      "  guard evidence=" +
+        decisionWithGuards.guardIds
+          .map((gid) => JSON.stringify(state.guards.get(gid)?.lastRun?.evidence?.slice(0, 20)))
+          .join(","),
+    );
+    const failing = decisionWithGuards.guardIds
       .map((gid) => state.guards.get(gid))
-      .filter((g): g is NonNullable<typeof g> => g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0);
+      .filter(
+        (g): g is NonNullable<typeof g> =>
+          g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0,
+      );
     const preferred = failing.find((g) => g.lastRun!.evidence.includes("found in")) ?? failing[0];
     if (preferred !== undefined) {
       return {
         quote: preferred.lastRun!.evidence,
         source: "guard",
-        confidence: asConfidence(isDeterministic(preferred.spec.kind) ? GUARD_CONFIDENCE : JUDGED_CONFIDENCE),
+        confidence: asConfidence(
+          isDeterministic(preferred.spec.kind) ? GUARD_CONFIDENCE : JUDGED_CONFIDENCE,
+        ),
       };
     }
   }

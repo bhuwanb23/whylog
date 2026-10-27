@@ -14,17 +14,16 @@ export {
   type Notice,
   type WhyLogState,
 } from "./whylog";
-export * as selectors from "./selectors";
-export {
+export * as selectors from "./selectors";export {
   DEFAULT_CASCADE_DEPTH_CAP,
   DEFAULT_MAX_SEARCH_STEPS,
-  applyConfig,
-  defaultConfig,
   initialSettings,
+  useTuning,
   type SettingsState,
 } from "./settings";
 
-export {
+
+export {
   REVIEW_KEY,
   hasPendingReview,
   pendingReviewAge,

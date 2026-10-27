@@ -24,6 +24,7 @@
  */
 
 import { type Result, err, ok } from "@/lib/result";
+import type { ISODateString } from "@/types/common";
 import {
   type StoredConfig,
   clearApiKey as clearStoredKey,
@@ -31,6 +32,7 @@ import {
   saveConfig,
 } from "@/substrate/persistence";
 import type { EngineId } from "@/types/common";
+export type { EngineId };
 
 export type ProviderId = "openai" | "anthropic" | "openrouter" | "local";
 
@@ -130,6 +132,10 @@ export function writeConfig(config: EngineConfig): Result<void, string> {
     savedAt: new Date().toISOString() as never,
   };
   return saveConfig(stored);
+}
+
+export function applyConfig(current: EngineConfig, patch: Partial<EngineConfig>): Result<void, string> {
+  return writeConfig({ ...current, ...patch });
 }
 
 export function forgetKey(): Result<void, string> {

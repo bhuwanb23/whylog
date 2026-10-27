@@ -41,7 +41,9 @@ const LATER = asISO("2026-11-18T09:41:00.000Z");
 /** Falsify the premise the demo rests on, and run the whole cycle. */
 async function falsifyAndRevise() {
   const before = useWhyLog.getState().state;
-  const singleUser = [...before.premises.values()].find((p) => p.predicate === "scale.single_user");
+  const singleUser = [...before.premises.values()].find(
+    (p) => p.predicate === "scale.single_user",
+  );
   if (!singleUser) throw new Error("the fixture did not yield scale.single_user");
 
   const outcome = await useReasoning.getState().assertAndRevise(
@@ -57,7 +59,11 @@ async function falsifyAndRevise() {
 }
 
 /** The deepest the cascade reached, and whether the cap said so. */
-function cascadeDepth(): { deepest: number; truncated: boolean; beyond: number } {
+function cascadeDepth(): {
+  deepest: number;
+  truncated: boolean;
+  beyond: number;
+} {
   const result = useReasoning.getState().result;
   if (!result) throw new Error("no result");
 

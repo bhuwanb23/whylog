@@ -28,28 +28,37 @@
  * ---------------------------------------------------------------------------
  */
 
+import type { WhyLogEngine } from "@/ai/types";
+import type { Assertion } from "@/reasoning/assert";
+import type { Labelled, NodeId } from "@/reasoning/labeller";
+import type { GraphState } from "@/substrate/graph-state";
 import type { Actor } from "@/types/common";
 import type { DecisionId, GuardId, ISODateString } from "@/types/common";
 import type { EventType, NewEvent } from "@/types/events";
 import type { Guard, GuardBaseline, UnverifiableDecision, VirtualProject } from "@/types/guards";
-import type { WhyLogEngine } from "@/ai/types";
-import type { GraphState } from "@/substrate/graph-state";
-import type { Assertion } from "@/reasoning/assert";
-import type { Labelled, NodeId } from "@/reasoning/labeller";
+import {
+  applyBaseline,
+  describeBaseline,
+  freezeBaseline,
+  hasBaseline,
+  ratchetAfterRun,
+} from "./baseline";
+import { runGuards } from "./eval";
+import {
+  type GuardFeedback,
+  describeFeedbackLoop,
+  feedbackFor,
+  measuredCostCoverage,
+} from "./feedback";
+import { type ComplianceResult, compliance } from "./metrics/compliance";
+import { type CoverageResult, coverage } from "./metrics/coverage";
+import { type DriftResult, driftAge } from "./metrics/drift";
+import { type RatioResult, deterministicRatio } from "./metrics/ratio";
+import { type SoundnessResult, soundness } from "./metrics/soundness";
+import { describeReviewPolicy } from "./review";
+import { type SynthesizeInput, synthesize, synthesizeAll, templateShare } from "./synth";
 import type { EvaluatedGuard, GuardRunReport, SynthesisReport } from "./types";
 import { GUARDS_PER_DECISION_CAP } from "./types";
-import { buildProject, describeProject, type ProjectInput } from "./project";
-import { runGuards, describeKindCoverage, lifecycleGate } from "./eval";
-import { synthesize, synthesizeAll, describeSynthesis, templateShare, type SynthesizeInput } from "./synth";
-import { applyBaseline, describeBaseline, freezeBaseline, hasBaseline, ratchetAfterRun } from "./baseline";
-import { compliance, describeCompliance, type ComplianceResult } from "./metrics/compliance";
-import { coverage, describeCoverage, type CoverageResult } from "./metrics/coverage";
-import { soundness, describeSoundness, type SoundnessResult } from "./metrics/soundness";
-import { driftAge, describeDrift, type DriftResult } from "./metrics/drift";
-import { deterministicRatio, describeRatio, type RatioResult } from "./metrics/ratio";
-import { feedbackFor, guardStatusMap, measuredCostCoverage, describeFeedbackLoop, type GuardFeedback } from "./feedback";
-import { guardsForDecision, overCap, whyDisabled, describeReviewPolicy } from "./review";
-import { exportCi, describeExport, type CiExport, type CiExportInput } from "./ci-export";
 
 /* -------------------------------------------------------------------------- */
 /* Stage 1 — synthesise                                                       */
@@ -124,8 +133,13 @@ export async function synthesiseAll(input: SynthesiseAllInput): Promise<Synthesi
         },
         actor: input.actor,
         reason:
-          "Compiled from " + report.decisionId + " by the " + proposed.generatedBy + " path: " +
-          proposed.spec.kind + ". It is PROPOSED and will not run until a human accepts it.",
+          "Compiled from " +
+          report.decisionId +
+          " by the " +
+          proposed.generatedBy +
+          " path: " +
+          proposed.spec.kind +
+          ". It is PROPOSED and will not run until a human accepts it.",
         at: input.at,
       });
     }
@@ -166,8 +180,13 @@ export async function synthesiseDecision(
       },
       actor: input.actor,
       reason:
-        "Compiled from " + input.decisionId + " by the " + proposed.generatedBy + " path: " +
-        proposed.spec.kind + ". It is PROPOSED and will not run until a human accepts it.",
+        "Compiled from " +
+        input.decisionId +
+        " by the " +
+        proposed.generatedBy +
+        " path: " +
+        proposed.spec.kind +
+        ". It is PROPOSED and will not run until a human accepts it.",
       at: input.at,
     });
   }
@@ -232,7 +251,9 @@ export interface RunResult {
  * but it does not fire a revision proposal for something the user already knew about on the
  * first run — that queue would be the wall of red §4.4's baseline pattern exists to prevent.
  */
-export async function runAll(input: RunInput & { actor: Actor; at: ISODateString }): Promise<RunResult> {
+export async function runAll(
+  input: RunInput & { actor: Actor; at: ISODateString },
+): Promise<RunResult> {
   const guards = acceptedGuards(input.state);
 
   const labelByGuard = new Map<GuardId, Labelled["label"]>();
@@ -298,9 +319,10 @@ export async function runAll(input: RunInput & { actor: Actor; at: ISODateString
     drafts,
     assertions,
     feedback,
-    baseline: hasBaseline(input.baseline) && input.baseline !== null
-      ? ratchetAfterRun(input.baseline, withBaseline)
-      : input.baseline ?? freezeBaseline(withBaseline, null),
+    baseline:
+      hasBaseline(input.baseline) && input.baseline !== null
+        ? ratchetAfterRun(input.baseline, withBaseline)
+        : (input.baseline ?? freezeBaseline(withBaseline, null)),
   };
 }
 
@@ -313,7 +335,9 @@ export function acceptedGuards(state: GraphState): readonly Guard[] {
     if (guard.lifecycle !== "accepted") continue;
     out.push(guard);
   }
-  return out.sort((a, b) => (a.decisionId < b.decisionId ? -1 : a.decisionId > b.decisionId ? 1 : a.id < b.id ? -1 : 1));
+  return out.sort((a, b) =>
+    a.decisionId < b.decisionId ? -1 : a.decisionId > b.decisionId ? 1 : a.id < b.id ? -1 : 1,
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -357,14 +381,36 @@ export function metrics(input: MetricsInput): MetricsResult {
  *  flatters itself, and the two are never rendered apart. */
 export function renderDashboard(result: MetricsResult): string {
   const lines = [
-    row("DECISION COMPLIANCE", result.compliance.score, result.compliance.compliant + " / " + result.compliance.denominator),
-    row("VERIFIABLE COVERAGE", result.coverage.score, result.coverage.covered + " / " + result.coverage.inDecisions),
-    row("LOG SOUNDNESS", result.soundness.score, result.soundness.inCount + " / " + result.soundness.denominator),
-    row("DETERMINISTIC RATIO", result.ratio.score, result.ratio.deterministic + " / " + result.ratio.total),
-    "DRIFT AGE (worst)            " + (result.drift.worst === null ? "none" : result.drift.worstDays + " days · " + result.drift.worst.decisionId),
+    row(
+      "DECISION COMPLIANCE",
+      result.compliance.score,
+      result.compliance.compliant + " / " + result.compliance.denominator,
+    ),
+    row(
+      "VERIFIABLE COVERAGE",
+      result.coverage.score,
+      result.coverage.covered + " / " + result.coverage.inDecisions,
+    ),
+    row(
+      "LOG SOUNDNESS",
+      result.soundness.score,
+      result.soundness.inCount + " / " + result.soundness.denominator,
+    ),
+    row(
+      "DETERMINISTIC RATIO",
+      result.ratio.score,
+      result.ratio.deterministic + " / " + result.ratio.total,
+    ),
+    "DRIFT AGE (worst)            " +
+      (result.drift.worst === null
+        ? "none"
+        : result.drift.worstDays + " days · " + result.drift.worst.decisionId),
     "",
-    "implementation_cost measured for " + result.measuredCost.measured + " decision(s); " +
-      result.measuredCost.unknown + " still UNKNOWN at 0.5.",
+    "implementation_cost measured for " +
+      result.measuredCost.measured +
+      " decision(s); " +
+      result.measuredCost.unknown +
+      " still UNKNOWN at 0.5.",
   ];
 
   if (result.compliance.failing.length > 0) {
@@ -378,7 +424,9 @@ export function renderDashboard(result: MetricsResult): string {
   if (result.coverage.unverifiable.length > 0) {
     lines.push(
       "",
-      "UNVERIFIABLE (" + result.coverage.unverifiable.length + " decisions — no guard could be synthesised):",
+      "UNVERIFIABLE (" +
+        result.coverage.unverifiable.length +
+        " decisions — no guard could be synthesised):",
       "  " + result.coverage.unverifiable.map((entry) => entry.decisionId).join(" · "),
     );
   }
@@ -398,12 +446,32 @@ function row(label: string, value: number, fraction: string): string {
 
 export { buildProject, describeProject, type ProjectInput } from "./project";
 export { runGuard, runGuards, lifecycleGate, describeKindCoverage, UNKNOWN_ENGINE } from "./eval";
-export { synthesize, synthesizeAll, describeSynthesis, templateShare, TEMPLATE_SHARE_TARGET } from "./synth";
-export { llmGuards, validate as validateProposedGuard, describeSpec } from "./synth/llm";
-export { templateGuards, TEMPLATED_VARIABLES, hasTemplate, describeCoverage as describeTemplateCoverage } from "./templates";
 export {
-  freezeBaseline, applyBaseline, isNewViolation, shrinkBaseline, ratchetUp, ratchetAfterRun,
-  baselinedFailures, newViolations, describeBaseline, hasBaseline, NO_BASELINE,
+  synthesize,
+  synthesizeAll,
+  describeSynthesis,
+  templateShare,
+  TEMPLATE_SHARE_TARGET,
+} from "./synth";
+export { llmGuards, validate as validateProposedGuard, describeSpec } from "./synth/llm";
+export {
+  templateGuards,
+  TEMPLATED_VARIABLES,
+  hasTemplate,
+  describeCoverage as describeTemplateCoverage,
+} from "./templates";
+export {
+  freezeBaseline,
+  applyBaseline,
+  isNewViolation,
+  shrinkBaseline,
+  ratchetUp,
+  ratchetAfterRun,
+  baselinedFailures,
+  newViolations,
+  describeBaseline,
+  hasBaseline,
+  NO_BASELINE,
 } from "./baseline";
 export { compliance, describeCompliance } from "./metrics/compliance";
 export { coverage, describeCoverage } from "./metrics/coverage";
@@ -411,23 +479,51 @@ export { soundness, describeSoundness } from "./metrics/soundness";
 export { driftAge, describeDrift, DRIFT_ESCALATION_DAYS } from "./metrics/drift";
 export { deterministicRatio, describeRatio } from "./metrics/ratio";
 export {
-  feedbackFor, guardStatusFor, guardStatusMap, measuredCostCoverage,
-  attributeFailure, specTarget, describeFeedbackLoop, GUARD_CONFIDENCE, JUDGED_CONFIDENCE,
+  feedbackFor,
+  guardStatusFor,
+  guardStatusMap,
+  measuredCostCoverage,
+  attributeFailure,
+  specTarget,
+  describeFeedbackLoop,
+  GUARD_CONFIDENCE,
+  JUDGED_CONFIDENCE,
 } from "./feedback";
 export {
-  guardsForDecision, acceptGuard, suppressGuard, deleteGuard, editGuard,
-  synthesiseEvent, nextSuffix, overCap, whyDisabled, describeTarget, describeReviewPolicy,
+  guardsForDecision,
+  acceptGuard,
+  suppressGuard,
+  deleteGuard,
+  editGuard,
+  synthesiseEvent,
+  nextSuffix,
+  overCap,
+  whyDisabled,
+  describeTarget,
+  describeReviewPolicy,
 } from "./review";
 export { exportCi, renderRunner, renderWorkflow, describeExport } from "./ci-export";
 /* Imported for local use AS WELL AS re-exported. A re-export does not bind the name inside this
  * module, and `describeGuards()` below calls `describeTaxonomy()` — so without the import line
  * that call would be unresolved. Same trap as a namespaced re-export not flattening names. */
-import { TAXONOMY, describeTaxonomy } from "./taxonomy";
-export { TAXONOMY, describeTaxonomy, describeKind, runnableHere, deterministicKinds } from "./taxonomy";
+import { describeTaxonomy } from "./taxonomy";
+export {
+  TAXONOMY,
+  describeTaxonomy,
+  describeKind,
+  runnableHere,
+  deterministicKinds,
+} from "./taxonomy";
 export { GUARDS_PER_DECISION_CAP, KIND_ORDER, kindRank, severityRank, outcomeRank } from "./types";
 export type {
-  EvaluatedGuard, DecisionGuards, GuardRunReport, ProjectParseReport,
-  SynthesisReport, TemplateInput, TemplateOutput, TemplateSource,
+  EvaluatedGuard,
+  DecisionGuards,
+  GuardRunReport,
+  ProjectParseReport,
+  SynthesisReport,
+  TemplateInput,
+  TemplateOutput,
+  TemplateSource,
 } from "./types";
 export type { AttributedGuard } from "./templates";
 export type { CiExport, CiExportInput, ExportedGuard } from "./ci-export";

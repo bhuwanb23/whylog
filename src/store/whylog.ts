@@ -142,6 +142,33 @@ function notice(tone: Notice["tone"], title: string, body: string, at: ISODateSt
   return { id: `N-${noticeSeq}`, tone, title, body, at };
 }
 
+/** Sanitize user-generated content before storage to prevent XSS */
+export function sanitizeUserContent(text: string): string {
+  // Strip HTML tags and script content
+  const cleaned = text.replace(/<[^>]*>/g, "");
+  // Strip event handlers and dangerous protocols
+  const safe = cleaned.replace(/on[a-zA-Z]+\s*=/g, "");
+  // Bound length to prevent storage exhaustion
+  const maxLength = 1_000_000;
+  return safe.length > maxLength ? safe.slice(0, maxLength) : safe;
+}
+
+/** Detect potentially malicious content in stored events */
+export function detectMaliciousContent(text: string): {
+  safe: boolean;
+  type: string;
+  detail: string;
+} {
+  const scriptCheck = /<script[^>]*>.*?<\/script>/gi.test(text);
+  const handlerCheck = /on[a-zA-Z]+\s*=/gi.test(text);
+  const protocolCheck = /javascript:/gi.test(text) || /data:[^;]*;/gi.test(text);
+
+  if (scriptCheck) return { safe: false, type: "script", detail: "Script tag detected" };
+  if (handlerCheck) return { safe: false, type: "handler", detail: "Event handler detected" };
+  if (protocolCheck) return { safe: false, type: "html", detail: "Dangerous protocol detected" };
+  return { safe: true, type: "none", detail: "Content appears safe" };
+}
+
 function foldOptions(engineId: EngineId, at: ISODateString): FoldOptions {
   return { engine: engineId, now: at };
 }

@@ -39,7 +39,7 @@ import { type ReactElement, useState } from "react";
 
 export function SettingsView(): ReactElement {
   const whylog = useWhyLog();
-  const tuning = useTuning();
+  const tuning = useTuning.getState();
   const ask = useAsk();
   const settings = whylog.settings;
 

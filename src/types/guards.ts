@@ -42,6 +42,18 @@ export type GuardKind =
   /** A rubric verdict over a diff or file set. Requires a key. */
   | "llm_judge";
 
+/** The return type of a guard evaluator. */
+export interface Evaluation {
+  readonly outcome: "pass" | "skip";
+  readonly evidence: string;
+  readonly skipReason?: string;
+}
+
+/** A skip reason for guards that cannot be evaluated. */
+export interface SkipReason {
+  readonly skipReason: string;
+}
+
 /** The six kinds that evaluate deterministically with no model and no shell. */
 export const DETERMINISTIC_GUARD_KINDS: readonly GuardKind[] = [
   "dependency_present",
