@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 340" width="440" height="340" role="img" aria-label="WhyLog — a decision log that checks itself">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  </style>
+
+  <!-- Mark centred, scaled 1.25x from the 128u master -->
+  <g transform="translate(140,24) scale(1.25)">
+    <rect width="128" height="128" rx="28" fill="#0b0d10" stroke="#232830" stroke-width="2"/>
+    <path d="M40 58 L54 74 M88 58 L74 74" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M40 58 L74 74" stroke="#fbbf24" stroke-width="2.5" fill="none" stroke-dasharray="5 4" stroke-linecap="round"/>
+    <circle cx="40" cy="44" r="14" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+    <circle cx="88" cy="44" r="14" fill="#0b0d10" stroke="#4ade80" stroke-width="3.5"/>
+    <rect x="44" y="74" width="40" height="40" rx="11" fill="#4ade80"/>
+  </g>
+
+  <text x="220" y="256" font-size="54" font-weight="700" letter-spacing="-1.5" fill="#e6e9ee" text-anchor="middle">WhyLog</text>
+  <line x1="150" y1="282" x2="290" y2="282" stroke="#232830" stroke-width="2"/>
+  <text x="220" y="312" font-size="17" font-weight="400" letter-spacing="0.2" fill="#99a1ad" text-anchor="middle">a decision log that checks itself</text>
+</svg>

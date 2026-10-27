@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WhyLog Ontology Diagram -->
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .entity { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; fill: #1a1a2e; }
+      .prop { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 12px; fill: #666666; }
+      .arrow { fill: #e94560; marker-end: url(#arrowhead); }
+      .box { fill:#fff; stroke:#dee2e6; stroke-width:1; rx:6; ry:6; }
+      .box-dark { fill:#e9ecef; stroke:#aaa; stroke-width:1; rx:6; ry:6; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#e94560">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+  
+  <text x="500" y="40" text-anchor="middle" class="title" font-size="22">WhyLog — Ontology</text>
+  
+  <!-- Core entities -->
+  <g transform="translate(150, 150)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Decision</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">id, text, timestamp</text>
+  </g>
+  
+  <g transform="translate(350, 150)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Premise</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">decisionId, statement, weight</text>
+  </g>
+  
+  <g transform="translate(550, 150)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Alternative</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">decisionId, option, score</text>
+  </g>
+  
+  <g transform="translate(750, 150)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Provenance</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">source, evidence, trace</text>
+  </g>
+  
+  <!-- Relationships -->
+  <g fill="none" stroke="#e94560" stroke-width="2">
+    <path d="M140 50 C200 50 300 50 340 50"/>
+    <path d="M280 50 C340 50 420 50 460 50"/>
+    <path d="M420 50 C480 50 580 50 620 50"/>
+    <path d="M560 50 C620 50 720 50 760 50"/>
+  </g>
+  
+  <!-- Lattice connection -->
+  <g transform="translate(300, 300)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Lattice Node</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">position, neighbors, state</text>
+  </g>
+  
+  <g transform="translate(500, 300)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Variable</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">name, domain, constraints</text>
+  </g>
+  
+  <g transform="translate(700, 300)">
+    <rect x="0" y="0" width="140" height="80" class="box-dark" rx="6"/>
+    <text x="70" y="25" text-anchor="middle" class="entity">Constraint</text>
+    <text x="70" y="45" text-anchor="middle" class="prop">lhs, rhs, satisfied</text>
+  </g>
+  
+  <g fill="none" stroke="#e94560" stroke-width="2">
+    <path d="M140 250 C200 250 350 250 450 250"/>
+    <path d="M300 250 C360 250 450 250 550 250"/>
+    <path d="M500 250 C560 250 650 250 750 250"/>
+  </g>
+  
+  <!-- Invariants -->
+  <g transform="translate(500, 520)">
+    <rect x="0" y="0" width="300" height="50" fill="#fff8e1" stroke="#f39c12" stroke-width="1" rx="4"/>
+    <text x="150" y="25" text-anchor="middle" class="step" font-size="12">I1: Decisions are immutable once recorded</text>
+    <text x="150" y="40" text-anchor="middle" class="step" font-size="12">I2: Provenance traces all transformations</text>
+  </g>
+</svg>

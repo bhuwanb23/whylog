@@ -1,0 +1,1120 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 9,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "duplicate_media_discovery_risk",
+        "severity": "warning",
+        "message": "Detected 2 matching img entries with the same source/start/duration.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Avoid duplicated media nodes that can be discovered twice during compilation."
+      },
+      {
+        "code": "timeline_track_too_dense",
+        "severity": "warning",
+        "message": "Track 1 has 7 timed elements in this HTML file. Smaller sub-compositions keep timelines easier to read, iterate on, and diff.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move coherent scene groups into separate .html files under compositions/ and mount them from the parent with data-composition-src so the timeline stays easier to inspect, revise, and validate."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s1\"> is a timeline element that contains nested <div id=\"s1-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s1",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s1\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s2\"> is a timeline element that contains nested <div id=\"s2-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s2",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s2\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s3\"> is a timeline element that contains nested <div id=\"s3-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s3",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s3\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s4\"> is a timeline element that contains nested <div id=\"s4-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s4",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s4\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s5\"> is a timeline element that contains nested <div id=\"s5-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s5",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s5\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s6\"> is a timeline element that contains nested <div id=\"s6-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s6",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s6\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<section id=\"s7\"> is a timeline element that contains nested <div id=\"s7-inner\">. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#s7",
+        "dataAttributes": {},
+        "sourceFile": "D:\\projects\\ml\\whylog\\brag-output\\work\\whylog-brag\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <section id=\"s7\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 3,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "clip_media_fit",
+        "severity": "warning",
+        "message": "Audio \"sfx-tick-1\" is 0.08s but its slot (data-duration) is 0.50s — the slot is shortened to the media length when rendered. Set data-duration to ~0.08s if that isn't intended.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {
+          "data-composition-id": "main",
+          "data-start": "0",
+          "data-duration": "60",
+          "data-width": "1920",
+          "data-height": "1080",
+          "data-fps": "30"
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "time": 0
+      },
+      {
+        "code": "clip_media_fit",
+        "severity": "warning",
+        "message": "Audio \"sfx-tick-2\" is 0.08s but its slot (data-duration) is 0.50s — the slot is shortened to the media length when rendered. Set data-duration to ~0.08s if that isn't intended.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {
+          "data-composition-id": "main",
+          "data-start": "0",
+          "data-duration": "60",
+          "data-width": "1920",
+          "data-height": "1080",
+          "data-fps": "30"
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "time": 0
+      },
+      {
+        "code": "clip_media_fit",
+        "severity": "warning",
+        "message": "Audio \"sfx-hit\" is 0.25s but its slot (data-duration) is 0.60s — the slot is shortened to the media length when rendered. Set data-duration to ~0.25s if that isn't intended.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {
+          "data-composition-id": "main",
+          "data-start": "0",
+          "data-duration": "60",
+          "data-width": "1920",
+          "data-height": "1080",
+          "data-fps": "30"
+        },
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080
+        },
+        "time": 0
+      }
+    ]
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 4,
+    "infoCount": 3,
+    "findings": [
+      {
+        "code": "connector_orphan",
+        "severity": "warning",
+        "time": 23.333,
+        "selector": "#e1",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 630,
+          "top": 418,
+          "right": 790,
+          "bottom": 570,
+          "width": 160,
+          "height": 152
+        },
+        "containerSelector": "#s4-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 630,
+          "y": 418,
+          "width": 160,
+          "height": 152
+        },
+        "firstSeen": 23.333,
+        "lastSeen": 30,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          23.333,
+          30
+        ]
+      },
+      {
+        "code": "connector_orphan",
+        "severity": "warning",
+        "time": 36.667,
+        "selector": "#s5-e1",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 660,
+          "top": 466.5,
+          "right": 820,
+          "bottom": 582.5,
+          "width": 160,
+          "height": 116
+        },
+        "containerSelector": "#s5-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 660,
+          "y": 466.5,
+          "width": 160,
+          "height": 116
+        },
+        "firstSeen": 36.667,
+        "lastSeen": 43.333,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          36.667,
+          43.333
+        ]
+      },
+      {
+        "code": "connector_orphan",
+        "severity": "warning",
+        "time": 36.667,
+        "selector": "#s5-e2",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 860,
+          "top": 466.5,
+          "right": 960,
+          "bottom": 582.5,
+          "width": 100,
+          "height": 116
+        },
+        "containerSelector": "#s5-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 860,
+          "y": 466.5,
+          "width": 100,
+          "height": 116
+        },
+        "firstSeen": 36.667,
+        "lastSeen": 43.333,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          36.667,
+          43.333
+        ]
+      },
+      {
+        "code": "connector_orphan",
+        "severity": "warning",
+        "time": 36.667,
+        "selector": "#s5-e3",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 1160,
+          "top": 466.5,
+          "right": 1260,
+          "bottom": 582.5,
+          "width": 100,
+          "height": 116
+        },
+        "containerSelector": "#s5-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1160,
+          "y": 466.5,
+          "width": 100,
+          "height": 116
+        },
+        "firstSeen": 36.667,
+        "lastSeen": 43.333,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          36.667,
+          43.333
+        ]
+      },
+      {
+        "code": "connector_orphan",
+        "severity": "info",
+        "time": 30,
+        "selector": "#e2",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 830,
+          "top": 418,
+          "right": 960,
+          "bottom": 570,
+          "width": 130,
+          "height": 152
+        },
+        "containerSelector": "#s4-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 830,
+          "y": 418,
+          "width": 130,
+          "height": 152
+        },
+        "firstSeen": 30,
+        "lastSeen": 30,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          30
+        ]
+      },
+      {
+        "code": "connector_orphan",
+        "severity": "info",
+        "time": 30,
+        "selector": "#e3",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 960,
+          "top": 418,
+          "right": 1130,
+          "bottom": 570,
+          "width": 170,
+          "height": 152
+        },
+        "containerSelector": "#s4-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 960,
+          "y": 418,
+          "width": 170,
+          "height": 152
+        },
+        "firstSeen": 30,
+        "lastSeen": 30,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          30
+        ]
+      },
+      {
+        "code": "connector_orphan",
+        "severity": "info",
+        "time": 30,
+        "selector": "#e4",
+        "message": "Connector shaft is visible while both endpoints are not on stage.",
+        "rect": {
+          "left": 1190,
+          "top": 418,
+          "right": 1290,
+          "bottom": 570,
+          "width": 100,
+          "height": 152
+        },
+        "containerSelector": "#s4-lattice > svg:nth-of-type(1)",
+        "fixHint": "Show the shaft only after both ends are on, and hide it with the earlier exit. Do not give the line its own clock.",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 1190,
+          "y": 418,
+          "width": 100,
+          "height": 152
+        },
+        "firstSeen": 30,
+        "lastSeen": 30,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          30
+        ]
+      }
+    ],
+    "duration": 60,
+    "samples": [
+      3.333,
+      10,
+      16.667,
+      23.333,
+      30,
+      36.667,
+      43.333,
+      50,
+      56.667
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 7,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 3,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "contrast_aa_failure",
+        "severity": "warning",
+        "message": "Contrast is 3.77:1; WCAG AA requires 4.5:1.",
+        "text": "dec_sqlite · October",
+        "fg": "rgb(106,114,128)",
+        "bg": "rgb(18,21,26)",
+        "ratio": 3.77,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(119,127,139)",
+        "large": false,
+        "selector": "div > section:nth-of-type(3) > div > div > div:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 611,
+          "y": 318.90625,
+          "width": 168,
+          "height": 18
+        },
+        "time": 16.667,
+        "times": [
+          16.667
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "warning",
+        "message": "Contrast is 3.77:1; WCAG AA requires 4.5:1.",
+        "text": "Rests on",
+        "fg": "rgb(106,114,128)",
+        "bg": "rgb(18,21,26)",
+        "ratio": 3.77,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(119,127,139)",
+        "large": false,
+        "selector": "div > section:nth-of-type(3) > div > div > div:nth-of-type(3)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 611,
+          "y": 435.09375,
+          "width": 698,
+          "height": 15
+        },
+        "time": 16.667,
+        "times": [
+          16.667
+        ]
+      },
+      {
+        "code": "contrast_aa_failure",
+        "severity": "warning",
+        "message": "Contrast is 3.77:1; WCAG AA requires 4.5:1.",
+        "text": "Excludes",
+        "fg": "rgb(106,114,128)",
+        "bg": "rgb(18,21,26)",
+        "ratio": 3.77,
+        "requiredRatio": 4.5,
+        "suggestedColor": "rgb(119,127,139)",
+        "large": false,
+        "selector": "div > section:nth-of-type(3) > div > div > div:nth-of-type(6)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 611,
+          "y": 604.09375,
+          "width": 698,
+          "height": 15
+        },
+        "time": 16.667,
+        "times": [
+          16.667
+        ]
+      }
+    ],
+    "enabled": true,
+    "samples": [
+      3.333,
+      16.667,
+      30,
+      43.333,
+      56.667
+    ],
+    "checked": 45,
+    "passed": 42
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 7,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "first_frame_empty",
+        "severity": "warning",
+        "message": "Frame 0 shows only the background, and the first frame is the thumbnail on social players: have the title or key image already on screen at 0 s instead of entering from nothing; see references/review.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      },
+      {
+        "code": "dead_stretch",
+        "severity": "warning",
+        "message": "Nothing on screen changes for 3.38 s (8.25–11.63 s): start the next move within 3 s, or put data-hold on the element whose stillness is deliberate; see references/motion.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 8.25,
+        "seconds": 3.375,
+        "floorSeconds": 3,
+        "until": 11.625
+      },
+      {
+        "code": "dead_stretch",
+        "severity": "warning",
+        "message": "Nothing on screen changes for 6.00 s (15.63–21.63 s): start the next move within 3 s, or put data-hold on the element whose stillness is deliberate; see references/motion.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 15.625,
+        "seconds": 6,
+        "floorSeconds": 3,
+        "until": 21.625
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 48 text elements stay under it for 0.5 s or more, the smallest \"IN\" at 12 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "IN",
+        "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 631.7,
+          "y": 377.59,
+          "width": 14.02,
+          "height": 14.6
+        },
+        "time": 22.375,
+        "times": [
+          1.125,
+          12.375,
+          12.375,
+          12.375,
+          12.375,
+          13.375,
+          13.375,
+          13.75,
+          13.75,
+          14,
+          14,
+          15.25,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          22.375,
+          25.25,
+          30.375,
+          30.375,
+          30.375,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          31.25,
+          46.375,
+          46.375,
+          46.375,
+          46.375,
+          46.375,
+          46.375,
+          46.375,
+          46.75,
+          46.75,
+          46.75,
+          48.25,
+          56.375
+        ],
+        "fontPx": 11.68,
+        "floorPx": 28,
+        "seconds": 7.75,
+        "elements": [
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(2)",
+            "text": "IN",
+            "fontPx": 11.68,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(4)",
+            "text": "IN",
+            "fontPx": 11.68,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(6)",
+            "text": "IN",
+            "fontPx": 11.68,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(8)",
+            "text": "IN",
+            "fontPx": 11.68,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(10)",
+            "text": "IN",
+            "fontPx": 11.68,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s3-card > div:nth-of-type(3)",
+            "text": "Rests on",
+            "fontPx": 12,
+            "time": 12.375,
+            "seconds": 9.75
+          },
+          {
+            "selector": "#s3-card > div:nth-of-type(6)",
+            "text": "Excludes",
+            "fontPx": 12,
+            "time": 12.375,
+            "seconds": 9.75
+          },
+          {
+            "selector": "#s5-p1l",
+            "text": "OUT",
+            "fontPx": 12,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-p2l",
+            "text": "OUT",
+            "fontPx": 12,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-lattice > svg:nth-of-type(1) > text:nth-of-type(6)",
+            "text": "IN",
+            "fontPx": 12,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-d1l",
+            "text": "OUT",
+            "fontPx": 12,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-lattice > svg:nth-of-type(1) > text:nth-of-type(10)",
+            "text": "IN",
+            "fontPx": 12,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s6-guards > div:nth-of-type(1) > span:nth-of-type(1)",
+            "text": "pass",
+            "fontPx": 12,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s6-guards > div:nth-of-type(2) > span:nth-of-type(1)",
+            "text": "pass",
+            "fontPx": 12,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s6-guards > div:nth-of-type(3) > span:nth-of-type(1)",
+            "text": "proposed",
+            "fontPx": 12,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s3-p1 > span:nth-of-type(3)",
+            "text": "IN",
+            "fontPx": 13,
+            "time": 13.375,
+            "seconds": 8.75
+          },
+          {
+            "selector": "#s3-p2 > span:nth-of-type(3)",
+            "text": "IN",
+            "fontPx": 13,
+            "time": 13.75,
+            "seconds": 8.375
+          },
+          {
+            "selector": "span.premise-label.out",
+            "text": "OUT-list",
+            "fontPx": 13,
+            "time": 14,
+            "seconds": 8.125
+          },
+          {
+            "selector": "#s6-guards > h3:nth-of-type(1)",
+            "text": "Executable guards · proposed",
+            "fontPx": 13,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s6-export > h3:nth-of-type(1)",
+            "text": "Agent-native export",
+            "fontPx": 13,
+            "time": 46.75,
+            "seconds": 7.375
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(1)",
+            "text": "single_user",
+            "fontPx": 13.63,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(3)",
+            "text": "local_only",
+            "fontPx": 13.63,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(5)",
+            "text": "offline_ok",
+            "fontPx": 13.63,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(7)",
+            "text": "SQLite",
+            "fontPx": 13.63,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s4-lattice > svg:nth-of-type(1) > text:nth-of-type(9)",
+            "text": "file sync",
+            "fontPx": 13.63,
+            "time": 22.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "span.card-id",
+            "text": "dec_sqlite · October",
+            "fontPx": 14,
+            "time": 12.375,
+            "seconds": 9.75
+          },
+          {
+            "selector": "#s3-badge",
+            "text": "IN",
+            "fontPx": 14,
+            "time": 12.375,
+            "seconds": 9.75
+          },
+          {
+            "selector": "#s5-p1t",
+            "text": "single_user",
+            "fontPx": 14,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-p2t",
+            "text": "local_only",
+            "fontPx": 14,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-lattice > svg:nth-of-type(1) > text:nth-of-type(5)",
+            "text": "offline_ok",
+            "fontPx": 14,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-d1t",
+            "text": "SQLite",
+            "fontPx": 14,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "#s5-lattice > svg:nth-of-type(1) > text:nth-of-type(9)",
+            "text": "file sync",
+            "fontPx": 14,
+            "time": 31.25,
+            "seconds": 14.75
+          },
+          {
+            "selector": "div.keyless",
+            "text": "keyless · offline · MIT",
+            "fontPx": 14,
+            "time": 56.375,
+            "seconds": 3.625
+          },
+          {
+            "selector": "div.export-block",
+            "text": "Postgres — premise status: OUT (scale.single_user) CLAUDE.md · AGENTS.md · .cursorrules",
+            "fontPx": 15,
+            "time": 46.75,
+            "seconds": 7.375
+          },
+          {
+            "selector": "div.export-block > strong:nth-of-type(1)",
+            "text": "## Rejected — do not re-propose",
+            "fontPx": 15,
+            "time": 46.75,
+            "seconds": 7.375
+          },
+          {
+            "selector": "#s5-world > div:nth-of-type(1)",
+            "text": "four users",
+            "fontPx": 18,
+            "time": 30.375,
+            "seconds": 15.625
+          },
+          {
+            "selector": "#s5-world > div:nth-of-type(2)",
+            "text": "deployed",
+            "fontPx": 18,
+            "time": 30.375,
+            "seconds": 15.625
+          },
+          {
+            "selector": "#s5-world > div:nth-of-type(3)",
+            "text": "concurrent edits",
+            "fontPx": 18,
+            "time": 30.375,
+            "seconds": 15.625
+          },
+          {
+            "selector": "#s6-guards > div:nth-of-type(1) > span:nth-of-type(2)",
+            "text": "no concurrent writers in package.json",
+            "fontPx": 18,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s6-guards > div:nth-of-type(2) > span:nth-of-type(2)",
+            "text": "sqlite dependency present",
+            "fontPx": 18,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s6-guards > div:nth-of-type(3) > span:nth-of-type(2)",
+            "text": "verify command compiled",
+            "fontPx": 18,
+            "time": 46.375,
+            "seconds": 7.75
+          },
+          {
+            "selector": "#s3-p1 > span:nth-of-type(2)",
+            "text": "scale.single_user",
+            "fontPx": 20,
+            "time": 13.375,
+            "seconds": 8.75
+          },
+          {
+            "selector": "#s3-p2 > span:nth-of-type(2)",
+            "text": "deployment.local_only",
+            "fontPx": 20,
+            "time": 13.75,
+            "seconds": 8.375
+          },
+          {
+            "selector": "#s3-p3 > span:nth-of-type(2)",
+            "text": "concurrent writers",
+            "fontPx": 20,
+            "time": 14,
+            "seconds": 8.125
+          },
+          {
+            "selector": "#s1-sub",
+            "text": "decision truth maintenance",
+            "fontPx": 22,
+            "time": 1.125,
+            "seconds": 4
+          },
+          {
+            "selector": "#s4-cap",
+            "text": "Premises are shared nodes. Cascade is exact — not a force-directed guess.",
+            "fontPx": 24,
+            "time": 25.25,
+            "seconds": 4.875
+          },
+          {
+            "selector": "#s3-cap",
+            "text": "Nobody stores the given. WhyLog does.",
+            "fontPx": 26,
+            "time": 15.25,
+            "seconds": 6.875
+          },
+          {
+            "selector": "#s6-cap",
+            "text": "The system proposes. You dispose. The agent reads the stamp.",
+            "fontPx": 26,
+            "time": 48.25,
+            "seconds": 5.875
+          }
+        ]
+      },
+      {
+        "code": "dead_stretch",
+        "severity": "warning",
+        "message": "Nothing on screen changes for 4.00 s (25.63–29.63 s): start the next move within 3 s, or put data-hold on the element whose stillness is deliberate; see references/motion.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 25.625,
+        "seconds": 4,
+        "floorSeconds": 3,
+        "until": 29.625
+      },
+      {
+        "code": "dead_stretch",
+        "severity": "warning",
+        "message": "Nothing on screen changes for 9.63 s (36.00–45.63 s): start the next move within 3 s, or put data-hold on the element whose stillness is deliberate; see references/motion.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 36,
+        "seconds": 9.625,
+        "floorSeconds": 3,
+        "until": 45.625
+      },
+      {
+        "code": "dead_stretch",
+        "severity": "warning",
+        "message": "Nothing on screen changes for 5.00 s (48.63–53.63 s): start the next move within 3 s, or put data-hold on the element whose stillness is deliberate; see references/motion.md.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 48.625,
+        "seconds": 5,
+        "floorSeconds": 3,
+        "until": 53.625
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 480
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}
