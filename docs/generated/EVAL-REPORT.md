@@ -1,6 +1,6 @@
 # DecisionMemEval — evaluation report
 
-Generated 2026-10-26T15:09:24.627Z. Do not edit by hand: `npm run eval:report` regenerates it.
+Generated 2026-10-28T02:14:51.376Z. Do not edit by hand: `npm run eval:report` regenerates it.
 
 Corpus 0.1.0 · engine local/cue-extractor-v1 · 12 transcripts
 
