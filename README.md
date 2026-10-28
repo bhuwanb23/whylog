@@ -102,10 +102,11 @@ No API key is required. Optional providers live in [`.env.example`](.env.example
 | Command | Purpose |
 |---|---|
 | `npm run dev` | UI on `0.0.0.0:5173` |
+| `npm run verify` | ~25 s pre-push gate (typecheck + lint + structure + tests) |
+| `npm run readiness` | Full answer: hard gates + measured metrics + known gaps (~45 s with ablation cache) |
 | `npm run check:structure` | Structural verifier (Python only — no `node_modules` needed) |
-| `npm run verify` | Typecheck + Biome + structure + tests |
 | `npm run demo:verify` | Scripted demo beats + dry runs |
-| `npm run eval` | DecisionMemEval baseline (local engine, offline) |
+| `npm run eval` | DecisionMemEval baseline (local engine, offline; exits 1 while hardening is NOT READY) |
 | `npm run eval:report` | Writes `docs/generated/EVAL-REPORT.md` |
 
 ---

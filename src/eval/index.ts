@@ -3,14 +3,15 @@
  *
  * Phase 7 · one import site.
  *
- * Three entry points, all runnable keyless:
+ * Four entry points, all runnable keyless:
  *   `npm run eval`           baseline run, thirteen metrics, every honest note printed
  *   `npm run eval:ablation`  fifteen configurations, delta table, prediction audit
  *   `npm run eval:report`    writes docs/generated/EVAL-REPORT.md
+ *   `npm run readiness`      hard gates (exit code) + measured + known gaps (never gated)
  *
  * The modules below are pure: no filesystem, no console, no `process`. Only `cli.ts`, `run.ts`,
- * `report.ts` and `ablation/cli.ts` touch the outside world, which is what keeps the suite importable
- * from the browser build without dragging Node into a Vite bundle.
+ * `report.ts`, `readiness.ts` and `ablation/cli.ts` touch the outside world, which is what keeps the
+ * suite importable from the browser build without dragging Node into a Vite bundle.
  */
 
 /* --- the corpus (7.1) --- */
@@ -105,8 +106,25 @@ export {
   buildDeltaRows,
   renderAblationTable,
   renderPredictionAudit,
+  summarizePredictionAudit,
 } from "./ablation/table";
-export type { DeltaRow, PredictionVerdict, VerdictKind } from "./ablation/table";
+export type {
+  DeltaRow,
+  PredictionAuditSummary,
+  PredictionVerdict,
+  VerdictKind,
+} from "./ablation/table";
+export {
+  ABLATION_CACHE_PATH,
+  ABLATION_CACHE_SCHEMA,
+  ablationCacheUsable,
+  cacheFromStudy,
+  persistAblationAudit,
+  planFingerprint,
+  readAblationCache,
+  writeAblationCache,
+} from "./ablation/cache";
+export type { AblationCache } from "./ablation/cache";
 
 /* --- hardening (7.4) --- */
 export { checkDemoKillers, checkFailureModes, harden, renderHardening } from "./hardening";

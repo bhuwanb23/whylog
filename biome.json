@@ -16,7 +16,8 @@
       ".hyperframes",
       ".render",
       ".reconcile",
-      ".freebuff"
+      ".freebuff",
+      "scripts/whylog-guards.mjs"
     ]
   },
   "formatter": {

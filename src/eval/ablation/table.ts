@@ -336,6 +336,35 @@ export function renderAblationTable(study: AblationStudy): string {
   return lines.join("\n");
 }
 
+/** Counts the prediction-audit buckets. Shared by the rendered audit and `npm run readiness`. */
+export interface PredictionAuditSummary {
+  readonly confirmed: number;
+  readonly falsified: number;
+  readonly belowFloor: number;
+  readonly untestable: number;
+  readonly notWired: number;
+  /** §7.3: at least one declared hypothesis confirmed or falsified. */
+  readonly hypothesisResolved: boolean;
+}
+
+export function summarizePredictionAudit(study: AblationStudy): PredictionAuditSummary {
+  const rows = buildDeltaRows(study).filter((row) => row.usable);
+  const all = rows.flatMap((row) => row.verdicts);
+  const confirmed = all.filter((verdict) => verdict.kind === "confirmed").length;
+  const falsified = all.filter((verdict) => verdict.kind === "falsified").length;
+  const belowFloor = all.filter((verdict) => verdict.kind === "below-floor").length;
+  const untestable = all.filter((verdict) => verdict.kind === "untestable").length;
+  const notWired = all.filter((verdict) => verdict.kind === "not-wired").length;
+  return {
+    confirmed,
+    falsified,
+    belowFloor,
+    untestable,
+    notWired,
+    hypothesisResolved: confirmed + falsified >= 1,
+  };
+}
+
 /** The prediction audit. This is where §7.3's "at least one hypothesis falsified and reported honestly"
  *  is either satisfied or visibly not. */
 export function renderPredictionAudit(study: AblationStudy): string {
@@ -343,10 +372,10 @@ export function renderPredictionAudit(study: AblationStudy): string {
   const lines: string[] = [];
 
   const all = rows.flatMap((row) => row.verdicts.map((verdict) => ({ row, verdict })));
+  const summary = summarizePredictionAudit(study);
   const falsified = all.filter((entry) => entry.verdict.kind === "falsified");
   const confirmed = all.filter((entry) => entry.verdict.kind === "confirmed");
   const untestable = all.filter((entry) => entry.verdict.kind === "untestable");
-  const belowFloor = all.filter((entry) => entry.verdict.kind === "below-floor");
   const notWired = all.filter((entry) => entry.verdict.kind === "not-wired");
 
   lines.push("PREDICTION AUDIT");
@@ -354,19 +383,19 @@ export function renderPredictionAudit(study: AblationStudy): string {
     "Thresholds were declared in src/eval/ablation/toggles.ts BEFORE any configuration was run.",
   );
   lines.push("");
-  lines.push("  confirmed     " + confirmed.length);
-  lines.push("  FALSIFIED     " + falsified.length);
+  lines.push("  confirmed     " + summary.confirmed);
+  lines.push("  FALSIFIED     " + summary.falsified);
   lines.push(
     "  below floor   " +
-      belowFloor.length +
+      summary.belowFloor +
       "   (moved less than " +
       NOISE_FLOOR.toFixed(2) +
       " — too small to interpret on 12 transcripts)",
   );
-  lines.push("  untestable    " + untestable.length + "   (no denominator in either run)");
+  lines.push("  untestable    " + summary.untestable + "   (no denominator in either run)");
   lines.push(
     "  NOT WIRED     " +
-      notWired.length +
+      summary.notWired +
       "   (the switch is declared in toggles.ts but eval/harness.ts never reads it — the row measured nothing)",
   );
   lines.push("");

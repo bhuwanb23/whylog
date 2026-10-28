@@ -42,3 +42,5 @@ tmp/
 # Commit them deliberately if you want them versioned with a project.
 .whylog/
 whylog-export/
+# Emitted by `npm run guards:ci` — regenerable; linting the generated file is noise.
+scripts/whylog-guards.mjs

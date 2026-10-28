@@ -10,6 +10,7 @@
 
 import { banner, blank, heading, line, prepare, readArgs, write } from "../cli";
 import { type ScoredRun, renderSuite } from "../metrics";
+import { persistAblationAudit } from "./cache";
 import { type AblationStudy, describeStudy, runAblation } from "./run";
 import { renderAblationTable, renderPredictionAudit } from "./table";
 import { describePlan, fullPlan } from "./toggles";
@@ -32,6 +33,7 @@ async function main(): Promise<void> {
   line("advances per call, and interleaving them would make deltas unattributable to the toggles.");
 
   const study = await runAblation(resolved, { engineId });
+  persistAblationAudit(study);
 
   heading("Study");
   line(describeStudy(study));

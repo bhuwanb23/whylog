@@ -21,7 +21,9 @@
  * ---------------------------------------------------------------------------
  */
 
+import { pathToFileURL } from "node:url";
 import { nowISO } from "@/lib/format";
+import type { AblationCache } from "./ablation/cache";
 import { type AblationStudy, describeStudy, runAblation } from "./ablation/run";
 import { renderAblationTable, renderPredictionAudit } from "./ablation/table";
 import { DEFAULT_PARAMS, FULL } from "./ablation/toggles";
@@ -48,6 +50,8 @@ export function renderFullReport(
   scored: ScoredRun,
   study: AblationStudy | null,
   hardening: HardeningReport | null = null,
+  /** When the full study was not re-run but a readiness cache holds the audit counts. */
+  ablationAudit: AblationCache | null = null,
 ): string {
   const out: string[] = [];
 
@@ -125,6 +129,27 @@ export function renderFullReport(
     out.push("");
     out.push("```");
     out.push(renderPredictionAudit(study));
+    out.push("```");
+    out.push("");
+  } else if (ablationAudit !== null) {
+    out.push("## Ablation study");
+    out.push("");
+    out.push(
+      "Full delta table not regenerated on this run. Prediction-audit counts below are from the",
+    );
+    out.push(
+      "readiness cache (`docs/generated/ablation-audit.json`, ran " +
+        ablationAudit.ranAt +
+        "). Pass `--ablation` or `npm run eval:ablation` to refresh the study.",
+    );
+    out.push("");
+    out.push("```");
+    out.push("PREDICTION AUDIT (cached)");
+    out.push("  confirmed     " + ablationAudit.confirmed);
+    out.push("  FALSIFIED     " + ablationAudit.falsified);
+    out.push("  below floor   " + ablationAudit.belowFloor);
+    out.push("  untestable    " + ablationAudit.untestable);
+    out.push("  NOT WIRED     " + ablationAudit.notWired);
     out.push("```");
     out.push("");
   } else {
@@ -562,9 +587,16 @@ async function main(): Promise<void> {
   );
 }
 
-main().catch((error: unknown) => {
-  process.stderr.write(
-    "\n" + (error instanceof Error ? (error.stack ?? error.message) : String(error)) + "\n",
-  );
-  process.exitCode = 1;
-});
+/* Only run when this file is the process entry point. Importing `renderFullReport`
+ * from `readiness.ts` (or anywhere else) must not start a second baseline run. */
+const entry = process.argv[1];
+const invokedDirectly = typeof entry === "string" && import.meta.url === pathToFileURL(entry).href;
+
+if (invokedDirectly) {
+  main().catch((error: unknown) => {
+    process.stderr.write(
+      "\n" + (error instanceof Error ? (error.stack ?? error.message) : String(error)) + "\n",
+    );
+    process.exitCode = 1;
+  });
+}

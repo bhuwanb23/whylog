@@ -1,6 +1,6 @@
 # DecisionMemEval — evaluation report
 
-Generated 2026-10-28T02:14:51.376Z. Do not edit by hand: `npm run eval:report` regenerates it.
+Generated 2026-10-28T02:35:45.824Z. Do not edit by hand: `npm run eval:report` regenerates it.
 
 Corpus 0.1.0 · engine local/cue-extractor-v1 · 12 transcripts
 
@@ -312,9 +312,17 @@ seeded. See `docs/LIMITATIONS.md`. What is measurable:
 
 ## Ablation study
 
-NOT RUN. Pass `--ablation` or run `npm run eval:ablation` separately.
-A baseline without ablations supports claims about what the system scores, not about which
-component earned the score — and only the second kind of claim is an architectural one.
+Full delta table not regenerated on this run. Prediction-audit counts below are from the
+readiness cache (`docs/generated/ablation-audit.json`, ran 2026-10-28T02:14:51.376Z). Pass `--ablation` or `npm run eval:ablation` to refresh the study.
+
+```
+PREDICTION AUDIT (cached)
+  confirmed     0
+  FALSIFIED     0
+  below floor   8
+  untestable    5
+  NOT WIRED     0
+```
 
 ## Hardening pass
 

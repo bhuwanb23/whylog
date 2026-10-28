@@ -26,10 +26,11 @@
     "eval:report": "tsx src/eval/report.ts",
     "guards:ci": "tsx scripts/export_guards.ts",
     "verify": "npm run typecheck && npm run check && npm run check:structure && npm run test",
+    "readiness": "tsx src/eval/readiness.ts",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "demo:verify": "tsx src/eval/demo/cli.ts",
     "demo:dryrun": "tsx src/eval/demo/cli.ts --runs 3",
-    "verify:all": "npm run verify && npm run eval && npm run demo:verify",
+    "verify:all": "npm run readiness",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "vitest run tests/e2e"

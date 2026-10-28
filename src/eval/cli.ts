@@ -115,7 +115,20 @@ export function readArgs(argv: readonly string[]): Map<string, string> {
     }
   }
 
-  const known = new Set(["out", "json", "engine", "only", "quick"]);
+  const known = new Set([
+    "out",
+    "json",
+    "engine",
+    "only",
+    "quick",
+    "ablation",
+    "force",
+    "runs",
+    "log",
+    "include-proposed",
+    "dry-run",
+    "quiet",
+  ]);
   for (const key of out.keys()) {
     if (!known.has(key))
       line("note: unknown flag --" + key + " ignored (known: " + [...known].join(", ") + ")");
