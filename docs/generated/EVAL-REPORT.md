@@ -1,6 +1,6 @@
 # DecisionMemEval — evaluation report
 
-Generated 2026-10-26T03:35:13.706Z. Do not edit by hand: `npm run eval:report` regenerates it.
+Generated 2026-10-26T15:09:24.627Z. Do not edit by hand: `npm run eval:report` regenerates it.
 
 Corpus 0.1.0 · engine local/cue-extractor-v1 · 12 transcripts
 
@@ -17,7 +17,7 @@ size, its comparator where one is published, and a statement of what it does not
 - **Cascade correctness (L3 propagation)**: 0.000 (n=2)
 - **Survivor preservation**: 0.000 (n=2)
 - **False-positive rate per 100 decisions**: 11.8 per 100 (lower is better) (n=34)
-- **Answer groundedness**: 0.000 (n=8)
+- **Answer groundedness**: 0.375 (n=8)
 - **Retrieval precision@5**: 0.050 (n=8)
 - **Retrieval MRR**: 0.083 (n=6)
 - **Guard precision on seeded violations**: 0.000 (n=0)
@@ -36,7 +36,7 @@ Premise-invalidation recall (L2 non-monotonic)    0.000      1  NONE PUBLISHED
 Cascade correctness (L3 propagation)              0.000      2  NONE PUBLISHED
 Survivor preservation                             0.000      2  NONE PUBLISHED
 False-positive rate per 100 decisions          11.8/100     34  ARGUS (arXiv:2604.10345)
-Answer groundedness                               0.000      8  RepoRationale
+Answer groundedness                               0.375      8  RepoRationale
 Retrieval precision@5                             0.050      8  agentmemory
 Retrieval MRR                                     0.083      6  NONE PUBLISHED
 Guard precision on seeded violations              0.000      0  fitness-function literature
@@ -130,13 +130,13 @@ Comparator: ARGUS (arXiv:2604.10345) — FP:FN 13:1 — 155 false positives agai
 
 #### Answer groundedness
 
-**0.000** · n=8
+**0.375** · n=8
 
-0 of 8 answer(s) carried the verdict the corpus expected. Mean groundedness 0.757 (120 grounded claim(s) of 137). 0 answer(s) exceeded the 3-search budget. Refusals: 0 of 2 correct.
+3 of 8 answer(s) carried the verdict the corpus expected. Mean groundedness 0.375 (52 grounded claim(s) of 52). 0 answer(s) exceeded the 3-search budget. Refusals: 1 of 2 correct.
 
 Comparator: RepoRationale — Specifies the evidence contract (bounded searches, citations resolve in-run, insufficient-evidence first-class) but publishes no quantity
 
-> The headline is VERDICT ACCURACY, not mean groundedness, because groundedness measures whether an answer's claims cite things that exist — and a confidently wrong answer can score 1.0 on it. RepoRationale specifies the contract but publishes no quantity, so there is nothing to beat and the three clauses are CHECKED instead: search budget, citation resolution, refusal. n=8 questions, of which 2 is deliberately unanswerable and scores as a HIT when the system refuses — the only place in this suite where producing no output earns the point. An answer with zero claims is scored 0, not 1: 0/0 would reward silence. 1 empty answer(s) were produced, which should be read against the refusal count before concluding anything about restraint.
+> The headline is VERDICT ACCURACY, not mean groundedness, because groundedness measures whether an answer's claims cite things that exist — and a confidently wrong answer can score 1.0 on it. RepoRationale specifies the contract but publishes no quantity, so there is nothing to beat and the three clauses are CHECKED instead: search budget, citation resolution, refusal. n=8 questions, of which 2 is deliberately unanswerable and scores as a HIT when the system refuses — the only place in this suite where producing no output earns the point. An answer with zero claims is scored 0, not 1: 0/0 would reward silence. 5 empty answer(s) were produced, which should be read against the refusal count before concluding anything about restraint.
 
 #### Retrieval precision@5
 
@@ -279,14 +279,14 @@ Unexpected interruptions (the false-positive numerator), first 4:
 
 | id | verdict | expected | groundedness | claims | searches | over budget |
 | --- | --- | --- | --- | --- | --- | --- |
-| q1 | PARTIAL | GROUNDED | 0.85 | 23/27 | 1 | no |
-| q2 | PARTIAL | GROUNDED | 0.88 | 15/17 | 1 | no |
-| q3 | PARTIAL | GROUNDED | 0.91 | 21/23 | 1 | no |
+| q1 | GROUNDED | GROUNDED | 1.00 | 19/19 | 1 | no |
+| q2 | INSUFFICIENT_EVIDENCE | GROUNDED | 0.00 | 0/0 | 1 | no |
+| q3 | INSUFFICIENT_EVIDENCE | GROUNDED | 0.00 | 0/0 | 1 | no |
 | q4 | INSUFFICIENT_EVIDENCE | GROUNDED | 0.00 | 0/0 | 2 | no |
-| q5 | PARTIAL | INSUFFICIENT_EVIDENCE | 0.78 | 7/9 | 2 | no |
-| q6 | PARTIAL | GROUNDED | 0.91 | 21/23 | 1 | no |
-| q7 | PARTIAL | INSUFFICIENT_EVIDENCE | 0.88 | 23/26 | 1 | no |
-| q8 | PARTIAL | GROUNDED | 0.83 | 10/12 | 1 | no |
+| q5 | INSUFFICIENT_EVIDENCE | INSUFFICIENT_EVIDENCE | 0.00 | 0/0 | 2 | no |
+| q6 | GROUNDED | GROUNDED | 1.00 | 15/15 | 1 | no |
+| q7 | GROUNDED | INSUFFICIENT_EVIDENCE | 1.00 | 18/18 | 1 | no |
+| q8 | INSUFFICIENT_EVIDENCE | GROUNDED | 0.00 | 0/0 | 1 | no |
 
 | id | relevant expected | found in top 5 | first relevant rank |
 | --- | --- | --- | --- |
@@ -369,9 +369,9 @@ check and no argument is the dangerous category — it reads as covered and is c
   pass    [docs/03 §8] Search budget exceeded — more than three searches
            0 answer(s) exceeded the 3-search budget.
   pass    [docs/03 §8] Empty answer scored as grounded (0/0 = 1)
-           1 empty answer(s), all scored 0 rather than 1.
+           5 empty answer(s), all scored 0 rather than 1.
   FAIL    [docs/03 §8] Answering a question the corpus cannot answer
-           0 of 2 unanswerable question(s) refused.
+           1 of 2 unanswerable question(s) refused.
   pass    [docs/03 §8] Citation that does not resolve within the run
            every cited decision id exists in the graph.
   ARGUED  [docs/03 §8] Negation missed — 'not Postgres' read as a decision for Postgres
