@@ -1,10 +1,6 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    /* The tests run in node, not in a browser: they read the fixture from disk with `node:fs`
-     * and resolve paths with `node:path` and `process.cwd()`. The app project deliberately does
-     * NOT have node types, so that browser code cannot reach for `process` by accident. Giving
-     * the tests their own project is what lets both be right at the same time. */
     "types": ["node", "vite/client"]
   },
   "include": ["src", "tests"]

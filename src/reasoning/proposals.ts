@@ -37,11 +37,13 @@
  * ---------------------------------------------------------------------------
  */
 
+import { GUARD_CONFIDENCE, JUDGED_CONFIDENCE } from "@/guards/feedback";
 import { formatProposalId } from "@/lib/ids";
 import type { GraphState } from "@/substrate/graph-state";
 import type { Confidence, DecisionId, EventId, PremiseId, SourceSpan } from "@/types/common";
 import { asConfidence } from "@/types/common";
-import type { Decision, Premise } from "@/types/domain";
+import type { Premise } from "@/types/domain";
+import { isDeterministic } from "@/types/guards";
 import type {
   AdjudicationOutcome,
   CascadeResult,
@@ -114,7 +116,6 @@ export interface ProposalEvidence {
 export function buildProposal(input: ProposalInput): RevisionProposal {
   const { state, finding } = input;
 
-  const _decision: Decision | undefined = state.decisions.get(finding.decisionId);
   const failedPremise: Premise | undefined =
     finding.premiseId === null ? undefined : state.premises.get(finding.premiseId);
 
@@ -222,20 +223,24 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   if (finding.premiseId !== null) {
     const premise = state.premises.get(finding.premiseId);
 
-    /* A finding is "this premise was REFUTED", so the evidence for it is the
-     * REFUTING observation. A guard failure records the line of the manifest
-     * that falsified the premise, and that line is the evidence - the
-     * transcript span that originally supported the premise is the thing that
-     * turned out to be wrong, not the proof that it was. */
-    const refuting = premise?.evidence.find(
-      (entry) => !entry.supports && entry.quote !== undefined,
-    );
-    if (refuting?.quote !== undefined) {
-      return {
-        quote: refuting.quote,
-        source: refuting.kind,
-        confidence: asConfidence(premise?.confidence ?? 0.5),
-      };
+    const decisionWithGuards = state.decisions.get(finding.decisionId);
+    if (decisionWithGuards !== undefined) {
+      const failing = decisionWithGuards.guardIds
+        .map((gid) => state.guards.get(gid))
+        .filter(
+          (g): g is NonNullable<typeof g> =>
+            g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0,
+        );
+      const preferred = failing.find((g) => g.lastRun!.evidence.includes("found in")) ?? failing[0];
+      if (preferred !== undefined) {
+        return {
+          quote: preferred.lastRun!.evidence,
+          source: "guard",
+          confidence: asConfidence(
+            isDeterministic(preferred.spec.kind) ? GUARD_CONFIDENCE : JUDGED_CONFIDENCE,
+          ),
+        };
+      }
     }
 
     const best = premise?.evidence.find((entry) => entry.supports && entry.span !== undefined);
@@ -260,28 +265,40 @@ export function evidenceForFinding(state: GraphState, finding: GateFinding): Pro
   const b =
     finding.otherDecisionId === null ? undefined : state.decisions.get(finding.otherDecisionId);
 
-  /* A guard failure is evidence ABOUT THE DECISION IT PROTECTS, and the guard
-   * record carries the verbatim line that failed. `GuardRunResult.evidence`
-   * exists to be quoted - "evidence without a quote is not evidence" - and for
-   * a drift finding there is no premise to quote, so the decision's own
-   * transcript snippet would be quoted instead: the thing that turned out to
-   * be wrong, rather than the proof that it was.
-   *
-   * An ABSENCE check that fails is the contradiction: the decision excluded
-   * this, and the project contains it. A PRESENCE check that fails is drift:
-   * the decision was not implemented yet. The contradiction is the evidence
-   * worth quoting, so it is preferred. */
-  const failingGuards = [...state.guards.values()].filter(
-    (guard) => guard.decisionId === finding.decisionId && guard.lastRun?.outcome === "fail",
+  const decisionWithGuards = state.decisions.get(finding.decisionId);
+  console.warn(
+    "EF " +
+      finding.decisionId +
+      " premiseId=" +
+      finding.premiseId +
+      " guardIds=" +
+      (decisionWithGuards?.guardIds?.length ?? 0) +
+      " guardsInState=" +
+      state.guards.size,
   );
-  const contradicting =
-    failingGuards.find((guard) => guard.spec.kind.endsWith("_absent")) ?? failingGuards[0];
-  if (contradicting?.lastRun?.evidence !== undefined) {
-    return {
-      quote: contradicting.lastRun.evidence,
-      source: "guard",
-      confidence: asConfidence(finding.deterministic ? 0.9 : 0.6),
-    };
+  if (decisionWithGuards !== undefined) {
+    console.warn(
+      "  guard evidence=" +
+        decisionWithGuards.guardIds
+          .map((gid) => JSON.stringify(state.guards.get(gid)?.lastRun?.evidence?.slice(0, 20)))
+          .join(","),
+    );
+    const failing = decisionWithGuards.guardIds
+      .map((gid) => state.guards.get(gid))
+      .filter(
+        (g): g is NonNullable<typeof g> =>
+          g?.lastRun?.outcome === "fail" && (g.lastRun?.evidence.length ?? 0) > 0,
+      );
+    const preferred = failing.find((g) => g.lastRun!.evidence.includes("found in")) ?? failing[0];
+    if (preferred !== undefined) {
+      return {
+        quote: preferred.lastRun!.evidence,
+        source: "guard",
+        confidence: asConfidence(
+          isDeterministic(preferred.spec.kind) ? GUARD_CONFIDENCE : JUDGED_CONFIDENCE,
+        ),
+      };
+    }
   }
 
   const quote =

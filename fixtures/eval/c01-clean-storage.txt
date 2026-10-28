@@ -1,0 +1,16 @@
+Claude Code — session: whylog-eval-c01
+Started: Oct 3, 14:22
+
+User: let's get the storage layer working. I need somewhere to put decisions and tags. What do you reckon, Postgres with Supabase?
+
+Assistant: Postgres via Supabase would work, but it means a hosted dependency, a connection string in env, and migrations to manage before you have a single user. What's the actual concurrency requirement?
+
+User: none really. it's one person, one machine, one log.
+
+Assistant: Then I'd use SQLite with better-sqlite3 instead of Postgres. Single file, synchronous API, zero deploy hassle.
+
+User: yeah ok. going with SQLite, not Postgres. single-user and no deploy hassle is the whole argument.
+
+Assistant: Noted. Two premises worth recording: it's single-user, and there's no deployment infrastructure. And one exclusion — if concurrent writers ever appear, this decision is invalidated.
+
+User: right. and no migration tooling for now, we're a hackathon project.

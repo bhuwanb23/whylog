@@ -99,14 +99,15 @@ export function EntrenchmentBreakdown({
           <span
             className="badge"
             style={{ color: "var(--label-unknown)" }}
-            title={`The EE3 cap binds: a derived belief is never more entrenched than its weakest premise. ${
-              breakdown.weakestPremiseId === undefined
+            title={
+              "The EE3 cap binds: a derived belief is never more entrenched than its weakest premise. " +
+              (breakdown.weakestPremiseId === undefined
                 ? ""
-                : `Capped by ${breakdown.weakestPremiseId}.`
-            }`}
+                : "Capped by " + breakdown.weakestPremiseId + ".")
+            }
           >
             EE3 cap
-            {breakdown.weakestPremiseId !== undefined ? ` · ${breakdown.weakestPremiseId}` : ""}
+            {breakdown.weakestPremiseId !== undefined ? " · " + breakdown.weakestPremiseId : ""}
           </span>
         ) : null}
       </div>
@@ -197,7 +198,7 @@ export function EntrenchmentBreakdown({
 }
 
 function pct(value: number): string {
-  return `${(Math.max(0, Math.min(1, value)) * 100).toFixed(1)}%`;
+  return (Math.max(0, Math.min(1, value)) * 100).toFixed(1) + "%";
 }
 
 export type { DecisionId };

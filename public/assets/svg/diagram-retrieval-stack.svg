@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 820" width="1400" height="820" role="img" aria-label="Retrieval stack: five index levels to a grounded answer">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .title { font-size: 34px; font-weight: 700; fill: #e6e9ee; }
+    .sub { font-size: 17px; fill: #99a1ad; }
+    .lv { font-size: 15px; font-weight: 700; fill: #e6e9ee; }
+    .ld { font-size: 13px; fill: #99a1ad; }
+    .st { font-size: 16.5px; font-weight: 700; fill: #e6e9ee; text-anchor: middle; }
+    .sd { font-size: 13.5px; fill: #99a1ad; text-anchor: middle; }
+  </style>
+
+  <rect width="1400" height="820" fill="#0b0d10"/>
+  <text x="70" y="62" class="title">Ask: retrieve, classify, cite — or refuse</text>
+  <text x="70" y="94" class="sub">Groundedness = |claims with ≥1 resolving citation| ÷ |total claims|. "Insufficient evidence" is a first-class answer.</text>
+
+  <!-- index levels -->
+  <text x="70" y="152" font-size="15" font-weight="700" letter-spacing="1.6" fill="#6a7280">FIVE INDEX LEVELS</text>
+  <g>
+    <g transform="translate(70,172)">
+      <rect width="330" height="72" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="20" y="32" class="lv">L1 · statements</text>
+      <text x="20" y="56" class="ld">dense vectors, tagged {engine, model}</text>
+      <text x="312" y="32" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="end">dense</text>
+    </g>
+    <g transform="translate(70,254)">
+      <rect width="330" height="72" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="20" y="32" class="lv">L2 · inverted questions</text>
+      <text x="20" y="56" class="ld">HyPE — built at extraction, zero extra calls</text>
+      <text x="312" y="32" font-size="14" font-weight="700" fill="#60a5fa" text-anchor="end">hybrid</text>
+    </g>
+    <g transform="translate(70,336)">
+      <rect width="330" height="72" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="20" y="32" class="lv">L3 · BM25 sparse</text>
+      <text x="20" y="56" class="ld">ontology alias table: pg → postgres</text>
+      <text x="312" y="32" font-size="14" font-weight="700" fill="#4ade80" text-anchor="end">lexical</text>
+    </g>
+    <g transform="translate(70,418)">
+      <rect width="330" height="72" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="20" y="32" class="lv">L4 · structural</text>
+      <text x="20" y="56" class="ld">variableIndex · valueIndex</text>
+      <text x="312" y="32" font-size="14" font-weight="700" fill="#fbbf24" text-anchor="end">exact</text>
+    </g>
+    <g transform="translate(70,500)">
+      <rect width="330" height="72" rx="10" fill="#12151a" stroke="#333a45"/>
+      <text x="20" y="32" class="lv">L5 · premises</text>
+      <text x="20" y="56" class="ld">premise → dependents, makes cascade O(1)</text>
+      <text x="312" y="32" font-size="14" font-weight="700" fill="#a78bfa" text-anchor="end">graph</text>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M400 366 L470 366"/><path d="M458 360 L474 366 L458 372"/>
+  </g>
+
+  <!-- fusion -->
+  <g transform="translate(470,270)">
+    <rect width="220" height="192" rx="14" fill="#0e1620" stroke="#60a5fa" stroke-width="2.5"/>
+    <text x="110" y="56" font-size="22" font-weight="700" fill="#60a5fa" text-anchor="middle">RRF</text>
+    <text x="110" y="88" class="sd">reciprocal rank fusion</text>
+    <text x="110" y="114" class="sd">k = 60</text>
+    <text x="110" y="146" font-size="14" font-weight="700" fill="#e6e9ee" text-anchor="middle">deterministic</text>
+    <text x="110" y="172" font-size="14" font-weight="700" fill="#e6e9ee" text-anchor="middle">score-agnostic</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M690 366 L750 366"/><path d="M738 360 L754 366 L738 372"/>
+  </g>
+
+  <!-- rerank -->
+  <g transform="translate(750,270)">
+    <rect width="230" height="192" rx="14" fill="#12151a" stroke="#333a45" stroke-width="2"/>
+    <text x="115" y="44" class="st">rerank</text>
+    <g font-size="13.5" fill="#99a1ad">
+      <text x="24" y="78">LLM listwise</text>
+      <text x="24" y="106">local five-weight</text>
+      <text x="24" y="134">cross-encoder —</text>
+      <text x="44" y="156">"unavailable", not faked</text>
+    </g>
+    <text x="115" y="182" font-size="13" fill="#6a7280" text-anchor="middle">weights .35 .30 .20 .10 .05</text>
+  </g>
+
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M980 366 L1040 366"/><path d="M1028 360 L1044 366 L1028 372"/>
+  </g>
+
+  <!-- classifier -->
+  <g transform="translate(1040,240)">
+    <rect width="300" height="252" rx="14" fill="#12151a" stroke="#f87171" stroke-width="2"/>
+    <text x="150" y="44" class="st" fill="#f87171">contradiction classifier</text>
+    <text x="150" y="70" class="sd">five verdicts — invariant I3:</text>
+    <text x="150" y="92" class="sd">similarity selects, then is discarded</text>
+    <g font-size="14" font-weight="700">
+      <rect x="30" y="112" width="112" height="34" rx="17" fill="#0b0d10" stroke="#f87171"/>
+      <text x="86" y="134" fill="#f87171" text-anchor="middle">CONTRADICTS</text>
+      <rect x="154" y="112" width="112" height="34" rx="17" fill="#0b0d10" stroke="#60a5fa"/>
+      <text x="210" y="134" fill="#60a5fa" text-anchor="middle">REVERSES</text>
+      <rect x="30" y="156" width="112" height="34" rx="17" fill="#0b0d10" stroke="#4ade80"/>
+      <text x="86" y="178" fill="#4ade80" text-anchor="middle">REFINES</text>
+      <rect x="154" y="156" width="112" height="34" rx="17" fill="#0b0d10" stroke="#94a3b8"/>
+      <text x="210" y="178" fill="#94a3b8" text-anchor="middle">DUPLICATE</text>
+      <rect x="92" y="200" width="112" height="34" rx="17" fill="#0b0d10" stroke="#6a7280"/>
+      <text x="148" y="222" fill="#99a1ad" text-anchor="middle">NEUTRAL</text>
+    </g>
+  </g>
+
+  <!-- evidence contract -->
+  <g fill="none" stroke="#333a45" stroke-width="2.5" stroke-linecap="round">
+    <path d="M1190 492 L1190 556"/><path d="M1184 542 L1190 558 L1196 542"/>
+  </g>
+  <g transform="translate(1040,556)">
+    <rect width="300" height="130" rx="14" fill="#0e1620" stroke="#fbbf24" stroke-width="2"/>
+    <text x="150" y="40" class="st" fill="#fbbf24">evidence contract</text>
+    <text x="150" y="70" class="sd">≤ 3 bounded searches</text>
+    <text x="150" y="94" class="sd">citations valid only if they resolve in-run</text>
+    <text x="150" y="118" class="sd">GROUNDED · PARTIAL · INSUFFICIENT</text>
+  </g>
+
+  <!-- side panel: citation expansion -->
+  <g transform="translate(70,640)">
+    <rect width="880" height="140" rx="14" fill="#12151a" stroke="#232830"/>
+    <text x="24" y="40" font-size="16.5" font-weight="700" fill="#e6e9ee">Citation expansion shows what the decision actually rests on</text>
+    <g font-size="14" fill="#99a1ad">
+      <text x="24" y="72">premises with live labels · excluded conditions (OUT-list) · rejected alternatives</text>
+      <text x="24" y="98">with each rejection's premise status · guards · verbatim provenance</text>
+    </g>
+    <rect x="24" y="112" width="330" height="24" rx="6" fill="#0b0d10" stroke="#fbbf24"/>
+    <text x="190" y="129" font-size="13" fill="#fbbf24" text-anchor="middle">rejected-alternative pre-emption: warn BEFORE</text>
+  </g>
+</svg>

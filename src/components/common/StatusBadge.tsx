@@ -42,7 +42,7 @@ export function LabelBadge({ label }: { label: DecisionLabel }): ReactElement {
       title={LABEL_MEANING[label]}
       style={{
         color: LABEL_COLOUR[label],
-        border: `1px solid ${LABEL_COLOUR[label]}`,
+        border: "1px solid " + LABEL_COLOUR[label],
         /* UNFOUNDED is a data-quality warning, not a truth claim, and the plan draws it hollow
          * with a dashed border so it cannot be mistaken for a verdict about the world. */
         borderStyle: label === "UNFOUNDED" ? "dashed" : "solid",
@@ -140,12 +140,12 @@ export function TimelineStatusBadge({ status }: { status: TimelineStatus }): Rea
       title={TIMELINE_STATUS_MEANING[status]}
       style={{
         color: TIMELINE_STATUS_COLOUR[status],
-        border: `1px solid ${TIMELINE_STATUS_COLOUR[status]}`,
+        border: "1px solid " + TIMELINE_STATUS_COLOUR[status],
         /* Hollow for the two that mean "we do not know", filled for the two that mean "we do". */
         background:
           status === "UNVERIFIED" || status === "UNFOUNDED"
             ? "transparent"
-            : `color-mix(in srgb, ${TIMELINE_STATUS_COLOUR[status]} 12%, transparent)`,
+            : "color-mix(in srgb, " + TIMELINE_STATUS_COLOUR[status] + " 12%, transparent)",
         borderStyle: status === "UNFOUNDED" ? "dashed" : "solid",
         textDecoration: status === "SUPERSEDED" ? "line-through" : "none",
       }}

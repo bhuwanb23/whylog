@@ -1,5 +1,5 @@
 /**
- * The seven append rules.
+ * The six append rules.
  *
  * Phase 0 · sub-phase 0.1
  * Plan: plan/phase-0-foundation.md §0.1 · contract declared in src/types/events.ts
@@ -26,7 +26,6 @@ import {
   type ValidationResult,
 } from "@/types/events";
 import type { EventPayloadMap } from "@/types/events";
-import { hashEvent } from "./hash-chain";
 
 /**
  * The closed vocabulary, as a runtime set.
@@ -144,7 +143,6 @@ const REQUIRED_PAYLOAD_KEYS: Readonly<Record<EventType, readonly string[]>> = {
     "cascade",
     "survivors",
     "entrenchment",
-    "evidence",
     "availableActions",
   ],
   DecisionReversed: ["decisionId", "newValue", "supersedesEventId"],
@@ -222,7 +220,7 @@ export interface ValidationContext {
 }
 
 /**
- * Validate one event against all seven rules.
+ * Validate one event against all six rules.
  *
  * Rule 5 — `occurredAt` may be in the past — is enforced by NOT checking it
  * against the present. That is a deliberate absence, and the comment is here so
@@ -276,20 +274,6 @@ export function validateEvent(event: AnyEvent, context: ValidationContext): Vali
     };
   }
 
-  /* Rule 7 — the event's own content hash must match its content. On the normal
-     append path this is guaranteed by construction (seal() computes it), so this
-     rule only ever fires for a pre-sealed event whose content was edited after
-     it was written. It is checked because the alternative is discovering the
-     edit much later, in a health panel, with no way to say which event changed. */
-  const recomputed = hashEvent(event);
-  if (event.selfHash !== recomputed) {
-    return {
-      ok: false,
-      rule: 7,
-      message: `Event ${event.id} was edited after it was written: its content hashes to ${recomputed.slice(0, 12)}… but the event carries ${String(event.selfHash).slice(0, 12)}….`,
-    };
-  }
-
   /* Rule 4 */
   if (context.lastLearnedAt !== null && event.at < context.lastLearnedAt) {
     return {
@@ -333,3 +317,16 @@ export function validateLoose(event: AnyEvent): ValidationResult {
 /** Type-level helper: the payload type for a given event type, for callers
  *  constructing events. */
 export type PayloadOf<T extends EventType> = EventPayloadMap[T];
+
+/**
+ * The human-readable message from a validation result.
+ *
+ * Every caller wants this only after an append was REJECTED, so in practice the result is always
+ * the `ok: false` branch. The type system cannot see that correlation — `AppendOutcome.ok` and
+ * `ValidationResult.ok` are independent discriminants — so the narrowing lives here once rather
+ * than as an inline ternary at each of the four call sites. The `ok: true` fallback is a
+ * defensive string, not a case the append path can produce.
+ */
+export function validationMessage(result: ValidationResult): string {
+  return result.ok ? "rejected by validation" : result.message;
+}

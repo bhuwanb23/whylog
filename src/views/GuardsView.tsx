@@ -99,7 +99,7 @@ export function GuardsView(): ReactElement {
    * mutation — two readings of one fact is how a stale label reaches the screen. */
   const decisionCount = whylog.state.decisions.size;
   const guardCount = whylog.state.guards.size;
-  const over = useMemo(() => overCapDecisions(whylog.state), [whylog.state]);
+  const over = useMemo(() => overCapDecisions(guards), [whylog.state, guards]);
 
   const busy = guards.status === "running" || guards.status === "synthesising";
 
@@ -171,8 +171,8 @@ export function GuardsView(): ReactElement {
         {over.length > 0 ? (
           <div className="notice notice-warning" style={{ marginTop: 12 }}>
             {over.length} decision(s) have more than the cap of {GUARDS_PER_DECISION_CAP} guards:{" "}
-            {over.map((entry) => `${entry.decisionId} (+${entry.over})`).join(", ")}. The cap ranks
-            by determinism, so the least trustworthy kinds are the ones to remove.
+            {over.map((entry) => entry.decisionId + " (+" + entry.over + ")").join(", ")}. The cap
+            ranks by determinism, so the least trustworthy kinds are the ones to remove.
           </div>
         ) : null}
       </section>
@@ -221,8 +221,10 @@ function GateG4Card(): ReactElement {
     const synthesised = await guards.synthesise({ templatesOnly: true });
     steps.push(
       synthesised.ok
-        ? `2. Compiled ${synthesised.value} guard(s) from the log's decisions — templates only, no model consulted.`
-        : `2. Synthesis failed: ${synthesised.error}`,
+        ? "2. Compiled " +
+            synthesised.value +
+            " guard(s) from the log's decisions — templates only, no model consulted."
+        : "2. Synthesis failed: " + synthesised.error,
     );
 
     /* Accept everything the templates produced, so the run has something to evaluate. In normal
@@ -230,14 +232,18 @@ function GateG4Card(): ReactElement {
      * the LOOP, not the review. */
     const accepted = acceptAllProposed();
     steps.push(
-      `3. Accepted ${accepted} proposed guard(s) in bulk — the gate tests the loop, not the review.`,
+      "3. Accepted " +
+        accepted +
+        " proposed guard(s) in bulk — the gate tests the loop, not the review.",
     );
 
     const ran = await guards.run();
     steps.push(
       ran.ok
-        ? `4. Ran the guards. ${ran.value} failure(s) entered REVISE() as evidence, through the same entry point a transcript uses.`
-        : `4. Run failed: ${ran.error}`,
+        ? "4. Ran the guards. " +
+            ran.value +
+            " failure(s) entered REVISE() as evidence, through the same entry point a transcript uses."
+        : "4. Run failed: " + ran.error,
     );
 
     steps.push(
@@ -245,7 +251,11 @@ function GateG4Card(): ReactElement {
     );
 
     steps.push(
-      `Decisions in log: ${whylog.state.decisions.size}. Guards: ${whylog.state.guards.size}.`,
+      "Decisions in log: " +
+        whylog.state.decisions.size +
+        ". Guards: " +
+        whylog.state.guards.size +
+        ".",
     );
 
     setDone(steps.join("\n"));
@@ -469,10 +479,15 @@ function FailureRow({ entry }: { entry: EvaluatedGuard }): ReactElement {
   return (
     <div
       style={{
-        borderLeft: `3px solid ${entry.guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)"}`,
+        borderLeft:
+          "3px solid " +
+          (entry.guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)"),
         padding: "10px 12px",
         marginBottom: 10,
-        background: `color-mix(in srgb, ${entry.guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)"} 7%, transparent)`,
+        background:
+          "color-mix(in srgb, " +
+          (entry.guard.severity === "blocking" ? "var(--label-out)" : "var(--label-unknown)") +
+          " 7%, transparent)",
       }}
     >
       <div style={{ fontSize: 13, fontWeight: 600 }}>
@@ -496,7 +511,7 @@ function FailureRow({ entry }: { entry: EvaluatedGuard }): ReactElement {
         Decided: {decision?.temporal.valid.slice(0, 10) ?? "unknown"} · Rests on:{" "}
         {premises.length === 0
           ? "nothing recorded — so nothing can falsify it, which is a gap worth filling"
-          : premises.map((p) => `${p.id} ${p.text} (${p.label})`).join(", ")}
+          : premises.map((p) => p.id + " " + p.text + " (" + p.label + ")").join(", ")}
       </div>
 
       {rejected.map((alt) => (
@@ -504,7 +519,7 @@ function FailureRow({ entry }: { entry: EvaluatedGuard }): ReactElement {
           Rejected alternative {alt.value}
           {alt.whyRejected === undefined
             ? " — no reason recorded"
-            : ` — reason: "${alt.whyRejected}"`}
+            : ' — reason: "' + alt.whyRejected + '"'}
         </div>
       ))}
 
@@ -630,7 +645,7 @@ function ProjectCard(): ReactElement {
               >
                 {guards.parse.unparsed.slice(0, 8).join("\n")}
                 {guards.parse.unparsed.length > 8
-                  ? `\n… ${guards.parse.unparsed.length - 8} more`
+                  ? "\n… " + (guards.parse.unparsed.length - 8) + " more"
                   : ""}
               </pre>
             </div>
@@ -693,7 +708,6 @@ function Metric({ label, value }: { label: string; value: number }): ReactElemen
  *  mutation. Two readings of one fact is how a stale label reaches the screen. */
 function ReviewCard(): ReactElement {
   const whylog = useWhyLog();
-  const _guards = useGuards();
 
   const decisions = [...whylog.state.decisions.values()].filter(
     (decision) => decision.status !== "superseded" && decision.status !== "archived",
@@ -977,11 +991,16 @@ function describeSpec(spec: GuardSpec): string {
       return spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return `${JSON.stringify(spec.pattern)} within ${spec.glob}${spec.wordBoundary === false ? ", no word boundary" : ", word-boundary matched"}`;
+      return (
+        JSON.stringify(spec.pattern) +
+        " within " +
+        spec.glob +
+        (spec.wordBoundary === false ? ", no word boundary" : ", word-boundary matched")
+      );
     case "command_exit_zero":
       return spec.command;
     case "llm_judge":
-      return `rubric over ${spec.scopeGlobs.join(", ")}`;
+      return "rubric over " + spec.scopeGlobs.join(", ");
   }
 }
 

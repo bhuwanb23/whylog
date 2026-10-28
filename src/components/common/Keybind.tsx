@@ -100,7 +100,7 @@ export function describeKeybinds(actions: readonly KeybindAction[]): string {
     .map((action) => {
       const key =
         action.meta === true
-          ? `⌘/Ctrl + ${action.key}`
+          ? "⌘/Ctrl + " + action.key
           : action.key === "Escape"
             ? "Esc"
             : action.key;

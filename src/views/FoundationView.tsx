@@ -38,7 +38,8 @@ import type { EventId } from "@/types/common";
 import { DECISION_VARIABLES } from "@/types/domain";
 import type { DecisionVariable } from "@/types/domain";
 import type { EventType, NewEvent } from "@/types/events";
-import { type ReactElement, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { ReactElement } from "react";
 
 export function FoundationView(): ReactElement {
   const status = useWhyLog((s) => s.status);
@@ -694,7 +695,7 @@ function EngineCard({
         <Metric
           label="fell back"
           value={engine?.fellBack === true ? "yes" : "no"}
-          {...(engine?.fellBack === true ? { colour: "var(--label-unknown)" } : {})}
+          colour={engine?.fellBack === true ? "var(--label-unknown)" : undefined}
         />
         <Metric
           label="index"
@@ -877,7 +878,7 @@ function Metric({
 }: {
   label: string;
   value: string;
-  colour?: string;
+  colour?: string | undefined;
 }): ReactElement {
   return (
     <div className="metric">

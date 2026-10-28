@@ -1,0 +1,12 @@
+whylog-eval-a01 — Oct 17, 14:20 (ADVERSARIAL: hypotheticals)
+
+user: what if we used Redis for the cache layer?
+assistant: Redis would give you TTLs and eviction for free, but it's another process to run. What's the access pattern?
+user: I don't know yet, just thinking out loud. what about if we went with DynamoDB instead of sqlite?
+assistant: That would reverse the Oct 3 decision. It's a hosted dependency, which is exactly what you excluded.
+user: yeah I'm not doing that. just asking.
+user: hypothetically, if we had a team of ten, would sqlite still work?
+assistant: No — concurrent writers would invalidate it. But you have four, not ten, and that's a different question.
+user: ok. what if we used Kafka for the event log?
+assistant: You already have an append-only event log in-process. Kafka would be a distributed system for a single-user tool.
+user: right, forget I asked. none of those, obviously.

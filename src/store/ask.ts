@@ -164,14 +164,23 @@ export const useAsk = create<AskState>()((set, get) => ({
         reason:
           report.embedded === 0
             ? "Index rebuilt with no new embeddings: L3/L4/L5 are pure functions of the log and every vector was already current."
-            : `Index rebuilt: ${report.embedded} decision(s) embedded, ${report.skipped} unchanged, levels ${report.levels.join("/")}.`,
+            : "Index rebuilt: " +
+              report.embedded +
+              " decision(s) embedded, " +
+              report.skipped +
+              " unchanged, levels " +
+              report.levels.join("/") +
+              ".",
         actor: ASK_ACTOR,
         occurredAt: nowISO() as ISODateString,
       });
 
       if (!committed.ok) {
         set({
-          buildError: `The index was built but its events could not be committed: ${committed.error}. Retrieval will still work from the in-memory artifacts; the log just cannot explain this rebuild later.`,
+          buildError:
+            "The index was built but its events could not be committed: " +
+            committed.error +
+            ". Retrieval will still work from the in-memory artifacts; the log just cannot explain this rebuild later.",
         });
         return report;
       }
@@ -324,9 +333,20 @@ export function describeIndex(state: AskState): string {
   }
 
   if (state.build !== null)
-    return `${describeBuild(state.build)}\n\nLog size: ${whylog.state.decisions.size} decisions.`;
+    return (
+      describeBuild(state.build) + "\n\nLog size: " + whylog.state.decisions.size + " decisions."
+    );
 
-  return `Index built by ${artifacts.engine} at ${artifacts.computedAt}${artifacts.stale ? " — STALE: the engine or the log has changed since." : ""}\nLog size: ${whylog.state.decisions.size} decisions.`;
+  return (
+    "Index built by " +
+    artifacts.engine +
+    " at " +
+    artifacts.computedAt +
+    (artifacts.stale ? " — STALE: the engine or the log has changed since." : "") +
+    "\nLog size: " +
+    whylog.state.decisions.size +
+    " decisions."
+  );
 }
 
 export function describeHowProduced(_state: AskState, result: RetrievalResult | null): string {
@@ -368,12 +388,19 @@ export function describePreemptionCoverage(state: GraphState): string {
   }
 
   return [
-    `${counts.eligible} of ${counts.total} recorded alternatives can pre-empt a repeat question.`,
+    counts.eligible +
+      " of " +
+      counts.total +
+      " recorded alternatives can pre-empt a repeat question.",
     counts.missingReason > 0
-      ? `  ${counts.missingReason} have no recorded reason — pre-empting without a reason is nagging, so they are excluded.`
+      ? "  " +
+        counts.missingReason +
+        " have no recorded reason — pre-empting without a reason is nagging, so they are excluded."
       : "",
     counts.unconfirmed > 0
-      ? `  ${counts.unconfirmed} have a reason but were never confirmed by a human — an inferred rejection is far more likely to be wrong than right, so they are excluded too.`
+      ? "  " +
+        counts.unconfirmed +
+        " have a reason but were never confirmed by a human — an inferred rejection is far more likely to be wrong than right, so they are excluded too."
       : "",
     "",
     "Confirm an alternative on the Review tab to make it eligible. A false pre-emption costs",

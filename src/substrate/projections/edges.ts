@@ -44,7 +44,7 @@ export interface Edge {
    *  makes the edge EXPLAINABLE: hover it and the UI can say which assumption is
    *  shared, rather than drawing a line and calling it a relationship. */
   readonly viaPremiseId?: PremiseId;
-  readonly viaPremiseText?: string;
+  readonly viaPremiseText?: string | undefined;
 }
 
 /** Edges along which invalidation may propagate. */
@@ -85,14 +85,10 @@ function attachPremises(state: GraphState, edges: readonly Edge[]): readonly Edg
     const b = premisesOfDecision(state, edge.to);
     for (const premiseId of a) {
       if (b.includes(premiseId)) {
-        // The text is optional: a premise node may have been closed out and
-        // pruned from the map. Absent text means the key is omitted, not
-        // present-and-undefined.
-        const viaPremiseText = state.premises.get(premiseId)?.text;
         return {
           ...edge,
           viaPremiseId: premiseId,
-          ...(viaPremiseText === undefined ? {} : { viaPremiseText }),
+          viaPremiseText: state.premises.get(premiseId)?.text,
         };
       }
     }

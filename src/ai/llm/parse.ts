@@ -91,18 +91,22 @@ export function toExtractionResult(
   completionTokens: number,
 ): ExtractionResult {
   if (parsed.decisions.length === 0 && parsed.premises.length === 0) {
-    // The LLM's own empty-extraction constant holds Llm* candidates, which are
-    // a different shape from the seam's. The empty result is built directly.
+    /* Built field by field rather than spread from EMPTY_LLM_EXTRACTION: that constant is an
+     * `LlmExtraction` (raw wire shapes), and this function returns an `ExtractionResult`
+     * (validated candidates). With no decisions and no premises there are no candidates of any kind,
+     * so the empty lists are the honest value — and an alternative with no decision to attach to
+     * could not have become one anyway. */
     return {
       decisions: [],
       premises: [],
       alternatives: [],
       episodes: [],
+      /* `LlmDiscard.confidence` is a raw number off the wire; `DiscardedCandidate.confidence` is
+       * branded. Branding it here is the boundary crossing, and it is the same clamp every other
+       * parsed confidence in this file goes through. */
       discarded: parsed.discarded.map((discard) => ({
-        kind: discard.kind,
-        discardedBy: discard.discardedBy,
-        rawText: String(discard.rawText ?? "").slice(0, 400),
-        confidence: asConfidence(clamp(Number(discard.confidence ?? 0.3))),
+        ...discard,
+        confidence: asConfidence(clamp(discard.confidence)),
       })),
       engine,
       durationMs: Math.round(durationMs),
@@ -314,7 +318,7 @@ export function splitForPrompt(
   transcriptId: ExtractionRequest["transcriptId"],
 ): readonly string[] {
   const normalized = normaliseTranscript(raw, { transcriptId });
-  const { chunks } = chunkTurns(normalized.turns, PROMPT_CHAR_BUDGET);
+  const { chunks } = chunkTurns(normalized.turns, normalized, PROMPT_CHAR_BUDGET);
 
   if (chunks.length === 0) return [raw];
   return chunks.map((chunk) =>

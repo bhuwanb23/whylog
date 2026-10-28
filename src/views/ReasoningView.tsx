@@ -86,10 +86,10 @@ export function ReasoningView(): ReactElement {
   /** The last newcomer that went through screening. Kept so "override anyway" can force
    *  the SAME information through rather than making the user retype it — an override
    *  that requires re-entry is an override nobody performs. */
-  const [pendingNewcomer, setPendingNewcomer] = useState<Newcomer | null>(null);
+  const [pendingNewcomer] = useState<Newcomer | null>(null);
 
-  const premiseCount = state.premises.size;
   const decisionCount = state.decisions.size;
+  const premiseCount = state.premises.size;
 
   const deterministic = useMemo(() => deterministicCases(cases), [cases]);
   const contested = useMemo(() => contestedCases(cases), [cases]);
@@ -186,15 +186,7 @@ export function ReasoningView(): ReactElement {
         onText={setNewcomerText}
         onVariable={setNewcomerVariable}
         onValue={setNewcomerValue}
-        onSubmit={(newcomer) => {
-          // Remember it. A rejected newcomer is not recoverable from the run's
-          // result — the adjudication carries the BREAKDOWN, not the information
-          // itself — and the Contested card's "override anyway" has to force the
-          // SAME information through rather than making the user retype it. An
-          // override that requires re-entry is an override nobody performs.
-          setPendingNewcomer(newcomer);
-          void reasoning.run({ newcomer });
-        }}
+        onSubmit={(newcomer) => void reasoning.run({ newcomer })}
       />
 
       {result?.adjudication?.kind === "reject-newcomer" ? (
@@ -823,8 +815,6 @@ function Part({
 }: {
   n: number;
   title: string;
-  /** `ReactNode`, not `ReactElement`: a section's body is often a conditional, and a
-   *  conditional that renders nothing is `null`, not a missing element. */
   children: ReactNode;
 }): ReactElement {
   return (
@@ -1099,6 +1089,7 @@ function FalsifySection(): ReactElement {
                     onChange={(event) => setObserved(event.target.value)}
                     placeholder={`what you observed instead — e.g. "there are two of us editing it now"`}
                     style={{ flex: 1, minWidth: 260 }}
+                    autoFocus
                   />
                   <RunButton
                     label={busy ? "Running the cycle…" : "Falsify it"}

@@ -1,0 +1,11 @@
+whylog-eval-a03 — Oct 21, 09:00 (ADVERSARIAL: near-duplicate restatements)
+
+user: quick recap before we continue. we're on sqlite right?
+assistant: Yes, decided Oct 3. Single file, better-sqlite3, no Postgres.
+user: ok and the frontend is vite
+assistant: Correct, Vite with React, decided Oct 4. No SSR requirement.
+user: and state is zustand
+assistant: Yes, zustand, also Oct 4. Redux was rejected as too much ceremony.
+user: great. so to be clear — sqlite for storage, vite for the build, zustand for state
+assistant: That's the same three decisions restated. They should resolve to the existing nodes, not create new ones.
+user: perfect. that's what I wanted to check.

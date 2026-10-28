@@ -169,7 +169,7 @@ export function renderPreemption(notice: PreemptionNotice): string {
     notice.restsOn.length === 0
       ? "It rests on no recorded premise, so there is nothing to check it against."
       : notice.restsOn
-          .map((entry) => `${entry.premiseId} "${entry.text}" (${entry.label})`)
+          .map((entry) => entry.premiseId + ' "' + entry.text + '" (' + entry.label + ")")
           .join(", ");
 
   const status = notice.stillHolds
@@ -177,9 +177,15 @@ export function renderPreemption(notice: PreemptionNotice): string {
     : "At least one premise it rests on is no longer IN, so the reason may have expired.";
 
   return [
-    `You are asking about ${notice.alternativeValue}. You REJECTED it on ${decided} in ${notice.rejectedByDecisionId}.`,
-    `Reason: ${notice.whyRejected}`,
-    `It rests on ${premises}.`,
+    "You are asking about " +
+      notice.alternativeValue +
+      ". You REJECTED it on " +
+      decided +
+      " in " +
+      notice.rejectedByDecisionId +
+      ".",
+    "Reason: " + notice.whyRejected,
+    "It rests on " + premises + ".",
     status,
     notice.stillHolds
       ? "Has anything changed since then?"

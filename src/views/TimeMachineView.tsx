@@ -147,7 +147,7 @@ export function TimeMachineView(): ReactElement {
               if (chosen !== undefined) setAt(chosen.at);
             }}
             style={{ flex: 1, minWidth: 240 }}
-            aria-label={`Replay position on the ${axisMeta.short} axis`}
+            aria-label={"Replay position on the " + axisMeta.short + " axis"}
           />
 
           <input

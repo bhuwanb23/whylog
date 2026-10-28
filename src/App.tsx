@@ -29,7 +29,8 @@ import { ReviewView } from "@/views/ReviewView";
 import { SettingsView } from "@/views/SettingsView";
 import { TimeMachineView } from "@/views/TimeMachineView";
 import { TimelineView } from "@/views/TimelineView";
-import { type ReactElement, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactElement } from "react";
 /* Bundled rather than fetched: the sandboxed preview has no network, and §6.9 requires the demo to
  * be one click from a cold start. */
 import demoTranscript from "../fixtures/demo-transcript.txt?raw";
@@ -107,13 +108,16 @@ export function App(): ReactElement {
   };
 
   /* ---- 6.9 keyboard ---- */
-  const keybinds: readonly KeybindAction[] = [
-    { key: "k", meta: true, label: "ask the log", run: () => setView("ask") },
-    { key: "n", label: "quick-log a decision", run: () => setView("timeline") },
-    { key: "p", label: "paste a transcript", run: () => setView("review") },
-    { key: "g", label: "the premise lattice", run: () => setView("graph") },
-    { key: "Escape", label: "back to the timeline", run: () => setView("timeline") },
-  ];
+  const keybinds: readonly KeybindAction[] = useMemo(
+    () => [
+      { key: "k", meta: true, label: "ask the log", run: () => setView("ask") },
+      { key: "n", label: "quick-log a decision", run: () => setView("timeline") },
+      { key: "p", label: "paste a transcript", run: () => setView("review") },
+      { key: "g", label: "the premise lattice", run: () => setView("graph") },
+      { key: "Escape", label: "back to the timeline", run: () => setView("timeline") },
+    ],
+    [],
+  );
 
   useKeybinds(keybinds);
 

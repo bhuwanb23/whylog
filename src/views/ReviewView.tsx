@@ -42,11 +42,16 @@ import {
   describeMergeTargets,
   describeQueue,
   discard,
+  filterQueue,
+  previewCommit,
+  queueFromRun,
+  sortQueue,
   summariseCommit,
+  summariseQueue,
 } from "@/extraction";
 import { useExtraction } from "@/store/extraction";
 import { useWhyLog } from "@/store/whylog";
-import { type ReactElement, useEffect, useState } from "react";
+import { type ReactElement, useEffect, useMemo, useState } from "react";
 
 export function ReviewView(): ReactElement {
   const status = useExtraction((s) => s.status);
@@ -58,11 +63,23 @@ export function ReviewView(): ReactElement {
   const clear = useExtraction((s) => s.clear);
   const restore = useExtraction((s) => s.restore);
   const lastSummary = useExtraction((s) => s.lastSummary);
+  const queue = useExtraction((s) => s.queue);
+  const run = useExtraction((s) => s.run);
   const degraded = useWhyLog((s) => s.status === "degraded");
 
-  const items = useExtraction((s) => s.visible());
-  const summary = useExtraction((s) => s.summary());
-  const preview = useExtraction((s) => s.preview());
+  // Derive outside the Zustand selector. Returning a fresh array/object from getSnapshot
+  // (visible/summary/preview) makes React 18 treat every read as a change and loop forever.
+  const items = useMemo(() => {
+    if (run === null) return [];
+    return sortQueue(filterQueue(queueFromRun(run, queue), options), options.sort);
+  }, [run, queue, options]);
+
+  const summary = useMemo(() => {
+    if (run === null) return summariseQueue([]);
+    return summariseQueue(queueFromRun(run, queue));
+  }, [run, queue]);
+
+  const preview = useMemo(() => previewCommit(queue, run?.discarded ?? []), [queue, run]);
 
   const [selected, setSelected] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);

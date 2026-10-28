@@ -100,7 +100,6 @@ export type { EmitInput, DecisionNarrative, RenderOptions } from "./emitters";
 export { emitCi, CI_TARGET } from "./ci";
 export { emitRunner, emitWorkflow } from "./ci/runner";
 export { WORKFLOW_PATH, WORKFLOW_PURPOSE } from "./ci/workflow";
-export { type GateCheck, checkGateG5, renderGateG5 } from "./gate-g5";
 export type { CiInput, CiResult } from "./ci";
 
 /* ---- round trip ---- */

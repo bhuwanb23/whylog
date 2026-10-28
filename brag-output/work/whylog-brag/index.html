@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>WhyLog — 60s cinematic</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "Fraunces";
+        src: url("./fonts/Fraunces-400.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "Fraunces";
+        src: url("./fonts/Fraunces-600.woff2") format("woff2");
+        font-weight: 600;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "IBM Plex Sans";
+        src: url("./fonts/IBMPlexSans-400.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "IBM Plex Sans";
+        src: url("./fonts/IBMPlexSans-500.woff2") format("woff2");
+        font-weight: 500;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("./fonts/IBMPlexMono-400.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      :root {
+        --surface: #0b0d10;
+        --raised: #12151a;
+        --sunken: #07090b;
+        --border: #232830;
+        --border-strong: #333a45;
+        --text: #e6e9ee;
+        --dim: #99a1ad;
+        --faint: #8b93a0;
+        --in: #4ade80;
+        --out: #94a3b8;
+        --unknown: #fbbf24;
+        --action: #f87171;
+        --cascade: #60a5fa;
+        --font-display: "Fraunces", Georgia, serif;
+        --font-sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font-sans);
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--surface);
+      }
+
+      .bg-fill {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 60% at 50% 20%, rgba(96, 165, 250, 0.07), transparent 55%),
+          radial-gradient(ellipse 50% 40% at 80% 80%, rgba(74, 222, 128, 0.05), transparent 50%),
+          var(--surface);
+      }
+
+      .grain {
+        position: absolute;
+        inset: 0;
+        opacity: 0.04;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      .clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      .scene-inner {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 120px;
+      }
+
+      .brand-mark {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 28px;
+      }
+
+      .wordmark {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 96px;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        color: var(--text);
+      }
+
+      .subtitle {
+        margin-top: 18px;
+        font-size: 22px;
+        font-weight: 400;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+
+      .question {
+        margin-top: 48px;
+        max-width: 1100px;
+        text-align: center;
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: 42px;
+        line-height: 1.25;
+        color: var(--text);
+      }
+
+      .headline {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 64px;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        text-align: center;
+        max-width: 1400px;
+      }
+
+      .subline {
+        margin-top: 24px;
+        font-size: 28px;
+        color: var(--dim);
+        text-align: center;
+        max-width: 900px;
+        line-height: 1.4;
+      }
+
+      .strike {
+        color: var(--faint);
+        text-decoration: line-through;
+        text-decoration-color: var(--action);
+      }
+
+      /* Decision card */
+      .card {
+        width: 780px;
+        background: var(--raised);
+        border: 1px solid var(--border-strong);
+        border-radius: 16px;
+        padding: 36px 40px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .card-id {
+        font-family: var(--font-mono);
+        font-size: 14px;
+        color: var(--faint);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+      }
+
+      .badge-in {
+        color: var(--in);
+        background: rgba(74, 222, 128, 0.12);
+        border: 1px solid rgba(74, 222, 128, 0.35);
+      }
+
+      .badge-out {
+        color: var(--out);
+        background: rgba(148, 163, 184, 0.12);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+      }
+
+      .card-statement {
+        font-family: var(--font-display);
+        font-size: 36px;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 28px;
+      }
+
+      .section-label {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin-bottom: 12px;
+      }
+
+      .premise {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        background: var(--sunken);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 20px;
+      }
+
+      .premise-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .premise-dot.in {
+        background: var(--in);
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+      }
+
+      .premise-dot.out {
+        background: var(--out);
+      }
+
+      .premise-label {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--in);
+      }
+
+      .premise-label.out {
+        color: var(--out);
+      }
+
+      .card-caption {
+        margin-top: 36px;
+        text-align: center;
+        font-size: 26px;
+        color: var(--dim);
+        max-width: 900px;
+      }
+
+      /* Lattice */
+      .lattice-wrap {
+        position: relative;
+        width: 1100px;
+        height: 520px;
+      }
+
+      .lattice-svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .node-p {
+        fill: var(--raised);
+        stroke: var(--in);
+        stroke-width: 2.5;
+      }
+
+      .node-p.out {
+        stroke: var(--out);
+      }
+
+      .node-d {
+        fill: var(--raised);
+        stroke: var(--in);
+        stroke-width: 2.5;
+        rx: 14;
+      }
+
+      .node-d.out {
+        stroke: var(--out);
+      }
+
+      .edge {
+        stroke: var(--cascade);
+        stroke-width: 2;
+        fill: none;
+        opacity: 0.7;
+      }
+
+      .edge.dim {
+        opacity: 0.25;
+        stroke: var(--border-strong);
+      }
+
+      .node-text {
+        fill: var(--text);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        text-anchor: middle;
+      }
+
+      .node-text.small {
+        font-size: 14px;
+        fill: var(--dim);
+      }
+
+      .tex {
+        /* texture / chrome labels — not reading text */
+      }
+
+      .lattice-caption {
+        margin-top: 28px;
+        font-size: 24px;
+        color: var(--dim);
+        text-align: center;
+      }
+
+      /* World move strip */
+      .world-strip {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+
+      .chip {
+        padding: 14px 22px;
+        background: var(--raised);
+        border: 1px solid var(--border-strong);
+        border-radius: 10px;
+        font-family: var(--font-mono);
+        font-size: 18px;
+        color: var(--text);
+      }
+
+      .chip.warn {
+        border-color: rgba(248, 113, 113, 0.45);
+        color: var(--action);
+      }
+
+      .peak-line {
+        max-width: 1280px;
+        text-align: center;
+        font-family: var(--font-display);
+        font-size: 40px;
+        font-weight: 400;
+        line-height: 1.35;
+        color: var(--text);
+      }
+
+      .peak-line em {
+        font-style: italic;
+        color: var(--in);
+      }
+
+      /* Close loop */
+      .split {
+        display: flex;
+        gap: 40px;
+        align-items: stretch;
+      }
+
+      .panel {
+        width: 520px;
+        background: var(--raised);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 28px 32px;
+      }
+
+      .panel h3 {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin-bottom: 16px;
+      }
+
+      .guard-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 18px;
+      }
+
+      .guard-row:last-child {
+        border-bottom: none;
+      }
+
+      .export-block {
+        font-family: var(--font-mono);
+        font-size: 15px;
+        line-height: 1.55;
+        color: var(--dim);
+        background: var(--sunken);
+        border-radius: 8px;
+        padding: 16px;
+        border-left: 3px solid var(--action);
+      }
+
+      .export-block strong {
+        color: var(--text);
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .outro-close {
+        max-width: 1200px;
+        text-align: center;
+        font-family: var(--font-display);
+        font-size: 36px;
+        line-height: 1.4;
+        font-weight: 400;
+      }
+
+      .outro-close strong {
+        font-weight: 600;
+        color: var(--in);
+      }
+
+      .outro-brand {
+        margin-top: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .outro-brand .wordmark {
+        font-size: 56px;
+      }
+
+      .keyless {
+        margin-top: 8px;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--in);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="60"
+      data-width="1920"
+      data-height="1080"
+      data-fps="30"
+    >
+      <div id="bg-fill" class="bg-fill" data-track-index="0"></div>
+      <div id="grain" class="grain" data-track-index="0"></div>
+
+      <!-- Scene 1: Hook 0–5 -->
+      <section id="s1" class="clip" data-start="0" data-duration="5.2" data-track-index="1">
+        <div class="scene-inner" id="s1-inner">
+          <img class="brand-mark" id="s1-logo" src="./public/assets/logo-mark.svg" alt="" width="72" height="72" />
+          <div class="wordmark" id="s1-word">WhyLog</div>
+          <div class="subtitle" id="s1-sub">decision truth maintenance</div>
+          <p class="question" id="s1-q" data-hold>Is what we decided still true?</p>
+        </div>
+      </section>
+
+      <!-- Scene 2: Subvert 5–12 -->
+      <section id="s2" class="clip" data-start="5" data-duration="7.2" data-track-index="1">
+        <div class="scene-inner" id="s2-inner">
+          <p class="headline" id="s2-a" data-hold>
+            <span class="strike" id="s2-strike">Memory isn’t the hard part.</span>
+          </p>
+          <p class="headline" id="s2-b" data-hold style="margin-top: 28px">Assumptions are.</p>
+          <p class="subline" id="s2-c" data-hold>
+            A decision is a belief held under premises about the world — and the world moves.
+          </p>
+        </div>
+      </section>
+
+      <!-- Scene 3: Reveal 12–22 -->
+      <section id="s3" class="clip" data-start="12" data-duration="10.2" data-track-index="1">
+        <div class="scene-inner" id="s3-inner">
+          <div class="card" id="s3-card">
+            <div class="card-header">
+              <span class="card-id tex" data-layout-ignore>dec_sqlite · October</span>
+              <span class="badge badge-in" id="s3-badge"><span class="premise-dot in"></span> IN</span>
+            </div>
+            <div class="card-statement" data-hold>Use SQLite, not Postgres</div>
+            <div class="section-label tex" data-layout-ignore>Rests on</div>
+            <div class="premise" id="s3-p1">
+              <span class="premise-dot in"></span>
+              <span>scale.single_user</span>
+              <span class="premise-label">IN</span>
+            </div>
+            <div class="premise" id="s3-p2">
+              <span class="premise-dot in"></span>
+              <span>deployment.local_only</span>
+              <span class="premise-label">IN</span>
+            </div>
+            <div class="section-label tex" data-layout-ignore style="margin-top: 18px">Excludes</div>
+            <div class="premise" id="s3-p3" style="border-style: dashed">
+              <span class="premise-dot out"></span>
+              <span>concurrent writers</span>
+              <span class="premise-label out">OUT-list</span>
+            </div>
+          </div>
+          <p class="card-caption" id="s3-cap" data-hold>Nobody stores the given. WhyLog does.</p>
+        </div>
+      </section>
+
+      <!-- Scene 4: Lattice 22–30 -->
+      <section id="s4" class="clip" data-start="22" data-duration="8.2" data-track-index="1">
+        <div class="scene-inner" id="s4-inner">
+          <div class="lattice-wrap" id="s4-lattice">
+            <svg class="lattice-svg" viewBox="0 0 1100 520" aria-hidden="true">
+              <!-- Premises row -->
+              <circle class="node-p" id="n-p1" cx="220" cy="120" r="48" />
+              <text class="node-text" x="220" y="116" data-layout-ignore>single_user</text>
+              <text class="node-text small" x="220" y="136" data-layout-ignore>IN</text>
+
+              <circle class="node-p" id="n-p2" cx="550" cy="120" r="48" />
+              <text class="node-text" x="550" y="116" data-layout-ignore>local_only</text>
+              <text class="node-text small" x="550" y="136" data-layout-ignore>IN</text>
+
+              <circle class="node-p" id="n-p3" cx="880" cy="120" r="48" />
+              <text class="node-text" x="880" y="116" data-layout-ignore>offline_ok</text>
+              <text class="node-text small" x="880" y="136" data-layout-ignore>IN</text>
+
+              <!-- Edges -->
+              <path class="edge" id="e1" d="M220 168 L380 320" />
+              <path class="edge" id="e2" d="M550 168 L420 320" />
+              <path class="edge" id="e3" d="M550 168 L720 320" />
+              <path class="edge dim" id="e4" d="M880 168 L780 320" />
+
+              <!-- Decisions -->
+              <rect class="node-d" id="n-d1" x="280" y="340" width="200" height="72" />
+              <text class="node-text" x="380" y="372" data-layout-ignore>SQLite</text>
+              <text class="node-text small" x="380" y="392" data-layout-ignore>IN</text>
+
+              <rect class="node-d" id="n-d2" x="620" y="340" width="220" height="72" />
+              <text class="node-text" x="730" y="372" data-layout-ignore>file sync</text>
+              <text class="node-text small" x="730" y="392" data-layout-ignore>IN</text>
+            </svg>
+          </div>
+          <p class="lattice-caption" id="s4-cap" data-hold>
+            Premises are shared nodes. Cascade is exact — not a force-directed guess.
+          </p>
+        </div>
+      </section>
+
+      <!-- Scene 5: Peak 30–46 -->
+      <section id="s5" class="clip" data-start="30" data-duration="16.2" data-track-index="1">
+        <div class="scene-inner" id="s5-inner">
+          <div class="world-strip" id="s5-world">
+            <div class="chip warn">four users</div>
+            <div class="chip warn">deployed</div>
+            <div class="chip warn">concurrent edits</div>
+          </div>
+          <div class="lattice-wrap" id="s5-lattice" style="height: 400px; width: 1000px">
+            <svg class="lattice-svg" viewBox="0 0 1000 400" aria-hidden="true">
+              <circle class="node-p out" id="s5-p1" cx="200" cy="90" r="44" />
+              <text class="node-text" id="s5-p1t" x="200" y="86" style="fill: var(--out)" data-layout-ignore>single_user</text>
+              <text class="node-text small" id="s5-p1l" x="200" y="106" style="fill: var(--out)" data-layout-ignore>OUT</text>
+
+              <circle class="node-p out" id="s5-p2" cx="500" cy="90" r="44" />
+              <text class="node-text" id="s5-p2t" x="500" y="86" style="fill: var(--out)" data-layout-ignore>local_only</text>
+              <text class="node-text small" id="s5-p2l" x="500" y="106" style="fill: var(--out)" data-layout-ignore>OUT</text>
+
+              <circle class="node-p" id="s5-p3" cx="800" cy="90" r="44" />
+              <text class="node-text" x="800" y="86" data-layout-ignore>offline_ok</text>
+              <text class="node-text small" x="800" y="106" style="fill: var(--in)" data-layout-ignore>IN</text>
+
+              <path class="edge" id="s5-e1" d="M200 134 L360 250" style="stroke: var(--action)" />
+              <path class="edge" id="s5-e2" d="M500 134 L400 250" style="stroke: var(--action)" />
+              <path class="edge dim" id="s5-e3" d="M800 134 L700 250" />
+
+              <rect class="node-d out" id="s5-d1" x="260" y="270" width="200" height="68" />
+              <text class="node-text" id="s5-d1t" x="360" y="300" style="fill: var(--out)" data-layout-ignore>SQLite</text>
+              <text class="node-text small" id="s5-d1l" x="360" y="318" style="fill: var(--out)" data-layout-ignore>OUT</text>
+
+              <rect class="node-d" id="s5-d2" x="600" y="270" width="200" height="68" />
+              <text class="node-text" x="700" y="300" data-layout-ignore>file sync</text>
+              <text class="node-text small" x="700" y="318" style="fill: var(--in)" data-layout-ignore>IN</text>
+            </svg>
+          </div>
+          <p class="peak-line" id="s5-peak" data-hold>
+            Nothing contradicted me. I never said the word database.
+            <em>The world moved, and the log noticed.</em>
+          </p>
+        </div>
+      </section>
+
+      <!-- Scene 6: Close loop 46–54 -->
+      <section id="s6" class="clip" data-start="46" data-duration="8.2" data-track-index="1">
+        <div class="scene-inner" id="s6-inner">
+          <div class="split" id="s6-split">
+            <div class="panel" id="s6-guards">
+              <h3>Executable guards · proposed</h3>
+              <div class="guard-row">
+                <span class="badge badge-in" style="padding: 4px 10px; font-size: 12px">pass</span>
+                <span>no concurrent writers in package.json</span>
+              </div>
+              <div class="guard-row">
+                <span class="badge badge-in" style="padding: 4px 10px; font-size: 12px">pass</span>
+                <span>sqlite dependency present</span>
+              </div>
+              <div class="guard-row">
+                <span class="badge" style="padding: 4px 10px; font-size: 12px; color: var(--unknown); border: 1px solid rgba(251,191,36,0.35)">proposed</span>
+                <span>verify command compiled</span>
+              </div>
+            </div>
+            <div class="panel" id="s6-export">
+              <h3>Agent-native export</h3>
+              <div class="export-block">
+                <strong>## Rejected — do not re-propose</strong>
+                Postgres — premise status: OUT (scale.single_user)
+                CLAUDE.md · AGENTS.md · .cursorrules
+              </div>
+            </div>
+          </div>
+          <p class="card-caption" id="s6-cap" data-hold style="margin-top: 40px">
+            The system proposes. You dispose. The agent reads the stamp.
+          </p>
+        </div>
+      </section>
+
+      <!-- Scene 7: Outro 54–60 -->
+      <section id="s7" class="clip" data-start="54" data-duration="6" data-track-index="1">
+        <div class="scene-inner" id="s7-inner">
+          <p class="outro-close" id="s7-line">
+            Memory tools stop you repeating yourself.
+            <strong>WhyLog stops you building on a decision that stopped being true.</strong>
+          </p>
+          <div class="outro-brand" id="s7-brand">
+            <div class="wordmark">WhyLog</div>
+            <div class="keyless">keyless · offline · MIT</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Audio bed + soft accents -->
+      <audio
+        id="bgm"
+        src="./assets/bgm/track.wav"
+        data-start="0"
+        data-duration="60"
+        data-volume="0.82"
+        preload="auto"
+      ></audio>
+      <audio
+        id="sfx-tick-1"
+        src="./assets/sfx/soft-tick.wav"
+        data-start="13.2"
+        data-duration="0.08"
+        data-volume="0.22"
+        preload="auto"
+      ></audio>
+      <audio
+        id="sfx-tick-2"
+        src="./assets/sfx/soft-hit.wav"
+        data-start="13.55"
+        data-duration="0.25"
+        data-volume="0.18"
+        preload="auto"
+      ></audio>
+      <audio
+        id="sfx-hit"
+        src="./assets/sfx/soft-hit.wav"
+        data-start="32.0"
+        data-duration="0.25"
+        data-volume="0.28"
+        preload="auto"
+      ></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // --- Scene 1 Hook (brand visible at frame 0 for social poster) ---
+      gsap.set(["#s1-logo", "#s1-word"], { opacity: 1, y: 0 });
+      gsap.set("#s1-sub", { opacity: 0.85 });
+      gsap.set("#s1-q", { opacity: 0, y: 20 });
+      tl.fromTo("#s1-logo", { scale: 0.92 }, { scale: 1, duration: 0.7, ease: "power3.out" }, 0);
+      tl.fromTo("#s1-q", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, 1.4);
+      tl.to("#s1-inner", { opacity: 0, duration: 0.45, ease: "power2.in" }, 4.7);
+
+      // --- Scene 2 ---
+      tl.fromTo("#s2-a", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 5.15);
+      tl.fromTo("#s2-b", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 6.4);
+      tl.fromTo("#s2-c", { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "power2.out" }, 7.5);
+      tl.to("#s2-inner", { opacity: 0, duration: 0.4, ease: "power2.in" }, 11.7);
+
+      // --- Scene 3 ---
+      tl.fromTo("#s3-card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.85, ease: "power3.out" }, 12.2);
+      tl.fromTo("#s3-p1", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.45, ease: "power2.out" }, 13.2);
+      tl.fromTo("#s3-p2", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.45, ease: "power2.out" }, 13.55);
+      tl.fromTo("#s3-p3", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.45, ease: "power2.out" }, 13.9);
+      tl.fromTo("#s3-cap", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 15.0);
+      tl.to("#s3-inner", { opacity: 0, duration: 0.4, ease: "power2.in" }, 21.7);
+
+      // --- Scene 4 (whole lattice fades as one unit — no orphan connectors) ---
+      tl.fromTo("#s4-lattice", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" }, 22.2);
+      tl.fromTo("#s4-cap", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 24.2);
+      tl.to("#s4-inner", { opacity: 0, duration: 0.4, ease: "power2.in" }, 29.7);
+
+      // --- Scene 5 Peak ---
+      tl.fromTo("#s5-world", { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 30.2);
+      tl.fromTo("#s5-lattice", { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out" }, 31.0);
+      tl.fromTo("#s5-e1,#s5-e2", { attr: { "stroke-width": 2 } }, { attr: { "stroke-width": 4 }, duration: 0.35, yoyo: true, repeat: 3, ease: "sine.inOut" }, 32.0);
+      tl.fromTo("#s5-d1", { scale: 1 }, { scale: 1.04, duration: 0.35, yoyo: true, repeat: 2, ease: "sine.inOut", transformOrigin: "50% 50%" }, 32.4);
+      tl.fromTo("#s5-peak", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.0, ease: "power3.out" }, 34.5);
+      tl.to("#s5-world", { opacity: 0.35, duration: 0.8, ease: "power1.out" }, 38.0);
+      tl.to("#s5-inner", { opacity: 0, duration: 0.45, ease: "power2.in" }, 45.6);
+
+      // --- Scene 6 ---
+      tl.fromTo("#s6-guards", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.7, ease: "power3.out" }, 46.25);
+      tl.fromTo("#s6-export", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.7, ease: "power3.out" }, 46.55);
+      tl.fromTo("#s6-cap", { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out" }, 48.0);
+      tl.to("#s6-inner", { opacity: 0, duration: 0.4, ease: "power2.in" }, 53.7);
+
+      // --- Scene 7 ---
+      tl.fromTo("#s7-line", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, 54.2);
+      tl.fromTo("#s7-brand", { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "power2.out" }, 56.2);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

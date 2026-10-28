@@ -38,13 +38,18 @@ export function evalPath(spec: PathGlobSpec, project: VirtualProject): Evaluatio
     if (matches.length === 0) {
       return {
         outcome: "fail",
-        evidence: `No file matches \`${spec.glob}\` among the ${project.filePaths.length} path(s) in the pasted listing. If the listing was partial, this failure may be an artifact of the paste rather than of the codebase.`,
+        evidence:
+          "No file matches `" +
+          spec.glob +
+          "` among the " +
+          project.filePaths.length +
+          " path(s) in the pasted listing. If the listing was partial, this failure may be an artifact of the paste rather than of the codebase.",
       };
     }
 
     return {
       outcome: "pass",
-      evidence: `${matches.length} file(s) match \`${spec.glob}\`: ${quote(matches)}`,
+      evidence: matches.length + " file(s) match `" + spec.glob + "`: " + quote(matches),
     };
   }
 
@@ -52,13 +57,19 @@ export function evalPath(spec: PathGlobSpec, project: VirtualProject): Evaluatio
   if (matches.length > 0) {
     return {
       outcome: "fail",
-      evidence: `${matches.length} file(s) match \`${spec.glob}\` but none should: ${quote(matches)}`,
+      evidence:
+        matches.length + " file(s) match `" + spec.glob + "` but none should: " + quote(matches),
     };
   }
 
   return {
     outcome: "pass",
-    evidence: `No file matches \`${spec.glob}\` among the ${project.filePaths.length} path(s) in the listing. Note that this passes on the listing as pasted — a file that exists but was not listed is invisible to it.`,
+    evidence:
+      "No file matches `" +
+      spec.glob +
+      "` among the " +
+      project.filePaths.length +
+      " path(s) in the listing. Note that this passes on the listing as pasted — a file that exists but was not listed is invisible to it.",
   };
 }
 
@@ -67,7 +78,7 @@ function quote(paths: readonly string[]): string {
     .slice(0, EVIDENCE_PATH_LIMIT)
     .map((path) => path)
     .join(", ");
-  return paths.length > EVIDENCE_PATH_LIMIT ? `${shown}, … (${paths.length} total)` : shown;
+  return paths.length > EVIDENCE_PATH_LIMIT ? shown + ", … (" + paths.length + " total)" : shown;
 }
 
 /** Whether a glob matches anything in the pasted listing. Used by synthesis to check that a

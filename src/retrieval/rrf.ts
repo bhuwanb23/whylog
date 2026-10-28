@@ -8,7 +8,7 @@
  * ---------------------------------------------------------------------------
  * WHY RRF AND NOT SCORE FUSION
  *
- *   RRF(d) = ä over retrievers r of  1 / (k + rank_r(d))        k = 60
+ *   RRF(d) = Σ over retrievers r of  1 / (k + rank_r(d))        k = 60
  *
  * RRF is **score-agnostic**: it needs ranks, not scores. That is the entire reason it
  * is used here rather than a weighted sum of similarities.
@@ -27,7 +27,7 @@
  * stacks. It is a named constant, not a magic number, and it is NOT tuned here.
  *
  * What it does: it damps the difference between high ranks. At k=60, rank 1 scores
- * 1/61 ÷ 0.0164 and rank 2 scores 1/62 ÷ 0.0161 — nearly identical. A small k would
+ * 1/61 ≈ 0.0164 and rank 2 scores 1/62 ≈ 0.0161 — nearly identical. A small k would
  * make the top of each list dominate the fusion; a large k flattens it. 60 is the
  * conventional middle, and deviating from it would need a metric to justify it, which
  * is Phase 7's job.

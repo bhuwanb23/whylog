@@ -182,7 +182,7 @@ export interface ExtractionResult {
   readonly durationMs: number;
   /** Token usage, when the engine knows it. Reported, never hidden: the LLM path
    *  costs something and the user is entitled to see what. */
-  readonly usage?: { readonly promptTokens: number; readonly completionTokens: number };
+  readonly usage?: { readonly promptTokens: number; readonly completionTokens: number } | undefined;
 }
 
 export interface EpisodeSpan {
@@ -205,6 +205,11 @@ export interface ExtractionRequest {
   /** When the conversation happened, if known. Drives `occurredAt`. */
   readonly occurredAt?: ISODateString;
   readonly signal?: AbortSignal;
+  /** Ablation switches, threaded from `PipelineOptions`. Absent means production behaviour:
+   *  negation cues on and the modality filter on. They live on the request rather than on the
+   *  engine because the engine is shared across a run and the ablation varies per run. */
+  readonly negationCues?: boolean;
+  readonly modalityFilter?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -300,12 +305,6 @@ export interface CompositionResult {
   /** The decision ids the text actually cites. Compared against `material` to
    *  detect a citation that does not resolve. */
   readonly citedDecisionIds: readonly DecisionId[];
-  /** A note about HOW this was composed — a provenance disclosure, not a claim about
-   *  the log. It is returned separately so the claim attribution never has to guess
-   *  whether a sentence is a claim: a disclosure carries no decision id, so if it
-   *  were part of `text` it would be scored as an ungrounded claim and would drag a
-   *  perfectly well-sourced answer below the GROUNDED threshold. */
-  readonly disclosure?: string;
   readonly engine: EngineId;
   readonly durationMs: number;
 }

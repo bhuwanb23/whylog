@@ -48,7 +48,7 @@
  * ---------------------------------------------------------------------------
  */
 
-import { detectStructural } from "@/reasoning/gates/structural";
+import { wouldContradict } from "@/reasoning/gates/structural";
 import type { Labelled, NodeId } from "@/reasoning/labeller";
 import type { GraphState } from "@/substrate/graph-state";
 import type { DecisionId, PremiseId } from "@/types/common";
@@ -60,19 +60,6 @@ export interface GateInput {
   readonly labels: ReadonlyMap<NodeId, Labelled>;
   /** The decisions the caller intends to emit. */
   readonly candidates: readonly DecisionId[];
-  /**
-   * The subset of `candidates` that will actually be WRITTEN.
-   *
-   * Two sets, because two different questions are being asked. "Does the log contradict
-   * itself?" is answered over every candidate, and every conflict is reported. "Would the
-   * file tell an agent to do two incompatible things?" is answered over the emitted set
-   * only: a decision that is labelled OUT, or superseded, is excluded from the file, so a
-   * conflict with it is the log's problem and not the file's.
-   *
-   * Defaults to `candidates` when the caller does not say, so a standalone preview of the
-   * gate blocks on anything it can see.
-   */
-  readonly emitted?: readonly DecisionId[];
 }
 
 export interface GateReport {
@@ -102,32 +89,10 @@ export interface Annotation {
  */
 export function consistencyGate(input: GateInput): GateReport {
   const candidateSet = new Set(input.candidates);
-  /* The decisions that will actually be WRITTEN. See `GateInput.emitted`: the two sets answer
-   * two different questions, and blocking is about the file, not about the log. */
-  const emittedSet = new Set(input.emitted ?? input.candidates);
   const conflicts: ConflictPair[] = [];
   const warnings: ExportWarning[] = [];
   const annotations: Annotation[] = [];
   const seenPairs = new Set<string>();
-
-  /* ---- conflicts: delegated to gate (a) ----
-   *
-   * `detectStructural` is gate (a)'s POST-HOC form: it looks at decisions that ALREADY EXIST and
-   * returns pairs of them. `wouldContradict` is gate (a)'s PRE-COMMIT form: it answers "would
-   * asserting this value contradict something live?", so the side it names as `decisionB` is the
-   * NEWCOMER sentinel - the decision that does not exist yet.
-   *
-   * This file used the pre-commit form and copied `hit.decisionA`/`hit.decisionB` straight into
-   * the conflict pair. Every pair therefore contained "WLD-NEW", which is never in the candidate
-   * set, so `candidateSet.has(a) && candidateSet.has(b)` was never true and `blocking` was always
-   * empty: the gate DETECTED contradictions, REPORTED them, and could never REFUSE anything. A
-   * gate that cannot block is a comment.
-   *
-   * Both forms share one detector - `canonicalValueOf` plus `areAntonyms` plus the same
-   * exclusions - so using the post-hoc form does not give the export a second opinion about what
-   * a contradiction is. It gives it the right SHAPE: two real decisions.
-   */
-  const structural = detectStructural(input.state);
 
   for (const decisionId of input.candidates) {
     const decision = input.state.decisions.get(decisionId);
@@ -140,24 +105,23 @@ export function consistencyGate(input: GateInput): GateReport {
       warnings.push({ kind: "out-decision-excluded", decisionId });
     }
 
-    /* ---- conflicts ---- */
-    const hits = structural.filter(
-      (hit) => hit.decisionA === decisionId || hit.decisionB === decisionId,
-    );
+    /* ---- conflicts: delegated to gate (a) ---- */
+    const hits = wouldContradict(input.state, decision.variable, decision.value, decision.temporal);
 
     for (const hit of hits) {
-      const other = hit.decisionA === decisionId ? hit.decisionB : hit.decisionA;
-      const key =
-        decisionId < other ? `${decisionId}\u0000${other}` : `${other}\u0000${decisionId}`;
+      const a = hit.decisionA === "WLD-NEW" ? decisionId : hit.decisionA;
+      const b = hit.decisionB === "WLD-NEW" ? decisionId : hit.decisionB;
+      const other = a === decisionId ? b : a;
+      const key = a < b ? a + "\u0000" + b : b + "\u0000" + a;
       if (seenPairs.has(key)) continue;
       seenPairs.add(key);
 
       const pair: ConflictPair = {
-        a: hit.decisionA,
-        b: hit.decisionB,
+        a,
+        b,
         explanation:
           hit.explanation +
-          (emittedSet.has(hit.decisionA) && emittedSet.has(hit.decisionB)
+          (candidateSet.has(a) && candidateSet.has(b)
             ? " BOTH are being exported, so the compiled file would tell an agent to do two incompatible things."
             : " Only one of the two is being exported, so the file itself stays consistent — but the log does not."),
       };
@@ -179,7 +143,11 @@ export function consistencyGate(input: GateInput): GateReport {
         annotations.push({
           decisionId,
           kind: "contested-premise",
-          text: `Premise ${premiseId}${premise === undefined ? "" : ` ("${premise.text}")`} is CONTESTED — neither confirmed nor refuted. This rule rests on something the log has not settled, so it may be about to change.`,
+          text:
+            "Premise " +
+            premiseId +
+            (premise === undefined ? "" : ' ("' + premise.text + '")') +
+            " is CONTESTED — neither confirmed nor refuted. This rule rests on something the log has not settled, so it may be about to change.",
         });
       }
     }
@@ -191,7 +159,10 @@ export function consistencyGate(input: GateInput): GateReport {
       annotations.push({
         decisionId,
         kind: "failing-guard",
-        text: `VERIFY CURRENTLY FAILS: ${failing.join(", ")}. The code does not currently satisfy this rule. Either the rule has drifted or the decision has been reversed in practice and not in the log — resolve it before trusting the rule.`,
+        text:
+          "VERIFY CURRENTLY FAILS: " +
+          failing.join(", ") +
+          ". The code does not currently satisfy this rule. Either the rule has drifted or the decision has been reversed in practice and not in the log — resolve it before trusting the rule.",
       });
     }
 
@@ -205,10 +176,8 @@ export function consistencyGate(input: GateInput): GateReport {
     }
   }
 
-  /* Only a conflict where BOTH sides are EMITTED blocks. A conflict with an excluded
-   * decision is the log's inconsistency, not the file's: the file never contains both
-   * answers, so the file is not wrong. It is still reported, because the log is. */
-  const blocking = conflicts.filter((pair) => emittedSet.has(pair.a) && emittedSet.has(pair.b));
+  /* Only a conflict where BOTH sides are emitted blocks. Anything else the file survives. */
+  const blocking = conflicts.filter((pair) => candidateSet.has(pair.a) && candidateSet.has(pair.b));
 
   const result: ConsistencyGateResult =
     blocking.length === 0 ? { ok: true } : { ok: false, blocking, warnings };
@@ -280,17 +249,18 @@ export function renderBlocked(report: GateReport, state: GraphState): string {
     const a = state.decisions.get(pair.a);
     const b = state.decisions.get(pair.b);
 
-    lines.push(`  ${pair.a} — ${a?.statement ?? "(not in log)"}`);
-    lines.push(`  ${pair.b} — ${b?.statement ?? "(not in log)"}`);
-    lines.push(`  ${pair.explanation}`);
+    lines.push("  " + pair.a + " — " + (a?.statement ?? "(not in log)"));
+    lines.push("  " + pair.b + " — " + (b?.statement ?? "(not in log)"));
+    lines.push("  " + pair.explanation);
 
     const nogood = relevantNogood(state, pair);
     if (nogood !== null) {
-      lines.push(`  Recorded nogood ${nogood.id}: ${nogood.explanation}`);
+      lines.push("  Recorded nogood " + nogood.id + ": " + nogood.explanation);
     }
 
     const proposal = relevantProposal(state, pair);
-    if (proposal !== null) lines.push(`  Revision proposal ${proposal} already covers this pair.`);
+    if (proposal !== null)
+      lines.push("  Revision proposal " + proposal + " already covers this pair.");
 
     lines.push("");
     lines.push("  Resolve it on the Reasoning tab: reverse one, re-justify one, or vouch for the");
@@ -356,7 +326,7 @@ export function renderWarnings(report: GateReport): string {
 
   const lines = ["Annotated rather than hidden:"];
   for (const [kind, count] of counts) {
-    lines.push(`  ${count} × ${describeWarningKind(kind)}`);
+    lines.push("  " + count + " × " + describeWarningKind(kind));
   }
 
   lines.push("");

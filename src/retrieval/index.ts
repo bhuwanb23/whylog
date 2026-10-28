@@ -67,6 +67,7 @@ import type {
   IndexLevel,
   QueryOptions,
   RankedHit,
+  ResolvedQueryOptions,
   RetrievedHit,
 } from "@/types/retrieval";
 import { DEFAULT_QUERY_OPTIONS } from "@/types/retrieval";
@@ -78,7 +79,7 @@ import { searchL3 } from "./index-levels/l3-sparse";
 import { type StructuralMatch, searchL4 } from "./index-levels/l4-structural";
 import { type PremiseMatch, expandBySharedPremise, searchL5 } from "./index-levels/l5-premises";
 import { findPreemptions } from "./preemption";
-import { type RerankCandidate, rerank } from "./rerank";
+import { type RerankCandidate, type RerankResult, rerank } from "./rerank";
 import { RRF_K, type RankedList, fuse, rank } from "./rrf";
 
 export { RRF_K } from "./rrf";
@@ -104,7 +105,7 @@ export interface UnderstoodQuery {
  */
 export function understandQuery(state: GraphState, question: string): UnderstoodQuery {
   const folded = question.toLowerCase();
-  const terms = queryTerms(question);
+  const terms = queryTerms(state, question);
 
   let variable: DecisionVariable | null = null;
   let value: string | null = null;
@@ -125,7 +126,7 @@ export function understandQuery(state: GraphState, question: string): Understood
 
       variable = slot;
       value = canonicalValueOf(slot, candidate);
-      why.push(`"${candidate}" is a known ${slot} value`);
+      why.push('"' + candidate + '" is a known ' + slot + " value");
       break outer;
     }
   }
@@ -138,14 +139,14 @@ export function understandQuery(state: GraphState, question: string): Understood
       const slot = slots[0];
       if (slot === undefined) continue;
       variable = slot;
-      why.push(`"${keyword}" is a ${slot} keyword`);
+      why.push('"' + keyword + '" is a ' + slot + " keyword");
       break;
     }
   }
 
   const premiseIds = premisesNamedBy(state, terms);
   if (premiseIds.length > 0) {
-    why.push(`${premiseIds.length} premise(s) share vocabulary with the question`);
+    why.push(premiseIds.length + " premise(s) share vocabulary with the question");
   }
 
   if (variable === null)
@@ -157,7 +158,7 @@ export function understandQuery(state: GraphState, question: string): Understood
     value,
     terms,
     premiseIds,
-    explanation: `${why.join("; ")}.`,
+    explanation: why.join("; ") + ".",
   };
 }
 
@@ -204,7 +205,10 @@ export interface RetrieveInput {
   readonly labels: ReadonlyMap<NodeId, Labelled>;
   readonly engine: WhyLogEngine;
   readonly question: string;
-  readonly options?: Partial<QueryOptions>;
+  readonly options?: Partial<QueryOptions> | undefined;
+  /** Ablation: skip the second stage, so the raw RRF fusion order IS the answer order.
+   *  Absent means rerank, which is production behaviour. */
+  readonly skipRerank?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -225,35 +229,19 @@ export interface RetrievalResult {
  * Retrieval PROPOSES. It never classifies a pair and never produces a verdict — invariant I3.
  * The scores it returns select candidates for `contradiction.ts`, which then discards them.
  */
-/**
- * Merge the caller's options over the defaults.
- *
- * A plain spread is not enough: `QueryOptions` fields are optional, and
- * spreading an optional over a required default yields `number | undefined` —
- * so `options.topK` would be possibly-undefined at every use, even though a
- * default always exists. Resolving each field explicitly keeps the resolved
- * options total, which is what the rest of the retrieval stack assumes.
- */
-function resolveQueryOptions(options: QueryOptions | undefined): Required<
-  Pick<QueryOptions, "topK" | "recallK" | "rrfK" | "useHyde" | "includeSuperseded">
-> & {
-  readonly levels: readonly IndexLevel[] | undefined;
-} {
-  return {
-    topK: options?.topK ?? DEFAULT_QUERY_OPTIONS.topK,
-    recallK: options?.recallK ?? DEFAULT_QUERY_OPTIONS.recallK,
-    rrfK: options?.rrfK ?? DEFAULT_QUERY_OPTIONS.rrfK,
-    useHyde: options?.useHyde ?? DEFAULT_QUERY_OPTIONS.useHyde,
-    includeSuperseded: options?.includeSuperseded ?? DEFAULT_QUERY_OPTIONS.includeSuperseded,
-    levels: options?.levels,
-  };
-}
-
 export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
   const started = Date.now();
-  const options = resolveQueryOptions(input.options);
+  const options: ResolvedQueryOptions = { ...DEFAULT_QUERY_OPTIONS, ...(input.options ?? {}) };
   const understood = understandQuery(input.state, input.question);
-  const levels = usableLevels(input.state);
+  /* `options.levels` restricts the usable set; it never adds to it. Before the ablation was
+   * wired this field was declared on QueryOptions and read by nobody, so asking for a subset
+   * of levels silently returned all of them. A level that is unusable for want of data stays
+   * unusable — restricting cannot conjure an index that was never built. */
+  const usable = usableLevels(input.state);
+  const levels =
+    options.levels === undefined
+      ? usable
+      : usable.filter((level) => options.levels?.includes(level) === true);
   const lists: RankedList[] = [];
   const perLevelScores = new Map<DecisionId, Map<IndexLevel, number>>();
 
@@ -333,18 +321,31 @@ export async function retrieve(input: RetrieveInput): Promise<RetrievalResult> {
   }
 
   /* ---- rerank: second stage, against the ORIGINAL query ---- */
-  const ranked = await rerank({
-    query: understood.question,
-    candidates,
-    artifacts: input.artifacts,
-    state: input.state,
-    engine: input.engine,
-    queryTerms: understood.terms,
-    queryPremises: understood.premiseIds,
-    topK: options.topK,
-    now: Date.now(),
-    ...(input.signal === undefined ? {} : { signal: input.signal }),
-  });
+  const ranked: RerankResult =
+    input.skipRerank === true
+      ? {
+          /* The candidate list is already in fusion order, with promoted exact matches
+           * appended — which is precisely "raw RRF order" as the answer order. `scored` is
+           * empty rather than fabricated: a run with the reranker off has no component
+           * scores to report, and inventing them would be inventing an explanation. */
+          order: candidates.map((candidate) => candidate.decisionId).slice(0, options.topK),
+          method: "none",
+          scored: [],
+          durationMs: 0,
+          engine: "reranker-disabled",
+        }
+      : await rerank({
+          query: understood.question,
+          candidates,
+          artifacts: input.artifacts,
+          state: input.state,
+          engine: input.engine,
+          queryTerms: understood.terms,
+          queryPremises: understood.premiseIds,
+          topK: options.topK,
+          now: Date.now(),
+          ...(input.signal === undefined ? {} : { signal: input.signal }),
+        });
 
   const scoredBy = new Map(ranked.scored.map((entry) => [entry.candidate.decisionId, entry]));
   const rrfBy = new Map(fused.map((hit) => [hit.decisionId, hit]));
@@ -467,6 +468,10 @@ function promotedLevelsOf(
 export interface AskInput extends RetrieveInput {
   readonly engineId: EngineId;
   readonly forceLocalRerank?: boolean;
+  /** Searches permitted for this question. Absent means the contract ceiling. Lowered only by the
+   *  ablation, to measure what the budget is worth; `SearchTrace` clamps it, so it can never be
+   *  raised above the ceiling. */
+  readonly maxSearches?: number | undefined;
 }
 
 /**
@@ -486,7 +491,7 @@ export interface AskInput extends RetrieveInput {
  * not know.
  */
 export async function ask(input: AskInput): Promise<Answer> {
-  const trace = new SearchTrace();
+  const trace = new SearchTrace(input.maxSearches);
   const answeredAt = nowISO();
 
   /* ---- search 1 ---- */
@@ -498,7 +503,7 @@ export async function ask(input: AskInput): Promise<Answer> {
       first.levels,
       first.hits.length,
       first.hits[0]?.finalScore ?? 0,
-      `The question as asked, over all five levels. ${first.understood.explanation}`,
+      "The question as asked, over all five levels. " + first.understood.explanation,
     ),
   );
 
@@ -515,7 +520,7 @@ export async function ask(input: AskInput): Promise<Answer> {
 
     const recorded2 = trace.record(
       searchStep(
-        `decisions sharing a premise with: ${seeds.join(", ")}`,
+        "decisions sharing a premise with: " + seeds.join(", "),
         ["L5"],
         added.length,
         0,
@@ -582,6 +587,7 @@ export async function ask(input: AskInput): Promise<Answer> {
     preemptions,
     logSize: input.state.decisions.size,
     answeredAt,
+    askedAbout: first.understood.variable,
     ...(input.signal === undefined ? {} : { signal: input.signal }),
   });
 }
@@ -612,7 +618,7 @@ async function searchByPremiseQuestions(
     return [];
   }
 
-  const terms = queryTerms(questionText);
+  const terms = queryTerms(input.state, questionText);
   const l3 = searchL3(input.artifacts, terms, DEFAULT_QUERY_OPTIONS.recallK);
 
   const before = new Set(current.map((hit) => hit.decisionId));
@@ -685,7 +691,7 @@ function premiseLines(
       const premise = state.premises.get(premiseId);
       if (premise === undefined) continue;
       const label = labels.get(premiseId)?.label ?? premise.label;
-      out.push(`${premiseId} "${premise.text}" (${label})`);
+      out.push(premiseId + ' "' + premise.text + '" (' + label + ")");
     }
   }
 
@@ -698,15 +704,19 @@ function premiseLines(
 
 export function describeRetrieval(result: RetrievalResult): string {
   const lines = [
-    `Levels available: ${result.levels.join(", ")}${result.levelsUnavailable.length > 0 ? `  (unavailable: ${result.levelsUnavailable.join(", ")})` : ""}`,
-    `Query read as: ${result.understood.explanation}`,
-    `Fusion: RRF at k = ${RRF_K} — ranks only, so no score calibration between levels.`,
-    `Rerank: ${result.method}, scored against the ORIGINAL query.`,
-    `Candidates: ${result.fused.length} fused → ${result.hits.length} returned.`,
-    `Took ${result.durationMs} ms.`,
+    "Levels available: " +
+      result.levels.join(", ") +
+      (result.levelsUnavailable.length > 0
+        ? "  (unavailable: " + result.levelsUnavailable.join(", ") + ")"
+        : ""),
+    "Query read as: " + result.understood.explanation,
+    "Fusion: RRF at k = " + RRF_K + " — ranks only, so no score calibration between levels.",
+    "Rerank: " + result.method + ", scored against the ORIGINAL query.",
+    "Candidates: " + result.fused.length + " fused → " + result.hits.length + " returned.",
+    "Took " + result.durationMs + " ms.",
   ];
 
-  if (result.notice !== null) lines.push(`Note: ${result.notice}`);
+  if (result.notice !== null) lines.push("Note: " + result.notice);
 
   return lines.join("\n");
 }
@@ -725,7 +735,7 @@ export function describePipeline(): string {
     "Averaging a fact into a statistical consensus lets four levels of weak topical agreement",
     "outvote one level of exact evidence, which is backwards. The reranker cannot demote them.",
     "",
-    `Fusion is RRF at k = ${RRF_K}. It reads ranks and never scores, so it needs no`,
+    "Fusion is RRF at k = " + RRF_K + ". It reads ranks and never scores, so it needs no",
     "calibration between a cosine in [-1,1] and a BM25 score with no upper bound.",
     "",
     "The reranker scores against the ORIGINAL QUERY. `rerank()` takes the query string and",

@@ -75,18 +75,28 @@ export function describeRatio(result: RatioResult): string {
   }
 
   const lines = [
-    `Deterministic ratio: ${result.deterministic} of ${result.total} accepted guards (${(result.score * 100).toFixed(0)}%) produce the same result every run, with no model and no shell.`,
+    "Deterministic ratio: " +
+      result.deterministic +
+      " of " +
+      result.total +
+      " accepted guards (" +
+      (result.score * 100).toFixed(0) +
+      "%) produce the same result every run, with no model and no shell.",
   ];
 
   if (result.environmentDependent > 0) {
     lines.push(
-      `  ${result.environmentDependent} command guard(s) — deterministic in principle, environment-dependent in practice, run only in CI.`,
+      "  " +
+        result.environmentDependent +
+        " command guard(s) — deterministic in principle, environment-dependent in practice, run only in CI.",
     );
   }
 
   if (result.judged > 0) {
     lines.push(
-      `  ${result.judged} judged guard(s) — ADVISORY. Non-reproducible, and excluded from the compliance score entirely.`,
+      "  " +
+        result.judged +
+        " judged guard(s) — ADVISORY. Non-reproducible, and excluded from the compliance score entirely.",
     );
   }
 
@@ -94,7 +104,10 @@ export function describeRatio(result: RatioResult): string {
   lines.push("Breakdown by kind:");
   for (const entry of result.byKind) {
     lines.push(
-      `  ${entry.kind.padEnd(24)}${entry.count}${entry.deterministic ? "" : "  (non-deterministic)"}`,
+      "  " +
+        entry.kind.padEnd(24) +
+        entry.count +
+        (entry.deterministic ? "" : "  (non-deterministic)"),
     );
   }
 

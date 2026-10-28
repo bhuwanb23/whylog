@@ -22,7 +22,7 @@ export function emitAgentsMd(cif: ExportCif, stampBlock: string, projectName?: s
   const name = projectName ?? "this project";
   const sections: string[] = [];
 
-  sections.push(`# AGENTS.md — ${name}`);
+  sections.push("# AGENTS.md — " + name);
   sections.push("");
   sections.push(
     "Machine-readable decision record, compiled from a WhyLog decision log. Each rule below is " +
@@ -50,7 +50,7 @@ export function emitAgentsMd(cif: ExportCif, stampBlock: string, projectName?: s
       "_No decisions are currently in force._ The log is empty, or everything in it is OUT or superseded.",
     );
   } else {
-    sections.push(`## Active decisions (${cif.records.length})`);
+    sections.push("## Active decisions (" + cif.records.length + ")");
     sections.push("");
     for (const record of cif.records) {
       sections.push(renderRecord(record, { antiRelitigation: ANTI_RELITIGATION }));
@@ -70,7 +70,19 @@ export function emitAgentsMd(cif: ExportCif, stampBlock: string, projectName?: s
   sections.push(
     "## Provenance",
     "",
-    `Compiled from log head \`${cif.headHash.slice(0, 12)}\u2026\` at ${cif.generatedAt}. ${cif.stats.decisionsIncluded} decision(s) inline, ${cif.stats.decisionsLinkedOut} linked out, ${cif.stats.decisionsExcluded} excluded. To change a rule, change the decision in the log and re-export: editing this file directly will be detected as a stamp mismatch and the edit will be lost on the next export.`,
+    "Compiled from log head `" +
+      cif.headHash.slice(0, 12) +
+      "\u2026` at " +
+      cif.generatedAt +
+      ". " +
+      cif.stats.decisionsIncluded +
+      " decision(s) inline, " +
+      cif.stats.decisionsLinkedOut +
+      " linked out, " +
+      cif.stats.decisionsExcluded +
+      " excluded. To change a rule, change the " +
+      "decision in the log and re-export: editing this file directly will be detected as a stamp " +
+      "mismatch and the edit will be lost on the next export.",
   );
   sections.push("");
   sections.push(stampBlock);

@@ -1,0 +1,14 @@
+whylog-eval-a02 — Oct 19, 10:44 (ADVERSARIAL: sarcasm, unaccepted proposals, reversal)
+
+assistant: I'd suggest we move the whole thing to a microservices architecture. Each concern gets its own service and its own database.
+user: sure, and let's also rewrite it in Haskell and hire twelve people
+assistant: That was sarcasm?
+user: yes. obviously. we are four people at a hackathon. monolith, obviously.
+assistant: Understood. Recording: architecture is a monolith.
+user: and don't record the microservices thing, I never agreed to it
+assistant: Not recorded. It was a proposal you did not accept.
+user: also — remember when I said Clerk for auth?
+assistant: Yes, Oct 6.
+user: actually scrap that. we're not doing auth at all for the demo. no login.
+assistant: That reverses the Clerk decision. Recording: auth is none, superseding the Oct 6 decision.
+user: yeah. reason is the demo doesn't need it and every hour on auth is an hour off the reasoning layer

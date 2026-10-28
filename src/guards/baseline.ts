@@ -200,9 +200,9 @@ export function describeBaseline(baseline: GuardBaseline | null): string {
   const frozen = Object.keys(baseline.frozenFailures).length;
 
   return [
-    `Baseline frozen ${baseline.frozenAt}.`,
-    `  known failures   ${frozen}`,
-    `  enforced (ratcheted) ${baseline.enforced.length}`,
+    "Baseline frozen " + baseline.frozenAt + ".",
+    "  known failures   " + frozen,
+    "  enforced (ratcheted) " + baseline.enforced.length,
     "",
     "Only violations NEW since that freeze surface as drift. An enforced guard that starts",
     "failing is new by definition, because the baseline recorded it passing — that is the",

@@ -122,7 +122,7 @@ export function previewCommit(
       case "premise": {
         if (candidate.resolution.action === "merge") mergedPremises += 1;
         else newPremises += 1;
-        if (candidate.premise?.text.includes("— excluded by")) {
+        if (candidate.premise !== null && candidate.premise.text.includes("— excluded by")) {
           derivedPremises += 1;
         }
         break;

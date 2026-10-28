@@ -30,14 +30,18 @@ export function evalCommand(_spec: CommandSpec, _project: VirtualProject): Evalu
   return {
     outcome: "skip",
     evidence: "",
-    skipReason: `${SKIP_NOT_RUNNABLE.skipReason} This guard runs \`${_spec.command}\` and needs a shell; the exported CI runner executes it and reports the real exit code.`,
+    skipReason:
+      SKIP_NOT_RUNNABLE.skipReason +
+      " This guard runs `" +
+      _spec.command +
+      "` and needs a shell; the exported CI runner executes it and reports the real exit code.",
   };
 }
 
 /** The command as it appears in the exported runner. Quoted for a POSIX shell. */
 export function commandLine(spec: CommandSpec): string {
   const cwd =
-    spec.cwd === undefined || spec.cwd.length === 0 ? "" : `cd ${shellQuote(spec.cwd)} && `;
+    spec.cwd === undefined || spec.cwd.length === 0 ? "" : "cd " + shellQuote(spec.cwd) + " && ";
   return cwd + spec.command;
 }
 
@@ -45,5 +49,5 @@ export function shellQuote(value: string): string {
   /* Single quotes with embedded quotes escaped. Double quotes would let the shell expand
    * variables inside a path, which for a command emitted into CI is a silent substitution the
    * author did not ask for. */
-  return `'${value.replace(/'/g, "'\\''")}'`;
+  return "'" + value.replace(/'/g, "'\\''") + "'";
 }

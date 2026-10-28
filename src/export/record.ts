@@ -99,7 +99,7 @@ export function recordFor(input: RecordInput): ExportRecord {
     becauseText:
       premises.length === 0
         ? ""
-        : premises.map((entry) => `${entry.text} (${entry.id})`).join(", "),
+        : premises.map((entry) => entry.text + " (" + entry.id + ")").join(", "),
     rejected: rejected.map((entry) =>
       entry.why === undefined ? { value: entry.value } : { value: entry.value, why: entry.why },
     ),
@@ -137,9 +137,9 @@ export function imperativeFor(
 
   const statement = decision.statement.trim();
   if (isAlreadyImperative(statement)) {
-    parts.push(`${statement.replace(/\.\s*$/, "")}.`);
+    parts.push(statement.replace(/\.\s*$/, "") + ".");
   } else {
-    parts.push(`MUST use ${decision.value}.`);
+    parts.push("MUST use " + decision.value + ".");
   }
 
   /* The MUST NOT clause is compiled from the rejected alternatives, which is why alternatives are
@@ -148,7 +148,14 @@ export function imperativeFor(
   if (rejected.length > 0) {
     const names = rejected.map((entry) => entry.value).slice(0, MUST_NOT_LIMIT);
     parts.push(
-      `MUST NOT introduce ${names.join(", ")}${rejected.length > MUST_NOT_LIMIT ? ` (and ${rejected.length - MUST_NOT_LIMIT} other rejected options — see the Rejected section)` : ""}.`,
+      "MUST NOT introduce " +
+        names.join(", ") +
+        (rejected.length > MUST_NOT_LIMIT
+          ? " (and " +
+            (rejected.length - MUST_NOT_LIMIT) +
+            " other rejected options — see the Rejected section)"
+          : "") +
+        ".",
     );
   }
 
@@ -257,7 +264,7 @@ function acceptedGuardsOf(state: GraphState, decisionId: DecisionId) {
  * use; a warning three sections away is a warning that does not exist.
  */
 export function renderStatus(record: ExportRecord): string {
-  const parts: string[] = [`Status: ${record.status}`];
+  const parts: string[] = ["Status: " + record.status];
 
   if (record.status === "IN") parts.push("sound");
   else if (record.status === "UNKNOWN") parts.push("justification incomplete");
@@ -266,11 +273,11 @@ export function renderStatus(record: ExportRecord): string {
   if (record.guardsTotal === 0) {
     parts.push("no guards — UNVERIFIABLE");
   } else {
-    parts.push(`guards ${record.guardsPassing}/${record.guardsTotal} passing`);
+    parts.push("guards " + record.guardsPassing + "/" + record.guardsTotal + " passing");
   }
 
   if (record.lastVerifiedAt !== undefined)
-    parts.push(`last verified ${record.lastVerifiedAt.slice(0, 10)}`);
+    parts.push("last verified " + record.lastVerifiedAt.slice(0, 10));
 
   if (record.contestedPremise) parts.push("PREMISE CONTESTED");
   if (record.failingGuard) parts.push("VERIFY CURRENTLY FAILS");

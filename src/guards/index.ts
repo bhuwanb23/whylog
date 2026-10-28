@@ -67,9 +67,14 @@ import { GUARDS_PER_DECISION_CAP } from "./types";
 export interface SynthesiseAllInput {
   readonly state: GraphState;
   readonly engine?: WhyLogEngine | null;
-  readonly templatesOnly?: boolean;
+  readonly templatesOnly?: boolean | undefined;
   readonly cap?: number;
   readonly signal?: AbortSignal;
+  /** Needed to build the `GuardSynthesised` drafts. Absent means "report only, propose nothing",
+   *  which is what a read-only dashboard wants; a caller that intends to record the proposals passes
+   *  both, because an event without an actor and a timestamp is not an event. */
+  readonly actor?: Actor | undefined;
+  readonly at?: ISODateString | undefined;
 }
 
 export interface SynthesiseAllResult {
@@ -96,7 +101,51 @@ export async function synthesiseAll(input: SynthesiseAllInput): Promise<Synthesi
     ...(input.signal === undefined ? {} : { signal: input.signal }),
   });
 
-  return { reports, unverifiable, drafts: [], share: templateShare(reports) };
+  /* Without an actor and a timestamp there is nothing to stamp the events with, so this is the
+   * report-only path. With them, every proposed guard becomes a `GuardSynthesised` draft — PROPOSED,
+   * never accepted (I4), so it enters the graph but does not run until a human accepts it.
+   *
+   * This used to return an empty list unconditionally, which made the bulk path a no-op: the store
+   * pushed `all.drafts` into its batch and nothing arrived, so "synthesise guards for every
+   * decision" silently proposed nothing and the guard count stayed at zero. */
+  if (input.actor === undefined || input.at === undefined) {
+    return { reports, unverifiable, drafts: [], share: templateShare(reports) };
+  }
+
+  const drafts: NewEvent<EventType>[] = [];
+  for (const report of reports) {
+    let suffixIndex = usedSuffixCount(input.state, report.decisionId);
+
+    for (const proposed of report.proposed) {
+      const suffix = letterFor(suffixIndex);
+      suffixIndex += 1;
+
+      drafts.push({
+        type: "GuardSynthesised",
+        payload: {
+          guardId: guardIdFor(report.decisionId, suffix),
+          decisionId: report.decisionId,
+          kind: proposed.spec.kind,
+          spec: proposed.spec,
+          severity: proposed.severity,
+          rationale: proposed.rationale,
+          generatedBy: proposed.generatedBy,
+        },
+        actor: input.actor,
+        reason:
+          "Compiled from " +
+          report.decisionId +
+          " by the " +
+          proposed.generatedBy +
+          " path: " +
+          proposed.spec.kind +
+          ". It is PROPOSED and will not run until a human accepts it.",
+        at: input.at,
+      });
+    }
+  }
+
+  return { reports, unverifiable, drafts, share: templateShare(reports) };
 }
 
 /**
@@ -130,7 +179,14 @@ export async function synthesiseDecision(
         generatedBy: proposed.generatedBy,
       },
       actor: input.actor,
-      reason: `Compiled from ${input.decisionId} by the ${proposed.generatedBy} path: ${proposed.spec.kind}. It is PROPOSED and will not run until a human accepts it.`,
+      reason:
+        "Compiled from " +
+        input.decisionId +
+        " by the " +
+        proposed.generatedBy +
+        " path: " +
+        proposed.spec.kind +
+        ". It is PROPOSED and will not run until a human accepts it.",
       at: input.at,
     });
   }
@@ -148,13 +204,13 @@ function usedSuffixCount(state: GraphState, decisionId: DecisionId): number {
 
 function letterFor(index: number): string {
   if (index < 26) return String.fromCharCode(97 + index);
-  return `z${String(index - 25)}`;
+  return "z" + String(index - 25);
 }
 
 /** `G-0007a`. Mirrors `formatGuardId` in `lib/ids.ts`; duplicated here only because that helper
  *  takes a `DecisionId` and this one has already sliced it. */
 function guardIdFor(decisionId: DecisionId, suffix: string): GuardId {
-  return `G-${decisionId.slice(4)}${suffix}` as GuardId;
+  return ("G-" + decisionId.slice(4) + suffix) as GuardId;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -328,41 +384,50 @@ export function renderDashboard(result: MetricsResult): string {
     row(
       "DECISION COMPLIANCE",
       result.compliance.score,
-      `${result.compliance.compliant} / ${result.compliance.denominator}`,
+      result.compliance.compliant + " / " + result.compliance.denominator,
     ),
     row(
       "VERIFIABLE COVERAGE",
       result.coverage.score,
-      `${result.coverage.covered} / ${result.coverage.inDecisions}`,
+      result.coverage.covered + " / " + result.coverage.inDecisions,
     ),
     row(
       "LOG SOUNDNESS",
       result.soundness.score,
-      `${result.soundness.inCount} / ${result.soundness.denominator}`,
+      result.soundness.inCount + " / " + result.soundness.denominator,
     ),
     row(
       "DETERMINISTIC RATIO",
       result.ratio.score,
-      `${result.ratio.deterministic} / ${result.ratio.total}`,
+      result.ratio.deterministic + " / " + result.ratio.total,
     ),
-    `DRIFT AGE (worst)            ${result.drift.worst === null ? "none" : `${result.drift.worstDays} days · ${result.drift.worst.decisionId}`}`,
+    "DRIFT AGE (worst)            " +
+      (result.drift.worst === null
+        ? "none"
+        : result.drift.worstDays + " days · " + result.drift.worst.decisionId),
     "",
-    `implementation_cost measured for ${result.measuredCost.measured} decision(s); ${result.measuredCost.unknown} still UNKNOWN at 0.5.`,
+    "implementation_cost measured for " +
+      result.measuredCost.measured +
+      " decision(s); " +
+      result.measuredCost.unknown +
+      " still UNKNOWN at 0.5.",
   ];
 
   if (result.compliance.failing.length > 0) {
-    lines.push("", `FAILING: ${result.compliance.failing.join(", ")}`);
+    lines.push("", "FAILING: " + result.compliance.failing.join(", "));
   }
 
   if (result.compliance.unchecked.length > 0) {
-    lines.push(`UNCHECKED (guards skipped): ${result.compliance.unchecked.join(", ")}`);
+    lines.push("UNCHECKED (guards skipped): " + result.compliance.unchecked.join(", "));
   }
 
   if (result.coverage.unverifiable.length > 0) {
     lines.push(
       "",
-      `UNVERIFIABLE (${result.coverage.unverifiable.length} decisions — no guard could be synthesised):`,
-      `  ${result.coverage.unverifiable.map((entry) => entry.decisionId).join(" · ")}`,
+      "UNVERIFIABLE (" +
+        result.coverage.unverifiable.length +
+        " decisions — no guard could be synthesised):",
+      "  " + result.coverage.unverifiable.map((entry) => entry.decisionId).join(" · "),
     );
   }
 
@@ -372,7 +437,7 @@ export function renderDashboard(result: MetricsResult): string {
 function row(label: string, value: number, fraction: string): string {
   const filled = Math.max(0, Math.min(10, Math.round(value * 10)));
   const bar = "\u2588".repeat(filled) + "\u2591".repeat(10 - filled);
-  return `${label.padEnd(28) + bar}  ${(value * 100).toFixed(0).padStart(3)}%   ${fraction}`;
+  return label.padEnd(28) + bar + "  " + (value * 100).toFixed(0).padStart(3) + "%   " + fraction;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -460,8 +525,6 @@ export type {
   TemplateOutput,
   TemplateSource,
 } from "./types";
-/* `AttributedGuard` is the templates module's type - a guard paired with the
- * source that produced it - not one of the shared contracts in ./types. */
 export type { AttributedGuard } from "./templates";
 export type { CiExport, CiExportInput, ExportedGuard } from "./ci-export";
 export type { ComplianceResult, CoverageResult, SoundnessResult, DriftResult, RatioResult };
@@ -510,7 +573,7 @@ export function describeGuards(state: GraphState): string {
     describeBaseline(null),
     "",
     "──────── this log ────────",
-    `${state.guards.size} guard record(s), ${acceptedGuards(state).length} accepted.`,
-    `Cap: ${GUARDS_PER_DECISION_CAP} per decision, ranked by determinism.`,
+    state.guards.size + " guard record(s), " + acceptedGuards(state).length + " accepted.",
+    "Cap: " + GUARDS_PER_DECISION_CAP + " per decision, ranked by determinism.",
   ].join("\n");
 }

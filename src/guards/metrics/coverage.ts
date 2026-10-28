@@ -84,18 +84,26 @@ export function describeCoverage(result: CoverageResult): string {
   }
 
   const lines = [
-    `Verifiable coverage: ${result.covered} of ${result.inDecisions} IN decisions have at least one accepted guard.`,
+    "Verifiable coverage: " +
+      result.covered +
+      " of " +
+      result.inDecisions +
+      " IN decisions have at least one accepted guard.",
   ];
 
   if (result.awaitingAcceptance.length > 0) {
     lines.push(
-      `  ${result.awaitingAcceptance.length} more have PROPOSED guards awaiting acceptance: ${result.awaitingAcceptance.join(", ")}. One review click each.`,
+      "  " +
+        result.awaitingAcceptance.length +
+        " more have PROPOSED guards awaiting acceptance: " +
+        result.awaitingAcceptance.join(", ") +
+        ". One review click each.",
     );
   }
 
   if (result.uncovered.length > 0) {
     lines.push(
-      `  ${result.uncovered.length} have nothing proposed: ${result.uncovered.join(", ")}`,
+      "  " + result.uncovered.length + " have nothing proposed: " + result.uncovered.join(", "),
     );
   }
 
@@ -103,7 +111,7 @@ export function describeCoverage(result: CoverageResult): string {
     lines.push("");
     lines.push("Unverifiable — no guard could be synthesised, and the reason is recorded:");
     for (const entry of result.unverifiable) {
-      lines.push(`  ${entry.decisionId} — ${entry.reason}`);
+      lines.push("  " + entry.decisionId + " — " + entry.reason);
     }
   }
 

@@ -54,7 +54,6 @@ import {
   type LlmAlternative,
   type LlmDecision,
   type LlmDiscard,
-  type LlmExtraction,
   type LlmPremise,
   SYSTEM_PROMPT,
   needsChunking,
@@ -123,14 +122,14 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
       let promptTokens = 0;
       let completionTokens = 0;
-      /* The accumulator is built from MUTABLE arrays and assembled once at the end.
-       * `LlmExtraction` declares its arrays readonly, so pushing into a value of
-       * that type is a type error - and the fix is to accumulate locally, not to
-       * weaken the published shape. */
-      const decisions: LlmDecision[] = [];
-      const premises: LlmPremise[] = [];
-      const alternatives: LlmAlternative[] = [];
-      const discarded: LlmDiscard[] = [];
+      /* Mutable accumulator. `LlmExtraction`'s arrays are readonly because that is what a CONSUMER
+       * of a finished extraction gets; this is the producer, chunk by chunk. */
+      const merged = {
+        decisions: [] as LlmDecision[],
+        premises: [] as LlmPremise[],
+        alternatives: [] as LlmAlternative[],
+        discarded: [] as LlmDiscard[],
+      };
 
       for (const piece of pieces) {
         if (request.signal?.aborted) {
@@ -156,13 +155,12 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
         completionTokens += response.completionTokens;
 
         const parsed = readExtraction(response.text, id.model);
-        decisions.push(...parsed.decisions);
-        premises.push(...parsed.premises);
-        alternatives.push(...parsed.alternatives);
-        discarded.push(...parsed.discarded);
+        merged.decisions.push(...parsed.decisions);
+        merged.premises.push(...parsed.premises);
+        merged.alternatives.push(...parsed.alternatives);
+        merged.discarded.push(...parsed.discarded);
       }
 
-      const merged: LlmExtraction = { decisions, premises, alternatives, discarded };
       return toExtractionResult(
         merged,
         request,
@@ -294,7 +292,12 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
           // Stated rather than omitted: a decision with no synthesizable guard is
           // marked unverifiable and SHOWN, because a compliance score computed only
           // over the decisions that happened to be checkable flatters itself.
-          unverifiableReason: `The model proposed no check for ${request.variable} = ${request.value}, which means it could not describe what a violation would look like. That is the literature's own test for an unverifiable decision, and it is reported rather than filled in with a guess.`,
+          unverifiableReason:
+            "The model proposed no check for " +
+            request.variable +
+            " = " +
+            request.value +
+            ", which means it could not describe what a violation would look like. That is the literature's own test for an unverifiable decision, and it is reported rather than filled in with a guess.",
           engine: id,
         };
       }
@@ -311,7 +314,10 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
         ...(guards.length > 0
           ? {}
           : {
-              unverifiableReason: `The model proposed ${parsed.length} guard(s) but none survived validation — each had an unknown kind or an empty package, glob or pattern. Nothing was repaired, because a repaired spec is a check nobody proposed.`,
+              unverifiableReason:
+                "The model proposed " +
+                parsed.length +
+                " guard(s) but none survived validation — each had an unknown kind or an empty package, glob or pattern. Nothing was repaired, because a repaired spec is a check nobody proposed.",
             }),
         engine: id,
       };
@@ -321,17 +327,17 @@ export function createLlmEngine(options: LlmEngineOptions): WhyLogEngine {
 
 function guardSynthesisPrompt(request: GuardSynthesisRequest): string {
   const lines = [
-    `Decision ${request.decisionId}: ${request.statement}`,
-    `Variable: ${request.variable}`,
-    `Chosen value: ${request.value}`,
+    "Decision " + request.decisionId + ": " + request.statement,
+    "Variable: " + request.variable,
+    "Chosen value: " + request.value,
   ];
 
   if (request.appliesTo.length > 0)
-    lines.push(`Governs these paths: ${request.appliesTo.join(", ")}`);
+    lines.push("Governs these paths: " + request.appliesTo.join(", "));
 
   if (request.premises.length > 0) {
     lines.push("Rests on:");
-    for (const premise of request.premises) lines.push(`  - ${premise.id} ${premise.text}`);
+    for (const premise of request.premises) lines.push("  - " + premise.id + " " + premise.text);
   }
 
   const rejected = request.rejected ?? [];
@@ -341,7 +347,9 @@ function guardSynthesisPrompt(request: GuardSynthesisRequest): string {
     );
     for (const entry of rejected) {
       lines.push(
-        `  - ${entry.value}${entry.whyRejected === undefined ? "" : ` — "${entry.whyRejected}"`}`,
+        "  - " +
+          entry.value +
+          (entry.whyRejected === undefined ? "" : ' — "' + entry.whyRejected + '"'),
       );
     }
   }

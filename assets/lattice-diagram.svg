@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WhyLog Lattice Diagram -->
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .node { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 500; fill: #1a1a2e; }
+      .label { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 11px; fill: #666666; }
+      .arrow { fill: #e94560; marker-end: url(#arrowhead); }
+      .gridline { stroke:#dee2e6; stroke-width:1; fill:none; }
+      .bg { fill:#f8f9fa; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#e94560">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+  
+  <text x="500" y="40" text-anchor="middle" class="title" font-size="22">WhyLog — Lattice Structure</text>
+  
+  <!-- Lattice grid -->
+  <g transform="translate(50, 100)" class="bg">
+    <rect x="0" y="0" width="900" height="450" rx="8" ry="8"/>
+  </g>
+  
+  <!-- Grid lines -->
+  <g stroke="#dee2e6" stroke-width="1" class="gridline">
+    <!-- Vertical lines -->
+    <line x1="0" y1="0" x2="0" y2="450"/>
+    <line x1="100" y1="0" x2="100" y2="450"/>
+    <line x1="200" y1="0" x2="200" y2="450"/>
+    <line x1="300" y1="0" x2="300" y2="450"/>
+    <line x1="400" y1="0" x2="400" y2="450"/>
+    <line x1="500" y1="0" x2="500" y2="450"/>
+    <line x1="600" y1="0" x2="600" y2="450"/>
+    <line x1="700" y1="0" x2="700" y2="450"/>
+    <line x1="800" y1="0" x2="800" y2="450"/>
+    <line x1="900" y1="0" x2="900" y2="450"/>
+    
+    <!-- Horizontal lines -->
+    <line x1="0" y1="0" x2="900" y2="0"/>
+    <line x1="0" y1="100" x2="900" y2="100"/>
+    <line x1="0" y1="200" x2="900" y2="200"/>
+    <line x1="0" y1="300" x2="900" y2="300"/>
+    <line x1="0" y1="400" x2="900" y2="400"/>
+    <line x1="0" y1="450" x2="900" y2="450"/>
+  </g>
+  
+  <!-- Lattice nodes (decision premises) -->
+  <g fill="#4a90e2">
+    <circle cx="50" cy="50" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="50" y="58" text-anchor="middle" class="label">d1</text>
+    
+    <circle cx="150" cy="50" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="150" y="58" text-anchor="middle" class="label">d2</text>
+    
+    <circle cx="250" cy="50" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="250" y="58" text-anchor="middle" class="label">d3</text>
+    
+    <circle cx="350" cy="50" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="350" y="58" text-anchor="middle" class="label">d4</text>
+    
+    <circle cx="50" cy="150" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="50" y="158" text-anchor="middle" class="label">d5</text>
+    
+    <circle cx="250" cy="150" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="250" y="158" text-anchor="middle" class="label">d6</text>
+    
+    <circle cx="450" cy="150" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="450" y="158" text-anchor="middle" class="label">d7</text>
+    
+    <circle cx="50" cy="250" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="50" y="258" text-anchor="middle" class="label">d8</text>
+    
+    <circle cx="350" cy="250" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="350" y="258" text-anchor="middle" class="label">d9</text>
+    
+    <circle cx="50" cy="350" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="50" y="358" text-anchor="middle" class="label">d10</text>
+    
+    <circle cx="250" cy="350" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="250" y="358" text-anchor="middle" class="label">d11</text>
+    
+    <circle cx="450" cy="350" r="18" stroke:#2c5aa0 stroke-width="2"/>
+    <text x="450" y="358" text-anchor="middle" class="label">d12</text>
+  </g>
+  
+  <!-- Arrows showing lattice connections -->
+  <g fill="none" stroke="#e94560" stroke-width="2">
+    <path d="M68 50 L132 50"/>
+    <path d="M248 50 L312 50"/>
+    <path d="M68 150 L132 150"/>
+    <path d="M248 150 L312 150"/>
+    <path d="M68 250 L132 250"/>
+    <path d="M248 250 L312 250"/>
+    <path d="M68 350 L132 350"/>
+    <path d="M248 350 L312 350"/>
+    
+    <path d="M128 100 L128 150"/>
+    <path d="M228 100 L228 250"/>
+    <path d="M328 100 L328 350"/>
+    <path d="M428 100 L428 250"/>
+    <path d="M528 100 L528 150"/>
+    <path d="M628 100 L628 250"/>
+    <path d="M728 100 L728 350"/>
+    <path d="M828 100 L828 150"/>
+    <path d="M928 100 L928 250"/>
+  </g>
+  
+  <!-- Invariants -->
+  <g transform="translate(500, 530)">
+    <rect x="0" y="0" width="300" height="50" fill:#e8f5e9 stroke:#4caf50 stroke-width="1" rx="4"/>
+    <text x="150" y="25" text-anchor="middle" class="step" font-size="12">Lattice: partial order of decisions</text>
+    <text x="150" y="40" text-anchor="middle" class="step" font-size="12">entrenchment · backtrack · cascade</text>
+  </g>
+  
+  <!-- AI Seam -->
+  <g transform="translate(850, 550)">
+    <rect x="0" y="0" width="120" height="40" fill="#fff8e1" stroke="#f39c12" stroke-width="1" rx="4"/>
+    <text x="60" y="20" text-anchor="middle" class="step" font-size="11">@/lattice*</text>
+  </g>
+</svg>

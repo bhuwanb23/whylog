@@ -1,0 +1,3 @@
+WhyLog is a truth maintenance system for the decisions you make while building with AI. It stores the premises those decisions rest on — and when the world moves without anyone contradicting you, the log notices.
+
+Memory tools stop you repeating yourself. WhyLog stops you building on a decision that stopped being true.

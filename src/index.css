@@ -58,10 +58,6 @@
 
   --status-proposed: #fbbf24;
   --status-active: #4ade80;
-  /* CONTESTED is AMBER, not red. The plan's table: "CONTESTED | Amber outline, pulsing once |
-   * Needs human attention, not alarming", and "Red is reserved for contradiction". A
-   * contested decision is a decision waiting for a human, and red would say "error". The
-   * red in this file belongs to `--edge-conflict` and `--action`, and to nothing else. */
   --status-contested: #fbbf24;
   --status-superseded: #94a3b8;
   --status-archived: #6a7280;
@@ -100,21 +96,11 @@
     --label-unfounded: #6d28d9;
     --label-unfounded-bg: rgba(109, 40, 217, 0.1);
 
-    /* The status and mode tokens were MISSING here, so in light mode the decision status
-     * badge and the engine badge resolved `var(--status-contested)` and `var(--mode-local)`
-     * to nothing: no colour, no border, and an engine badge that could not say whether
-     * the decision came from the local engine or from a model. The dark theme had them all
-     * along. A token that exists in one theme and not the other is a bug that only shows
-     * up on half the machines. */
     --status-proposed: #b45309;
     --status-active: #15803d;
     --status-contested: #b45309;
     --status-superseded: #475569;
-    --status-archived: #6a7280;
-
-    --mode-local: #15803d;
-    --mode-llm: #2563eb;
-    --mode-stale: #b45309;
+    --status-archived: #7c8592;
 
     --edge-cascade: #2563eb;
     --edge-conflict: #dc2626;
@@ -122,6 +108,10 @@
     --edge-related: #9ca3af;
 
     --action: #dc2626;
+
+    --mode-local: #15803d;
+    --mode-llm: #2563eb;
+    --mode-stale: #b45309;
   }
 }
 

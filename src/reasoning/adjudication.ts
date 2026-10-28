@@ -77,7 +77,7 @@ export interface Newcomer {
   readonly confidence: number;
   /** Valid time of the observation. Defaults to now. */
   readonly observedAt?: string;
-  readonly source?: "transcript" | "guard" | "human" | "repo-scan";
+  readonly source?: "transcript" | "guard" | "human" | "repo-scan" | undefined;
 }
 
 export interface AdjudicationInput {
@@ -85,6 +85,11 @@ export interface AdjudicationInput {
   readonly now: number;
   /** Guard status per decision, from Phase 4. Absent => implementation cost unknown. */
   readonly guards?: ReadonlyMap<DecisionId, GuardStatus>;
+  /** Ablation only. Hansson screening requires a newcomer to outrank EVERY contradictor;
+   *  with this set the newcomer wins outright and the ordering is never consulted. The
+   *  retraction order still runs weakest-first, because that is a property of the cascade
+   *  and not of the screening. */
+  readonly disableEntrenchment?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -121,7 +126,14 @@ export function adjudicate(
     ),
   }));
 
-  const blockers = scored.filter((entry) => entry.breakdown.capped >= newcomerScore);
+  /* Entrenchment off => no blocker can ever outrank the newcomer, so the refusal branch
+   * is unreachable and every contested decision is simply retracted. That is the point of
+   * the ablation: it measures what the screening is worth by removing the only thing that
+   * can say "no". */
+  const blockers =
+    input.disableEntrenchment === true
+      ? []
+      : scored.filter((entry) => entry.breakdown.capped >= newcomerScore);
 
   if (blockers.length > 0) {
     const blocker = blockers.reduce((best, entry) =>

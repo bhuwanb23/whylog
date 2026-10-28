@@ -141,7 +141,7 @@ export interface IndexStatus {
    *  retrieval is DISABLED — comparing vectors across embedding spaces is
    *  meaningless, and silently returning garbage would be worse than saying so. */
   readonly stale: boolean;
-  readonly staleSince?: ISODateString;
+  readonly staleSince?: ISODateString | undefined;
   readonly lastEventId?: EventId;
 }
 

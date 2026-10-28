@@ -73,7 +73,7 @@ export function l1Count(artifacts: IndexArtifacts): number {
 export function l1Text(statement: string, rationale: string | undefined): string {
   return rationale === undefined || rationale.length === 0
     ? statement
-    : `${statement}. ${rationale}`;
+    : statement + ". " + rationale;
 }
 
 export function describeL1(artifacts: IndexArtifacts): string {
@@ -83,5 +83,9 @@ export function describeL1(artifacts: IndexArtifacts): string {
   const count = l1Count(artifacts);
   return count === 0
     ? "L1 statement embeddings — none built. Lexical, structural and premise retrieval still work."
-    : `L1 statement embeddings — ${count} vector(s), ${artifacts.dimensions}d. The baseline; necessary, never sufficient, because these documents are one sentence long.`;
+    : "L1 statement embeddings — " +
+        count +
+        " vector(s), " +
+        artifacts.dimensions +
+        "d. The baseline; necessary, never sufficient, because these documents are one sentence long.";
 }

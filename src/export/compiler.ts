@@ -258,7 +258,12 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
     artifacts.push(...ci.artifacts);
 
     if (needsRunner && !targets.includes("ci-guards")) {
-      ciAddedBecause = `The CI runner was emitted even though it was not selected, because verify commands in the exported documents invoke ${RUNNER_PATH}. Without it those commands would be instructions that fail.`;
+      ciAddedBecause =
+        "The CI runner was emitted even though it was not selected, because verify commands in the " +
+        "exported documents invoke " +
+        RUNNER_PATH +
+        ". Without it those commands would be " +
+        "instructions that fail.";
     }
   }
 
@@ -282,7 +287,19 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
         lineCount: totalLines,
       },
       actor: input.actor,
-      reason: `Compiled ${artifacts.length} artifact(s) from log head ${stamp.headHash.slice(0, 12)}: ${agentResult.cif.stats.decisionsIncluded} decision(s) inline, ${agentResult.cif.stats.decisionsLinkedOut} linked out, ${agentResult.cif.stats.decisionsExcluded} excluded. One pass over one graph, so the verify commands and the guard set cannot disagree.`,
+      reason:
+        "Compiled " +
+        artifacts.length +
+        " artifact(s) from log head " +
+        stamp.headHash.slice(0, 12) +
+        ": " +
+        agentResult.cif.stats.decisionsIncluded +
+        " decision(s) inline, " +
+        agentResult.cif.stats.decisionsLinkedOut +
+        " linked out, " +
+        agentResult.cif.stats.decisionsExcluded +
+        " excluded. One pass over one graph, so the verify " +
+        "commands and the guard set cannot disagree.",
       at: generatedAt,
       occurredAt: generatedAt,
     },
@@ -290,7 +307,12 @@ export async function compile(input: CompileInput): Promise<CompileResult> {
       type: "ExportStamped",
       payload: { exportId, stamp },
       actor: input.actor,
-      reason: `Stamped with log head ${stamp.headHash.slice(0, 12)} so each artifact can be tied back to the state that produced it and a later rewrite detected. Auditability, not security: the hash is unsalted and the algorithm is in the source.`,
+      reason:
+        "Stamped with log head " +
+        stamp.headHash.slice(0, 12) +
+        " so each artifact can be tied back " +
+        "to the state that produced it and a later rewrite detected. Auditability, not security: the " +
+        "hash is unsalted and the algorithm is in the source.",
       at: generatedAt,
       occurredAt: generatedAt,
     },
@@ -324,13 +346,8 @@ function finishArtifact(
   gate: GateReport,
   cif: ExportCif,
 ): CompiledArtifact {
-  /* The body is trimmed ONCE and both the digest and the artifact are built
-   * from that same string: the stamp's digest covers the body, and the verifier
-   * reconstructs the body by stripping the stamp back off. If the two are
-   * trimmed differently the digest can never match. */
-  const bodyTrimmed = body.trim();
-  const stampBlock = renderStamp(stamp, bodyTrimmed);
-  const contents = `${bodyTrimmed}\n\n${stampBlock}\n`;
+  const stampBlock = renderStamp(stamp, body);
+  const contents = body.trimEnd() + "\n\n" + stampBlock + "\n";
 
   return {
     exportId,
@@ -421,26 +438,40 @@ export function describeCompile(result: CompileResult): string {
   }
 
   const lines = [
-    `Compiled ${result.artifacts.length} artifact(s) in ${result.durationMs} ms, one pass over one graph.`,
+    "Compiled " +
+      result.artifacts.length +
+      " artifact(s) in " +
+      result.durationMs +
+      " ms, one pass over one graph.",
     "",
   ];
 
   for (const artifact of result.artifacts) {
     lines.push(
-      `  ${artifact.filename.padEnd(38)}${artifact.contents.split("\n").length} lines${artifact.warnings.length > 0 ? `  · ${artifact.warnings.length} annotation(s)` : ""}`,
+      "  " +
+        artifact.filename.padEnd(38) +
+        artifact.contents.split("\n").length +
+        " lines" +
+        (artifact.warnings.length > 0 ? "  · " + artifact.warnings.length + " annotation(s)" : ""),
     );
   }
 
   lines.push("");
-  lines.push(`  inline      ${result.agentCif.stats.decisionsIncluded}`);
-  lines.push(`  linked out  ${result.agentCif.stats.decisionsLinkedOut}`);
-  lines.push(`  excluded    ${result.agentCif.stats.decisionsExcluded}`);
+  lines.push("  inline      " + result.agentCif.stats.decisionsIncluded);
+  lines.push("  linked out  " + result.agentCif.stats.decisionsLinkedOut);
+  lines.push("  excluded    " + result.agentCif.stats.decisionsExcluded);
   lines.push(
-    `  budget      ${result.agentCif.stats.lineCount} / ${result.artifacts[0]?.budget.maxLines}${result.agentCif.stats.lineCount > (result.artifacts[0]?.budget.maxLines ?? 0) ? "  — OVER" : ""}`,
+    "  budget      " +
+      result.agentCif.stats.lineCount +
+      " / " +
+      result.artifacts[0]?.budget.maxLines +
+      (result.agentCif.stats.lineCount > (result.artifacts[0]?.budget.maxLines ?? 0)
+        ? "  — OVER"
+        : ""),
   );
-  lines.push(`  compliance  ${Math.round(result.agentCif.stats.compliance * 100)}%`);
-  lines.push(`  coverage    ${Math.round(result.agentCif.stats.verifiableCoverage * 100)}%`);
-  lines.push(`  log head    ${result.stamp.headHash.slice(0, 12)}`);
+  lines.push("  compliance  " + Math.round(result.agentCif.stats.compliance * 100) + "%");
+  lines.push("  coverage    " + Math.round(result.agentCif.stats.verifiableCoverage * 100) + "%");
+  lines.push("  log head    " + result.stamp.headHash.slice(0, 12));
 
   if (result.ciAddedBecause !== null) {
     lines.push("");

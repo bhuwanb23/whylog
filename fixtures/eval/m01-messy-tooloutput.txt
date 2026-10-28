@@ -1,0 +1,26 @@
+session: whylog-eval-m01 — Oct 8, 09:14
+(no speaker markers on some turns; tool output interleaved)
+
+need a way to run the checks in CI
+
+> npm test
+> 
+> Error: no test files found
+> exit code 1
+
+hmm. ok so we have no tests at all right now
+
+I'd suggest vitest. it's the vite-native one so no extra config
+
+sure, use vitest. but I don't want to write a full suite, this is a hackathon thing — just enough to stop regressions in the fold
+
+    $ npm i -D vitest
+    added 1 package
+
+ok done. testing is vitest, and the scope is regression-only, not full coverage
+
+what about the graph view library? d3?
+
+d3 is a lot. can we just do plain SVG?
+
+yes — plain SVG, no d3. I want to control the animation myself and d3 would fight me on that

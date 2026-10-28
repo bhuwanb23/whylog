@@ -1,0 +1,14 @@
+Claude Code — session: whylog-eval-c03
+Started: Oct 6, 16:40
+
+User: we need auth eventually. what's the plan?
+
+Assistant: What's the constraint — do you want to own the user table, or hand it off?
+
+User: hand it off, I don't want to write password reset flows. but there's no budget for a paid tier.
+
+Assistant: Clerk has a free tier that covers a hackathon. Supabase auth is also free but you're not on Supabase. Rolling your own is free but it's the thing you just said you don't want.
+
+User: ok, Clerk it is. free tier is why, and not owning the user table is the other reason.
+
+Assistant: Recording: auth is Clerk. Premises: budget is zero, and the team does not want to own the user table. Rejected: rolling your own (you explicitly don't want it), Supabase auth (not on Supabase).

@@ -378,7 +378,9 @@ function indexDrafts(
       reason:
         levels.length === 0
           ? "Index built with no levels available: the log has no live decisions."
-          : `Index rebuilt. Levels ${levels.join(", ")}. The vectors themselves live outside the log — this event records the FACT that an index exists, who built it and when, because that is history and the floats are not.`,
+          : "Index rebuilt. Levels " +
+            levels.join(", ") +
+            ". The vectors themselves live outside the log — this event records the FACT that an index exists, who built it and when, because that is history and the floats are not.",
       at,
     },
   ];
@@ -443,19 +445,21 @@ function nowMs(): number {
  */
 export function describeBuild(report: BuildReport): string {
   const lines = [
-    `Index build — ${report.durationMs} ms`,
-    `  levels available: ${report.levels.length === 0 ? "none" : report.levels.join(", ")}`,
-    `  vectors embedded: ${report.embedded}  ·  decisions unchanged: ${report.skipped}`,
-    `  inverted questions: ${report.questionsBuilt}  ·  dead vectors pruned: ${report.pruned}`,
-    `  estimated blob size: ${Math.round(report.estimatedBytes / 1024)} KB`,
+    "Index build — " + report.durationMs + " ms",
+    "  levels available: " + (report.levels.length === 0 ? "none" : report.levels.join(", ")),
+    "  vectors embedded: " + report.embedded + "  ·  decisions unchanged: " + report.skipped,
+    "  inverted questions: " + report.questionsBuilt + "  ·  dead vectors pruned: " + report.pruned,
+    "  estimated blob size: " + Math.round(report.estimatedBytes / 1024) + " KB",
   ];
 
   if (report.staleness.stale && report.staleness.reason !== null) {
-    lines.push(`  STALE: ${report.staleness.reason}`);
+    lines.push("  STALE: " + report.staleness.reason);
   }
   if (!report.saved && report.saveError !== null) {
     lines.push(
-      `  NOT SAVED: ${report.saveError} — the index works this session and is rebuilt next load.`,
+      "  NOT SAVED: " +
+        report.saveError +
+        " — the index works this session and is rebuilt next load.",
     );
   }
 

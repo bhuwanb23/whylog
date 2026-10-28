@@ -14,12 +14,12 @@
 
 import type { DecisionId, ISODateString, PremiseId } from "@/types/common";
 import type { Decision, DecisionLabel, DecisionStatus, DecisionVariable } from "@/types/domain";
-import { byIdAsc, byTemporalValidDesc, compare, formatInterval, isOpen } from "../bi-temporal";
+import { byIdAsc, byValidDesc, compare, formatInterval, isOpen } from "../bi-temporal";
 import type { GraphState } from "../graph-state";
 
 export type DecisionSort = "valid-desc" | "valid-asc" | "id" | "entrenchment";
 
-const BY_VALID_TIME = compare(byTemporalValidDesc, byIdAsc);
+const BY_VALID_TIME = compare<Decision>(byValidDesc, byIdAsc);
 
 export function getDecision(state: GraphState, id: DecisionId): Decision | null {
   return state.decisions.get(id) ?? null;
@@ -87,8 +87,8 @@ export function pendingReview(state: GraphState): readonly Decision[] {
 
 /** Decisions resting on a given premise. This is the cascade's first hop and it
  *  is O(1) because the fold materialised the reverse index. */
-export function decisionsOnPremise(state: GraphState, premiseId: PremiseId): readonly Decision[] {
-  const ids = state.premiseToDecisions.get(premiseId) ?? [];
+export function decisionsOnPremise(state: GraphState, premiseId: string): readonly Decision[] {
+  const ids = state.premiseToDecisions.get(premiseId as PremiseId) ?? [];
   const out: Decision[] = [];
   for (const id of ids as readonly DecisionId[]) {
     const decision = state.decisions.get(id);

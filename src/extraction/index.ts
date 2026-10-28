@@ -85,6 +85,7 @@ export {
   rawBounds,
   spanFrom,
 } from "./offset-map";
+export type { OffsetMap } from "./offset-map";
 export {
   locateInEpisode,
   locateRange,
@@ -111,6 +112,7 @@ export {
   normaliseTranscript,
   toRawBounds,
 } from "./normalizer";
+export type { NormalizerOptions } from "./normalizer";
 export {
   describeSegmentation,
   episodeAt,
@@ -130,6 +132,7 @@ export {
   strongestCue,
   variableAtCue,
 } from "./cue-scan";
+export type { CueHit } from "./cue-scan";
 export {
   EMPTY_NOISE_SCAN,
   collapseNoise,

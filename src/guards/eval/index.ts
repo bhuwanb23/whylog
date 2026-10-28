@@ -161,11 +161,11 @@ export function lifecycleGate(guard: Guard, decisionLabel: DecisionLabel): Evalu
       return {
         outcome: "skip",
         evidence: "",
-        skipReason: `Suppressed${
-          guard.suppressionReason === undefined || guard.suppressionReason.length === 0
+        skipReason:
+          "Suppressed" +
+          (guard.suppressionReason === undefined || guard.suppressionReason.length === 0
             ? "."
-            : `: ${guard.suppressionReason}`
-        }`,
+            : ": " + guard.suppressionReason),
       };
     case "deleted":
       return {
@@ -181,7 +181,10 @@ export function lifecycleGate(guard: Guard, decisionLabel: DecisionLabel): Evalu
     return {
       outcome: "skip",
       evidence: "",
-      skipReason: `Its decision is labelled ${decisionLabel}, so this guard is disabled. Guards inherit their decision's label: a reversed or unsupported decision must stop nagging, and re-enabling requires the decision to return to IN.`,
+      skipReason:
+        "Its decision is labelled " +
+        decisionLabel +
+        ", so this guard is disabled. Guards inherit their decision's label: a reversed or unsupported decision must stop nagging, and re-enabling requires the decision to return to IN.",
     };
   }
 
@@ -300,9 +303,10 @@ export function describeKindCoverage(project: VirtualProject): string {
 
   return [
     "What can run against the pasted project:",
-    `  dependency_present / dependency_absent   ${manifest ? "yes" : "SKIP — no manifest"}`,
-    `  path_glob_exists / path_glob_absent      ${listing ? "yes" : "SKIP — no listing"}`,
-    `  string_in_files / string_absent_in_files ${listing && contents ? "yes" : "SKIP — needs both a listing and contents"}`,
+    "  dependency_present / dependency_absent   " + (manifest ? "yes" : "SKIP — no manifest"),
+    "  path_glob_exists / path_glob_absent      " + (listing ? "yes" : "SKIP — no listing"),
+    "  string_in_files / string_absent_in_files " +
+      (listing && contents ? "yes" : "SKIP — needs both a listing and contents"),
     "  command_exit_zero                        SKIP always — export to CI, there is no shell here",
     "  llm_judge                                needs a key; advisory only, never in compliance",
     "",

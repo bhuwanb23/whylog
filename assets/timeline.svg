@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WhyLog Timeline Diagram -->
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .milestone { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; fill: #1a1a2e; }
+      .year { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 12px; fill: #666666; }
+      .arrow { fill: #e94560; marker-end: url(#arrowhead); }
+      .line { stroke:#dee2e6; stroke-width:2; fill:none; }
+      .box { fill:#fff; stroke:#1976d2; stroke-width:2; rx:6; ry:6; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#e94560">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+  
+  <text x="500" y="40" text-anchor="middle" class="title" font-size="22">WhyLog — Timeline</text>
+  
+  <!-- Timeline line -->
+  <g>
+    <line x1="100" y1="300" x2="900" y2="300" class="line"/>
+  </g>
+  
+  <!-- Milestones -->
+  <g fill="#4a90e2">
+    <!-- Milestone 1 -->
+    <circle cx="200" cy="300" r="14" stroke:#2c5aa0 stroke-width="3"/>
+    <text x="200" y="285" text-anchor="middle" class="milestone" font-size="12">v0.1.0</text>
+    <text x="200" y="315" text-anchor="middle" class="year" font-size="11">Oct 2026</text>
+    
+    <!-- Milestone 2 -->
+    <circle cx="350" cy="300" r="14" stroke:#2c5aa0 stroke-width="3"/>
+    <text x="350" y="285" text-anchor="middle" class="milestone" font-size="12">v0.5.0</text>
+    <text x="350" y="315" text-anchor="middle" class="year" font-size="11">Nov 2026</text>
+    
+    <!-- Milestone 3 -->
+    <circle cx="500" cy="300" r="14" stroke:#2c5aa0 stroke-width="3"/>
+    <text x="500" y="285" text-anchor="middle" class="milestone" font-size="12">v1.0.0</text>
+    <text x="500" y="315" text-anchor="middle" class="year" font-size="11">Dec 2026</text>
+    
+    <!-- Milestone 4 -->
+    <circle cx="650" cy="300" r="14" stroke:#2c5aa0 stroke-width="3"/>
+    <text x="650" y="285" text-anchor="middle" class="milestone" font-size="12">v1.5.0</text>
+    <text x="650" y="315" text-anchor="middle" class="year" font-size="11">Jan 2027</text>
+    
+    <!-- Milestone 5 -->
+    <circle cx="800" cy="300" r="14" stroke:#2c5aa0 stroke-width="3"/>
+    <text x="800" y="285" text-anchor="middle" class="milestone" font-size="12">v2.0.0</text>
+    <text x="800" y="315" text-anchor="middle" class="year" font-size="11">Feb 2027</text>
+  </g>
+  
+  <!-- Connection arrows -->
+  <g fill="none" stroke="#e94560" stroke-width="3">
+    <path d="M214 300 L346 300"/>
+    <path d="M364 300 L496 300"/>
+    <path d="M514 300 L646 300"/>
+    <path d="M664 300 L796 300"/>
+  </g>
+  
+  <!-- What each milestone represents -->
+  <g transform="translate(200, 420)">
+    <rect x="0" y="0" width="180" height="60" fill:#e3f2fd stroke:#1976d2 stroke-width="1" rx="6"/>
+    <text x="90" y="25" text-anchor="middle" class="step" font-size="13">v0.1.0: Extraction engine</text>
+    <text x="90" y="42" text-anchor="middle" class="step" font-size="11">@/store/extraction</text>
+  </g>
+  
+  <g transform="translate(350, 420)">
+    <rect x="0" y="0" width="180" height="60" fill:#e3f2fd stroke:#1976d2 stroke-width="1" rx="6"/>
+    <text x="90" y="25" text-anchor="middle" class="step" font-size="13">v0.5.0: Reasoning JTMS</text>
+    <text x="90" y="42" text-anchor="middle" class="step" font-size="11">3-gates · entrenchment</text>
+  </g>
+  
+  <g transform="translate(500, 420)">
+    <rect x="0" y="0" width="180" height="60" fill:#e3f2fd stroke:#1976d2 stroke-width="1" rx="6"/>
+    <text x="90" y="25" text-anchor="middle" class="step" font-size="13">v1.0.0: Public release</text>
+    <text x="90" y="42" text-anchor="middle" class="step" font-size="11">All 5 phases</text>
+  </g>
+  
+  <g transform="translate(650, 420)">
+    <rect x="0" y="0" width="180" height="60" fill:#e3f2fd stroke:#1976d2 stroke-width="1" rx="6"/>
+    <text x="90" y="25" text-anchor="middle" class="step" font-size="13">v1.5.0: Lattice support</text>
+    <text x="90" y="42" text-anchor="middle" class="step" font-size="11">Partial order · entrenchment</text>
+  </g>
+  
+  <g transform="translate(800, 420)">
+    <rect x="0" y="0" width="180" height="60" fill:#e3f2fd stroke:#1976d2 stroke-width="1" rx="6"/>
+    <text x="90" y="25" text-anchor="middle" class="step" font-size="13">v2.0.0: AI seam unified</text>
+    <text x="90" y="42" text-anchor="middle" class="step" font-size="11">Local + LLM</text>
+  </g>
+  
+  <!-- Invariants -->
+  <g transform="translate(500, 530)">
+    <rect x="0" y="0" width="300" height="50" fill:#e8f5e9 stroke:#4caf50 stroke-width="1" rx="4"/>
+    <text x="150" y="25" text-anchor="middle" class="step" font-size="12">I1-I4: All versions respect invariants</text>
+  </g>
+</svg>

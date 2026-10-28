@@ -169,25 +169,42 @@ function specKey(guard: ProposedGuard): string {
   switch (spec.kind) {
     case "dependency_present":
     case "dependency_absent":
-      return `${spec.kind}\u0000${spec.package}\u0000${String(spec.includeDev ?? spec.kind === "dependency_absent")}`;
+      return (
+        spec.kind +
+        "\u0000" +
+        spec.package +
+        "\u0000" +
+        String(spec.includeDev ?? spec.kind === "dependency_absent")
+      );
     case "path_glob_exists":
     case "path_glob_absent":
-      return `${spec.kind}\u0000${spec.glob}`;
+      return spec.kind + "\u0000" + spec.glob;
     case "string_in_files":
     case "string_absent_in_files":
-      return `${spec.kind}\u0000${spec.pattern}\u0000${spec.glob}\u0000${String(spec.wordBoundary ?? true)}\u0000${String(spec.caseSensitive ?? false)}`;
+      return (
+        spec.kind +
+        "\u0000" +
+        spec.pattern +
+        "\u0000" +
+        spec.glob +
+        "\u0000" +
+        String(spec.wordBoundary ?? true) +
+        "\u0000" +
+        String(spec.caseSensitive ?? false)
+      );
     case "command_exit_zero":
-      return `${spec.kind}\u0000${spec.command}`;
+      return spec.kind + "\u0000" + spec.command;
     case "llm_judge":
-      return `${spec.kind}\u0000${spec.rubric}\u0000${spec.scopeGlobs.join(",")}`;
+      return spec.kind + "\u0000" + spec.rubric + "\u0000" + spec.scopeGlobs.join(",");
   }
 }
 
 /** How much of a decision the templates cover, for the health panel. */
 export function describeCoverage(variable: DecisionVariable): string {
   return hasTemplate(variable)
-    ? `${variable} has a specific template, plus the generic rejection / value / scope strategies.`
-    : `${variable} has no specific template. The generic strategies still apply: every rejected alternative must be absent, the chosen value is checked if it looks like a package or path, and the decision's own globs must match something.`;
+    ? variable + " has a specific template, plus the generic rejection / value / scope strategies."
+    : variable +
+        " has no specific template. The generic strategies still apply: every rejected alternative must be absent, the chosen value is checked if it looks like a package or path, and the decision's own globs must match something.";
 }
 
 export { authGuards, databaseGuards, frameworkGuards, hostingGuards, storageGuards };

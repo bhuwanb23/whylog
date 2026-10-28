@@ -49,6 +49,20 @@ export interface DecisionCue {
    *  `proposed` modality rather than `asserted`. ONLY asserted modality creates
    *  an IN-labelled node, so this field is doing real work. */
   readonly speculative: boolean;
+  /**
+   * True for phrases that mark the WHY or the CONDITION beside a decision rather than the decision
+   * itself: "because", "since", "so that", "in order to", "as long as".
+   *
+   * They stay in this table because they are good EPISODE BOUNDARY markers — the negotiation is where
+   * the rationale appears, and `segmentEpisodes` reads this table. But `recoverOne` must not mint a
+   * decision from them. Doing so emits a SECOND candidate for a decision the real cue already found,
+   * carrying a different span and often a different variable, which the matcher cannot align to the
+   * label: one true decision becomes one false negative and one false positive. `rationale.ts` and
+   * `premise-cues.ts` already own these phrases for the jobs they are actually for.
+   *
+   * Optional so the 115 cues that do mark decisions need not carry a redundant flag.
+   */
+  readonly rationaleOnly?: boolean;
 }
 
 export const DECISION_CUES: readonly DecisionCue[] = [
@@ -377,8 +391,22 @@ export const DECISION_CUES: readonly DecisionCue[] = [
   { phrase: "instead", direction: "pivot", weight: 0.6, valueAfter: false, speculative: false },
 
   /* ---- rationale markers: not decisions, but they bound the episode ---- */
-  { phrase: "because", direction: "neutral", weight: 0.5, valueAfter: true, speculative: false },
-  { phrase: "since", direction: "neutral", weight: 0.4, valueAfter: true, speculative: false },
+  {
+    phrase: "because",
+    direction: "neutral",
+    weight: 0.5,
+    valueAfter: true,
+    speculative: false,
+    rationaleOnly: true,
+  },
+  {
+    phrase: "since",
+    direction: "neutral",
+    weight: 0.4,
+    valueAfter: true,
+    speculative: false,
+    rationaleOnly: true,
+  },
   {
     phrase: "the reason is",
     direction: "neutral",
@@ -386,13 +414,21 @@ export const DECISION_CUES: readonly DecisionCue[] = [
     valueAfter: true,
     speculative: false,
   },
-  { phrase: "so that", direction: "neutral", weight: 0.45, valueAfter: true, speculative: false },
+  {
+    phrase: "so that",
+    direction: "neutral",
+    weight: 0.45,
+    valueAfter: true,
+    speculative: false,
+    rationaleOnly: true,
+  },
   {
     phrase: "in order to",
     direction: "neutral",
     weight: 0.45,
     valueAfter: true,
     speculative: false,
+    rationaleOnly: true,
   },
   {
     phrase: "given that",
@@ -402,7 +438,14 @@ export const DECISION_CUES: readonly DecisionCue[] = [
     speculative: false,
   },
   { phrase: "assuming", direction: "neutral", weight: 0.55, valueAfter: true, speculative: false },
-  { phrase: "as long as", direction: "neutral", weight: 0.5, valueAfter: true, speculative: false },
+  {
+    phrase: "as long as",
+    direction: "neutral",
+    weight: 0.5,
+    valueAfter: true,
+    speculative: false,
+    rationaleOnly: true,
+  },
   {
     phrase: "the catch is",
     direction: "neutral",

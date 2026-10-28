@@ -418,14 +418,21 @@ export function radiusFor(dependents: number): number {
 
 export function describeLayout(layout: LatticeLayout): string {
   return [
-    `${layout.premiseCount} premise node(s) in ${layout.columns.length} type column(s), ${layout.decisionCount} decision(s) below.`,
+    layout.premiseCount +
+      " premise node(s) in " +
+      layout.columns.length +
+      " type column(s), " +
+      layout.decisionCount +
+      " decision(s) below.",
     layout.collapsedPremiseCount > 0
-      ? `${layout.collapsedPremiseCount} premise(s) collapsed into their decision's card — a premise supporting exactly one decision adds a node and an edge to say what the card already says.`
+      ? layout.collapsedPremiseCount +
+        " premise(s) collapsed into their decision's card — a premise supporting exactly one decision adds a node and an edge to say what the card already says."
       : "No premises collapsed.",
     layout.droppedDecisionCount > 0
-      ? `${layout.droppedDecisionCount} superseded/archived decision(s) hidden. Toggle to show them.`
+      ? layout.droppedDecisionCount +
+        " superseded/archived decision(s) hidden. Toggle to show them."
       : "",
-    `${layout.edges.length} edge(s).`,
+    layout.edges.length + " edge(s).",
     "",
     "Layout is DETERMINISTIC, not a force simulation: columns by premise type, decisions at the",
     "barycentre of the premises they rest on. A force layout settles differently on each render, so",

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WhyLog Wordmark / Logo -->
+<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .word { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 96px; font-weight: 300; fill: #1a1a2e; letter-spacing: -2; }
+      .tagline { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 18px; fill: #666666; }
+    </style>
+  </defs>
+  
+  <!-- WhyLog wordmark -->
+  <text x="200" y="70" text-anchor="middle" class="word">WhyLog</text>
+  
+  <!-- Tagline -->
+  <text x="200" y="95" text-anchor="middle" class="tagline">Decision Truth Maintenance</text>
+  
+  <!-- Decorative line -->
+  <line x1="50" y1="85" x2="350" y2="85" stroke:#1a1a2e stroke-width="3"/>
+  
+  <!-- UI hints -->
+  <g transform="translate(50, 105)">
+    <text x="0" y="0" class="tagline" font-size="11">↗ Timeline  ↗ Lattice  ↗ Export</text>
+  </g>
+</svg>

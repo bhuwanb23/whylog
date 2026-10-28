@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "planFingerprint": "n=15;floor=0.050;full{}|no-structuralContradiction{contradiction-recall-l1:0.500}|no-semanticContradiction{contradiction-recall-l1:0.050}|no-premiseInvalidation{invalidation-recall-l2:0.500,cascade-correctness-l3:0.300}|no-cascade{cascade-correctness-l3:0.300}|no-entrenchment{false-positive-rate:0.050}|no-negationCues{decision-extraction:0.200}|no-modalityFilter{modality-precision:0.300}|no-noiseCollapse{decision-extraction:0.050}|no-voting{}|no-denseRetrieval{retrieval-mrr:0.050}|no-reranking{retrieval-mrr:0.050}|depth-1{cascade-correctness-l3:0.050}|depth-3{}|searches-1{answer-groundedness:0.050}",
+  "ranAt": "2026-10-28T02:14:51.376Z",
+  "corpusVersion": "0.1.0",
+  "confirmed": 0,
+  "falsified": 0,
+  "belowFloor": 8,
+  "untestable": 5,
+  "notWired": 0,
+  "hypothesisResolved": false
+}

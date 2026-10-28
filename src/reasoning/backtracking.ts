@@ -66,6 +66,7 @@ import type { DecisionId, PremiseId } from "@/types/common";
 import type { BacktrackResult } from "@/types/reasoning";
 import { indexGraph, justificationsFor } from "./graph-index";
 import type { Labelled, NodeId } from "./labeller";
+import { validityOf } from "./labeller";
 
 /** Deeper than this and the graph is almost certainly cyclic or the diagnosis has
  *  stopped being useful to a human. */
@@ -178,7 +179,11 @@ export function assumptionSetOf(
      * invalid one would put premises into the nogood that the decision never actually
      * relied on, and a nogood that overstates the conjunction blocks re-assertions it
      * has no business blocking. */
-    if (labels.get(justification.id)?.label !== "IN") continue;
+    /* A justification is not a node — the graph is bipartite over decisions and premises (I2), so it
+     * has no label to look up and `labels.get(justification.id)` was always undefined. That made this
+     * filter skip EVERY justification, so nogoods were recorded empty and blocked nothing. Doyle's
+     * validity condition over the labels the justification DOES have is the real test. */
+    if (!validityOf(justification, labels).valid) continue;
     for (const premiseId of justification.inList) inList.add(premiseId);
     for (const premiseId of justification.outList) outList.add(premiseId);
   }
@@ -213,10 +218,12 @@ export function partialCulprits(
   if (!result.truncated) return [];
 
   const culprits = new Set(result.culpritPremises);
-  return result.path.filter((nodeId): nodeId is PremiseId => {
-    const asPremise = nodeId as PremiseId;
-    return state.premises.has(asPremise) && !culprits.has(asPremise);
-  });
+  /* A type predicate rather than a cast inside the body: the survivors of this filter ARE premises,
+   * and saying so is what lets the declared return type stay `readonly PremiseId[]`. */
+  return result.path.filter(
+    (nodeId): nodeId is PremiseId =>
+      state.premises.has(nodeId as PremiseId) && !culprits.has(nodeId as PremiseId),
+  );
 }
 
 /* -------------------------------------------------------------------------- */

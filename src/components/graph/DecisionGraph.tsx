@@ -129,8 +129,9 @@ export function DecisionGraph({
                     title={LABEL_MEANING[nodeLabel]}
                     style={{
                       textAlign: "left",
-                      border: `1px solid ${isLive ? LABEL_COLOUR[nodeLabel] : "var(--border-strong)"}`,
-                      borderLeft: `3px solid ${LABEL_COLOUR[nodeLabel]}`,
+                      border:
+                        "1px solid " + (isLive ? LABEL_COLOUR[nodeLabel] : "var(--border-strong)"),
+                      borderLeft: "3px solid " + LABEL_COLOUR[nodeLabel],
                       borderRadius: 4,
                       padding: "6px 9px",
                       background: isLive ? "var(--surface-raised)" : "transparent",

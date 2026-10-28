@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- WhyLog Component Diagram -->
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .component { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; fill: #1a1a2e; }
+      .subcomponent { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 12px; fill: #666666; }
+      .arrow { fill: #e94560; marker-end: url(#arrowhead); }
+      .box { fill:#fff; stroke:#dee2e6; stroke-width:1; rx:6; ry:6; }
+      .box-primary { fill:#e3f2fd; stroke:#1976d2; stroke-width:2; rx:6; ry:6; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" fill="#e94560">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+  
+  <text x="500" y="40" text-anchor="middle" class="title" font-size="22">WhyLog — Component Diagram</text>
+  
+  <!-- Core Store -->
+  <g transform="translate(150, 150)">
+    <rect x="0" y="0" width="160" height="80" class="box-primary" rx="8"/>
+    <text x="80" y="25" text-anchor="middle" class="component">Store</text>
+    <text x="80" y="45" text-anchor="middle" class="subcomponent">whylog.ts · extraction.ts · index.ts</text>
+  </g>
+  
+  <!-- AI Layer -->
+  <g transform="translate(380, 150)">
+    <rect x="0" y="0" width="160" height="80" class="box-primary" rx="8"/>
+    <text x="80" y="25" text-anchor="middle" class="component">AI Layer</text>
+    <text x="80" y="45" text-anchor="middle" class="subcomponent">@/ai/local · @/ai/llm</text>
+  </g>
+  
+  <!-- Graph -->
+  <g transform="translate(610, 150)">
+    <rect x="0" y="0" width="160" height="80" class="box-primary" rx="8"/>
+    <text x="80" y="25" text-anchor="middle" class="component">Graph</text>
+    <text x="80" y="45" text-anchor="middle" class="subcomponent">DecisionGraph · Lattice</text>
+  </g>
+  
+  <!-- API / CLI -->
+  <g transform="translate(150, 350)">
+    <rect x="0" y="0" width="160" height="80" class="box-primary" rx="8"/>
+    <text x="80" y="25" text-anchor="middle" class="component">API / CLI</text>
+    <text x="80" y="45" text-anchor="middle" class="subcomponent">HTTP · CLI commands</text>
+  </g>
+  
+  <!-- Persistence -->
+  <g transform="translate(380, 350)">
+    <rect x="0" y="0" width="160" height="80" class="box-primary" rx="8"/>
+    <text x="80" y="25" text-anchor="middle" class="component">Persistence</text>
+    <text x="80" y="45" text-anchor="middle" class="subcomponent">event log · hash chain</text>
+  </g>
+  
+  <!-- Output -->
+  <g transform="translate(610, 350)">
+    <rect x="0" y="0" width="160" height="80" class="box-primary" rx="8"/>
+    <text x="80" y="25" text-anchor="middle" class="component">Output</text>
+    <text x="80" y="45" text-anchor="middle" class="subcommand">Timeline · Lattice · Export</text>
+  </g>
+  
+  <!-- Connections -->
+  <g fill="none" stroke="#e94560" stroke-width="2">
+    <path d="M210 210 C210 250 310 250 310 210"/>
+    <path d="M440 210 C440 250 540 250 540 210"/>
+    <path d="M670 210 C670 250 770 250 770 210"/>
+    <path d="M210 410 C210 450 310 450 310 410"/>
+    <path d="M440 410 C440 450 540 450 540 410"/>
+    <path d="M670 410 C670 450 770 450 770 410"/>
+  </g>
+  
+  <!-- Invariants -->
+  <g transform="translate(500, 530)">
+    <rect x="0" y="0" width="300" height="50" fill:#e8f5e9 stroke:#4caf50 stroke-width="1" rx="4"/>
+    <text x="150" y="25" text-anchor="middle" class="step" font-size="12">I1-I4: Consistent across all components</text>
+  </g>
+</svg>

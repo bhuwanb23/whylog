@@ -32,7 +32,12 @@ import {
   rerankLocally,
 } from "./local-weights";
 
-export type RerankMethod = "llm-listwise" | "local-weights";
+export type RerankMethod =
+  | "llm-listwise"
+  | "local-weights"
+  /** Only produced when `skipRerank` is set — the ablation measuring what the second stage is
+   *  worth. The fusion order is returned untouched and no component scores are claimed. */
+  | "none";
 
 export interface RerankResult {
   readonly order: readonly DecisionId[];
@@ -179,7 +184,7 @@ function textFor(state: GraphState, decisionId: DecisionId): string {
 }
 
 function describeEngineId(engineId: { kind: string; model: string }): string {
-  return engineId.model.length > 0 ? `${engineId.kind}:${engineId.model}` : engineId.kind;
+  return engineId.model.length > 0 ? engineId.kind + ":" + engineId.model : engineId.kind;
 }
 
 /** Which method WOULD be used, before running anything — for the UI to state its policy. */
@@ -188,6 +193,8 @@ export function rerankMethodFor(engine: WhyLogEngine): RerankMethod {
 }
 
 export function describeMethod(method: RerankMethod): string {
+  if (method === "none")
+    return "Reranker DISABLED for this run — the order below is the raw RRF fusion output, with promoted exact matches appended. No component scores exist to show, because no scoring happened.";
   return method === "llm-listwise"
     ? "LLM listwise — the model read the query and every candidate JOINTLY and ordered them. A bi-encoder cannot represent the relationship between two texts it embedded separately; this can, which is why it sees negation and scope."
     : "Local weighted — five inspectable components: structural 0.35, lexical 0.30, dense 0.20, premise 0.10, recency 0.05. No model, no key, and every number below is one you can argue with.";

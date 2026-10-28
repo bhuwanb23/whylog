@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 68" width="340" height="68" role="img" aria-label="WhyLog — 100% keyless">
+  <style>
+    text { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  </style>
+
+  <!-- Shields-style status badge: two flat segments, no gradients, legible at 1x. -->
+  <path d="M0 8 A8 8 0 0 1 8 0 H196 V68 H8 A8 8 0 0 1 0 60 Z" fill="#1b1f26"/>
+  <path d="M196 0 H332 A8 8 0 0 1 340 8 V60 A8 8 0 0 1 332 68 H196 Z" fill="#15803d"/>
+
+  <g transform="translate(16,18) scale(0.235)">
+    <path d="M40 58 L54 74 M88 58 L74 74" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="40" cy="44" r="15" fill="#1b1f26" stroke="#4ade80" stroke-width="4.5"/>
+    <circle cx="88" cy="44" r="15" fill="#1b1f26" stroke="#4ade80" stroke-width="4.5"/>
+    <rect x="44" y="74" width="40" height="40" rx="11" fill="#4ade80"/>
+  </g>
+
+  <text x="54" y="42" font-size="19" font-weight="600" fill="#e6e9ee">WhyLog</text>
+  <text x="268" y="42" font-size="19" font-weight="700" fill="#ffffff" text-anchor="middle">keyless</text>
+</svg>

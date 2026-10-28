@@ -194,12 +194,12 @@ export function buildSparseCorpus(state: GraphState): SparseCorpus {
   return buildCorpus(buildSparseDocuments(state));
 }
 
-/** Terms for a query, folded the same way documents were.
- *
- *  The graph is not consulted: query terms depend on the query, not on what is
- *  in the log. (Documents do need the graph — that is what `buildCorpus` is
- *  for.) */
-export function queryTerms(query: string, variable?: string): readonly string[] {
+/** Terms for a query, folded the same way documents were. */
+export function queryTerms(
+  _state: GraphState,
+  query: string,
+  variable?: string,
+): readonly string[] {
   const tokens = tokenise(query);
   const out = new Set<string>();
 
