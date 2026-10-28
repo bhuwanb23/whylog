@@ -53,5 +53,6 @@ __pycache__/
 # would mean committing a snapshot of a decision log that changes.
 scripts/whylog-guards.cjs
 .github/workflows/decision-guards.yml
-
-
+*.exe
+.hyperframes/
+.thumbnails/
