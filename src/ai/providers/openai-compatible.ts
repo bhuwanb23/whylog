@@ -2,6 +2,16 @@
  * One HTTP client for every provider.
  *
  * Phase 1 · sub-phase 1.10 (the LLM path)
+ *
+ * Trust boundary: everything that crosses into an LLM request is treated as
+ * untrusted for INSTRUCTION purposes. The provider layer sanitises the bytes
+ * that leave the browser, but the real defence is upstream: transcript text and
+ * system/prompt material are constructed in separate, labelled slots so the model
+ * is asked to analyse or compose rather than to follow whatever phrasing it sees.
+ *
+ * The pattern blacklist in `addSystemPrompt` is a COMPLIANCE gate, not the main
+ * defence. It exists so a developer cannot accidentally ship an obviously override-
+ * shaped system prompt; it does not make a crafted transcript safe.
  */
 
 import type { ProviderId } from "../config";
@@ -12,6 +22,15 @@ import {
   networkError,
   retryPolicy,
 } from "../errors";
+
+/**
+ * A raw LLM response is untrusted data. Parse it defensively, validate it against
+ * a schema at the call site, and never feed it into eval / SQL / a shell / the DOM
+ * or a file path. This module only returns plain text plus token counts; every
+ * downstream artefact (extraction, composition, guard proposals, classifications)
+ * is parsed and validated by the consumer that defines the shape.
+ */
+export type LlmText = string;
 
 export interface ChatMessage {
   readonly role: "system" | "user" | "assistant";
@@ -112,8 +131,12 @@ async function once(
 }
 
 /**
- * Sanitize user-provided text before sending it to an LLM.
- * Strips control characters and bounds length to 100k chars.
+ * Sanitize bytes that leave the browser for an LLM request.
+ *
+ * This is a transport/ 위생 gate: it strips zero-width and BOM control characters
+ * and caps length so a single turn cannot blow up the request. It does NOT make the
+ * content instruction-safe — that is the job of the prompt construction that puts the
+ * text into a labelled USER slot, not the SYSTEM slot.
  */
 export function sanitizeLlmInput(text: string): string {
   const controlRe = /[\u200b-\u200f\ufeff]/g;
@@ -134,14 +157,38 @@ export function boundLlmMessages(
 }
 
 /**
- * Add a system prompt if not already present, after validating it.
- * Rejects system prompts containing dangerous instruction patterns.
+ * Install a SYSTEM prompt only when the conversation has none.
+ *
+ * This is a COMPLIANCE guard, not the main prompt-injection defence. It rejects
+ * obviously override-shaped system text so a developer cannot accidentally ship one;
+ * it does not make a crafted transcript safe. The transcript the user wants analyzed
+ * must travel in USER turns, never as system text.
+ *
+ * System text is authoritative for the model's ROLE and CONSTRAINTS. User text —
+ * including the transcript — is data to analyse. Keeping those slots separate is the
+ * structural protection; this function only ensures the SYSTEM slot is not abused.
  */
 export function addSystemPrompt(
   messages: readonly ChatMessage[],
   systemContent: string,
 ): ChatMessage[] {
-  const dangerousPatterns = [
+  if (!isInstructionContent(systemContent)) {
+    throw new Error("System prompt contains suspicious patterns");
+  }
+  const hasSystem = messages.some((msg) => msg.role === "system");
+  if (hasSystem) return messages as ChatMessage[];
+  return [{ role: "system", content: systemContent }, ...messages] as ChatMessage[];
+}
+
+/**
+ * Heuristic gate on SYSTEM text only.
+ *
+ * These patterns are NOT an attack detector. They are a backstop against the most
+ * obvious override shapes so the SYSTEM role is not used to smuggle instructions that
+ * should live in the application prompt instead.
+ */
+function isInstructionContent(systemContent: string): boolean {
+  const patterns = [
     /ignore\s+(previous|all|above|below|system|instructions|rules)/i,
     /forget\s+(everything|all|previous|instructions)/i,
     /disregard\s+(instructions|rules|constraints|previous)/i,
@@ -150,12 +197,7 @@ export function addSystemPrompt(
     /do\s+not\s+(mention|reference|reveal|disclose)/i,
     /system\s+prompt\s+(reveal|show|display|output)/i,
   ];
-  if (dangerousPatterns.some((pattern) => pattern.test(systemContent))) {
-    throw new Error("System prompt contains suspicious patterns");
-  }
-  const hasSystem = messages.some((msg) => msg.role === "system");
-  if (hasSystem) return messages as ChatMessage[];
-  return [{ role: "system", content: systemContent }, ...messages] as ChatMessage[];
+  return !patterns.some((pattern) => pattern.test(systemContent));
 }
 
 function openaiBody(

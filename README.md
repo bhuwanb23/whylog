@@ -99,6 +99,12 @@ In the app: **load demo** (header) → walk Import → Reasoning → Lattice →
 
 No API key is required. Optional providers live in [`.env.example`](.env.example); keys stay in `localStorage` and never reach the event log or an export.
 
+### Security posture
+
+WhyLog is a browser-only app. There is no backend, no server session, and no auth flow. The only secret it ever holds is an optional LLM provider key, which is stored in browser `localStorage` and is safe only under that assumption: if the page ever gets an XSS hole, anything in that origin can be read. The app is written to avoid that class of mistake — it does not render external HTML, does not eval user input, and redacts the key from events, exports, and diagnostics — but the key model is explicitly ** contingent on there being no XSS**, not on any other control.
+
+If you later add a feature that fetches or renders content from outside the app, review it against that assumption before shipping: treat inbound content as untrusted, keep it out of the SYSTEM prompt (transcript data goes in USER turns), and keep any new external integration out of the same origin as the key store.
+
 | Command | Purpose |
 |---|---|
 | `npm run dev` | UI on `0.0.0.0:5173` |

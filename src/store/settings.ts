@@ -2,6 +2,11 @@
  * WhyLog settings — persisted tuning state under `whylog:settings:v1`.
  *
  * Phase 2 · sub-phase 2.7 (the settings store)
+ *
+ * SECURITY NOTE: The provider API key is stored in `localStorage` under the same
+ * origin as this settings store. This is acceptable ONLY because WhyLog is a
+ * browser-only app with no backend and no server auth. The key is safe here only
+ * while the origin has no XSS. See README § Security posture.
  */
 
 import {

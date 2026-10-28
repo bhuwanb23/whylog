@@ -37,7 +37,8 @@
  *
  * What cannot be identical is the file discovery: the browser runs against a pasted virtual
  * project, CI against the real tree. That difference is the point of exporting.
- */ import type { Evaluation, GuardSpec, SkipReason, VirtualProject } from "../../types/guards";
+ */
+import type { Evaluation, GuardSpec, SkipReason, VirtualProject } from "../../types/guards";
 
 export type CommandSpec = GuardSpec & { kind: "command_exit_zero"; command: string };
 
@@ -47,42 +48,48 @@ const SKIP_NOT_RUNNABLE: SkipReason = {
 };
 
 /**
- * COMMAND_ALLOWLIST — commands permitted to execute in CI evaluation.
+ * Command guards are a REVIEWED CI privilege, not generic app logic.
  *
- * Only these commands may be checked by the `command_exit_zero` guard. Everything
- * else is skipped. The list is intentionally small: read-only inspection commands
- * that cannot modify the filesystem or network.
+ * A guard that proposes a shell command gives the exported runner authority to execute
+ * something in the repo checked out by CI. That is the only reason this module exists:
+ * read-only existence/inspection checks that can be run deterministically in CI. If you
+ * add a command guard, treat the command string as security config and review it, because
+ * the runner executes it with the repo as cwd.
  */
-const COMMAND_ALLOWLIST = new Set([
+
+/**
+ * COMMAND_SAFE_WHITELIST — commands allowed for `command_exit_zero` guards.
+ *
+ * Defaults to genuinely side-effect-free inspection commands. Anything that can mutate
+ * the filesystem or network is out unless there is an explicit, reviewed reason to add
+ * it, and even then it belongs in the allowlist as DATA in the exported runner, not in
+ * this module's default posture.
+ */
+const COMMAND_SAFE_WHITELIST = new Set([
   "ls",
   "cat",
   "echo",
   "pwd",
   "grep",
   "find",
-  "chmod",
-  "cp",
-  "mv",
-  "mkdir",
-  "rmdir",
-  "touch",
   "head",
   "tail",
+  "tail -n",
   "sort",
   "uniq",
   "wc",
   "diff",
-  "tail -n",
   "sum",
 ]);
 
 /**
- * COMMAND_DENYLIST — commands explicitly blocked even if they appear in the allowlist.
+ * COMMAND_BLOCKLIST — commands rejected regardless of any whitelist.
  *
- * These are destructive or network-capable commands that should never run during
- * guard evaluation, regardless of context.
+ * Destructive, format, or network-capable commands that must never run during guard
+ * evaluation. This is the fail-closed layer: if a command touches this list, it is
+ * skipped even if someone added it to the exported runner by hand.
  */
-const COMMAND_DENYLIST = new Set([
+const COMMAND_BLOCKLIST = new Set([
   "rm -rf",
   "dd",
   "mkfs",
@@ -94,15 +101,29 @@ const COMMAND_DENYLIST = new Set([
   "socat",
 ]);
 
-/** Check if a command is allowed (whitelisted) or denied (blacklisted) */
+/**
+ * Decide whether a command may be executed by the exported runner.
+ *
+ * Policy order:
+ *  1. Blocklist wins. A command whose text contains a blocked token is refused.
+ *  2. Whitelist wins. Only the command token named here may run.
+ *  3. Otherwise the guard cannot be evaluated in-browser and is skipped.
+ *
+ * The allow/block check is on the COMMAND TOKEN, not the full argv, because the
+ * exported runner already quotes the command. Argument filtering would be tighter, but it
+ * is also a separate review concern; the default here is narrow, reviewed, inspect-only.
+ */
 function isCommandAllowed(command: string): boolean {
-  // First check denylist - dangerous commands are always blocked
-  for (const denied of COMMAND_DENYLIST) {
-    if (command.includes(denied)) return false;
+  // Fail closed: a blocked command is always refused.
+  for (const blocked of COMMAND_BLOCKLIST) {
+    if (command.includes(blocked)) return false;
   }
-  // Then check allowlist - only whitelisted commands permitted
-  const firstWord = command.split(" ")[0];
-  return firstWord != null && COMMAND_ALLOWLIST.has(firstWord);
+
+  const tokens = command.trim().split(" ");
+  const firstWord = tokens[0];
+  if (firstWord === "" || firstWord === undefined) return false;
+
+  return COMMAND_SAFE_WHITELIST.has(firstWord);
 }
 
 /* Both parameters are unused by design. The signature matches every other evaluator so the
@@ -111,7 +132,6 @@ function isCommandAllowed(command: string): boolean {
  * special cases.
  */
 export function evalCommand(_spec: CommandSpec, _project: VirtualProject): Evaluation {
-  // Check if the command is in the allowlist or denylist
   const command = _spec.command;
   const allowed = isCommandAllowed(command);
 
